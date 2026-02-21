@@ -93,7 +93,7 @@ const LoginForm: React.FC = () => {
             </div>
             <Button 
               type="submit" 
-              className="w-full bg-black text-white hover:bg-red-600 hover:text-white" 
+              className="w-full bg-blue-600 text-white hover:bg-blue-700 hover:text-white" 
               size="lg"
               disabled={isLoading}
             >
