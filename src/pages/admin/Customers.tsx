@@ -498,180 +498,110 @@ const Customers: React.FC = () => {
       <div className="space-y-3">
         {filteredCustomers.map((customer) => (
           <Card key={customer.id}>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mt-1">
-                    <User className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-bold">{customer.name}</p>
-                      {getSectorName(customer.sector_id) && (
-                        <Badge variant="secondary" className="text-xs">
-                          <MapPin className="w-3 h-3 ml-1" />
-                          {getSectorName(customer.sector_id)}
-                        </Badge>
-                      )}
-                      {customer.internal_name && (
-                        <Badge variant="outline" className="text-xs border-primary/30 text-primary">
-                          <UserCircle className="w-3 h-3 ml-1" />
-                          {customer.internal_name}
-                        </Badge>
-                      )}
-                      {customer.is_trusted && (
-                        <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs">
-                          <Shield className="w-3 h-3 ml-1" />
-                          {t('customers.trusted')}
-                        </Badge>
-                      )}
-                      <Badge variant="outline" className="text-xs">
-                        {customer.default_payment_type === 'with_invoice' ? 'فاتورة 1' :
-                          customer.default_price_subtype === 'super_gros' ? 'سوبر غرو' :
-                            customer.default_price_subtype === 'retail' ? 'تجزئة' : 'غرو'
-                        }
+            <CardContent className="p-3">
+              {/* Customer Info Row */}
+              <div className="flex items-start gap-2">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center mt-0.5 shrink-0">
+                  <User className="w-4 h-4 text-primary" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-sm leading-tight">{customer.name}</p>
+                  <div className="flex items-center gap-1 flex-wrap mt-1">
+                    {getSectorName(customer.sector_id) && (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                        <MapPin className="w-2.5 h-2.5 ml-0.5" />
+                        {getSectorName(customer.sector_id)}
                       </Badge>
-                    </div>
-                    {customer.phone && (
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
-                        <Phone className="w-3 h-3" />
-                        <span dir="ltr">{customer.phone}</span>
-                      </div>
                     )}
+                    {customer.internal_name && (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary/30 text-primary">
+                        {customer.internal_name}
+                      </Badge>
+                    )}
+                    {customer.is_trusted && (
+                      <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[10px] px-1.5 py-0">
+                        <Shield className="w-2.5 h-2.5 ml-0.5" />
+                        {t('customers.trusted')}
+                      </Badge>
+                    )}
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                      {customer.default_payment_type === 'with_invoice' ? 'فاتورة 1' :
+                        customer.default_price_subtype === 'super_gros' ? 'سوبر غرو' :
+                          customer.default_price_subtype === 'retail' ? 'تجزئة' : 'غرو'
+                      }
+                    </Badge>
+                  </div>
+                  {customer.phone && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                      <Phone className="w-3 h-3 shrink-0" />
+                      <span dir="ltr">{customer.phone}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5 flex-wrap">
                     {customer.wilaya && (
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <MapPin className="w-3 h-3" />
-                        <span>{customer.wilaya}</span>
-                      </div>
+                      <span className="flex items-center gap-0.5">
+                        <MapPin className="w-3 h-3 shrink-0" />
+                        {customer.wilaya}
+                      </span>
                     )}
                     {customer.branch_id && (
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Building2 className="w-3 h-3" />
-                        <span>{getBranchName(customer.branch_id)}</span>
-                      </div>
-                    )}
-                    {customer.address && (
-                      <p className="text-xs text-muted-foreground mt-1">{customer.address}</p>
+                      <span className="flex items-center gap-0.5">
+                        <Building2 className="w-3 h-3 shrink-0" />
+                        {getBranchName(customer.branch_id)}
+                      </span>
                     )}
                   </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-muted-foreground hover:text-primary hover:bg-primary/10"
-                    onClick={() => {
-                      setProfileCustomer(customer);
-                      setIsProfileOpen(true);
-                    }}
-                    title={t('customers.profile.title')}
-                  >
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                  {customer.phone && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:text-primary hover:bg-primary/10"
-                      onClick={() => window.location.href = `tel:${customer.phone}`}
-                      title={t('common.phone')}
-                    >
-                      <Phone className="w-4 h-4" />
-                    </Button>
+                  {customer.address && (
+                    <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{customer.address}</p>
                   )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-muted-foreground hover:text-primary hover:bg-primary/10"
-                    onClick={() => navigate('/orders', {
-                      state: {
-                        customerId: customer.id,
-                        paymentType: customer.default_payment_type
-                      }
-                    })}
-                    title={t('orders.new')}
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-muted-foreground hover:text-primary hover:bg-primary/10"
-                    onClick={() => navigate('/customer-debts', {
-                      state: { customerId: customer.id }
-                    })}
-                    title={t('debts.title')}
-                  >
-                    <CreditCard className="w-4 h-4" />
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-muted-foreground hover:text-primary hover:bg-primary/10"
-                    onClick={() => navigate('/orders', {
-                      state: {
-                        customerId: customer.id,
-                        action: 'sale'
-                      }
-                    })}
-                    title={t('stock.direct_sale')}
-                  >
-                    <Banknote className="w-4 h-4" />
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-muted-foreground hover:text-primary hover:bg-primary/10"
-                    onClick={() => navigate('/orders', {
-                      state: {
-                        customerId: customer.id,
-                        action: 'delivery'
-                      }
-                    })}
-                    title={t('deliveries.title')}
-                  >
-                    <Truck className="w-4 h-4" />
-                  </Button>
-                  {customer.latitude && customer.longitude && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:text-primary hover:bg-primary/10"
-                      onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${customer.latitude},${customer.longitude}`, '_blank')}
-                      title={t('common.navigation')}
-                    >
-                      <Navigation className="w-4 h-4" />
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-muted-foreground hover:text-primary hover:bg-primary/10"
-                    onClick={() => setCustomerForPrices(customer)}
-                    title={t('customers.special_prices')}
-                  >
-                    <Tag className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-muted-foreground hover:text-primary hover:bg-primary/10"
-                    onClick={() => openEditDialog(customer)}
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => setCustomerToDelete(customer)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
                 </div>
+              </div>
+              {/* Action Buttons - compact grid */}
+              <div className="flex items-center justify-end gap-0 mt-2 border-t pt-1.5 flex-wrap">
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                  onClick={() => { setProfileCustomer(customer); setIsProfileOpen(true); }} title={t('customers.profile.title')}>
+                  <Eye className="w-3.5 h-3.5" />
+                </Button>
+                {customer.phone && (
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                    onClick={() => window.location.href = `tel:${customer.phone}`} title={t('common.phone')}>
+                    <Phone className="w-3.5 h-3.5" />
+                  </Button>
+                )}
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                  onClick={() => navigate('/orders', { state: { customerId: customer.id, paymentType: customer.default_payment_type } })} title={t('orders.new')}>
+                  <PlusCircle className="w-3.5 h-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                  onClick={() => navigate('/customer-debts', { state: { customerId: customer.id } })} title={t('debts.title')}>
+                  <CreditCard className="w-3.5 h-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                  onClick={() => navigate('/orders', { state: { customerId: customer.id, action: 'sale' } })} title={t('stock.direct_sale')}>
+                  <Banknote className="w-3.5 h-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                  onClick={() => navigate('/orders', { state: { customerId: customer.id, action: 'delivery' } })} title={t('deliveries.title')}>
+                  <Truck className="w-3.5 h-3.5" />
+                </Button>
+                {customer.latitude && customer.longitude && (
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                    onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${customer.latitude},${customer.longitude}`, '_blank')} title={t('common.navigation')}>
+                    <Navigation className="w-3.5 h-3.5" />
+                  </Button>
+                )}
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                  onClick={() => setCustomerForPrices(customer)} title={t('customers.special_prices')}>
+                  <Tag className="w-3.5 h-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                  onClick={() => openEditDialog(customer)}>
+                  <Pencil className="w-3.5 h-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => setCustomerToDelete(customer)}>
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
               </div>
             </CardContent>
           </Card>
