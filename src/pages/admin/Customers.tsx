@@ -29,6 +29,7 @@ import CustomerApprovalTab from '@/components/customers/CustomerApprovalTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 
+// Force rebuild
 const Customers: React.FC = () => {
   const navigate = useNavigate();
   const { workerId, activeBranch, role } = useAuth();
