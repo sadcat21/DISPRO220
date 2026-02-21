@@ -309,7 +309,7 @@ const WorkerHome: React.FC = () => {
         }}
         onVisitOnly={async (customer) => {
           try {
-            await trackVisit(customer.id);
+            await trackVisit({ customerId: customer.id, operationType: 'visit' });
             toast.success(t('debts.visit_recorded'));
           } catch (error) {
             console.error('Error recording visit:', error);

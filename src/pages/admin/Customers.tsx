@@ -27,7 +27,7 @@ import { useTrackVisit } from '@/hooks/useVisitTracking';
 import CustomerProfileDialog from '@/components/customers/CustomerProfileDialog';
 import CustomerApprovalTab from '@/components/customers/CustomerApprovalTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Eye, PlusCircle, CreditCard, Banknote, Truck, Phone } from 'lucide-react';
+import { Eye, PlusCircle, Banknote, Truck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Customers: React.FC = () => {
