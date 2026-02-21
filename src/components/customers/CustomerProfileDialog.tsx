@@ -84,38 +84,38 @@ const CustomerProfileDialog: React.FC<CustomerProfileDialogProps> = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                <DialogHeader className="p-6 pb-0">
-                    <DialogTitle className="flex items-center gap-3 text-2xl">
-                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                            <User className="w-6 h-6" />
+            <DialogContent className="max-w-2xl w-[95vw] max-h-[85vh] overflow-hidden flex flex-col p-0" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                <DialogHeader className="px-4 pt-4 pb-2 shrink-0">
+                    <DialogTitle className="flex items-center gap-2 text-lg">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                            <User className="w-5 h-5" />
                         </div>
-                        <div>
-                            <p>{customer.name}</p>
-                            <p className="text-sm font-normal text-muted-foreground">{customer.store_name || t('common.none')}</p>
+                        <div className="min-w-0">
+                            <p className="truncate">{customer.name}</p>
+                            <p className="text-xs font-normal text-muted-foreground truncate">{customer.store_name || t('common.none')}</p>
                         </div>
                     </DialogTitle>
                 </DialogHeader>
 
-                <ScrollArea className="flex-1 p-6 pt-4">
-                    <div className="space-y-6">
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <ScrollArea className="flex-1 px-4 pb-4 pt-2">
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-2">
                             <Card className="bg-primary/5 border-primary/10">
-                                <CardBaseContent icon={<ShoppingCart className="w-4 h-4 mx-auto mb-1 text-primary" />} value={stats.totalOrders} label={t('customers.profile.stats')} />
+                                <CardBaseContent icon={<ShoppingCart className="w-4 h-4 mx-auto mb-0.5 text-primary" />} value={stats.totalOrders} label={t('customers.profile.stats')} />
                             </Card>
                             <Card className="bg-green-500/5 border-green-500/10">
-                                <CardBaseContent icon={<TrendingUp className="w-4 h-4 mx-auto mb-1 text-green-600" />} value={`${stats.totalSpent.toLocaleString()} DA`} label={t('customers.profile.total_spent')} />
+                                <CardBaseContent icon={<TrendingUp className="w-4 h-4 mx-auto mb-0.5 text-green-600" />} value={`${stats.totalSpent.toLocaleString()}`} label={t('customers.profile.total_spent')} />
                             </Card>
                             <Card className="bg-purple-500/5 border-purple-500/10">
-                                <CardBaseContent icon={<Package className="w-4 h-4 mx-auto mb-1 text-purple-600" />} value={stats.promoCount} label="عروض" />
+                                <CardBaseContent icon={<Package className="w-4 h-4 mx-auto mb-0.5 text-purple-600" />} value={stats.promoCount} label="عروض" />
                             </Card>
                             <Card className="bg-red-500/5 border-red-500/10">
-                                <CardBaseContent icon={<CreditCard className="w-4 h-4 mx-auto mb-1 text-red-600" />} value={`${stats.totalDebt.toLocaleString()} DA`} label="ديون" />
+                                <CardBaseContent icon={<CreditCard className="w-4 h-4 mx-auto mb-0.5 text-red-600" />} value={`${stats.totalDebt.toLocaleString()}`} label="ديون" />
                             </Card>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="md:col-span-1 space-y-4">
+                        <div className="space-y-4">
+                            <div className="space-y-3">
                                 <h3 className="font-bold flex items-center gap-2 text-sm border-b pb-2">
                                     <Info className="w-4 h-4" />
                                     {t('customers.profile.personal_info')}
@@ -127,7 +127,7 @@ const CustomerProfileDialog: React.FC<CustomerProfileDialogProps> = ({
                                 </div>
                             </div>
 
-                            <div className="md:col-span-2">
+                            <div>
                                 <Tabs defaultValue="orders" className="w-full">
                                     <TabsList className="w-full grid grid-cols-3 mb-4">
                                         <TabsTrigger value="orders" className="text-xs">{t('customers.profile.order_history')}</TabsTrigger>
@@ -187,10 +187,10 @@ const CustomerProfileDialog: React.FC<CustomerProfileDialogProps> = ({
 };
 
 const CardBaseContent: React.FC<{ icon: React.ReactNode, value: string | number, label: string }> = ({ icon, value, label }) => (
-    <div className="p-3 text-center">
+    <div className="p-2 text-center">
         {icon}
-        <p className="text-xl font-bold">{value}</p>
-        <p className="text-[10px] text-muted-foreground uppercase">{label}</p>
+        <p className="text-base font-bold leading-tight">{value}</p>
+        <p className="text-[9px] text-muted-foreground">{label}</p>
     </div>
 );
 
