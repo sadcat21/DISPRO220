@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Plus, User, Loader2, Trash2, Phone, MapPin, Search, Pencil, Building2, ChevronDown, ChevronUp, Navigation, Shield, Tag, UserCircle, Store, CreditCard, Warehouse } from 'lucide-react';
+import { Plus, User, Loader2, Trash2, Phone, MapPin, Search, Pencil, Building2, ChevronDown, ChevronUp, Navigation, Shield, Tag, UserCircle, Store, CreditCard, Warehouse, Eye, PlusCircle, Banknote, Truck } from 'lucide-react';
 import { toast } from 'sonner';
 import { ALGERIAN_WILAYAS, DEFAULT_WILAYA } from '@/data/algerianWilayas';
 import LazyLocationPicker from '@/components/map/LazyLocationPicker';
@@ -27,7 +27,6 @@ import { useTrackVisit } from '@/hooks/useVisitTracking';
 import CustomerProfileDialog from '@/components/customers/CustomerProfileDialog';
 import CustomerApprovalTab from '@/components/customers/CustomerApprovalTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Eye, PlusCircle, Banknote, Truck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Customers: React.FC = () => {
