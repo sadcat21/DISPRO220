@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type OperationType = 'order' | 'direct_sale' | 'delivery' | 'add_customer' | 'update_customer' | 'delete_customer' | 'debt_collection';
+export type OperationType = 'order' | 'direct_sale' | 'delivery' | 'add_customer' | 'update_customer' | 'delete_customer' | 'debt_collection' | 'visit';
 
 export interface VisitRecord {
   id: string;
@@ -30,6 +30,7 @@ const OPERATION_LABELS: Record<OperationType, string> = {
   update_customer: 'طلب تعديل زبون',
   delete_customer: 'طلب حذف زبون',
   debt_collection: 'تحصيل دين',
+  visit: 'زيارة',
 };
 
 export const getOperationLabel = (type: OperationType) => OPERATION_LABELS[type] || type;
