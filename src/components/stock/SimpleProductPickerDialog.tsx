@@ -1,0 +1,87 @@
+import React, { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Search, Package } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
+
+interface SimpleProductOption {
+  id: string;
+  name: string;
+}
+
+interface SimpleProductPickerDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  products: SimpleProductOption[];
+  selectedProductId: string;
+  onSelect: (productId: string) => void;
+}
+
+const SimpleProductPickerDialog: React.FC<SimpleProductPickerDialogProps> = ({
+  open,
+  onOpenChange,
+  products,
+  selectedProductId,
+  onSelect,
+}) => {
+  const { t } = useLanguage();
+  const [search, setSearch] = useState('');
+
+  const filtered = products.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) setSearch(''); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Package className="w-5 h-5 text-primary" />
+            {t('stock.product')}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="relative">
+          <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder={t('common.search')}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="ps-9"
+          />
+        </div>
+        <div className="max-h-[55vh] overflow-y-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {filtered.map(p => {
+              const isSelected = p.id === selectedProductId;
+              return (
+                <button
+                  key={p.id}
+                  className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition-colors
+                    ${isSelected ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent border-border'}
+                  `}
+                  onClick={() => {
+                    onSelect(p.id);
+                    onOpenChange(false);
+                    setSearch('');
+                  }}
+                >
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isSelected ? 'bg-primary-foreground/20' : 'bg-primary/10'}`}>
+                    <Package className={`w-5 h-5 ${isSelected ? 'text-primary-foreground' : 'text-primary'}`} />
+                  </div>
+                  <span className="font-medium text-xs leading-tight truncate w-full">{p.name}</span>
+                </button>
+              );
+            })}
+          </div>
+          {filtered.length === 0 && (
+            <div className="text-center text-sm text-muted-foreground py-4">
+              {t('common.no_results')}
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default SimpleProductPickerDialog;

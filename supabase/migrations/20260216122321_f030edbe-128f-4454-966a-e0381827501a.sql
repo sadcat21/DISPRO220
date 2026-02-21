@@ -1,0 +1,2 @@
+ALTER TABLE public.debt_payments DROP CONSTRAINT IF EXISTS debt_payments_payment_method_check;
+ALTER TABLE public.debt_payments ADD CONSTRAINT debt_payments_payment_method_check CHECK (payment_method IN ('cash', 'check', 'transfer', 'receipt', 'visit'));

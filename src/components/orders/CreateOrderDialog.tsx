@@ -1,0 +1,889 @@
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import {
+  ShoppingCart, Plus, Minus, Loader2, User,
+  Receipt, ReceiptText, UserPlus, Edit2, XCircle, Package, Check, ChevronsUpDown, Stamp,
+  AlertTriangle, Gift
+} from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useCreateOrder, useMyOrders } from '@/hooks/useOrders';
+import { useTrackVisit } from '@/hooks/useVisitTracking';
+import { Customer, Product, PaymentType, PriceSubType } from '@/types/database';
+import { InvoicePaymentMethod, INVOICE_PAYMENT_METHODS } from '@/types/stamp';
+import { useActiveStampTiers, calculateStampAmount } from '@/hooks/useStampTiers';
+import ProductQuantityDialog, { PerItemPricing } from './ProductQuantityDialog';
+import AssignWorkerAfterSaveDialog from './AssignWorkerAfterSaveDialog';
+import AddCustomerDialog from '@/components/promo/AddCustomerDialog';
+import EditCustomerDialog from './EditCustomerDialog';
+import CustomerRecentOrders from './CustomerRecentOrders';
+import InvoicePaymentMethodSelect from './InvoicePaymentMethodSelect';
+import { cn } from '@/lib/utils';
+
+interface CreateOrderDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  initialCustomerId?: string;
+}
+
+interface OrderItemWithPrice {
+  productId: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  giftQuantity?: number;
+  giftPieces?: number;
+  giftOfferId?: string;
+  isUnitSale?: boolean;
+  itemPaymentType?: string;
+  itemInvoicePaymentMethod?: string | null;
+  itemPriceSubType?: string;
+}
+
+const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChange, initialCustomerId }) => {
+  const { workerId, activeBranch } = useAuth();
+  const { t, dir, language } = useLanguage();
+  const createOrder = useCreateOrder();
+  const { trackVisit } = useTrackVisit();
+  const { data: orders } = useMyOrders();
+  const { data: stampTiers } = useActiveStampTiers();
+
+  // Data states
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [shortageProductIds, setShortageProductIds] = useState<Set<string>>(new Set());
+  const [offerProductIds, setOfferProductIds] = useState<Set<string>>(new Set());
+  const [warehouseStockProductIds, setWarehouseStockProductIds] = useState<Set<string>>(new Set());
+
+  // Form states
+  const [selectedCustomerId, setSelectedCustomerId] = useState('');
+  const [orderItems, setOrderItems] = useState<OrderItemWithPrice[]>([]);
+  const [notes, setNotes] = useState('');
+  const [deliveryDate, setDeliveryDate] = useState('');
+  const [paymentType, setPaymentType] = useState<PaymentType>('with_invoice');
+  const [priceSubType, setPriceSubType] = useState<PriceSubType>('gros');
+  const [invoicePaymentMethod, setInvoicePaymentMethod] = useState<InvoicePaymentMethod | null>(null);
+  const [selectedDeliveryWorker, setSelectedDeliveryWorker] = useState('');
+  const [showAssignWorkerDialog, setShowAssignWorkerDialog] = useState(false);
+  const [savedOrderId, setSavedOrderId] = useState('');
+  const [savedCustomerBranchId, setSavedCustomerBranchId] = useState<string | null>(null);
+
+  // Search and dialogs
+  const [customerDropdownOpen, setCustomerDropdownOpen] = useState(false);
+  const [showAddCustomerDialog, setShowAddCustomerDialog] = useState(false);
+  const [showEditCustomerDialog, setShowEditCustomerDialog] = useState(false);
+  const [showQuantityDialog, setShowQuantityDialog] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  // Derived data
+  const selectedCustomer = useMemo(() =>
+    customers.find(c => c.id === selectedCustomerId),
+    [customers, selectedCustomerId]
+  );
+
+
+  useEffect(() => {
+    if (open && workerId) {
+      fetchData();
+      if (initialCustomerId) {
+        setSelectedCustomerId(initialCustomerId);
+      }
+    }
+  }, [open, workerId, activeBranch, initialCustomerId]);
+
+  const fetchData = async () => {
+    setIsLoadingData(true);
+    try {
+      let customersQuery = supabase.from('customers').select('*').order('name');
+
+      if (activeBranch) {
+        customersQuery = customersQuery.eq('branch_id', activeBranch.id);
+      }
+
+      let shortageQuery = supabase
+        .from('product_shortage_tracking')
+        .select('product_id')
+        .eq('status', 'pending');
+      if (activeBranch) {
+        shortageQuery = shortageQuery.eq('branch_id', activeBranch.id);
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+
+      // Build warehouse stock query (مخزون المستودع)
+      let warehouseStockQuery = supabase
+        .from('warehouse_stock')
+        .select('product_id, quantity')
+        .gt('quantity', 0);
+      if (activeBranch) {
+        warehouseStockQuery = warehouseStockQuery.eq('branch_id', activeBranch.id);
+      }
+
+      const [customersRes, productsRes, shortageRes, offersRes, warehouseStockRes] = await Promise.all([
+        customersQuery,
+        supabase.from('products').select('*').eq('is_active', true).order('name'),
+        shortageQuery,
+        supabase.from('product_offers').select('product_id')
+          .eq('is_active', true)
+          .or(`start_date.is.null,start_date.lte.${today}`)
+          .or(`end_date.is.null,end_date.gte.${today}`),
+        warehouseStockQuery,
+      ]);
+
+      if (customersRes.error) throw customersRes.error;
+      if (productsRes.error) throw productsRes.error;
+
+      setCustomers(customersRes.data || []);
+      setProducts(productsRes.data || []);
+      setShortageProductIds(new Set((shortageRes.data || []).map(s => s.product_id)));
+      setOfferProductIds(new Set((offersRes.data || []).map(o => o.product_id)));
+      setWarehouseStockProductIds(new Set((warehouseStockRes.data || []).map(s => s.product_id)));
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast.error(t('orders.fetch_error'));
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
+  const resetForm = useCallback(() => {
+    setSelectedCustomerId('');
+    setOrderItems([]);
+    setNotes('');
+    setDeliveryDate('');
+    setPaymentType('with_invoice');
+    setPriceSubType('gros');
+    setInvoicePaymentMethod(null);
+    setSelectedDeliveryWorker('');
+    setCustomerDropdownOpen(false);
+  }, []);
+
+  const handleClose = useCallback((isOpen: boolean) => {
+    if (!isOpen) {
+      resetForm();
+    }
+    onOpenChange(isOpen);
+  }, [onOpenChange, resetForm]);
+
+  // Product handlers
+  const handleProductClick = (product: Product) => {
+    if (shortageProductIds.has(product.id) || !warehouseStockProductIds.has(product.id)) {
+      toast.warning(t('stock.product_unavailable_warning'), { duration: 5000 });
+    }
+    setSelectedProduct(product);
+    setShowQuantityDialog(true);
+  };
+
+  const getProductPrice = (product: Product, pt?: PaymentType, pst?: PriceSubType): number => {
+    const currentPaymentType = pt || paymentType;
+    const currentPriceSubType = pst || priceSubType;
+
+    let basePrice = 0;
+    if (currentPaymentType === 'with_invoice') {
+      basePrice = product.price_invoice || 0;
+    } else {
+      switch (currentPriceSubType) {
+        case 'super_gros': basePrice = product.price_super_gros || product.price_no_invoice || 0; break;
+        case 'gros': basePrice = product.price_gros || product.price_no_invoice || 0; break;
+        case 'retail': basePrice = product.price_retail || product.price_no_invoice || 0; break;
+        default: basePrice = product.price_gros || product.price_no_invoice || 0;
+      }
+    }
+
+    // If pricing is per kg, multiply by weight_per_box to get box price
+    if (product.pricing_unit === 'kg' && product.weight_per_box) {
+      return basePrice * product.weight_per_box;
+    }
+    return basePrice;
+  };
+
+  const handleAddProductWithQuantity = (productId: string, quantity: number, giftInfo?: { giftQuantity: number; giftPieces: number; offerId?: string }, isUnitSale?: boolean, perItemPricing?: PerItemPricing) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
+    // Use per-item pricing if provided, otherwise use order-level defaults
+    const effectivePaymentType = perItemPricing?.paymentType || paymentType;
+    const effectivePriceSubType = perItemPricing?.priceSubType || priceSubType;
+
+    if (isUnitSale) {
+      const boxPrice = getProductPrice(product, effectivePaymentType, effectivePriceSubType);
+      const piecePrice = product.pieces_per_box > 0 ? boxPrice / product.pieces_per_box : boxPrice;
+      const totalPrice = piecePrice * quantity;
+
+      setOrderItems(prev => {
+        return [...prev, {
+          productId,
+          quantity,
+          unitPrice: piecePrice,
+          totalPrice,
+          isUnitSale: true,
+          itemPaymentType: perItemPricing?.paymentType,
+          itemInvoicePaymentMethod: perItemPricing?.invoicePaymentMethod,
+          itemPriceSubType: perItemPricing?.priceSubType,
+        }];
+      });
+      return;
+    }
+
+    const unitPrice = getProductPrice(product, effectivePaymentType, effectivePriceSubType);
+    const giftQuantity = giftInfo?.giftQuantity || 0;
+    const paidQuantity = quantity - giftQuantity;
+
+    setOrderItems(prev => {
+      const existing = prev.find(item => item.productId === productId && !item.isUnitSale && !item.itemPaymentType && !perItemPricing);
+      if (existing && !perItemPricing) {
+        const newQuantity = existing.quantity + quantity;
+        const newGift = (existing.giftQuantity || 0) + giftQuantity;
+        const newPaid = newQuantity - newGift;
+        return prev.map(item =>
+          item === existing
+            ? { ...item, quantity: newQuantity, totalPrice: newPaid * unitPrice, giftQuantity: newGift }
+            : item
+        );
+      }
+      return [...prev, {
+        productId,
+        quantity,
+        unitPrice,
+        totalPrice: paidQuantity * unitPrice,
+        giftQuantity: giftQuantity || undefined,
+        giftPieces: giftInfo?.giftPieces || undefined,
+        giftOfferId: giftInfo?.offerId,
+        itemPaymentType: perItemPricing?.paymentType,
+        itemInvoicePaymentMethod: perItemPricing?.invoicePaymentMethod,
+        itemPriceSubType: perItemPricing?.priceSubType,
+      }];
+    });
+  };
+
+  const handleUpdateQuantity = (productId: string, delta: number) => {
+    setOrderItems(prev =>
+      prev.map(item => {
+        if (item.productId === productId) {
+          const newQuantity = item.quantity + delta;
+          if (newQuantity > 0) {
+            return { ...item, quantity: newQuantity, totalPrice: newQuantity * item.unitPrice };
+          }
+        }
+        return item;
+      }).filter(item => item.quantity > 0)
+    );
+  };
+
+  const handleRemoveProduct = (productId: string) => {
+    setOrderItems(prev => prev.filter(item => item.productId !== productId));
+  };
+
+  const getProductName = (productId: string) => {
+    return products.find(p => p.id === productId)?.name || '';
+  };
+
+  // Recalculate prices when payment type changes
+  useEffect(() => {
+    if (orderItems.length > 0) {
+      setOrderItems(prev => prev.map(item => {
+        const product = products.find(p => p.id === item.productId);
+        if (product) {
+          const unitPrice = getProductPrice(product);
+          const paidQty = item.quantity - (item.giftQuantity || 0);
+          return { ...item, unitPrice, totalPrice: paidQty * unitPrice };
+        }
+        return item;
+      }));
+    }
+  }, [paymentType, priceSubType, products]);
+
+  // Calculate totals including stamp price for invoice payments when cash method is selected
+  const orderTotals = useMemo(() => {
+    const totalItems = orderItems.reduce((sum, item) => sum + item.quantity, 0);
+    const totalGiftBoxes = orderItems.reduce((sum, item) => sum + (item.giftQuantity || 0), 0);
+    const totalPaidItems = totalItems - totalGiftBoxes;
+    const subtotal = orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
+
+    // Calculate stamp amount only for invoice payments with cash method
+    let stampAmount = 0;
+    const shouldApplyStamp = paymentType === 'with_invoice' && invoicePaymentMethod === 'cash';
+
+    if (shouldApplyStamp && stampTiers && stampTiers.length > 0) {
+      stampAmount = calculateStampAmount(subtotal, stampTiers);
+    }
+
+    const totalAmount = subtotal + stampAmount;
+    return { totalItems, totalGiftBoxes, totalPaidItems, subtotal, stampAmount, totalAmount };
+  }, [orderItems, paymentType, invoicePaymentMethod, stampTiers]);
+
+  // Customer handlers
+  const handleNewCustomerAdded = (newCustomer: Customer) => {
+    setCustomers(prev => [...prev, newCustomer]);
+    setSelectedCustomerId(newCustomer.id);
+    setShowAddCustomerDialog(false);
+    setCustomerDropdownOpen(false);
+  };
+
+  const handleCustomerUpdated = (updatedCustomer: Customer) => {
+    setCustomers(prev => prev.map(c => c.id === updatedCustomer.id ? updatedCustomer : c));
+    setShowEditCustomerDialog(false);
+  };
+
+  // Submit handler
+  const handleCreateOrder = async () => {
+    if (!selectedCustomerId) {
+      toast.error(t('orders.select_customer_error'));
+      return;
+    }
+    if (orderItems.length === 0) {
+      toast.error(t('orders.add_products_error'));
+      return;
+    }
+    if (paymentType === 'with_invoice' && !invoicePaymentMethod) {
+      toast.error(t('orders.select_payment_error'));
+      return;
+    }
+
+    try {
+      const order = await createOrder.mutateAsync({
+        customerId: selectedCustomerId,
+        items: orderItems,
+        notes: notes || undefined,
+        deliveryDate: deliveryDate || undefined,
+        paymentType,
+        invoicePaymentMethod: paymentType === 'with_invoice' ? invoicePaymentMethod : undefined,
+        totalAmount: orderTotals.totalAmount > 0 ? orderTotals.totalAmount : undefined,
+      });
+
+      toast.success(t('orders.created_success'));
+
+      // Track visit GPS
+      trackVisit({ customerId: selectedCustomerId, operationType: 'order', operationId: order.id });
+
+      // Save info for assign dialog and close create dialog
+      const branchId = selectedCustomer?.branch_id || activeBranch?.id || null;
+      setSavedOrderId(order.id);
+      setSavedCustomerBranchId(branchId);
+      handleClose(false);
+
+      // Show assign worker dialog
+      setShowAssignWorkerDialog(true);
+    } catch (error: any) {
+      toast.error(error.message || t('common.error'));
+    }
+  };
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="max-w-lg max-h-[90vh] p-0 gap-0 overflow-hidden" dir={dir}>
+          <DialogHeader className="p-4 pb-2 border-b">
+            <DialogTitle className="flex items-center gap-2">
+              <ShoppingCart className="w-5 h-5" />
+              {t('orders.create_new')}
+            </DialogTitle>
+          </DialogHeader>
+
+          <ScrollArea className="max-h-[calc(90vh-8rem)] px-4">
+            <div className="py-4 space-y-5">
+              {/* Customer Section */}
+              <section className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-base font-semibold">{t('orders.customer')}</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-xs text-primary hover:text-primary"
+                    onClick={() => setShowAddCustomerDialog(true)}
+                  >
+                    <UserPlus className="w-4 h-4 ms-1" />
+                    {t('orders.new_customer')}
+                  </Button>
+                </div>
+
+                {/* Customer Dropdown */}
+                <Popover open={customerDropdownOpen} onOpenChange={setCustomerDropdownOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={customerDropdownOpen}
+                      className="w-full justify-between h-11"
+                      disabled={isLoadingData}
+                    >
+                      {isLoadingData ? (
+                        <span className="flex items-center gap-2 text-muted-foreground">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          {t('common.loading')}
+                        </span>
+                      ) : selectedCustomer ? (
+                        <span className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
+                            {selectedCustomer.name?.charAt(0) || '?'}
+                          </div>
+                          <span className="truncate">{selectedCustomer.name}</span>
+                          {selectedCustomer.wilaya && (
+                            <span className="text-xs text-muted-foreground">({selectedCustomer.wilaya})</span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">{t('orders.select_customer')}</span>
+                      )}
+                      <ChevronsUpDown className="ms-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-[10050]" align="start">
+                    <Command>
+                      <CommandInput placeholder={t('orders.search_customer')} className="h-10" />
+                      <CommandList>
+                        <CommandEmpty>
+                          <div className="py-4 text-center">
+                            <User className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm text-muted-foreground">{t('orders.no_customers')}</p>
+                          </div>
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {customers.map((customer) => (
+                            <CommandItem
+                              key={customer.id}
+                              value={`${customer.name} ${customer.wilaya || ''} ${customer.phone || ''}`}
+                              onSelect={() => {
+                                setSelectedCustomerId(customer.id);
+                                // Load customer defaults
+                                if (customer.default_payment_type) {
+                                  setPaymentType(customer.default_payment_type as PaymentType);
+                                }
+                                if (customer.default_price_subtype) {
+                                  setPriceSubType(customer.default_price_subtype as PriceSubType);
+                                }
+                                setCustomerDropdownOpen(false);
+                              }}
+                              className="flex items-center gap-3 py-2.5"
+                            >
+                              <div className={cn(
+                                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
+                                selectedCustomerId === customer.id
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted text-muted-foreground"
+                              )}>
+                                {customer.name?.charAt(0) || '?'}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium truncate">{customer.name}</p>
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {customer.wilaya}
+                                  {customer.phone && ` • ${customer.phone}`}
+                                </p>
+                              </div>
+                              <Check
+                                className={cn(
+                                  "h-4 w-4 shrink-0",
+                                  selectedCustomerId === customer.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+
+                {/* Selected Customer Info */}
+                {selectedCustomer && (
+                  <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
+                          {selectedCustomer.name?.charAt(0) || '?'}
+                        </div>
+                        <div>
+                          <p className="font-bold">{selectedCustomer.name}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <p className="text-xs text-muted-foreground">
+                              {selectedCustomer.wilaya}
+                              {selectedCustomer.phone && ` • ${selectedCustomer.phone}`}
+                            </p>
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                              {selectedCustomer.default_payment_type === 'with_invoice' ? t('orders.with_invoice') :
+                                selectedCustomer.default_price_subtype === 'super_gros' ? t('products.price_super_gros') :
+                                  selectedCustomer.default_price_subtype === 'retail' ? t('products.price_retail') : t('products.price_gros')
+                              }
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => setShowEditCustomerDialog(true)}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+
+                    {orders && orders.length > 0 && (
+                      <CustomerRecentOrders
+                        customerId={selectedCustomerId}
+                        orders={orders}
+                        maxOrders={5}
+                      />
+                    )}
+                  </div>
+                )}
+              </section>
+
+              {/* Payment Type */}
+              <section className="space-y-3">
+                <Label className="text-base font-semibold">{t('orders.purchase_method')}</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    type="button"
+                    variant={paymentType === 'with_invoice' ? 'default' : 'outline'}
+                    className="h-16 flex flex-col gap-1.5"
+                    onClick={() => setPaymentType('with_invoice')}
+                  >
+                    <Receipt className="w-5 h-5" />
+                    <span className="text-sm">{t('orders.with_invoice')}</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={paymentType === 'without_invoice' ? 'default' : 'outline'}
+                    className="h-16 flex flex-col gap-1.5"
+                    onClick={() => setPaymentType('without_invoice')}
+                  >
+                    <ReceiptText className="w-5 h-5" />
+                    <span className="text-sm">{t('orders.without_invoice')}</span>
+                  </Button>
+                </div>
+
+                {/* Price Sub-Type Selection for without invoice */}
+                {paymentType === 'without_invoice' && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">{t('orders.price_type')}</Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {([
+                        { value: 'super_gros' as PriceSubType, label: t('products.price_super_gros') },
+                        { value: 'gros' as PriceSubType, label: t('products.price_gros') },
+                        { value: 'retail' as PriceSubType, label: t('products.price_retail') },
+                      ]).map((option) => (
+                        <Button
+                          key={option.value}
+                          type="button"
+                          variant={priceSubType === option.value ? 'default' : 'outline'}
+                          size="sm"
+                          className="h-10 text-xs"
+                          onClick={() => setPriceSubType(option.value)}
+                        >
+                          {option.label}
+                        </Button>
+                      ))}
+                    </div>
+                    {selectedCustomer?.default_price_subtype && (
+                      <p className="text-xs text-muted-foreground">
+                        ⓘ {t('orders.customer_default')}: {
+                          selectedCustomer.default_price_subtype === 'super_gros' ? t('products.price_super_gros') :
+                            selectedCustomer.default_price_subtype === 'gros' ? t('products.price_gros') :
+                              t('products.price_retail')
+                        }
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Invoice Payment Method Selection */}
+                {paymentType === 'with_invoice' && (
+                  <InvoicePaymentMethodSelect
+                    value={invoicePaymentMethod}
+                    onChange={setInvoicePaymentMethod}
+                  />
+                )}
+              </section>
+
+              {/* Products */}
+              <section className="space-y-3">
+                <Label className="text-base font-semibold">{t('products.title')}</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {products.map((product) => {
+                    const inCart = orderItems.find(item => item.productId === product.id);
+                    const price = getProductPrice(product);
+                    const isShortage = shortageProductIds.has(product.id);
+                    const isNotInStock = !warehouseStockProductIds.has(product.id);
+                    const hasOffer = offerProductIds.has(product.id);
+                    return (
+                      <Button
+                        key={product.id}
+                        variant={inCart ? 'secondary' : 'outline'}
+                        size="sm"
+                        onClick={() => handleProductClick(product)}
+                        className={cn(
+                          "text-xs h-auto py-2.5 justify-start flex-wrap relative",
+                          (isShortage || isNotInStock) && "border-orange-400/60",
+                          hasOffer && !isShortage && !isNotInStock && "border-green-500/50"
+                        )}
+                      >
+                        <Plus className="w-3.5 h-3.5 ms-1.5 shrink-0" />
+                        <span className="truncate">{product.name}</span>
+                        <div className="flex items-center gap-1 mr-auto flex-wrap">
+                          {(isShortage || isNotInStock) && (
+                            <AlertTriangle className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+                          )}
+                          {hasOffer && (
+                            <Badge variant="outline" className="text-[10px] px-1 border-green-500 text-green-600">
+                              <Gift className="w-3 h-3" />
+                            </Badge>
+                          )}
+                          {price > 0 && (
+                            <Badge variant="outline" className="text-[10px] px-1 text-primary">
+                              {price.toLocaleString()} {t('common.currency')}
+                            </Badge>
+                          )}
+                        </div>
+                        {inCart && (
+                          <Badge variant="default" className="text-[10px] px-1.5">
+                            {inCart.quantity}
+                          </Badge>
+                        )}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </section>
+
+              {/* Selected Items with Order Summary */}
+              {orderItems.length > 0 && (
+                <section className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-base font-semibold">{t('orders.cart')}</Label>
+                    <Badge variant="secondary" className="text-xs">
+                      <Package className="w-3 h-3 ms-1" />
+                      {orderTotals.totalItems} {t('common.piece')}
+                    </Badge>
+                  </div>
+                  <div className="space-y-2 bg-muted/50 rounded-lg p-3">
+                    {orderItems.map((item, idx) => (
+                      <div key={`${item.productId}-${item.isUnitSale ? 'unit' : 'box'}-${idx}`} className="flex items-center justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <span className="font-medium text-sm truncate block">
+                            {getProductName(item.productId)}
+                            {item.isUnitSale && (
+                              <Badge variant="outline" className="ms-1 text-[10px] px-1 py-0">
+                                {t('offers.unit_piece')}
+                              </Badge>
+                            )}
+                            {!item.isUnitSale && ((item.giftQuantity && item.giftQuantity > 0) || (item.giftPieces && item.giftPieces > 0)) && (
+                              <Badge variant="outline" className="ms-1 text-[10px] px-1 py-0 border-green-500 text-green-600">
+                                <Gift className="w-3 h-3 ms-0.5" />
+                                {item.giftQuantity && item.giftQuantity > 0 ? `${item.giftQuantity} ${t('offers.unit_box')}` : ''}
+                                {item.giftQuantity && item.giftQuantity > 0 && item.giftPieces && (item.giftPieces % (products.find(p => p.id === item.productId)?.pieces_per_box || 1)) > 0 ? ' + ' : ''}
+                                {item.giftPieces && (item.giftPieces % (products.find(p => p.id === item.productId)?.pieces_per_box || 1)) > 0 ? `${item.giftPieces % (products.find(p => p.id === item.productId)?.pieces_per_box || 1)} ${t('offers.unit_piece')}` : ''}
+                                {' '}{t('common.free')}
+                              </Badge>
+                            )}
+                          </span>
+                          {item.unitPrice > 0 && (
+                            <span className="text-xs text-muted-foreground">
+                              {item.unitPrice.toLocaleString()} دج × {item.isUnitSale ? item.quantity : (item.quantity - (item.giftQuantity || 0))} = {item.totalPrice.toLocaleString()} دج
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => handleUpdateQuantity(item.productId, -1)}
+                          >
+                            <Minus className="w-3 h-3" />
+                          </Button>
+                          <span className="w-8 text-center font-bold text-sm">{item.quantity}</span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => handleUpdateQuantity(item.productId, 1)}
+                          >
+                            <Plus className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive hover:text-destructive"
+                            onClick={() => handleRemoveProduct(item.productId)}
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Order Summary */}
+                    <div className="pt-3 mt-3 border-t border-border/50 space-y-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{t('products.total')}:</span>
+                        <span className="font-medium">{orderItems.length} {t('products.title')}</span>
+                      </div>
+
+                      {/* Paid quantity */}
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{t('common.quantity')}:</span>
+                        <span className="font-medium">{orderTotals.totalPaidItems} {orderTotals.totalPaidItems > 1 ? t('common.boxes') : t('common.box')}</span>
+                      </div>
+                      {orderTotals.subtotal > 0 && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">{t('orders.subtotal')}:</span>
+                          <span className="font-medium">{orderTotals.subtotal.toLocaleString()} {t('common.currency')}</span>
+                        </div>
+                      )}
+
+                      {/* Gift quantity */}
+                      {orderTotals.totalGiftBoxes > 0 && (
+                        <div className="mt-2 pt-2 border-t border-green-300/50 dark:border-green-700/50">
+                          <div className="flex items-center justify-between text-sm text-green-600 dark:text-green-400">
+                            <span className="flex items-center gap-1">
+                              <Gift className="w-3 h-3" />
+                              {t('offers.gift')}:
+                            </span>
+                            <span className="font-medium">{orderTotals.totalGiftBoxes} {orderTotals.totalGiftBoxes > 1 ? t('common.boxes') : t('common.box')}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm text-green-600 dark:text-green-400">
+                            <span className="text-xs">{t('orders.subtotal')}:</span>
+                            <span className="font-medium">0 {t('common.currency')}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Grand totals */}
+                      {orderTotals.subtotal > 0 && (
+                        <>
+                          {orderTotals.totalGiftBoxes > 0 && (
+                            <div className="mt-2 pt-2 border-t border-border/50">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground">{t('orders.total_boxes')}:</span>
+                                <span className="font-medium">{orderTotals.totalItems} {orderTotals.totalItems > 1 ? t('common.boxes') : t('common.box')}</span>
+                              </div>
+                            </div>
+                          )}
+                          {orderTotals.stampAmount > 0 && (
+                            <div className="flex items-center justify-between text-sm text-amber-600 dark:text-amber-400">
+                              <span className="flex items-center gap-1">
+                                <Stamp className="w-3 h-3" />
+                                {t('orders.stamp_tax')}:
+                              </span>
+                              <span className="font-medium">{orderTotals.stampAmount.toLocaleString('ar-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {t('common.currency')}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between text-base font-bold mt-2 pt-2 border-t border-border/50">
+                            <span>{t('orders.grand_total')}:</span>
+                            <span className="text-primary">{orderTotals.totalAmount.toLocaleString('ar-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {t('common.currency')}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {/* Delivery Worker - removed, now shown after save */}
+
+              {/* Delivery Date */}
+              <section className="space-y-2">
+                <Label>{t('orders.delivery_date')} ({t('common.optional')})</Label>
+                <Input
+                  type="date"
+                  value={deliveryDate}
+                  onChange={(e) => setDeliveryDate(e.target.value)}
+                />
+              </section>
+
+              {/* Notes */}
+              <section className="space-y-2">
+                <Label>{t('common.notes')} ({t('common.optional')})</Label>
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder={t('orders.add_notes')}
+                  rows={2}
+                />
+              </section>
+            </div>
+          </ScrollArea>
+
+          {/* Footer */}
+          <div className="p-4 border-t bg-background">
+            <Button
+              onClick={handleCreateOrder}
+              className="w-full h-12 text-base"
+              disabled={createOrder.isPending || !selectedCustomerId || orderItems.length === 0}
+            >
+              {createOrder.isPending ? (
+                <Loader2 className="w-5 h-5 ms-2 animate-spin" />
+              ) : (
+                <ShoppingCart className="w-5 h-5 ms-2" />
+              )}
+              {t('orders.create')}
+              {orderTotals.totalAmount > 0 ? (
+                <Badge variant="secondary" className="mr-2 bg-primary-foreground/20">
+                  {orderTotals.totalAmount.toLocaleString()} دج
+                </Badge>
+              ) : orderItems.length > 0 ? (
+                <Badge variant="secondary" className="mr-2 bg-primary-foreground/20">
+                  {orderTotals.totalItems}
+                </Badge>
+              ) : null}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sub-dialogs */}
+      <ProductQuantityDialog
+        open={showQuantityDialog}
+        onOpenChange={setShowQuantityDialog}
+        product={selectedProduct}
+        onConfirm={handleAddProductWithQuantity}
+        unitPrice={selectedProduct ? getProductPrice(selectedProduct) : 0}
+        unitPiecePrice={selectedProduct ? (getProductPrice(selectedProduct) / (selectedProduct.pieces_per_box || 1)) : 0}
+        defaultPaymentType={paymentType}
+        defaultPriceSubType={priceSubType}
+        defaultInvoicePaymentMethod={invoicePaymentMethod}
+      />
+
+      <AddCustomerDialog
+        open={showAddCustomerDialog}
+        onOpenChange={setShowAddCustomerDialog}
+        onSuccess={handleNewCustomerAdded}
+      />
+
+      <EditCustomerDialog
+        open={showEditCustomerDialog}
+        onOpenChange={setShowEditCustomerDialog}
+        customer={selectedCustomer || null}
+        onSuccess={handleCustomerUpdated}
+      />
+
+      <AssignWorkerAfterSaveDialog
+        open={showAssignWorkerDialog}
+        onOpenChange={setShowAssignWorkerDialog}
+        orderId={savedOrderId}
+        customerBranchId={savedCustomerBranchId}
+      />
+    </>
+  );
+};
+
+export default CreateOrderDialog;

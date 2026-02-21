@@ -1,0 +1,241 @@
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2, AlertTriangle } from 'lucide-react';
+import QuickDayPicker, { DAY_NAMES } from './QuickDayPicker';
+import ScheduleOverrideAlert from './ScheduleOverrideAlert';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUpdateDebtPayment } from '@/hooks/useCustomerDebts';
+import { useTrackVisit } from '@/hooks/useVisitTracking';
+import { toast } from 'sonner';
+
+interface CollectDebtDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  debtId: string;
+  remainingAmount: number;
+  customerName: string;
+  defaultAmount?: number;
+  collectionType?: string | null;
+  collectionDays?: string[] | null;
+}
+
+const CollectDebtDialog: React.FC<CollectDebtDialogProps> = ({
+  open, onOpenChange, debtId, remainingAmount, customerName, defaultAmount,
+  collectionType, collectionDays,
+}) => {
+  const { t, dir } = useLanguage();
+  const { workerId } = useAuth();
+  const updatePayment = useUpdateDebtPayment();
+  const { trackVisit } = useTrackVisit();
+  const [amount, setAmount] = useState(defaultAmount ? String(defaultAmount) : '');
+  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [notes, setNotes] = useState('');
+  const [nextDueDate, setNextDueDate] = useState('');
+  const [nextDueTime, setNextDueTime] = useState('');
+  const [showScheduleWarning, setShowScheduleWarning] = useState(false);
+  const [scheduleOverrideConfirmed, setScheduleOverrideConfirmed] = useState(false);
+
+  const hasSchedule = collectionType === 'daily' || collectionType === 'weekly';
+
+  useEffect(() => {
+    if (open) {
+      setAmount(defaultAmount ? String(defaultAmount) : '');
+      setShowScheduleWarning(false);
+      setScheduleOverrideConfirmed(false);
+    }
+  }, [open, defaultAmount]);
+
+  // Show warning when manual date is set and schedule exists
+  useEffect(() => {
+    if (nextDueDate && hasSchedule && !scheduleOverrideConfirmed) {
+      setShowScheduleWarning(true);
+    } else {
+      setShowScheduleWarning(false);
+    }
+  }, [nextDueDate, hasSchedule, scheduleOverrideConfirmed]);
+
+  const numAmount = Number(amount) || 0;
+  const isPartial = numAmount > 0 && numAmount < remainingAmount;
+
+  const scheduleLabel = collectionType === 'daily'
+    ? t('debts.schedule_type_daily')
+    : collectionType === 'weekly' && collectionDays?.length
+      ? `${t('debts.schedule_type_weekly')} (${collectionDays.map(d => DAY_NAMES[d]?.ar || d).join('، ')})`
+      : '';
+
+  const handleConfirmOverride = () => {
+    setScheduleOverrideConfirmed(true);
+    setShowScheduleWarning(false);
+  };
+
+  const handleCancelOverride = () => {
+    setNextDueDate('');
+    setNextDueTime('');
+    setShowScheduleWarning(false);
+  };
+
+  const handleSubmit = async () => {
+    if (!numAmount || numAmount <= 0) {
+      toast.error(t('debts.paid_amount'));
+      return;
+    }
+    if (numAmount > remainingAmount) {
+      toast.error(`المبلغ أكبر من المتبقي (${remainingAmount})`);
+      return;
+    }
+
+    try {
+      await updatePayment.mutateAsync({
+        debtId,
+        amount: numAmount,
+        workerId: workerId!,
+        paymentMethod,
+        notes: notes || undefined,
+        nextDueDate: nextDueDate 
+          ? (nextDueTime ? `${nextDueDate}T${nextDueTime}` : nextDueDate) 
+          : undefined,
+      });
+      toast.success(t('debts.payment_success'));
+      trackVisit({ operationType: 'debt_collection', operationId: debtId });
+      setAmount('');
+      setNotes('');
+      setNextDueDate('');
+      setNextDueTime('');
+      onOpenChange(false);
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-[95vw] sm:max-w-sm p-4 gap-3" dir={dir}>
+        <DialogHeader className="pb-0">
+          <DialogTitle className="text-base truncate">{t('debts.collect')} - {customerName}</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-2.5">
+          {/* Remaining amount */}
+          <div className="bg-muted/50 rounded-md p-2 text-center">
+            <p className="text-xs text-muted-foreground">{t('debts.remaining')}</p>
+            <p className="text-xl font-bold text-destructive">{remainingAmount.toLocaleString()} DA</p>
+          </div>
+
+          {/* Amount + Full payment button */}
+          <div className="space-y-1.5">
+            <Label className="text-xs">{t('debts.paid_amount')}</Label>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                placeholder="0"
+                min={0}
+                max={remainingAmount}
+                className="h-9 text-sm flex-1"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 text-xs shrink-0"
+                onClick={() => setAmount(String(remainingAmount))}
+              >
+                {t('debts.full_payment')}
+              </Button>
+            </div>
+          </div>
+
+          {/* Payment method */}
+          {numAmount > 0 && (
+            <div className="space-y-1">
+              <Label className="text-xs">{t('debts.payment_method')}</Label>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">{t('debts.method_cash')}</SelectItem>
+                  <SelectItem value="check">{t('debts.method_check')}</SelectItem>
+                  <SelectItem value="transfer">{t('debts.method_transfer')}</SelectItem>
+                  <SelectItem value="receipt">{t('debts.method_receipt')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Partial payment: next due date section */}
+          {isPartial && (
+            <div className="space-y-2 border-t pt-2">
+              {hasSchedule && (
+                <div className="bg-primary/10 border border-primary/30 rounded-md px-2 py-1.5 flex items-center gap-1.5 text-[11px]">
+                  <AlertTriangle className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span className="leading-tight">{t('debts.schedule_override_title')}: <strong>{scheduleLabel}</strong></span>
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <Label className="text-xs">{t('debts.quick_day_pick')}</Label>
+                <QuickDayPicker onSelectDate={setNextDueDate} selectedDate={nextDueDate} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">{t('debts.next_due_date')}</Label>
+                  <Input
+                    type="date"
+                    value={nextDueDate}
+                    onChange={e => setNextDueDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="h-9 text-sm"
+                  />
+                </div>
+                {nextDueDate && (
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t('debts.next_due_time')}</Label>
+                    <Input
+                      type="time"
+                      value={nextDueTime}
+                      onChange={e => setNextDueTime(e.target.value)}
+                      className="h-9 text-sm"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <ScheduleOverrideAlert
+                open={showScheduleWarning}
+                onConfirm={handleConfirmOverride}
+                onCancel={handleCancelOverride}
+                scheduleLabel={scheduleLabel}
+              />
+            </div>
+          )}
+
+          {/* Notes */}
+          <Textarea
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            rows={1}
+            placeholder={t('common.notes') + '...'}
+            className="text-sm min-h-[36px] resize-none"
+          />
+
+          <Button
+            className="w-full h-9"
+            onClick={handleSubmit}
+            disabled={updatePayment.isPending || !amount || numAmount <= 0 || showScheduleWarning}
+          >
+            {updatePayment.isPending && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
+            {t('debts.collect')}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default CollectDebtDialog;

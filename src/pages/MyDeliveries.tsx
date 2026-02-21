@@ -1,0 +1,543 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { 
+  ShoppingCart, Loader2, Package, User, Calendar, 
+  CheckCircle, Clock, Truck, XCircle, UserCheck, Phone, MapPin, ChevronDown, ChevronUp, Navigation, Search, Edit2,
+  Receipt, Banknote, Route, Gift, Trash2
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { useAssignedOrders, useOrderItems, useUpdateOrderStatus, useCancelOrder } from '@/hooks/useOrders';
+import { useLogActivity } from '@/hooks/useActivityLogs';
+import { useLanguage, Language } from '@/contexts/LanguageContext';
+import { OrderStatus, OrderWithDetails } from '@/types/database';
+import { format } from 'date-fns';
+import { ar, fr, enUS } from 'date-fns/locale';
+import LazyCustomerLocationView from '@/components/map/LazyCustomerLocationView';
+import LazyNavigationMapView from '@/components/map/LazyNavigationMapView';
+import OrderSearchDialog from '@/components/orders/OrderSearchDialog';
+import ModifyOrderDialog from '@/components/orders/ModifyOrderDialog';
+import DeliverySaleDialog from '@/components/orders/DeliverySaleDialog';
+import { useLocationBroadcast } from '@/hooks/useWorkerLocation';
+
+const MyDeliveries: React.FC = () => {
+  const { t, language, loadPrintSettingsFromDB } = useLanguage();
+  
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [showSearchDialog, setShowSearchDialog] = useState(false);
+  const [showDeliverySaleDialog, setShowDeliverySaleDialog] = useState(false);
+  const [pendingDeliveryOrder, setPendingDeliveryOrder] = useState<OrderWithDetails | null>(null);
+  const [modifyOrder, setModifyOrder] = useState<OrderWithDetails | null>(null);
+  const [confirmCancelOrderId, setConfirmCancelOrderId] = useState<string | null>(null);
+  const [navigationTarget, setNavigationTarget] = useState<{
+    lat: number; lng: number; name: string; address?: string;
+  } | null>(null);
+  
+  const { data: orders, isLoading } = useAssignedOrders();
+  const { data: selectedOrderItems } = useOrderItems(selectedOrderId);
+  const updateStatus = useUpdateOrderStatus();
+  const cancelOrder = useCancelOrder();
+  const logActivity = useLogActivity();
+  const { isTracking, startTracking } = useLocationBroadcast();
+
+  // Auto-start location broadcasting when there are active orders
+  useEffect(() => {
+    const hasActiveOrders = orders?.some(o => o.status === 'in_progress' || o.status === 'assigned');
+    if (hasActiveOrders && !isTracking) {
+      startTracking();
+    }
+  }, [orders, isTracking, startTracking]);
+  useEffect(() => {
+    loadPrintSettingsFromDB(null);
+  }, []);
+  
+  const getDateLocale = (lang: Language) => {
+    switch (lang) {
+      case 'fr': return fr;
+      case 'en': return enUS;
+      default: return ar;
+    }
+  };
+
+  const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; icon: React.ElementType }> = {
+    pending: { label: t('orders.pending'), color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: Clock },
+    assigned: { label: t('orders.assigned'), color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', icon: UserCheck },
+    in_progress: { label: t('orders.in_progress'), color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400', icon: Truck },
+    delivered: { label: t('orders.delivered'), color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: CheckCircle },
+    cancelled: { label: t('orders.cancelled'), color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: XCircle },
+  };
+
+  const handleDeliverClick = (order: OrderWithDetails) => {
+    setPendingDeliveryOrder(order);
+    setShowDeliverySaleDialog(true);
+  };
+
+  const handleCancelOrder = async (orderId: string) => {
+    try {
+      await cancelOrder.mutateAsync(orderId);
+      await logActivity.mutateAsync({
+        actionType: 'status_change',
+        entityType: 'order',
+        entityId: orderId,
+        details: { الحالة_الجديدة: t('orders.cancelled') },
+      });
+      toast.success(t('orders.cancel_success'));
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleUpdateStatus = async (orderId: string, status: OrderStatus) => {
+    try {
+      await updateStatus.mutateAsync({ orderId, status });
+      
+      await logActivity.mutateAsync({
+        actionType: 'status_change',
+        entityType: 'order',
+        entityId: orderId,
+        details: { الحالة_الجديدة: STATUS_CONFIG[status].label },
+      });
+      
+      toast.success(t('orders.worker_assigned'));
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const selectedOrder = orders?.find(o => o.id === selectedOrderId);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 space-y-4">
+      {/* Order Search Dialog */}
+      <OrderSearchDialog
+        open={showSearchDialog}
+        onOpenChange={setShowSearchDialog}
+      />
+      
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold">{t('deliveries.title')}</h2>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setShowSearchDialog(true)}
+        >
+          <Search className="w-4 h-4" />
+        </Button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-2">
+        <Card className="bg-blue-500/10">
+          <CardContent className="p-3 text-center">
+            <p className="text-xl font-bold">{orders?.filter(o => o.status === 'assigned').length || 0}</p>
+            <p className="text-xs text-muted-foreground">{t('orders.assigned')}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-purple-500/10">
+          <CardContent className="p-3 text-center">
+            <p className="text-xl font-bold">{orders?.filter(o => o.status === 'in_progress').length || 0}</p>
+            <p className="text-xs text-muted-foreground">{t('orders.in_progress')}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-green-500/10">
+          <CardContent className="p-3 text-center">
+            <p className="text-xl font-bold">{orders?.filter(o => o.status === 'delivered').length || 0}</p>
+            <p className="text-xs text-muted-foreground">{t('orders.delivered')}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Orders List */}
+      <div className="space-y-3">
+        {orders?.map((order) => {
+          const StatusIcon = STATUS_CONFIG[order.status]?.icon || Clock;
+          const isActive = order.status === 'assigned' || order.status === 'in_progress';
+          
+          return (
+            <Card key={order.id} className={isActive ? 'border-primary/50' : ''}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1">
+                    {/* Customer Info */}
+                    <div className="flex items-center gap-2 mb-2">
+                      <User className="w-4 h-4 text-muted-foreground" />
+                      <span className="font-bold">{order.customer?.name}</span>
+                    </div>
+                    
+                    {order.customer?.phone && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                        <Phone className="w-3 h-3" />
+                        <a href={`tel:${order.customer.phone}`} className="text-primary">
+                          {order.customer.phone}
+                        </a>
+                      </div>
+                    )}
+                    
+                    {order.customer?.address && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                        <MapPin className="w-3 h-3" />
+                        <span>{order.customer.address}</span>
+                        {order.customer.wilaya && <span>- {order.customer.wilaya}</span>}
+                      </div>
+                    )}
+                    
+                    <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                      <Badge className={STATUS_CONFIG[order.status]?.color}>
+                        <StatusIcon className="w-3 h-3 ml-1" />
+                        {STATUS_CONFIG[order.status]?.label}
+                      </Badge>
+                      
+                      {order.total_amount && Number(order.total_amount) > 0 && (
+                        <Badge variant="outline" className="font-bold text-primary">
+                          {Number(order.total_amount).toLocaleString()} دج
+                        </Badge>
+                      )}
+
+                      {/* Invoice type & payment details */}
+                      {order.payment_type === 'with_invoice' ? (
+                        <>
+                          <Badge variant="secondary" className="gap-1 text-xs">
+                            <Receipt className="w-3 h-3" />
+                            {t('orders.with_invoice')}
+                          </Badge>
+                          {order.status === 'delivered' && order.invoice_payment_method && (
+                            <Badge variant="outline" className="text-xs">
+                              {order.invoice_payment_method === 'check' ? t('accounting.method_check') :
+                               order.invoice_payment_method === 'transfer' ? t('accounting.method_transfer') :
+                               order.invoice_payment_method === 'receipt' ? t('accounting.method_receipt') :
+                               order.invoice_payment_method === 'cash' ? t('accounting.method_cash') :
+                               t('accounting.method_espace_cash')}
+                            </Badge>
+                          )}
+                        </>
+                      ) : order.payment_type === 'without_invoice' ? (
+                        <>
+                          <Badge variant="secondary" className="gap-1 text-xs">
+                            <Banknote className="w-3 h-3" />
+                            {t('orders.without_invoice')}
+                          </Badge>
+                          {order.status === 'delivered' && order.customer?.default_price_subtype && (
+                            <Badge variant="outline" className="text-xs">
+                              {order.customer.default_price_subtype === 'super_gros' ? t('products.price_super_gros') :
+                               order.customer.default_price_subtype === 'retail' ? t('products.price_retail') :
+                               t('products.price_gros')}
+                            </Badge>
+                          )}
+                        </>
+                      ) : null}
+                    </div>
+                    
+                    {order.delivery_date && (
+                      <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                        <Calendar className="w-4 h-4" />
+                        {format(new Date(order.delivery_date), 'dd MMMM yyyy', { locale: getDateLocale(language) })}
+                      </div>
+                    )}
+                    
+                    {order.notes && (
+                      <p className="text-sm text-muted-foreground mt-2 bg-muted/50 p-2 rounded">
+                        {order.notes}
+                      </p>
+                    )}
+                    
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {t('orders.created_by')}: {order.created_by_worker?.full_name} • {format(new Date(order.created_at), 'dd/MM HH:mm')}
+                    </p>
+                  </div>
+                  
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedOrderId(order.id);
+                        setShowDetailsDialog(true);
+                      }}
+                    >
+                      <Package className="w-4 h-4" />
+                    </Button>
+                    
+                    {order.status === 'assigned' && (
+                      <>
+                        {order.customer?.latitude && order.customer?.longitude && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                            onClick={() => setNavigationTarget({
+                              lat: order.customer!.latitude!,
+                              lng: order.customer!.longitude!,
+                              name: order.customer!.name,
+                              address: order.customer?.address || undefined,
+                            })}
+                          >
+                            <Route className="w-4 h-4" />
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setModifyOrder(order)}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleUpdateStatus(order.id, 'in_progress')}
+                          disabled={updateStatus.isPending}
+                        >
+                          <Truck className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleCancelOrder(order.id)}
+                          disabled={cancelOrder.isPending}
+                        >
+                          <XCircle className="w-4 h-4" />
+                        </Button>
+                      </>
+                    )}
+                    
+                    {order.status === 'in_progress' && (
+                      <>
+                        {order.customer?.latitude && order.customer?.longitude && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                            onClick={() => setNavigationTarget({
+                              lat: order.customer!.latitude!,
+                              lng: order.customer!.longitude!,
+                              name: order.customer!.name,
+                              address: order.customer?.address || undefined,
+                            })}
+                          >
+                            <Route className="w-4 h-4" />
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setModifyOrder(order)}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700"
+                          onClick={() => handleDeliverClick(order)}
+                          disabled={updateStatus.isPending}
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => setConfirmCancelOrderId(order.id)}
+                          disabled={cancelOrder.isPending}
+                        >
+                          <XCircle className="w-4 h-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+
+        {(!orders || orders.length === 0) && (
+          <div className="text-center py-12 text-muted-foreground">
+            <ShoppingCart className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p>{t('deliveries.no_deliveries')}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Order Details Dialog */}
+      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+        <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>{t('orders.details')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Customer Details */}
+            {selectedOrder?.customer && (
+              <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                <p className="font-bold">{selectedOrder.customer.name}</p>
+                {selectedOrder.customer.phone && (
+                  <a href={`tel:${selectedOrder.customer.phone}`} className="flex items-center gap-2 text-primary">
+                    <Phone className="w-4 h-4" />
+                    {selectedOrder.customer.phone}
+                  </a>
+                )}
+                {selectedOrder.customer.address && (
+                  <p className="flex items-center gap-2 text-sm">
+                    <MapPin className="w-4 h-4" />
+                    {selectedOrder.customer.address}
+                  </p>
+                )}
+              </div>
+            )}
+            
+            {/* Customer Location Map */}
+            {selectedOrder?.customer?.latitude && selectedOrder?.customer?.longitude && (
+              <Collapsible defaultOpen>
+                <CollapsibleTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-between border-primary/30 hover:bg-primary/5"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Navigation className="w-4 h-4 text-primary" />
+                      <span>{t('customers.search_location')}</span>
+                    </span>
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-3">
+                  <LazyCustomerLocationView
+                    latitude={selectedOrder.customer.latitude}
+                    longitude={selectedOrder.customer.longitude}
+                    customerName={selectedOrder.customer.name}
+                    address={selectedOrder.customer.address || undefined}
+                  />
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+            
+            {/* Items */}
+            <div className="space-y-2">
+              <p className="font-bold">{t('nav.products')}:</p>
+              {selectedOrderItems?.map((item) => (
+                <div key={item.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex-1 min-w-0">
+                    <span className="font-medium">
+                      {item.product?.name}
+                      {item.gift_quantity > 0 && (
+                        <Badge variant="outline" className="ms-1 text-[10px] px-1 py-0 border-green-500 text-green-600">
+                          <Gift className="w-3 h-3 ms-0.5" />
+                          {item.gift_quantity} {t('offers.unit_box')} {t('common.free')}
+                        </Badge>
+                      )}
+                    </span>
+                    {(item.unit_price || 0) > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        {Number(item.unit_price).toLocaleString()} دج × {item.quantity - (item.gift_quantity || 0)} = {Number(item.total_price || 0).toLocaleString()} دج
+                      </p>
+                    )}
+                  </div>
+                  <Badge variant="secondary">{item.quantity} {t('common.box')}</Badge>
+                </div>
+              ))}
+              {selectedOrder?.total_amount && Number(selectedOrder.total_amount) > 0 && (
+                <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg font-bold">
+                  <span>{t('orders.grand_total')}</span>
+                  <span className="text-primary">{Number(selectedOrder.total_amount).toLocaleString()} دج</span>
+                </div>
+              )}
+              {(!selectedOrderItems || selectedOrderItems.length === 0) && (
+                <p className="text-center text-muted-foreground py-4">{t('orders.no_products')}</p>
+              )}
+            </div>
+
+            {/* Status Update */}
+            {selectedOrder && (selectedOrder.status === 'assigned' || selectedOrder.status === 'in_progress') && (
+              <div className="space-y-2">
+                <p className="font-bold">{t('common.status')}:</p>
+                <Select
+                  value={selectedOrder.status}
+                  onValueChange={(val) => handleUpdateStatus(selectedOrder.id, val as OrderStatus)}
+                  disabled={updateStatus.isPending}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="assigned">{t('orders.assigned')}</SelectItem>
+                    <SelectItem value="in_progress">{t('orders.in_progress')}</SelectItem>
+                    <SelectItem value="delivered">{t('orders.delivered')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* Delivery Sale Dialog */}
+      {pendingDeliveryOrder && (
+        <DeliverySaleDialog
+          open={showDeliverySaleDialog}
+          onOpenChange={(open) => {
+            setShowDeliverySaleDialog(open);
+            if (!open) setPendingDeliveryOrder(null);
+          }}
+          order={pendingDeliveryOrder}
+        />
+      )}
+      {/* Modify Order Dialog */}
+      {modifyOrder && (
+        <ModifyOrderWithItems
+          order={modifyOrder}
+          onClose={() => setModifyOrder(null)}
+        />
+      )}
+      {/* Navigation Map Overlay */}
+      {navigationTarget && (
+        <LazyNavigationMapView
+          destinationLat={navigationTarget.lat}
+          destinationLng={navigationTarget.lng}
+          customerName={navigationTarget.name}
+          address={navigationTarget.address}
+          onClose={() => setNavigationTarget(null)}
+        />
+      )}
+      {/* Confirm Cancel Order */}
+      <AlertDialog open={!!confirmCancelOrderId} onOpenChange={() => setConfirmCancelOrderId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد إلغاء الطلبية</AlertDialogTitle>
+            <AlertDialogDescription>هل أنت متأكد من إلغاء هذه الطلبية؟ لا يمكن التراجع عن هذه العملية.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { if (confirmCancelOrderId) handleCancelOrder(confirmCancelOrderId); setConfirmCancelOrderId(null); }}>تأكيد الإلغاء</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+};
+
+// Wrapper to fetch order items for ModifyOrderDialog
+const ModifyOrderWithItems: React.FC<{ order: OrderWithDetails; onClose: () => void }> = ({ order, onClose }) => {
+  const { data: items } = useOrderItems(order.id);
+  return (
+    <ModifyOrderDialog
+      open={true}
+      onOpenChange={(open) => !open && onClose()}
+      order={order}
+      orderItems={items || []}
+    />
+  );
+};
+
+export default MyDeliveries;

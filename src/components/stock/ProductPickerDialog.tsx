@@ -1,0 +1,175 @@
+import React, { useState, useMemo } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Search, Package, Layers } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
+
+interface ProductOption {
+  id: string;
+  name: string;
+  warehouseQty: number;
+  groupName?: string;
+}
+
+interface ProductPickerDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  products: ProductOption[];
+  selectedProductIds: string[];
+  onSelect: (productId: string) => void;
+}
+
+const ProductPickerDialog: React.FC<ProductPickerDialogProps> = ({
+  open,
+  onOpenChange,
+  products,
+  selectedProductIds,
+  onSelect,
+}) => {
+  const { t } = useLanguage();
+  const [search, setSearch] = useState('');
+  const [activeGroup, setActiveGroup] = useState<string | null>(null);
+
+  const filtered = products.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  // Group products by groupName
+  const groups = useMemo(() => {
+    const map = new Map<string, ProductOption[]>();
+    const ungrouped: ProductOption[] = [];
+    for (const p of filtered) {
+      if (p.groupName) {
+        if (!map.has(p.groupName)) map.set(p.groupName, []);
+        map.get(p.groupName)!.push(p);
+      } else {
+        ungrouped.push(p);
+      }
+    }
+    const result: { name: string; products: ProductOption[] }[] = [];
+    for (const [name, prods] of map) {
+      result.push({ name, products: prods });
+    }
+    result.sort((a, b) => a.name.localeCompare(b.name));
+    if (ungrouped.length > 0) {
+      result.push({ name: '__ungrouped__', products: ungrouped });
+    }
+    return result;
+  }, [filtered]);
+
+  const allGroupNames = groups.map(g => g.name);
+
+  const visibleProducts = activeGroup
+    ? groups.find(g => g.name === activeGroup)?.products || []
+    : filtered;
+
+  const renderProductButton = (p: ProductOption) => {
+    const isSelected = selectedProductIds.includes(p.id);
+    const isOutOfStock = p.warehouseQty === 0;
+    return (
+      <button
+        key={p.id}
+        disabled={isSelected}
+        className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition-colors
+          ${isSelected ? 'bg-primary text-primary-foreground border-primary opacity-60 cursor-not-allowed' : 'hover:bg-accent border-border cursor-pointer'}
+          ${isOutOfStock && !isSelected ? 'border-destructive/30' : ''}
+        `}
+        onClick={() => {
+          if (!isSelected) {
+            onSelect(p.id);
+            onOpenChange(false);
+            setSearch('');
+            setActiveGroup(null);
+          }
+        }}
+      >
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isOutOfStock ? 'bg-destructive/10' : isSelected ? 'bg-primary-foreground/20' : 'bg-primary/10'}`}>
+          <Package className={`w-5 h-5 ${isOutOfStock ? 'text-destructive' : isSelected ? 'text-primary-foreground' : 'text-primary'}`} />
+        </div>
+        <span className={`font-medium text-xs leading-tight truncate w-full ${isOutOfStock && !isSelected ? 'text-destructive' : ''}`}>{p.name}</span>
+        <Badge variant={isOutOfStock ? 'destructive' : isSelected ? 'outline' : 'secondary'} className="text-[10px] px-1.5 py-0">
+          {isSelected ? '✓' : p.warehouseQty}
+        </Badge>
+      </button>
+    );
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setActiveGroup(null); setSearch(''); } }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Package className="w-5 h-5 text-primary" />
+            {t('stock.product')}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="relative">
+          <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder={t('common.search')}
+            value={search}
+            onChange={e => { setSearch(e.target.value); setActiveGroup(null); }}
+            className="ps-9"
+          />
+        </div>
+
+        {/* Group tabs */}
+        {!search && groups.length > 1 && (
+          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+            <button
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors
+                ${!activeGroup ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:bg-accent'}`}
+              onClick={() => setActiveGroup(null)}
+            >
+              الكل
+            </button>
+            {allGroupNames.map(name => (
+              <button
+                key={name}
+                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors flex items-center gap-1
+                  ${activeGroup === name ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:bg-accent'}`}
+                onClick={() => setActiveGroup(name === activeGroup ? null : name)}
+              >
+                <Layers className="w-3 h-3" />
+                {name === '__ungrouped__' ? 'أخرى' : name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="max-h-[55vh] overflow-y-auto space-y-3">
+          {activeGroup || search ? (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {visibleProducts.map(renderProductButton)}
+              </div>
+              {visibleProducts.length === 0 && (
+                <div className="text-center text-sm text-muted-foreground py-4">
+                  {t('common.no_results')}
+                </div>
+              )}
+            </>
+          ) : (
+            groups.map(group => (
+              <div key={group.name}>
+                <div className="flex items-center gap-2 mb-2 px-1">
+                  <Layers className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-xs font-bold text-muted-foreground">
+                    {group.name === '__ungrouped__' ? 'أخرى' : group.name}
+                  </span>
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{group.products.length}</Badge>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {group.products.map(renderProductButton)}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default ProductPickerDialog;

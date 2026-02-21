@@ -1,0 +1,1 @@
+UPDATE public.orders SET invoice_payment_method = 'cash' WHERE id = 'c6ed573a-67fb-4312-9da7-4d315fc0b57f' AND invoice_payment_method = 'espace_cash';

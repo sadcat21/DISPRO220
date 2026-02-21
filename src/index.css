@@ -1,0 +1,427 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Aroma Proma Design System - Red & Black Theme */
+
+@layer base {
+  :root {
+    --background: 0 0% 98%;
+    --foreground: 0 0% 5%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 5%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 5%;
+
+    --primary: 0 84% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 92%;
+    --muted-foreground: 0 0% 40%;
+
+    --accent: 0 70% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 85%;
+    --input: 0 0% 85%;
+    --ring: 0 84% 50%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 0 84% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: 0 84% 50%;
+
+    /* Custom brand colors */
+    --brand-red: 0 84% 50%;
+    --brand-red-light: 0 84% 60%;
+    --brand-red-dark: 0 84% 40%;
+    --brand-black: 0 0% 5%;
+    --brand-gray: 0 0% 45%;
+  }
+
+  .dark {
+    --background: 0 0% 5%;
+    --foreground: 0 0% 95%;
+
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 0 84% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 95%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 0 70% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 0 84% 50%;
+
+    --sidebar-background: 0 0% 3%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 0 84% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 0 84% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Cairo', 'Segoe UI', sans-serif;
+  }
+
+  /* RTL Support */
+  [dir="rtl"] {
+    text-align: right;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-md border border-border/50 shadow-lg;
+  }
+
+  .brand-gradient {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
+  }
+
+  .product-btn {
+    @apply relative overflow-hidden transition-all duration-300 ease-out;
+    @apply bg-secondary text-secondary-foreground;
+    @apply hover:bg-primary hover:text-primary-foreground;
+    @apply active:scale-95;
+    @apply rounded-xl p-4 font-bold text-lg;
+    @apply shadow-md hover:shadow-xl;
+  }
+
+  .product-btn::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent;
+    @apply opacity-0 transition-opacity duration-300;
+  }
+
+  .product-btn:hover::before {
+    @apply opacity-100;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-muted rounded-full;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-primary/50 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-primary;
+}
+
+/* Safe area padding for PWA */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Print Styles for A4 Landscape - Word-like Table */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 8mm 10mm;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide EVERYTHING first */
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  /* Portal container holds the printable content */
+  body > *:not(#print-portal) {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  #print-portal {
+    display: block !important;
+    visibility: visible !important;
+    height: auto !important;
+    width: auto !important;
+    overflow: visible !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  /* Show ONLY print container */
+  .print-container {
+    display: block !important;
+    visibility: visible !important;
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    font-family: 'Cairo', 'Traditional Arabic', 'Arial', sans-serif;
+    font-size: 11pt;
+    color: #000 !important;
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .print-container * {
+    visibility: visible !important;
+    color: #000 !important;
+  }
+
+  /* Watermark - behind the table */
+  .print-watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 0;
+    opacity: 0.12;
+    pointer-events: none;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .print-watermark img {
+    width: 350px;
+    height: auto;
+    opacity: 1;
+  }
+
+  /* Header with Logo */
+  .print-header-with-logo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #000;
+  }
+
+  .print-logo {
+    width: 80px;
+    flex-shrink: 0;
+  }
+
+  .print-logo img {
+    width: 100%;
+    height: auto;
+  }
+
+  .print-title-section {
+    flex: 1;
+    text-align: center;
+    padding: 0 20px;
+  }
+
+  .print-title-section h1 {
+    font-size: 22pt;
+    font-weight: bold;
+    margin: 0 0 8px 0;
+    letter-spacing: 1px;
+  }
+
+  .print-filter-criteria {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 5px;
+  }
+
+  .filter-item {
+    font-size: 11pt;
+    font-weight: 600;
+    color: #333 !important;
+  }
+
+  /* Legacy header (fallback) */
+  .print-title-header {
+    text-align: center;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #000;
+  }
+
+  .print-title-header h1 {
+    font-size: 20pt;
+    font-weight: bold;
+    margin: 0 0 5px 0;
+    letter-spacing: 1px;
+  }
+
+  .print-title-header p {
+    font-size: 10pt;
+    color: #333 !important;
+    margin: 0;
+  }
+
+  /* Word-like Table Styles */
+  .word-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 2px solid #000;
+    font-size: 10pt;
+    margin-top: 5px;
+    position: relative;
+    z-index: 1;
+    background: transparent !important;
+  }
+
+  .word-table th,
+  .word-table td {
+    border: 1px solid #000;
+    padding: 4px 6px;
+    text-align: start;
+    vertical-align: middle;
+    line-height: 1.3;
+    background: transparent !important;
+  }
+
+  .word-table th {
+    background-color: rgba(232, 232, 232, 0.9) !important;
+    font-weight: bold;
+    font-size: 10pt;
+    padding: 6px;
+    border-bottom: 2px solid #000;
+  }
+
+  .word-table tbody tr {
+    page-break-inside: avoid;
+  }
+
+  .word-table tbody tr:nth-child(even) {
+    background-color: #f8f8f8 !important;
+  }
+
+  .word-table .center {
+    text-align: center;
+  }
+
+  .word-table .bold {
+    font-weight: bold;
+  }
+
+  .word-table .small-text {
+    font-size: 9pt;
+  }
+
+  .word-table .ltr-text {
+    direction: ltr;
+    text-align: left;
+    font-size: 9pt;
+  }
+
+  .word-table .totals-row {
+    background-color: #d9d9d9 !important;
+    font-weight: bold;
+    border-top: 2px solid #000;
+  }
+
+  .word-table .totals-row td {
+    padding: 6px;
+  }
+
+  .word-table .totals-label {
+    text-align: center;
+    font-size: 11pt;
+  }
+
+  .print-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    padding-top: 5px;
+    border-top: 1px solid #999;
+    font-size: 8pt;
+    color: #666 !important;
+  }
+}
+
+/* Marquee Animation for Offers Ticker */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+
+[dir="rtl"] .animate-marquee {
+  animation: marquee-rtl 30s linear infinite;
+}
+
+@keyframes marquee-rtl {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(50%);
+  }
+}
