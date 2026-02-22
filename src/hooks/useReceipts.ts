@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export const useReceipts = (filters?: {
   date?: string;
+  dateTo?: string;
   workerId?: string;
   customerId?: string;
   receiptType?: string;
@@ -22,8 +23,9 @@ export const useReceipts = (filters?: {
         .order('created_at', { ascending: false });
 
       if (filters?.date) {
-        query = query.gte('created_at', `${filters.date}T00:00:00`)
-                     .lt('created_at', `${filters.date}T23:59:59`);
+        query = query.gte('created_at', `${filters.date}T00:00:00`);
+        const endDate = filters.dateTo || filters.date;
+        query = query.lt('created_at', `${endDate}T23:59:59`);
       }
       if (filters?.workerId) query = query.eq('worker_id', filters.workerId);
       if (filters?.customerId) query = query.eq('customer_id', filters.customerId);

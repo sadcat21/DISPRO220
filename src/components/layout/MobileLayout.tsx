@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LogOut, MoreHorizontal } from 'lucide-react';
+import { LogOut, MoreHorizontal, Bluetooth, BluetoothOff, Printer } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage, Language } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -9,6 +9,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import BranchSelectionDialog from '@/components/auth/BranchSelectionDialog';
@@ -22,6 +23,7 @@ import ReceiptModificationsNotification from '@/components/printing/ReceiptModif
 import { ALGERIAN_WILAYAS } from '@/data/algerianWilayas';
 import { useNavigation } from '@/hooks/useNavigation';
 import { useNavbarPreferences } from '@/hooks/useNavbarPreferences';
+import { useBluetoothPrinter } from '@/hooks/useBluetoothPrinter';
 
 interface MobileLayoutProps {
   children: React.ReactNode;
@@ -31,6 +33,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   const { role, user, logout, activeBranch, switchBranch, showBranchSelection, selectBranch, activeRole } = useAuth();
   const { t, dir, language, setLanguage } = useLanguage();
   const location = useLocation();
+  const { isConnected, deviceName, scanAndConnect, disconnect, status: printerStatus } = useBluetoothPrinter();
 
   const LANGUAGES: { code: Language; label: string; flag: string }[] = [
     { code: 'ar', label: 'العربية', flag: '🇩🇿' },
@@ -135,6 +138,33 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                     <span className="text-sm">{lang.label}</span>
                   </DropdownMenuItem>
                 ))}
+                {/* Printer connection */}
+                <DropdownMenuSeparator />
+                {isConnected ? (
+                  <>
+                    <DropdownMenuItem className="flex items-center gap-2 text-green-600 cursor-default">
+                      <Printer className="w-4 h-4" />
+                      <span className="text-sm truncate">{deviceName || 'طابعة متصلة'}</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={disconnect}
+                      className="flex items-center gap-2 cursor-pointer text-destructive"
+                    >
+                      <BluetoothOff className="w-4 h-4" />
+                      <span className="text-sm">قطع الاتصال</span>
+                    </DropdownMenuItem>
+                  </>
+                ) : (
+                  <DropdownMenuItem
+                    onClick={scanAndConnect}
+                    className="flex items-center gap-2 cursor-pointer"
+                    disabled={printerStatus === 'connecting'}
+                  >
+                    <Bluetooth className="w-4 h-4" />
+                    <span className="text-sm">{printerStatus === 'connecting' ? 'جاري الاتصال...' : 'ربط الطابعة'}</span>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
                 
                 {/* Branch selector for admin */}
                 {role === 'admin' && (

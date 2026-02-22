@@ -268,9 +268,9 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
       // Build promo tag + qty/price in one line
       let promoTag = '';
       if (item.giftQuantity && item.giftQuantity > 0) {
-        promoTag = `PROMO(${item.giftQuantity}BTS) `;
+        promoTag = `PRM-${item.giftQuantity}BTS `;
       } else if (item.giftPieces && item.giftPieces > 0) {
-        promoTag = `PROMO(${item.giftPieces}pcs) `;
+        promoTag = `PRM-${item.giftPieces}pcs `;
       }
 
       let qtyStr = String(item.quantity);
@@ -365,9 +365,9 @@ export function formatReceiptForPreview(data: ReceiptData): string {
     if (item.giftQuantity && item.giftQuantity > 0) {
       const paid = item.quantity - item.giftQuantity;
       qtyStr = `${paid}+${item.giftQuantity}`;
-      promoTag = `<span style="color:#16a34a;font-size:9px;">🎁${item.giftQuantity}BTS</span> `;
+      promoTag = `<span style="color:#16a34a;font-size:9px;">🎁PRM-${item.giftQuantity}BTS</span> `;
     } else if (item.giftPieces && item.giftPieces > 0) {
-      promoTag = `<span style="color:#16a34a;font-size:9px;">🎁${item.giftPieces}pcs</span> `;
+      promoTag = `<span style="color:#16a34a;font-size:9px;">🎁PRM-${item.giftPieces}pcs</span> `;
     }
     
     const noteHtml = item.offerNote ? `<div style="font-size:8px;color:#d97706;text-align:center;">${item.offerNote}</div>` : '';

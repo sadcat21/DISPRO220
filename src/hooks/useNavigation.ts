@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Home, Users, Package, BarChart3, Settings, FileSpreadsheet, UserCheck, Building2, Shield, ShoppingCart, Truck, Activity, Store, BookOpen, UserCog, Gift, Wallet, Warehouse, ClipboardList, Banknote, Calculator, MapPin, Navigation } from 'lucide-react';
+import { Home, Users, Package, BarChart3, Settings, FileSpreadsheet, UserCheck, Building2, Shield, ShoppingCart, Truck, Activity, Store, BookOpen, UserCog, Gift, Wallet, Warehouse, ClipboardList, Banknote, Calculator, MapPin, Navigation, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkerPermissions } from '@/hooks/usePermissions';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -41,6 +41,7 @@ export const useNavigation = () => {
           { path: '/stock-receipts', icon: ClipboardList, label: t('stock.receipts') },
           { path: '/load-stock', icon: Truck, label: t('stock.load_to_worker') },
           { path: '/expenses', icon: Wallet, label: t('expenses.my_expenses') },
+          { path: '/daily-receipts', icon: FileText, label: 'الفواتير اليومية' },
           { path: '/expenses-management', icon: Wallet, label: t('expenses.title') },
           { path: '/customer-debts', icon: Banknote, label: t('debts.title') },
           { path: '/accounting', icon: Calculator, label: t('accounting.title') },
@@ -94,6 +95,7 @@ export const useNavigation = () => {
           { path: '/stock-receipts', icon: ClipboardList, label: t('stock.receipts') },
           { path: '/load-stock', icon: Truck, label: t('stock.load_to_worker') },
           { path: '/expenses', icon: Wallet, label: t('expenses.my_expenses') },
+          { path: '/daily-receipts', icon: FileText, label: 'الفواتير اليومية' },
           { path: '/expenses-management', icon: Wallet, label: t('expenses.title') },
           { path: '/customer-debts', icon: Banknote, label: t('debts.title') },
           { path: '/accounting', icon: Calculator, label: t('accounting.title') },
@@ -151,6 +153,10 @@ export const useNavigation = () => {
     }
 
     // Expenses - always available for workers
+    moreItems.push({ path: '/expenses', icon: Wallet, label: t('expenses.my_expenses') });
+
+    // Daily receipts - always available for workers
+    moreItems.push({ path: '/daily-receipts', icon: FileText, label: 'الفواتير اليومية' });
     moreItems.push({ path: '/expenses', icon: Wallet, label: t('expenses.my_expenses') });
 
     // Guide page - always available for workers

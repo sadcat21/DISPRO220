@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { useReceipts, useUpdateReceiptPrintCount } from '@/hooks/useReceipts';
 import { useBluetoothPrinter } from '@/hooks/useBluetoothPrinter';
 import { formatReceiptForPreview, ReceiptData } from '@/services/receiptFormatter';
@@ -15,20 +14,21 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Printer, Search, Filter, Eye, Calendar, User, Receipt,
-  Bluetooth, Loader2, FileText, Truck, CreditCard, RefreshCw,
+  Search, Eye, Calendar, User, Receipt,
+  Printer, Loader2, FileText, Truck, CreditCard, RefreshCw,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const DailyReceipts: React.FC = () => {
   const { role, workerId, activeBranch } = useAuth();
   const { dir, t } = useLanguage();
-  const isAdmin = role === 'admin' || role === 'branch_admin';
-  const { isConnected, scanAndConnect, printReceipt, status } = useBluetoothPrinter();
+  const isAdmin = role === 'admin' || role === 'branch_admin' || role === 'supervisor';
+  const { isConnected, printReceipt } = useBluetoothPrinter();
   const updatePrintCount = useUpdateReceiptPrintCount();
 
   const today = new Date().toISOString().split('T')[0];
-  const [selectedDate, setSelectedDate] = useState(today);
+  const [dateFrom, setDateFrom] = useState(today);
+  const [dateTo, setDateTo] = useState(today);
   const [filterWorkerId, setFilterWorkerId] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -45,21 +45,44 @@ const DailyReceipts: React.FC = () => {
     enabled: isAdmin,
   });
 
+  // Customers list for filter
+  const [filterCustomer, setFilterCustomer] = useState('');
+  const { data: customers } = useQuery({
+    queryKey: ['customers-list-receipts'],
+    queryFn: async () => {
+      const { data } = await supabase.from('customers').select('id, name').eq('status', 'active').order('name').limit(500);
+      return data || [];
+    },
+  });
+
   const { data: receipts, isLoading } = useReceipts({
-    date: selectedDate,
+    date: dateFrom,
+    dateTo: dateTo !== dateFrom ? dateTo : undefined,
     workerId: isAdmin ? (filterWorkerId || undefined) : workerId || undefined,
     receiptType: filterType !== 'all' ? filterType : undefined,
   });
 
   const filteredReceipts = useMemo(() => {
     if (!receipts) return [];
-    if (!searchQuery) return receipts;
-    const q = searchQuery.toLowerCase();
-    return receipts.filter(r =>
-      r.customer_name.toLowerCase().includes(q) ||
-      String(r.receipt_number).includes(q)
-    );
-  }, [receipts, searchQuery]);
+    let result = receipts;
+    
+    // Filter by customer
+    if (filterCustomer) {
+      result = result.filter(r => r.customer_id === filterCustomer);
+    }
+    
+    // Search
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(r =>
+        r.customer_name.toLowerCase().includes(q) ||
+        String(r.receipt_number).includes(q) ||
+        r.worker_name?.toLowerCase().includes(q) ||
+        r.order_id?.toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [receipts, searchQuery, filterCustomer]);
 
   const typeLabels: Record<string, { label: string; icon: React.ElementType; color: string }> = {
     direct_sale: { label: 'بيع مباشر', icon: Receipt, color: 'bg-green-100 text-green-800' },
@@ -95,70 +118,91 @@ const DailyReceipts: React.FC = () => {
   const totalPaid = filteredReceipts.reduce((s, r) => s + Number(r.paid_amount), 0);
 
   return (
-    <div className="space-y-4" dir={dir}>
+    <div className="space-y-3 p-3" dir={dir}>
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold flex items-center gap-2">
+        <h1 className="text-lg font-bold flex items-center gap-2">
           <FileText className="w-5 h-5" />
           الفواتير اليومية
         </h1>
-        <div className="flex items-center gap-2">
-          {!isConnected ? (
-            <Button size="sm" variant="outline" onClick={scanAndConnect} disabled={status === 'connecting'}>
-              <Bluetooth className="w-4 h-4 ml-1" />
-              طابعة
-            </Button>
-          ) : (
-            <Badge variant="outline" className="bg-green-100 text-green-800 gap-1">
-              <Printer className="w-3 h-3" /> متصل
-            </Badge>
-          )}
-        </div>
+        {isConnected && (
+          <Badge variant="outline" className="bg-green-100 text-green-800 gap-1 text-xs">
+            <Printer className="w-3 h-3" /> متصل
+          </Badge>
+        )}
       </div>
 
       {/* Filters */}
       <div className="space-y-2">
-        <div className="flex gap-2">
+        {/* Date range */}
+        <div className="flex gap-2 items-center">
+          <div className="flex items-center gap-1 flex-1">
+            <Calendar className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={e => setDateFrom(e.target.value)}
+              className="h-8 text-xs"
+            />
+          </div>
+          <span className="text-xs text-muted-foreground">→</span>
           <Input
             type="date"
-            value={selectedDate}
-            onChange={e => setSelectedDate(e.target.value)}
-            className="h-9 text-sm w-auto"
+            value={dateTo}
+            onChange={e => setDateTo(e.target.value)}
+            className="h-8 text-xs flex-1"
           />
+        </div>
+
+        <div className="flex gap-2">
           <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="h-9 text-sm w-auto min-w-[120px]">
+            <SelectTrigger className="h-8 text-xs flex-1">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">الكل</SelectItem>
+              <SelectItem value="all">كل الأنواع</SelectItem>
               <SelectItem value="direct_sale">بيع مباشر</SelectItem>
               <SelectItem value="delivery">توصيل</SelectItem>
               <SelectItem value="debt_payment">تسديد دين</SelectItem>
             </SelectContent>
           </Select>
+
+          {isAdmin && (
+            <Select value={filterWorkerId} onValueChange={setFilterWorkerId}>
+              <SelectTrigger className="h-8 text-xs flex-1">
+                <SelectValue placeholder="كل العمال" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">كل العمال</SelectItem>
+                {workers?.map(w => (
+                  <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
-        {isAdmin && (
-          <Select value={filterWorkerId} onValueChange={setFilterWorkerId}>
-            <SelectTrigger className="h-9 text-sm">
-              <SelectValue placeholder="كل العمال" />
+        <div className="flex gap-2">
+          <Select value={filterCustomer} onValueChange={setFilterCustomer}>
+            <SelectTrigger className="h-8 text-xs flex-1">
+              <SelectValue placeholder="كل العملاء" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">كل العمال</SelectItem>
-              {workers?.map(w => (
-                <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>
+              <SelectItem value="">كل العملاء</SelectItem>
+              {customers?.map(c => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-        )}
+        </div>
 
         <div className="relative">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="بحث بالاسم أو رقم الوصل..."
-            className="h-9 text-sm pr-9"
+            placeholder="بحث: اسم عميل، عامل، رقم وصل، رقم طلبية..."
+            className="h-8 text-xs pr-8"
           />
         </div>
       </div>
@@ -166,16 +210,16 @@ const DailyReceipts: React.FC = () => {
       {/* Summary */}
       <div className="grid grid-cols-3 gap-2">
         <Card className="p-2 text-center">
-          <p className="text-xs text-muted-foreground">العدد</p>
-          <p className="text-lg font-bold">{filteredReceipts.length}</p>
+          <p className="text-[10px] text-muted-foreground">العدد</p>
+          <p className="text-base font-bold">{filteredReceipts.length}</p>
         </Card>
         <Card className="p-2 text-center">
-          <p className="text-xs text-muted-foreground">الإجمالي</p>
-          <p className="text-lg font-bold">{totalAmount.toLocaleString()}</p>
+          <p className="text-[10px] text-muted-foreground">الإجمالي</p>
+          <p className="text-base font-bold">{totalAmount.toLocaleString()}</p>
         </Card>
         <Card className="p-2 text-center">
-          <p className="text-xs text-muted-foreground">المحصل</p>
-          <p className="text-lg font-bold text-green-600">{totalPaid.toLocaleString()}</p>
+          <p className="text-[10px] text-muted-foreground">المحصل</p>
+          <p className="text-base font-bold text-green-600">{totalPaid.toLocaleString()}</p>
         </Card>
       </div>
 
@@ -187,7 +231,7 @@ const DailyReceipts: React.FC = () => {
       ) : filteredReceipts.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
-          <p>لا توجد فواتير</p>
+          <p className="text-sm">لا توجد فواتير</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -214,14 +258,14 @@ const DailyReceipts: React.FC = () => {
                       {Number(receipt.remaining_amount) > 0 && (
                         <span className="text-destructive">متبقي: {Number(receipt.remaining_amount).toLocaleString()}</span>
                       )}
-                      {isAdmin && receipt.worker?.full_name && (
+                      {receipt.worker_name && (
                         <span className="flex items-center gap-0.5">
-                          <User className="w-3 h-3" />{receipt.worker.full_name}
+                          <User className="w-3 h-3" />{receipt.worker_name}
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                      <span>{new Date(receipt.created_at).toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span>{new Date(receipt.created_at).toLocaleDateString('ar-DZ')} {new Date(receipt.created_at).toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' })}</span>
                       {receipt.print_count > 0 && (
                         <span className="flex items-center gap-0.5">
                           <Printer className="w-2.5 h-2.5" />
