@@ -25,6 +25,7 @@ import { useCreateDebt } from '@/hooks/useCustomerDebts';
 import ProductQuantityDialog from '@/components/orders/ProductQuantityDialog';
 import InvoicePaymentMethodSelect from '@/components/orders/InvoicePaymentMethodSelect';
 import DeliveryPaymentDialog from '@/components/orders/DeliveryPaymentDialog';
+import StockOverflowDialog from '@/components/warehouse/StockOverflowDialog';
 import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
@@ -51,6 +52,7 @@ interface OrderItemWithPrice {
   giftQuantity?: number;
   giftPieces?: number;
   giftOfferId?: string;
+  offerNote?: string; // note for managers when offer was overridden
 }
 
 const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange, stockItems, initialCustomerId }) => {
@@ -88,6 +90,8 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [receiptData, setReceiptData] = useState<any>(null);
+  const [showOverflowDialog, setShowOverflowDialog] = useState(false);
+  const [overflowData, setOverflowData] = useState<any>(null);
 
   // Derived
   const selectedCustomer = useMemo(() =>
@@ -218,6 +222,24 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
       return;
     }
 
+    // Check if quantity exceeds available stock
+    const baseQuantity = giftInfo?.giftQuantity ? quantity - giftInfo.giftQuantity : quantity;
+    if (baseQuantity > available) {
+      // Calculate gift for available quantity using ProductOfferBadge logic
+      const deliveredGiftPieces = 0; // Will be recalculated in overflow dialog
+      const deliveredGiftBoxes = 0;
+
+      setOverflowData({
+        product,
+        requestedQuantity: baseQuantity,
+        availableQuantity: available,
+        originalGift: giftInfo ? { giftQuantity: giftInfo.giftQuantity || 0, giftPieces: giftInfo.giftPieces || 0, offerId: giftInfo.offerId } : null,
+        deliveredGift: { giftQuantity: deliveredGiftBoxes, giftPieces: deliveredGiftPieces },
+      });
+      setShowOverflowDialog(true);
+      return;
+    }
+
     const unitPrice = getProductPrice(product);
     const giftQuantity = giftInfo?.giftQuantity || 0;
     const paidQuantity = quantity - giftQuantity;
@@ -225,7 +247,7 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
     setOrderItems(prev => {
       const existing = prev.find(item => item.productId === productId);
       if (existing) {
-        const newQuantity = Math.min(existing.quantity + quantity, available);
+        const newQuantity = Math.min(existing.quantity + quantity, available + giftQuantity);
         const newPaid = Math.max(0, newQuantity - giftQuantity);
         return prev.map(item =>
           item.productId === productId
@@ -233,10 +255,74 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
             : item
         );
       }
-      const clampedQty = Math.min(quantity, available);
-      const clampedPaid = Math.max(0, clampedQty - giftQuantity);
-      return [...prev, { productId, quantity: clampedQty, unitPrice, totalPrice: clampedPaid * unitPrice, giftQuantity: giftQuantity || undefined, giftPieces: giftInfo?.giftPieces || undefined, giftOfferId: giftInfo?.offerId }];
+      return [...prev, { productId, quantity, unitPrice, totalPrice: paidQuantity * unitPrice, giftQuantity: giftQuantity || undefined, giftPieces: giftInfo?.giftPieces || undefined, giftOfferId: giftInfo?.offerId }];
     });
+  };
+
+  // Sync function for gift calculation from overflow dialog
+  const calcGiftForQty = useCallback((_qty: number): { giftPieces: number; giftBoxes: number } => {
+    return { giftPieces: 0, giftBoxes: 0 };
+  }, []);
+
+  const handleOverflowConfirm = async (
+    deliveredQty: number,
+    giftInfo: { giftQuantity: number; giftPieces: number; offerId?: string } | null,
+    createOrderForExcess: boolean,
+    excessQty: number,
+    offerNote: string | null,
+  ) => {
+    if (!overflowData?.product) return;
+    const product = overflowData.product;
+    const unitPrice = getProductPrice(product);
+    const giftQuantity = giftInfo?.giftQuantity || 0;
+    const totalQty = deliveredQty + giftQuantity;
+    const paidQty = deliveredQty;
+
+    setOrderItems(prev => [...prev, {
+      productId: product.id,
+      quantity: totalQty,
+      unitPrice,
+      totalPrice: paidQty * unitPrice,
+      giftQuantity: giftQuantity || undefined,
+      giftPieces: giftInfo?.giftPieces || undefined,
+      giftOfferId: giftInfo?.offerId,
+      offerNote: offerNote || undefined,
+    }]);
+
+    // Create order for excess quantity if requested
+    if (createOrderForExcess && excessQty > 0 && selectedCustomerId && workerId) {
+      try {
+        const { data: order, error } = await supabase
+          .from('orders')
+          .insert({
+            customer_id: selectedCustomerId,
+            created_by: workerId,
+            assigned_worker_id: workerId,
+            branch_id: activeBranch?.id || null,
+            status: 'pending',
+            payment_type: paymentType,
+            notes: `طلبية تلقائية - كمية غير متوفرة: ${excessQty} ${product.name}`,
+          })
+          .select()
+          .single();
+
+        if (!error && order) {
+          await supabase.from('order_items').insert({
+            order_id: order.id,
+            product_id: product.id,
+            quantity: excessQty,
+            unit_price: unitPrice,
+            total_price: excessQty * unitPrice,
+          });
+          toast.success(`تم إنشاء طلبية بـ ${excessQty} ${product.name}`);
+        }
+      } catch (err) {
+        console.error('Error creating overflow order:', err);
+        toast.error('فشل إنشاء الطلبية');
+      }
+    }
+
+    setOverflowData(null);
   };
 
   const handleUpdateQuantity = (productId: string, delta: number) => {
@@ -353,7 +439,10 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
           invoice_payment_method: finalPaymentType === 'with_invoice' ? (finalInvoiceMethod || null) : null,
           partial_amount: paymentData.isFullPayment ? null : paymentData.paidAmount,
           total_amount: orderTotals.totalAmount,
-          notes: notes || 'بيع مباشر من الشاحنة',
+          notes: (() => {
+            const offerNotes = orderItems.filter(i => i.offerNote).map(i => i.offerNote).join(' | ');
+            return [notes || 'بيع مباشر من الشاحنة', offerNotes].filter(Boolean).join(' | ');
+          })(),
         })
         .select()
         .single();
@@ -415,6 +504,7 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
       setShowPaymentDialog(false);
 
       // Build receipt data and show receipt dialog
+      const offerNotes = orderItems.filter(i => i.offerNote).map(i => i.offerNote).join(' | ');
       const receiptItems: ReceiptItem[] = orderItems.map(item => ({
         productId: item.productId,
         productName: getProductName(item.productId),
@@ -423,7 +513,9 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
         totalPrice: item.totalPrice,
         giftQuantity: item.giftQuantity,
         giftPieces: item.giftPieces,
+        offerNote: item.offerNote,
       }));
+      const combinedNotes = [notes, offerNotes].filter(Boolean).join(' | ');
 
       setReceiptData({
         receiptType: 'direct_sale' as ReceiptType,
@@ -442,7 +534,7 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
         paidAmount: paymentData.paidAmount,
         remainingAmount: paymentData.remainingAmount,
         paymentMethod: paymentData.paymentMethod,
-        notes: notes || null,
+        notes: combinedNotes || null,
         orderPaymentType: frozenPaymentType,
         orderPriceSubtype: priceSubType,
         orderInvoicePaymentMethod: frozenInvoiceMethod || undefined,
@@ -715,6 +807,11 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
                               </Badge>
                             )}
                           </span>
+                          {item.offerNote && (
+                            <span className="text-[10px] text-amber-600 dark:text-amber-400 block mt-0.5">
+                              {item.offerNote}
+                            </span>
+                          )}
                           {item.unitPrice > 0 && (
                             <span className="text-xs text-muted-foreground">
                               {item.unitPrice.toLocaleString()} {t('common.currency')} × {item.quantity - (item.giftQuantity || 0)} = {item.totalPrice.toLocaleString()} {t('common.currency')}
@@ -831,6 +928,19 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
         frozenPaymentType={frozenPaymentType}
         frozenInvoiceMethod={frozenInvoiceMethod}
         onConfirm={handlePaymentConfirm}
+      />
+
+      {/* Stock Overflow Dialog */}
+      <StockOverflowDialog
+        open={showOverflowDialog}
+        onOpenChange={setShowOverflowDialog}
+        product={overflowData?.product || null}
+        requestedQuantity={overflowData?.requestedQuantity || 0}
+        availableQuantity={overflowData?.availableQuantity || 0}
+        originalGift={overflowData?.originalGift || null}
+        deliveredGift={overflowData?.deliveredGift || null}
+        onConfirm={handleOverflowConfirm}
+        calculateGiftForQuantity={calcGiftForQty}
       />
 
       {/* Receipt Dialog */}

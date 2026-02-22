@@ -288,6 +288,9 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
       if ((!item.giftQuantity || item.giftQuantity === 0) && item.giftPieces && item.giftPieces > 0) {
         addText(`  [PROMO: ${item.giftPieces} pcs]`);
       }
+      if (item.offerNote) {
+        addText(`  ${sanitizeForPrint(item.offerNote)}`);
+      }
 
       totalBoxes += item.quantity;
       totalProducts++;
@@ -367,9 +370,11 @@ export function formatReceiptForPreview(data: ReceiptData): string {
       badges.push(`🎁 PROMO ${item.giftPieces} pcs`);
     }
     
+    const noteHtml = item.offerNote ? `<div style="font-size:10px;color:#d97706;margin-top:2px;">${item.offerNote}</div>` : '';
+    
     itemsHtml += `
       <tr>
-        <td style="text-align:left;padding:2px 0;">${item.productName} ${badges.join(' ')}</td>
+        <td style="text-align:left;padding:2px 0;">${item.productName} ${badges.join(' ')}${noteHtml}</td>
         <td style="text-align:center;">${qtyStr}</td>
         <td style="text-align:right;">${Math.round(item.unitPrice)}</td>
         <td style="text-align:right;">${Math.round(item.totalPrice).toLocaleString()}</td>

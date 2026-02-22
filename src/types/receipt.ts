@@ -12,6 +12,7 @@ export interface ReceiptItem {
   paymentType?: string;
   priceSubtype?: string;
   invoicePaymentMethod?: string;
+  offerNote?: string; // note for managers when offer was overridden
 }
 
 export interface Receipt {
