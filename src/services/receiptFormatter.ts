@@ -262,7 +262,7 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
       const headerLine = '-'.repeat(maxPad) + '( ' + nameStr + ' )' + '-'.repeat(maxPad);
       addText(headerLine.substring(0, LINE_WIDTH));
 
-      // Promo line
+      // Promo line + qty/price on one combined line
       let promoLabel = '';
       if (item.giftQuantity && item.giftQuantity > 0) {
         promoLabel = `PROMO (${item.giftQuantity} BTS)`;
@@ -276,13 +276,13 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
         qtyStr = `${paid}+${item.giftQuantity}`;
       }
 
-      const priceStr = `${Math.round(item.unitPrice)} DA`;
-      const totalStr = `${formatAmount(item.totalPrice)} DA`;
+      const priceStr = `${Math.round(item.unitPrice)}`;
+      const totalStr = formatAmount(item.totalPrice);
 
       if (promoLabel) {
         addText(promoLabel);
       }
-      addText(`  ${padRight(qtyStr, 10)}${padRight(priceStr, 10)}${totalStr}`);
+      addText(`${qtyStr} | ${priceStr} DA | ${totalStr} DA`);
 
       if (item.offerNote) {
         addText(`  ${sanitizeForPrint(item.offerNote)}`);
@@ -365,32 +365,31 @@ export function formatReceiptForPreview(data: ReceiptData): string {
       promoLabel = `🎁 PROMO (${item.giftPieces} pcs)`;
     }
     
-    const noteHtml = item.offerNote ? `<div style="font-size:10px;color:#d97706;margin-top:1px;">${item.offerNote}</div>` : '';
+    const noteHtml = item.offerNote ? `<div style="font-size:9px;color:#d97706;margin-top:1px;">${item.offerNote}</div>` : '';
     
     itemsHtml += `
-      <tr>
-        <td colspan="4" style="text-align:center;padding:6px 0 2px;font-weight:bold;border-top:1px dashed #ccc;">
-          - - - ( ${item.productName} ) - - -
-          ${promoLabel ? `<div style="font-size:11px;color:#16a34a;font-weight:normal;">${promoLabel}</div>` : ''}
-          ${noteHtml}
-        </td>
-      </tr>
-      <tr>
-        <td style="text-align:left;padding:2px 0;"></td>
-        <td style="text-align:center;">${qtyStr}</td>
-        <td style="text-align:right;">${Math.round(item.unitPrice)}</td>
-        <td style="text-align:right;">${Math.round(item.totalPrice).toLocaleString()}</td>
-      </tr>`;
+      <div style="border-top:1px dashed #ccc;padding:3px 0 2px;text-align:center;font-weight:bold;font-size:11px;">
+        -----( ${item.productName} )-----
+        ${promoLabel ? `<div style="font-size:10px;color:#16a34a;font-weight:normal;">${promoLabel}</div>` : ''}
+        ${noteHtml}
+      </div>
+      <div style="display:flex;justify-content:center;gap:0;font-size:10px;padding:1px 0 3px;">
+        <span>${qtyStr}</span>
+        <span style="margin:0 4px;color:#999;">|</span>
+        <span>${Math.round(item.unitPrice)} DA</span>
+        <span style="margin:0 4px;color:#999;">|</span>
+        <span style="font-weight:bold;">${Math.round(item.totalPrice).toLocaleString()} DA</span>
+      </div>`;
     totalBoxes += item.quantity;
   }
 
   const payLabel = getPaymentLabel(data);
 
   return `
-    <div style="font-family:monospace;max-width:280px;margin:0 auto;font-size:12px;line-height:1.4;">
-      <div style="text-align:center;margin-bottom:8px;">
-        <div style="font-size:16px;font-weight:bold;">${data.companyName || 'Laser Food'}</div>
-        <div>${data.workerName} N° ${String(data.receiptNumber).padStart(6, '0')}</div>
+    <div style="font-family:monospace;max-width:280px;margin:0 auto;font-size:11px;line-height:1.3;">
+      <div style="text-align:center;margin-bottom:4px;">
+        <div style="font-size:14px;font-weight:bold;">${data.companyName || 'Laser Food'}</div>
+        <div style="font-size:10px;">${data.workerName} N° ${String(data.receiptNumber).padStart(6, '0')}</div>
         ${data.companyAddress ? `<div>${data.companyAddress}</div>` : ''}
         <div>${dateStr} ${timeStr}</div>
         <div>CLIENT: ${data.customerName}</div>
@@ -415,17 +414,7 @@ export function formatReceiptForPreview(data: ReceiptData): string {
           <div style="text-align:center;font-weight:bold;">PROCHAIN RDV: ${data.nextCollectionDate}${data.nextCollectionTime ? ' ' + data.nextCollectionTime : ''}</div>
         ` : ''}
       ` : `
-        <table style="width:100%;border-collapse:collapse;">
-          <thead>
-            <tr style="border-bottom:1px dotted #000;">
-              <th style="text-align:left;">Article</th>
-              <th style="text-align:center;">Qte</th>
-              <th style="text-align:right;">P.U</th>
-              <th style="text-align:right;">Total</th>
-            </tr>
-          </thead>
-          <tbody>${itemsHtml}</tbody>
-        </table>
+        <div>${itemsHtml}</div>
         <hr style="border:none;border-top:1px dashed #000;"/>
         <div style="text-align:center;">
           <div>N COLLISAGE: ${totalBoxes} | NBR ART: ${data.items.length}</div>
