@@ -114,35 +114,38 @@ const ProductOfferBadge: React.FC<ProductOfferBadgeProps> = ({
   };
 
   // Calculate gift pieces for an offer based on quantity, using tiers if available
+  // For multiplier offers with multiple tiers: apply highest tier first, then use remaining qty with lower tiers
   const calculateGiftPieces = (offer: ProductOfferWithDetails, qty: number): number => {
-    // Use tiers if available
     const tiers = offer.tiers && offer.tiers.length > 0 ? offer.tiers : null;
     
     if (tiers) {
-      // Find the best matching tier (highest min_quantity that the qty meets)
-      let totalGift = 0;
-      for (const tier of tiers) {
-        const tierMin = tier.min_quantity;
-        const tierMax = tier.max_quantity;
+      if (offer.condition_type === 'multiplier') {
+        // Sort tiers by min_quantity descending (highest first)
+        const sortedTiers = [...tiers].sort((a, b) => b.min_quantity - a.min_quantity);
+        let remaining = qty;
+        let totalGift = 0;
         
-        if (qty < tierMin) continue;
-        if (tierMax !== null && qty > tierMax) continue;
-        
-        // For multiplier type: how many times the threshold is met
-        const timesApplied = offer.condition_type === 'multiplier' 
-          ? Math.floor(qty / tierMin) 
-          : 1;
-        
-        const giftPerThreshold = tier.gift_quantity;
-        const giftUnit = tier.gift_quantity_unit || 'piece';
-        
-        if (giftUnit === 'box') {
-          totalGift += timesApplied * giftPerThreshold * piecesPerBox;
-        } else {
-          totalGift += timesApplied * giftPerThreshold;
+        for (const tier of sortedTiers) {
+          if (remaining < tier.min_quantity) continue;
+          
+          const timesApplied = Math.floor(remaining / tier.min_quantity);
+          remaining = remaining % tier.min_quantity;
+          
+          const giftUnit = tier.gift_quantity_unit || 'piece';
+          const giftAmount = timesApplied * tier.gift_quantity;
+          totalGift += giftUnit === 'box' ? giftAmount * piecesPerBox : giftAmount;
         }
+        return totalGift;
+      } else {
+        // Range type: find the single matching tier
+        for (const tier of [...tiers].sort((a, b) => b.min_quantity - a.min_quantity)) {
+          if (qty >= tier.min_quantity && (tier.max_quantity === null || qty <= tier.max_quantity)) {
+            const giftUnit = tier.gift_quantity_unit || 'piece';
+            return giftUnit === 'box' ? tier.gift_quantity * piecesPerBox : tier.gift_quantity;
+          }
+        }
+        return 0;
       }
-      return totalGift;
     }
     
     // Fallback to offer-level fields
@@ -165,13 +168,11 @@ const ProductOfferBadge: React.FC<ProductOfferBadgeProps> = ({
   const applicableOffers = offers.filter(offer => {
     const tiers = offer.tiers && offer.tiers.length > 0 ? offer.tiers : null;
     if (tiers) {
-      return tiers.some(tier => {
-        return quantity >= tier.min_quantity && (tier.max_quantity === null || quantity <= tier.max_quantity);
-      });
+      // For multiplier: applicable if qty >= lowest tier min_quantity
+      const lowestMin = Math.min(...tiers.map(t => t.min_quantity));
+      return quantity >= lowestMin;
     }
-    const minQty = offer.min_quantity;
-    const maxQty = offer.max_quantity;
-    return quantity >= minQty && (maxQty === null || quantity <= maxQty);
+    return quantity >= offer.min_quantity && (offer.max_quantity === null || quantity <= offer.max_quantity);
   });
 
   // Calculate total gift pieces from all applicable offers
