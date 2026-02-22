@@ -252,42 +252,38 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
       addText(`PROCHAIN RDV: ${data.nextCollectionDate}${data.nextCollectionTime ? ' ' + data.nextCollectionTime : ''}`);
     }
   } else {
-    // Items header (for sale/delivery receipts)
-    // Adjusted column widths: Article(12) Qte(7) PU(6) Total(7)
-    const hdrArticle = padRight('Article', 12);
-    const hdrQte = padRight('Qte', 7);
-    const hdrPU = padRight('P.U', 6);
-    const hdrTotal = padLeft('Total', 7);
-    addText(`${hdrArticle}${hdrQte}${hdrPU}${hdrTotal}`);
-    addText(line('.'));
-
     // Items
     let totalBoxes = 0;
     let totalProducts = 0;
     for (const item of data.items) {
+      // Product name as section header
+      const nameStr = item.productName;
+      const maxPad = Math.max(0, Math.floor((LINE_WIDTH - nameStr.length - 2) / 2));
+      const headerLine = '-'.repeat(maxPad) + '( ' + nameStr + ' )' + '-'.repeat(maxPad);
+      addText(headerLine.substring(0, LINE_WIDTH));
+
+      // Promo line
+      let promoLabel = '';
+      if (item.giftQuantity && item.giftQuantity > 0) {
+        promoLabel = `PROMO (${item.giftQuantity} BTS)`;
+      } else if (item.giftPieces && item.giftPieces > 0) {
+        promoLabel = `PROMO (${item.giftPieces} pcs)`;
+      }
+
       let qtyStr = String(item.quantity);
       if (item.giftQuantity && item.giftQuantity > 0) {
         const paid = item.quantity - item.giftQuantity;
         qtyStr = `${paid}+${item.giftQuantity}`;
       }
 
-      const pricePart = padRight(String(Math.round(item.unitPrice)), 6);
-      const totalPart = padLeft(String(Math.round(item.totalPrice)), 7);
+      const priceStr = `${Math.round(item.unitPrice)} DA`;
+      const totalStr = `${formatAmount(item.totalPrice)} DA`;
 
-      // Always print product name on its own line, then details below
-      if (item.productName.length > 12) {
-        addText(item.productName);
-        addText(`${padRight('', 12)}${padRight(qtyStr, 7)}${pricePart}${totalPart}`);
-      } else {
-        addText(`${padRight(item.productName, 12)}${padRight(qtyStr, 7)}${pricePart}${totalPart}`);
+      if (promoLabel) {
+        addText(promoLabel);
       }
+      addText(`  ${padRight(qtyStr, 10)}${padRight(priceStr, 10)}${totalStr}`);
 
-      if (item.giftQuantity && item.giftQuantity > 0) {
-        addText(`  [PROMO: ${item.giftQuantity}]`);
-      }
-      if ((!item.giftQuantity || item.giftQuantity === 0) && item.giftPieces && item.giftPieces > 0) {
-        addText(`  [PROMO: ${item.giftPieces} pcs]`);
-      }
       if (item.offerNote) {
         addText(`  ${sanitizeForPrint(item.offerNote)}`);
       }
@@ -360,21 +356,27 @@ export function formatReceiptForPreview(data: ReceiptData): string {
   let totalBoxes = 0;
   for (const item of data.items) {
     let qtyStr = String(item.quantity);
-    const badges: string[] = [];
+    let promoLabel = '';
     if (item.giftQuantity && item.giftQuantity > 0) {
       const paid = item.quantity - item.giftQuantity;
       qtyStr = `${paid}+${item.giftQuantity}`;
-      badges.push('🎁 PROMO');
-    }
-    if ((!item.giftQuantity || item.giftQuantity === 0) && item.giftPieces && item.giftPieces > 0) {
-      badges.push(`🎁 PROMO ${item.giftPieces} pcs`);
+      promoLabel = `🎁 PROMO (${item.giftQuantity} BTS)`;
+    } else if (item.giftPieces && item.giftPieces > 0) {
+      promoLabel = `🎁 PROMO (${item.giftPieces} pcs)`;
     }
     
-    const noteHtml = item.offerNote ? `<div style="font-size:10px;color:#d97706;margin-top:2px;">${item.offerNote}</div>` : '';
+    const noteHtml = item.offerNote ? `<div style="font-size:10px;color:#d97706;margin-top:1px;">${item.offerNote}</div>` : '';
     
     itemsHtml += `
       <tr>
-        <td style="text-align:left;padding:2px 0;">${item.productName} ${badges.join(' ')}${noteHtml}</td>
+        <td colspan="4" style="text-align:center;padding:6px 0 2px;font-weight:bold;border-top:1px dashed #ccc;">
+          - - - ( ${item.productName} ) - - -
+          ${promoLabel ? `<div style="font-size:11px;color:#16a34a;font-weight:normal;">${promoLabel}</div>` : ''}
+          ${noteHtml}
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align:left;padding:2px 0;"></td>
         <td style="text-align:center;">${qtyStr}</td>
         <td style="text-align:right;">${Math.round(item.unitPrice)}</td>
         <td style="text-align:right;">${Math.round(item.totalPrice).toLocaleString()}</td>
