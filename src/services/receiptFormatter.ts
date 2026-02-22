@@ -5,7 +5,6 @@
  */
 
 import { ReceiptItem, ReceiptType } from '@/types/receipt';
-import CodepageEncoder from '@point-of-sale/codepage-encoder';
 
 const ESC = 0x1B;
 const GS = 0x1D;
@@ -14,20 +13,64 @@ const LF = 0x0A;
 // 58mm printer ≈ 32 chars per line (monospace)
 const LINE_WIDTH = 32;
 
-const cpEncoder = new CodepageEncoder();
+/**
+ * Arabic to Latin (French) transliteration map
+ */
+const ARABIC_TO_LATIN: Record<string, string> = {
+  'ا': 'a', 'أ': 'a', 'إ': 'i', 'آ': 'a', 'ب': 'b', 'ت': 't', 'ث': 'th',
+  'ج': 'dj', 'ح': 'h', 'خ': 'kh', 'د': 'd', 'ذ': 'dh', 'ر': 'r', 'ز': 'z',
+  'س': 's', 'ش': 'ch', 'ص': 's', 'ض': 'd', 'ط': 't', 'ظ': 'dh', 'ع': 'a',
+  'غ': 'gh', 'ف': 'f', 'ق': 'q', 'ك': 'k', 'ل': 'l', 'م': 'm', 'ن': 'n',
+  'ه': 'h', 'و': 'ou', 'ي': 'i', 'ى': 'a', 'ة': 'a', 'ئ': 'i', 'ؤ': 'ou',
+  'ء': '', 'ﻻ': 'la', 'ﻷ': 'la', 'ﻹ': 'li', 'ﻵ': 'la',
+  // Diacritics - remove
+  '\u064B': '', '\u064C': '', '\u064D': '', '\u064E': '', '\u064F': '',
+  '\u0650': '', '\u0651': '', '\u0652': '',
+};
 
-function textToBytes(text: string): Uint8Array {
-  try {
-    // Use Windows-1256 for Arabic text support
-    return cpEncoder.encode(text, 'windows1256');
-  } catch {
-    // Fallback to UTF-8 for non-Arabic text
-    return new TextEncoder().encode(text);
+/**
+ * Transliterate Arabic text to Latin (French-style)
+ * Non-Arabic characters are kept as-is
+ */
+function transliterateArabic(text: string): string {
+  let result = '';
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (ARABIC_TO_LATIN[char] !== undefined) {
+      result += ARABIC_TO_LATIN[char];
+    } else {
+      result += char;
+    }
   }
+  // Capitalize first letter of each word
+  return result.replace(/\b\w/g, c => c.toUpperCase()).replace(/\s+/g, ' ').trim();
 }
 
-// ESC/POS command to select Windows-1256 codepage (varies by printer, 46 is common for Arabic)
-const SET_CODEPAGE_WIN1256 = new Uint8Array([ESC, 0x74, 46]);
+/**
+ * Check if text contains Arabic characters
+ */
+function hasArabic(text: string): boolean {
+  return /[\u0600-\u06FF]/.test(text);
+}
+
+/**
+ * Prepare text for thermal printing: transliterate Arabic to Latin,
+ * replace special chars that printers can't handle
+ */
+function sanitizeForPrint(text: string): string {
+  let result = hasArabic(text) ? transliterateArabic(text) : text;
+  // Replace non-breaking space with regular space
+  result = result.replace(/\u00A0/g, ' ');
+  // Replace ° with o
+  result = result.replace(/°/g, 'o');
+  return result;
+}
+
+function textToBytes(text: string): Uint8Array {
+  // Sanitize for print: transliterate Arabic, fix special chars
+  const sanitized = sanitizeForPrint(text);
+  return new TextEncoder().encode(sanitized);
+}
 
 function cmd(...bytes: number[]): Uint8Array {
   return new Uint8Array(bytes);
@@ -66,7 +109,11 @@ function line(char: string = '-', width: number = LINE_WIDTH): string {
 }
 
 function formatAmount(amount: number): string {
-  return amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // Use plain formatting without locale-specific separators that printers can't handle
+  const parts = amount.toFixed(2).split('.');
+  // Add space as thousands separator (ASCII space, not non-breaking)
+  const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return `${intPart},${parts[1]}`;
 }
 
 function getReceiptTypeName(type: ReceiptType): string {
@@ -109,9 +156,8 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
   const add = (bytes: Uint8Array) => parts.push(bytes);
   const addText = (text: string) => { add(textToBytes(text)); add(cmd(LF)); };
 
-  // Initialize and set Arabic codepage
+  // Initialize printer
   add(INIT);
-  add(SET_CODEPAGE_WIN1256);
 
   // Header - Company name
   add(ALIGN_CENTER);
@@ -127,7 +173,7 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
 
   // Receipt type
   add(BOLD_ON);
-  addText(`${getReceiptTypeName(data.receiptType)} N° ${String(data.receiptNumber).padStart(6, '0')}`);
+  addText(`${getReceiptTypeName(data.receiptType)} No ${String(data.receiptNumber).padStart(6, '0')}`);
   add(BOLD_OFF);
 
   // Date
@@ -181,8 +227,9 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
     }
   } else {
     // Items header (for sale/delivery receipts)
-    const hdrArticle = padRight('Article', 14);
-    const hdrQte = padRight('Qte', 5);
+    // Adjusted column widths: Article(12) Qte(7) PU(6) Total(7)
+    const hdrArticle = padRight('Article', 12);
+    const hdrQte = padRight('Qte', 7);
     const hdrPU = padRight('P.U', 6);
     const hdrTotal = padLeft('Total', 7);
     addText(`${hdrArticle}${hdrQte}${hdrPU}${hdrTotal}`);
@@ -192,22 +239,21 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
     let totalBoxes = 0;
     let totalProducts = 0;
     for (const item of data.items) {
-      const name = item.productName.length > 14 ? item.productName.substring(0, 14) : item.productName;
-      
       let qtyStr = String(item.quantity);
       if (item.giftQuantity && item.giftQuantity > 0) {
         const paid = item.quantity - item.giftQuantity;
-        qtyStr = `${paid}+[${item.giftQuantity}]`;
+        qtyStr = `${paid}+${item.giftQuantity}`;
       }
 
       const pricePart = padRight(String(Math.round(item.unitPrice)), 6);
       const totalPart = padLeft(String(Math.round(item.totalPrice)), 7);
 
-      if (item.productName.length > 14) {
+      // Always print product name on its own line, then details below
+      if (item.productName.length > 12) {
         addText(item.productName);
-        addText(`${padRight('', 14)}${padRight(qtyStr, 5)}${pricePart}${totalPart}`);
+        addText(`${padRight('', 12)}${padRight(qtyStr, 7)}${pricePart}${totalPart}`);
       } else {
-        addText(`${padRight(name, 14)}${padRight(qtyStr, 5)}${pricePart}${totalPart}`);
+        addText(`${padRight(item.productName, 12)}${padRight(qtyStr, 7)}${pricePart}${totalPart}`);
       }
 
       if (item.giftQuantity && item.giftQuantity > 0) {

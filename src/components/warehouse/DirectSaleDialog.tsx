@@ -469,7 +469,7 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
               <section className="space-y-3">
                 <Label className="text-base font-semibold">{t('orders.customer')}</Label>
 
-                <Popover open={customerDropdownOpen} onOpenChange={setCustomerDropdownOpen}>
+                <Popover open={customerDropdownOpen} onOpenChange={setCustomerDropdownOpen} modal={true}>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"

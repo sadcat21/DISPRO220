@@ -411,7 +411,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                 </div>
 
                 {/* Customer Dropdown */}
-                <Popover open={customerDropdownOpen} onOpenChange={setCustomerDropdownOpen}>
+                <Popover open={customerDropdownOpen} onOpenChange={setCustomerDropdownOpen} modal={true}>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
