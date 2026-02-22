@@ -96,7 +96,7 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
       }
 
       // Print
-      const printed = await printReceipt(receiptDataForFormatter);
+      const printed = await printReceipt(receiptDataForFormatter, previewHtml);
       if (printed && receiptId) {
         await updatePrintCount.mutateAsync(receiptId);
       }
