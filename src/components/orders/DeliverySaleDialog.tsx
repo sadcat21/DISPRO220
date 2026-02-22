@@ -205,11 +205,15 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
     const totalGiftBoxes = activeItems.reduce((sum, item) => sum + item.giftQuantity, 0);
     const subtotal = activeItems.reduce((sum, item) => sum + item.totalPrice, 0);
     let stampAmount = 0;
+    let stampPercentage = 0;
     const invoiceMethod = (order as any).invoice_payment_method;
     if (order.payment_type === 'with_invoice' && invoiceMethod === 'cash' && stampTiers?.length) {
       stampAmount = calculateStampAmount(subtotal, stampTiers);
+      const activeTiers = stampTiers.filter(t => t.is_active);
+      const matchedTier = activeTiers.find(t => subtotal >= t.min_amount && (t.max_amount === null || subtotal <= t.max_amount));
+      if (matchedTier) stampPercentage = matchedTier.percentage;
     }
-    return { totalItems, totalGiftBoxes, subtotal, stampAmount, totalAmount: subtotal + stampAmount };
+    return { totalItems, totalGiftBoxes, subtotal, stampAmount, stampPercentage, totalAmount: subtotal + stampAmount };
   }, [saleItems, order.payment_type, order, stampTiers, shortageProductIds]);
 
   // Validate and show payment dialog
@@ -396,6 +400,8 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
         orderPaymentType: order.payment_type || undefined,
         orderPriceSubtype: order.customer?.default_price_subtype || undefined,
         orderInvoicePaymentMethod: order.invoice_payment_method || undefined,
+        stampAmount: totals.stampAmount > 0 ? totals.stampAmount : undefined,
+        stampPercentage: totals.stampPercentage > 0 ? totals.stampPercentage : undefined,
       });
       setShowReceiptDialog(true);
       onOpenChange(false);

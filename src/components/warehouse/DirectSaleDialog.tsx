@@ -367,10 +367,14 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
     const totalItems = orderItems.reduce((sum, item) => sum + item.quantity, 0);
     const subtotal = orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
     let stampAmount = 0;
+    let stampPercentage = 0;
     if (paymentType === 'with_invoice' && invoicePaymentMethod === 'cash' && stampTiers?.length) {
       stampAmount = calculateStampAmount(subtotal, stampTiers);
+      const activeTiers = stampTiers.filter(t => t.is_active);
+      const matchedTier = activeTiers.find(t => subtotal >= t.min_amount && (t.max_amount === null || subtotal <= t.max_amount));
+      if (matchedTier) stampPercentage = matchedTier.percentage;
     }
-    return { totalItems, subtotal, stampAmount, totalAmount: subtotal + stampAmount };
+    return { totalItems, subtotal, stampAmount, stampPercentage, totalAmount: subtotal + stampAmount };
   }, [orderItems, paymentType, invoicePaymentMethod, stampTiers]);
 
   // Show payment dialog before completing
@@ -538,6 +542,8 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
         orderPaymentType: frozenPaymentType,
         orderPriceSubtype: priceSubType,
         orderInvoicePaymentMethod: frozenInvoiceMethod || undefined,
+        stampAmount: orderTotals.stampAmount > 0 ? orderTotals.stampAmount : undefined,
+        stampPercentage: orderTotals.stampPercentage > 0 ? orderTotals.stampPercentage : undefined,
       });
       setShowReceiptDialog(true);
       handleClose(false);
