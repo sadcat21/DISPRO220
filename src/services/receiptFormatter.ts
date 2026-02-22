@@ -189,19 +189,15 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
   add(NORMAL_SIZE);
   add(BOLD_OFF);
 
-  // Worker info
-  addText(`${data.workerName}${data.workerPhone ? ' ' + data.workerPhone : ''}`);
+  // Worker name + receipt number on same line
+  const receiptNum = String(data.receiptNumber).padStart(6, '0');
+  addText(`${data.workerName} No ${receiptNum}`);
   if (data.companyAddress) addText(data.companyAddress);
-
-  // Receipt type
-  add(BOLD_ON);
-  addText(`${getReceiptTypeName(data.receiptType)} No ${String(data.receiptNumber).padStart(6, '0')}`);
-  add(BOLD_OFF);
 
   // Date
   const dateStr = data.date.toLocaleDateString('fr-FR');
   const timeStr = data.date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  addText(`DATE: ${dateStr} ${timeStr}`);
+  addText(`${dateStr} ${timeStr}`);
 
   // Client
   addText(`CLIENT: ${data.customerName}`);
@@ -212,11 +208,11 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
     addText(`(Copie ${data.printCount + 1})`);
   }
 
-  // Payment type label
+  // Payment type label (without "TYPE:" prefix)
   const payLabel = getPaymentLabel(data);
   if (payLabel) {
     add(BOLD_ON);
-    addText(`TYPE: ${payLabel}`);
+    addText(payLabel);
     add(BOLD_OFF);
   }
 
@@ -320,12 +316,6 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
 
     add(BOLD_OFF);
 
-    if (data.paymentMethod) {
-      const methodLabels: Record<string, string> = {
-        cash: 'Especes', check: 'Cheque', transfer: 'Virement', receipt: 'Recu',
-      };
-      addText(`Mode: ${methodLabels[data.paymentMethod] || data.paymentMethod}`);
-    }
   }
 
   if (data.notes) {
@@ -338,7 +328,7 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
   add(ALIGN_CENTER);
   addText('');
   addText('Merci pour votre confiance');
-  add(FEED_LINES(4));
+  add(FEED_LINES(2));
   add(CUT_PAPER);
 
   // Concatenate all parts
@@ -387,14 +377,13 @@ export function formatReceiptForPreview(data: ReceiptData): string {
     <div style="font-family:monospace;max-width:280px;margin:0 auto;font-size:12px;line-height:1.4;">
       <div style="text-align:center;margin-bottom:8px;">
         <div style="font-size:16px;font-weight:bold;">${data.companyName || 'Laser Food'}</div>
-        <div>${data.workerName}${data.workerPhone ? ' ' + data.workerPhone : ''}</div>
+        <div>${data.workerName} N° ${String(data.receiptNumber).padStart(6, '0')}</div>
         ${data.companyAddress ? `<div>${data.companyAddress}</div>` : ''}
-        <div style="font-weight:bold;margin-top:4px;">${typeName} N° ${String(data.receiptNumber).padStart(6, '0')}</div>
-        <div>DATE: ${dateStr} ${timeStr}</div>
+        <div>${dateStr} ${timeStr}</div>
         <div>CLIENT: ${data.customerName}</div>
         ${data.customerPhone ? `<div>TEL: ${data.customerPhone}</div>` : ''}
         ${data.printCount > 0 ? `<div style="color:#888;">(Copie ${data.printCount + 1})</div>` : ''}
-        ${payLabel ? `<div style="font-weight:bold;margin-top:2px;">TYPE: ${payLabel}</div>` : ''}
+        ${payLabel ? `<div style="font-weight:bold;margin-top:2px;">${payLabel}</div>` : ''}
       </div>
       <hr style="border:none;border-top:1px dashed #000;"/>
       ${data.receiptType === 'debt_payment' ? `
@@ -440,7 +429,7 @@ export function formatReceiptForPreview(data: ReceiptData): string {
           <hr style="border:none;border-top:1px dashed #000;"/>
           <div>MONTANT RESTANT: ${formatAmount(data.remainingAmount)} DA</div>
         </div>
-        ${data.paymentMethod ? `<div style="text-align:center;">Mode: ${{cash:'Especes',check:'Cheque',transfer:'Virement',receipt:'Recu'}[data.paymentMethod] || data.paymentMethod}</div>` : ''}
+        ${data.paymentMethod && !payLabel ? `<div style="text-align:center;">Mode: ${{cash:'Especes',check:'Cheque',transfer:'Virement',receipt:'Recu'}[data.paymentMethod] || data.paymentMethod}</div>` : ''}
       `}
       ${data.notes ? `<div style="text-align:left;margin-top:4px;">Note: ${data.notes}</div>` : ''}
       <div style="text-align:center;margin-top:8px;">
