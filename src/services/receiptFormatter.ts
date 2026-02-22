@@ -165,6 +165,9 @@ export interface ReceiptData {
   orderPaymentType?: string;
   orderPriceSubtype?: string;
   orderInvoicePaymentMethod?: string;
+  // Stamp info
+  stampAmount?: number;
+  stampPercentage?: number;
   // Debt-specific fields
   debtTotalAmount?: number;
   debtPaidBefore?: number;
@@ -262,12 +265,12 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
       const headerLine = '-'.repeat(maxPad) + '( ' + nameStr + ' )' + '-'.repeat(maxPad);
       addText(headerLine.substring(0, LINE_WIDTH));
 
-      // Promo line + qty/price on one combined line
-      let promoLabel = '';
+      // Build promo tag + qty/price in one line
+      let promoTag = '';
       if (item.giftQuantity && item.giftQuantity > 0) {
-        promoLabel = `PROMO (${item.giftQuantity} BTS)`;
+        promoTag = `PROMO(${item.giftQuantity}BTS) `;
       } else if (item.giftPieces && item.giftPieces > 0) {
-        promoLabel = `PROMO (${item.giftPieces} pcs)`;
+        promoTag = `PROMO(${item.giftPieces}pcs) `;
       }
 
       let qtyStr = String(item.quantity);
@@ -279,10 +282,7 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
       const priceStr = `${Math.round(item.unitPrice)}`;
       const totalStr = formatAmount(item.totalPrice);
 
-      if (promoLabel) {
-        addText(promoLabel);
-      }
-      addText(`${qtyStr} | ${priceStr} DA | ${totalStr} DA`);
+      addText(`${promoTag}${qtyStr} | ${priceStr} DA | ${totalStr} DA`);
 
       if (item.offerNote) {
         addText(`  ${sanitizeForPrint(item.offerNote)}`);
@@ -301,8 +301,13 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
     add(BOLD_ON);
 
     if (data.discountAmount > 0) {
-      addText(`SOUS-TOTAL: ${formatAmount(data.totalAmount + data.discountAmount)} DA`);
+      addText(`SOUS-TOTAL: ${formatAmount(data.totalAmount + data.discountAmount - (data.stampAmount || 0))} DA`);
       addText(`REMISE: -${formatAmount(data.discountAmount)} DA`);
+    }
+
+    if (data.stampAmount && data.stampAmount > 0) {
+      const pct = data.stampPercentage ? ` (${data.stampPercentage}%)` : '';
+      addText(`TIMBRE${pct}: ${formatAmount(data.stampAmount)} DA`);
     }
 
     addText(`NET A PAYER: ${formatAmount(data.totalAmount)} DA`);
@@ -356,30 +361,25 @@ export function formatReceiptForPreview(data: ReceiptData): string {
   let totalBoxes = 0;
   for (const item of data.items) {
     let qtyStr = String(item.quantity);
-    let promoLabel = '';
+    let promoTag = '';
     if (item.giftQuantity && item.giftQuantity > 0) {
       const paid = item.quantity - item.giftQuantity;
       qtyStr = `${paid}+${item.giftQuantity}`;
-      promoLabel = `🎁 PROMO (${item.giftQuantity} BTS)`;
+      promoTag = `<span style="color:#16a34a;font-size:9px;">🎁${item.giftQuantity}BTS</span> `;
     } else if (item.giftPieces && item.giftPieces > 0) {
-      promoLabel = `🎁 PROMO (${item.giftPieces} pcs)`;
+      promoTag = `<span style="color:#16a34a;font-size:9px;">🎁${item.giftPieces}pcs</span> `;
     }
     
-    const noteHtml = item.offerNote ? `<div style="font-size:9px;color:#d97706;margin-top:1px;">${item.offerNote}</div>` : '';
+    const noteHtml = item.offerNote ? `<div style="font-size:8px;color:#d97706;text-align:center;">${item.offerNote}</div>` : '';
     
     itemsHtml += `
-      <div style="border-top:1px dashed #ccc;padding:3px 0 2px;text-align:center;font-weight:bold;font-size:11px;">
+      <div style="border-top:1px dashed #ccc;padding:4px 0 1px;text-align:center;font-weight:bold;font-size:10px;">
         -----( ${item.productName} )-----
-        ${promoLabel ? `<div style="font-size:10px;color:#16a34a;font-weight:normal;">${promoLabel}</div>` : ''}
-        ${noteHtml}
       </div>
-      <div style="display:flex;justify-content:center;gap:0;font-size:10px;padding:1px 0 3px;">
-        <span>${qtyStr}</span>
-        <span style="margin:0 4px;color:#999;">|</span>
-        <span>${Math.round(item.unitPrice)} DA</span>
-        <span style="margin:0 4px;color:#999;">|</span>
-        <span style="font-weight:bold;">${Math.round(item.totalPrice).toLocaleString()} DA</span>
-      </div>`;
+      <div style="text-align:center;font-size:10px;padding:2px 0 4px;">
+        ${promoTag}<span>${qtyStr}</span><span style="margin:0 3px;color:#999;">|</span><span>${Math.round(item.unitPrice)} DA</span><span style="margin:0 3px;color:#999;">|</span><span style="font-weight:bold;">${Math.round(item.totalPrice).toLocaleString()} DA</span>
+      </div>
+      ${noteHtml}`;
     totalBoxes += item.quantity;
   }
 
@@ -422,8 +422,11 @@ export function formatReceiptForPreview(data: ReceiptData): string {
         <hr style="border:none;border-top:1px dashed #000;"/>
         <div style="text-align:center;font-weight:bold;">
           ${data.discountAmount > 0 ? `
-            <div>SOUS-TOTAL: ${formatAmount(data.totalAmount + data.discountAmount)} DA</div>
+            <div>SOUS-TOTAL: ${formatAmount(data.totalAmount + data.discountAmount - (data.stampAmount || 0))} DA</div>
             <div>REMISE: -${formatAmount(data.discountAmount)} DA</div>
+          ` : ''}
+          ${data.stampAmount && data.stampAmount > 0 ? `
+            <div style="color:#d97706;">TIMBRE${data.stampPercentage ? ` (${data.stampPercentage}%)` : ''}: ${formatAmount(data.stampAmount)} DA</div>
           ` : ''}
           <div>NET A PAYER: ${formatAmount(data.totalAmount)} DA</div>
           <hr style="border:none;border-top:1px dashed #000;"/>
