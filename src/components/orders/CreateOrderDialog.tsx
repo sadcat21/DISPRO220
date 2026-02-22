@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import CustomerPickerDialog from './CustomerPickerDialog';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import {
   ShoppingCart, Plus, Minus, Loader2, User,
@@ -106,7 +107,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
   const fetchData = async () => {
     setIsLoadingData(true);
     try {
-      let customersQuery = supabase.from('customers').select('*').order('name');
+      let customersQuery = supabase.from('customers').select('*').eq('status', 'active').order('name');
 
       if (activeBranch) {
         customersQuery = customersQuery.eq('branch_id', activeBranch.id);
@@ -398,106 +399,56 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
               <section className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label className="text-base font-semibold">{t('orders.customer')}</Label>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 text-xs text-primary hover:text-primary"
-                    onClick={() => setShowAddCustomerDialog(true)}
-                  >
-                    <UserPlus className="w-4 h-4 ms-1" />
-                    {t('orders.new_customer')}
-                  </Button>
                 </div>
 
-                {/* Customer Dropdown */}
-                <Popover open={customerDropdownOpen} onOpenChange={setCustomerDropdownOpen} modal={true}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={customerDropdownOpen}
-                      className="w-full justify-between h-11"
-                      disabled={isLoadingData}
-                    >
-                      {isLoadingData ? (
-                        <span className="flex items-center gap-2 text-muted-foreground">
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          {t('common.loading')}
-                        </span>
-                      ) : selectedCustomer ? (
-                        <span className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
-                            {selectedCustomer.name?.charAt(0) || '?'}
-                          </div>
-                          <span className="truncate">{selectedCustomer.name}</span>
-                          {selectedCustomer.wilaya && (
-                            <span className="text-xs text-muted-foreground">({selectedCustomer.wilaya})</span>
-                          )}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">{t('orders.select_customer')}</span>
+                {/* Customer Selection Button - opens dialog */}
+                <Button
+                  variant="outline"
+                  className="w-full justify-between h-11"
+                  disabled={isLoadingData}
+                  onClick={() => setCustomerDropdownOpen(true)}
+                >
+                  {isLoadingData ? (
+                    <span className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      {t('common.loading')}
+                    </span>
+                  ) : selectedCustomer ? (
+                    <span className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
+                        {selectedCustomer.name?.charAt(0) || '?'}
+                      </div>
+                      <span className="truncate">{selectedCustomer.name}</span>
+                      {selectedCustomer.wilaya && (
+                        <span className="text-xs text-muted-foreground">({selectedCustomer.wilaya})</span>
                       )}
-                      <ChevronsUpDown className="ms-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-[10050]" align="start">
-                    <Command>
-                      <CommandInput placeholder={t('orders.search_customer')} className="h-10" />
-                      <CommandList>
-                        <CommandEmpty>
-                          <div className="py-4 text-center">
-                            <User className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                            <p className="text-sm text-muted-foreground">{t('orders.no_customers')}</p>
-                          </div>
-                        </CommandEmpty>
-                        <CommandGroup>
-                          {customers.map((customer) => (
-                            <CommandItem
-                              key={customer.id}
-                              value={`${customer.name} ${customer.wilaya || ''} ${customer.phone || ''}`}
-                              onSelect={() => {
-                                setSelectedCustomerId(customer.id);
-                                // Load customer defaults
-                                if (customer.default_payment_type) {
-                                  setPaymentType(customer.default_payment_type as PaymentType);
-                                }
-                                if (customer.default_price_subtype) {
-                                  setPriceSubType(customer.default_price_subtype as PriceSubType);
-                                }
-                                setCustomerDropdownOpen(false);
-                              }}
-                              className="flex items-center gap-3 py-2.5"
-                            >
-                              <div className={cn(
-                                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
-                                selectedCustomerId === customer.id
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-muted text-muted-foreground"
-                              )}>
-                                {customer.name?.charAt(0) || '?'}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium truncate">{customer.name}</p>
-                                <p className="text-xs text-muted-foreground truncate">
-                                  {customer.wilaya}
-                                  {customer.phone && ` • ${customer.phone}`}
-                                </p>
-                              </div>
-                              <Check
-                                className={cn(
-                                  "h-4 w-4 shrink-0",
-                                  selectedCustomerId === customer.id ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">{t('orders.select_customer')}</span>
+                  )}
+                  <ChevronsUpDown className="ms-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
 
+                <CustomerPickerDialog
+                  open={customerDropdownOpen}
+                  onOpenChange={setCustomerDropdownOpen}
+                  customers={customers}
+                  isLoading={isLoadingData}
+                  selectedCustomerId={selectedCustomerId}
+                  onSelect={(customer) => {
+                    setSelectedCustomerId(customer.id);
+                    if (customer.default_payment_type) {
+                      setPaymentType(customer.default_payment_type as PaymentType);
+                    }
+                    if (customer.default_price_subtype) {
+                      setPriceSubType(customer.default_price_subtype as PriceSubType);
+                    }
+                  }}
+                  onAddNew={() => {
+                    setCustomerDropdownOpen(false);
+                    setShowAddCustomerDialog(true);
+                  }}
+                />
                 {/* Selected Customer Info */}
                 {selectedCustomer && (
                   <div className="p-3 bg-muted/50 rounded-lg space-y-3">

@@ -29,7 +29,7 @@ const DailyReceipts: React.FC = () => {
   const today = new Date().toISOString().split('T')[0];
   const [dateFrom, setDateFrom] = useState(today);
   const [dateTo, setDateTo] = useState(today);
-  const [filterWorkerId, setFilterWorkerId] = useState('');
+  const [filterWorkerId, setFilterWorkerId] = useState('all');
   const [filterType, setFilterType] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [previewReceipt, setPreviewReceipt] = useState<ReceiptWithDetails | null>(null);
@@ -46,7 +46,7 @@ const DailyReceipts: React.FC = () => {
   });
 
   // Customers list for filter
-  const [filterCustomer, setFilterCustomer] = useState('');
+  const [filterCustomer, setFilterCustomer] = useState('all');
   const { data: customers } = useQuery({
     queryKey: ['customers-list-receipts'],
     queryFn: async () => {
@@ -58,7 +58,7 @@ const DailyReceipts: React.FC = () => {
   const { data: receipts, isLoading } = useReceipts({
     date: dateFrom,
     dateTo: dateTo !== dateFrom ? dateTo : undefined,
-    workerId: isAdmin ? (filterWorkerId || undefined) : workerId || undefined,
+    workerId: isAdmin ? (filterWorkerId !== 'all' ? filterWorkerId : undefined) : workerId || undefined,
     receiptType: filterType !== 'all' ? filterType : undefined,
   });
 
@@ -67,7 +67,7 @@ const DailyReceipts: React.FC = () => {
     let result = receipts;
     
     // Filter by customer
-    if (filterCustomer) {
+    if (filterCustomer && filterCustomer !== 'all') {
       result = result.filter(r => r.customer_id === filterCustomer);
     }
     
@@ -173,7 +173,7 @@ const DailyReceipts: React.FC = () => {
                 <SelectValue placeholder="كل العمال" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">كل العمال</SelectItem>
+                <SelectItem value="all">كل العمال</SelectItem>
                 {workers?.map(w => (
                   <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>
                 ))}
@@ -188,7 +188,7 @@ const DailyReceipts: React.FC = () => {
               <SelectValue placeholder="كل العملاء" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">كل العملاء</SelectItem>
+              <SelectItem value="all">كل العملاء</SelectItem>
               {customers?.map(c => (
                 <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
               ))}

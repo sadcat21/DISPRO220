@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import ReceiptDialog from '@/components/printing/ReceiptDialog';
+import AddCustomerDialog from '@/components/promo/AddCustomerDialog';
 import { ReceiptItem, ReceiptType } from '@/types/receipt';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import CustomerPickerDialog from '@/components/orders/CustomerPickerDialog';
 import {
   Truck, Plus, Minus, Loader2, User,
   Receipt, ReceiptText, XCircle, Package, Check, ChevronsUpDown, Stamp, Gift
@@ -91,6 +93,7 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [receiptData, setReceiptData] = useState<any>(null);
   const [showOverflowDialog, setShowOverflowDialog] = useState(false);
+  const [showAddCustomerDialog, setShowAddCustomerDialog] = useState(false);
   const [overflowData, setOverflowData] = useState<any>(null);
 
   // Derived
@@ -119,7 +122,7 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
   const fetchData = async () => {
     setIsLoadingData(true);
     try {
-      let customersQuery = supabase.from('customers').select('*').order('name');
+      let customersQuery = supabase.from('customers').select('*').eq('status', 'active').order('name');
       if (activeBranch) customersQuery = customersQuery.eq('branch_id', activeBranch.id);
 
       const [customersRes, mappingsRes, productsRes] = await Promise.all([
@@ -572,86 +575,53 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
               <section className="space-y-3">
                 <Label className="text-base font-semibold">{t('orders.customer')}</Label>
 
-                <Popover open={customerDropdownOpen} onOpenChange={setCustomerDropdownOpen} modal={true}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={customerDropdownOpen}
-                      className="w-full justify-between h-11"
-                      disabled={isLoadingData}
-                    >
-                      {isLoadingData ? (
-                        <span className="flex items-center gap-2 text-muted-foreground">
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          {t('common.loading')}
-                        </span>
-                      ) : selectedCustomer ? (
-                        <span className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
-                            {selectedCustomer.name?.charAt(0) || '?'}
-                          </div>
-                          <span className="truncate">{selectedCustomer.name}</span>
-                          {selectedCustomer.wilaya && (
-                            <span className="text-xs text-muted-foreground">({selectedCustomer.wilaya})</span>
-                          )}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">{t('orders.select_customer')}</span>
+                <Button
+                  variant="outline"
+                  className="w-full justify-between h-11"
+                  disabled={isLoadingData}
+                  onClick={() => setCustomerDropdownOpen(true)}
+                >
+                  {isLoadingData ? (
+                    <span className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      {t('common.loading')}
+                    </span>
+                  ) : selectedCustomer ? (
+                    <span className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
+                        {selectedCustomer.name?.charAt(0) || '?'}
+                      </div>
+                      <span className="truncate">{selectedCustomer.name}</span>
+                      {selectedCustomer.wilaya && (
+                        <span className="text-xs text-muted-foreground">({selectedCustomer.wilaya})</span>
                       )}
-                      <ChevronsUpDown className="ms-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-[10050]" align="start">
-                    <Command>
-                      <CommandInput placeholder={t('orders.search_customer')} className="h-10" />
-                      <CommandList>
-                        <CommandEmpty>
-                          <div className="py-4 text-center">
-                            <User className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                            <p className="text-sm text-muted-foreground">{t('orders.no_customers')}</p>
-                          </div>
-                        </CommandEmpty>
-                        <CommandGroup>
-                          {customers.map((customer) => (
-                            <CommandItem
-                              key={customer.id}
-                              value={`${customer.name} ${customer.wilaya || ''} ${customer.phone || ''}`}
-                              onSelect={() => {
-                                setSelectedCustomerId(customer.id);
-                                if (customer.default_payment_type) {
-                                  setPaymentType(customer.default_payment_type as PaymentType);
-                                }
-                                if (customer.default_price_subtype) {
-                                  setPriceSubType(customer.default_price_subtype as PriceSubType);
-                                }
-                                setCustomerDropdownOpen(false);
-                              }}
-                              className="flex items-center gap-3 py-2.5"
-                            >
-                              <div className={cn(
-                                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
-                                selectedCustomerId === customer.id
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-muted text-muted-foreground"
-                              )}>
-                                {customer.name?.charAt(0) || '?'}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium truncate">{customer.name}</p>
-                                <p className="text-xs text-muted-foreground truncate">
-                                  {customer.wilaya}
-                                  {customer.phone && ` • ${customer.phone}`}
-                                </p>
-                              </div>
-                              <Check className={cn("h-4 w-4 shrink-0", selectedCustomerId === customer.id ? "opacity-100" : "opacity-0")} />
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">{t('orders.select_customer')}</span>
+                  )}
+                  <ChevronsUpDown className="ms-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+
+                <CustomerPickerDialog
+                  open={customerDropdownOpen}
+                  onOpenChange={setCustomerDropdownOpen}
+                  customers={customers}
+                  isLoading={isLoadingData}
+                  selectedCustomerId={selectedCustomerId}
+                  onSelect={(customer) => {
+                    setSelectedCustomerId(customer.id);
+                    if (customer.default_payment_type) {
+                      setPaymentType(customer.default_payment_type as PaymentType);
+                    }
+                    if (customer.default_price_subtype) {
+                      setPriceSubType(customer.default_price_subtype as PriceSubType);
+                    }
+                  }}
+                  onAddNew={() => {
+                    setCustomerDropdownOpen(false);
+                    setShowAddCustomerDialog(true);
+                  }}
+                />
 
                 {/* Selected Customer Info */}
                 {selectedCustomer && (
@@ -957,6 +927,17 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
           receiptData={receiptData}
         />
       )}
+
+      {/* Add Customer Dialog */}
+      <AddCustomerDialog
+        open={showAddCustomerDialog}
+        onOpenChange={setShowAddCustomerDialog}
+        onSuccess={(newCustomer) => {
+          setCustomers(prev => [...prev, newCustomer]);
+          setSelectedCustomerId(newCustomer.id);
+          setShowAddCustomerDialog(false);
+        }}
+      />
     </>
   );
 };
