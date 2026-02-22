@@ -49,6 +49,7 @@ interface OrderItemWithPrice {
   unitPrice: number;
   totalPrice: number;
   giftQuantity?: number;
+  giftPieces?: number;
   giftOfferId?: string;
 }
 
@@ -234,7 +235,7 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
       }
       const clampedQty = Math.min(quantity, available);
       const clampedPaid = Math.max(0, clampedQty - giftQuantity);
-      return [...prev, { productId, quantity: clampedQty, unitPrice, totalPrice: clampedPaid * unitPrice, giftQuantity: giftQuantity || undefined, giftOfferId: giftInfo?.offerId }];
+      return [...prev, { productId, quantity: clampedQty, unitPrice, totalPrice: clampedPaid * unitPrice, giftQuantity: giftQuantity || undefined, giftPieces: giftInfo?.giftPieces || undefined, giftOfferId: giftInfo?.offerId }];
     });
   };
 
@@ -421,6 +422,7 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
         unitPrice: item.unitPrice,
         totalPrice: item.totalPrice,
         giftQuantity: item.giftQuantity,
+        giftPieces: item.giftPieces,
       }));
 
       setReceiptData({
@@ -703,7 +705,13 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
                             {item.giftQuantity && item.giftQuantity > 0 && (
                               <Badge variant="outline" className="ms-1 text-[10px] px-1 py-0 border-green-500 text-green-600">
                                 <Gift className="w-3 h-3 ms-0.5" />
-                                {item.giftQuantity} {t('common.free')}
+                                {t('common.free')} {item.giftQuantity} {t('offers.unit_box')}
+                              </Badge>
+                            )}
+                            {(!item.giftQuantity || item.giftQuantity === 0) && item.giftPieces && item.giftPieces > 0 && (
+                              <Badge variant="outline" className="ms-1 text-[10px] px-1 py-0 border-green-500 text-green-600">
+                                <Gift className="w-3 h-3 ms-0.5" />
+                                {t('common.free')} {item.giftPieces} {t('offers.unit_piece')}
                               </Badge>
                             )}
                           </span>

@@ -7,6 +7,7 @@ export interface ReceiptItem {
   unitPrice: number;
   totalPrice: number;
   giftQuantity?: number;
+  giftPieces?: number;
   isPromo?: boolean;
   paymentType?: string;
   priceSubtype?: string;

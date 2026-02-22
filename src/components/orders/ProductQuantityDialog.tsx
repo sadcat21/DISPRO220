@@ -76,7 +76,7 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
         onConfirm(product.id, quantity, undefined, true, perItemPricing);
       } else {
         const giftBoxes = product.pieces_per_box > 0 ? Math.floor(giftPieces / product.pieces_per_box) : 0;
-        if (offerApplied && giftPieces > 0) {
+        if (offerApplied && (giftPieces > 0 || giftBoxes > 0)) {
           onConfirm(product.id, quantity, { giftQuantity: giftBoxes, giftPieces }, false, perItemPricing);
         } else {
           onConfirm(product.id, quantity, undefined, false, perItemPricing);
@@ -105,7 +105,7 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
     if (!product || giftPieces <= 0) return;
     const giftBoxes = product.pieces_per_box > 0 ? Math.floor(giftPieces / product.pieces_per_box) : 0;
     if (giftBoxes > 0) setQuantity(prev => prev + giftBoxes);
-    setOfferApplied(true);
+    setOfferApplied(true); // Apply even if giftBoxes is 0 (piece-level gifts)
   };
 
   const handleOpenChange = (isOpen: boolean) => {

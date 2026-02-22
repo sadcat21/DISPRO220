@@ -285,6 +285,9 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
       if (item.giftQuantity && item.giftQuantity > 0) {
         addText(`  [PROMO: ${item.giftQuantity}]`);
       }
+      if ((!item.giftQuantity || item.giftQuantity === 0) && item.giftPieces && item.giftPieces > 0) {
+        addText(`  [PROMO: ${item.giftPieces} pcs]`);
+      }
 
       totalBoxes += item.quantity;
       totalProducts++;
@@ -359,6 +362,9 @@ export function formatReceiptForPreview(data: ReceiptData): string {
       const paid = item.quantity - item.giftQuantity;
       qtyStr = `${paid}+${item.giftQuantity}`;
       badges.push('🎁 PROMO');
+    }
+    if ((!item.giftQuantity || item.giftQuantity === 0) && item.giftPieces && item.giftPieces > 0) {
+      badges.push(`🎁 PROMO ${item.giftPieces} pcs`);
     }
     
     itemsHtml += `
