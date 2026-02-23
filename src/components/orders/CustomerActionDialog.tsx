@@ -8,7 +8,7 @@ import {
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Customer } from '@/types/database';
+import { Customer, Sector } from '@/types/database';
 import { toast } from 'sonner';
 
 interface CustomerActionDialogProps {
@@ -34,12 +34,14 @@ const CustomerActionDialog: React.FC<CustomerActionDialogProps> = ({
     const { activeBranch } = useAuth();
 
     const [customers, setCustomers] = useState<Customer[]>([]);
+    const [sectors, setSectors] = useState<Sector[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
     useEffect(() => {
         if (open) {
             fetchCustomers();
+            fetchSectors();
         } else {
             setSelectedCustomer(null);
         }
@@ -48,9 +50,9 @@ const CustomerActionDialog: React.FC<CustomerActionDialogProps> = ({
     const fetchCustomers = async () => {
         setIsLoading(true);
         try {
-            let query = supabase.from('customers').select('*').order('name');
+            let query = supabase.from('customers').select('*').eq('status', 'active').order('name');
             if (activeBranch) {
-                query = query.eq('branch_id', activeBranch.id);
+                query = query.or(`branch_id.eq.${activeBranch.id},branch_id.is.null`);
             }
             const { data, error } = await query;
             if (error) throw error;
@@ -60,6 +62,20 @@ const CustomerActionDialog: React.FC<CustomerActionDialogProps> = ({
             toast.error(t('orders.fetch_error'));
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const fetchSectors = async () => {
+        try {
+            let query = supabase.from('sectors').select('*').order('name');
+            if (activeBranch) {
+                query = query.eq('branch_id', activeBranch.id);
+            }
+            const { data, error } = await query;
+            if (error) throw error;
+            setSectors((data || []) as Sector[]);
+        } catch (error) {
+            console.error('Error fetching sectors:', error);
         }
     };
 
@@ -81,6 +97,7 @@ const CustomerActionDialog: React.FC<CustomerActionDialogProps> = ({
                 open={open}
                 onOpenChange={onOpenChange}
                 customers={customers}
+                sectors={sectors}
                 isLoading={isLoading}
                 onSelect={(customer) => setSelectedCustomer(customer)}
             />

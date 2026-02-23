@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Search, UserPlus, User, ChevronLeft, Loader2, X } from 'lucide-react';
-import { Customer } from '@/types/database';
+import { Customer, Sector } from '@/types/database';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
@@ -12,16 +12,24 @@ interface CustomerPickerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   customers: Customer[];
+  sectors?: Sector[];
   isLoading?: boolean;
   selectedCustomerId?: string;
   onSelect: (customer: Customer) => void;
   onAddNew?: () => void;
 }
 
+interface SectorGroup {
+  sectorId: string | null;
+  sectorName: string;
+  customers: Customer[];
+}
+
 const CustomerPickerDialog: React.FC<CustomerPickerDialogProps> = ({
   open,
   onOpenChange,
   customers,
+  sectors = [],
   isLoading,
   selectedCustomerId,
   onSelect,
@@ -46,6 +54,58 @@ const CustomerPickerDialog: React.FC<CustomerPickerDialogProps> = ({
       c.address?.toLowerCase().includes(q)
     );
   }, [customers, search]);
+
+  // Build sector map for quick lookup
+  const sectorMap = useMemo(() => {
+    const map = new Map<string, string>();
+    sectors.forEach(s => map.set(s.id, s.name));
+    return map;
+  }, [sectors]);
+
+  // Group customers by sector
+  const groupedCustomers = useMemo((): SectorGroup[] => {
+    const groups = new Map<string | null, Customer[]>();
+    
+    filteredCustomers.forEach(c => {
+      const key = c.sector_id || null;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(c);
+    });
+
+    const result: SectorGroup[] = [];
+    
+    // Add sectors with customers first (ordered by sector name)
+    const sectorIds = Array.from(groups.keys()).filter(k => k !== null) as string[];
+    sectorIds.sort((a, b) => {
+      const nameA = sectorMap.get(a) || '';
+      const nameB = sectorMap.get(b) || '';
+      return nameA.localeCompare(nameB, 'ar');
+    });
+
+    sectorIds.forEach(sid => {
+      result.push({
+        sectorId: sid,
+        sectorName: sectorMap.get(sid) || 'غير معروف',
+        customers: groups.get(sid)!,
+      });
+    });
+
+    // Add "no sector" group at the end
+    if (groups.has(null) && groups.get(null)!.length > 0) {
+      result.push({
+        sectorId: null,
+        sectorName: 'بدون سكتور',
+        customers: groups.get(null)!,
+      });
+    }
+
+    return result;
+  }, [filteredCustomers, sectorMap]);
+
+  const getSectorName = (sectorId: string | null | undefined) => {
+    if (!sectorId) return '';
+    return sectorMap.get(sectorId) || '';
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -102,49 +162,65 @@ const CustomerPickerDialog: React.FC<CustomerPickerDialogProps> = ({
               )}
             </div>
           ) : (
-            <div className="divide-y divide-border">
-              {filteredCustomers.map((customer) => {
-                const isSelected = selectedCustomerId === customer.id;
-                const subtitle = [customer.store_name, customer.phone].filter(Boolean).join(' • ');
-                return (
-                  <button
-                    key={customer.id}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-4 py-3 text-right transition-colors",
-                      "hover:bg-accent/50 active:bg-accent",
-                      isSelected && "bg-primary/5"
-                    )}
-                    onClick={() => {
-                      onSelect(customer);
-                      onOpenChange(false);
-                    }}
-                  >
-                    {/* Arrow */}
-                    <ChevronLeft className="w-4 h-4 text-muted-foreground shrink-0" />
+            <div>
+              {groupedCustomers.map((group) => (
+                <div key={group.sectorId || 'no-sector'}>
+                  {/* Sector header */}
+                  <div className="sticky top-0 z-10 bg-muted/80 backdrop-blur-sm px-4 py-2 border-b border-t">
+                    <p className="text-xs font-bold text-primary">
+                      {group.sectorName} ({group.customers.length})
+                    </p>
+                  </div>
+                  {/* Customers in this sector */}
+                  <div className="divide-y divide-border">
+                    {group.customers.map((customer) => {
+                      const isSelected = selectedCustomerId === customer.id;
+                      const sectorName = getSectorName(customer.sector_id);
+                      const subtitle = [customer.store_name, customer.phone].filter(Boolean).join(' • ');
+                      return (
+                        <button
+                          key={customer.id}
+                          className={cn(
+                            "w-full flex items-center gap-3 px-4 py-3 text-right transition-colors",
+                            "hover:bg-accent/50 active:bg-accent",
+                            isSelected && "bg-primary/5"
+                          )}
+                          onClick={() => {
+                            onSelect(customer);
+                            onOpenChange(false);
+                          }}
+                        >
+                          {/* Arrow */}
+                          <ChevronLeft className="w-4 h-4 text-muted-foreground shrink-0" />
 
-                    {/* Info - right aligned */}
-                    <div className="flex-1 min-w-0 text-right">
-                      <p className="font-bold text-sm truncate">{customer.name}</p>
-                      {subtitle && (
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">{subtitle}</p>
-                      )}
-                    </div>
+                          {/* Info */}
+                          <div className="flex-1 min-w-0 text-right">
+                            <div className="flex items-center gap-2 justify-end">
+                              <p className="font-bold text-sm truncate">{customer.name}</p>
+                            </div>
+                            {subtitle && (
+                              <p className="text-xs text-muted-foreground truncate mt-0.5">{subtitle}</p>
+                            )}
+                          </div>
 
-                    {/* Avatar */}
-                    <div className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
-                      isSelected ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                    )}>
-                      <User className="w-5 h-5" />
-                    </div>
-                  </button>
-                );
-              })}
+                          {/* Avatar */}
+                          <div className={cn(
+                            "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
+                            isSelected ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                          )}>
+                            <User className="w-5 h-5" />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </ScrollArea>
 
-        {/* Footer with count and add button */}
+        {/* Footer */}
         <div className="border-t px-4 py-2.5 flex items-center justify-between">
           <p className="text-xs text-muted-foreground">
             {filteredCustomers.length} عميل
