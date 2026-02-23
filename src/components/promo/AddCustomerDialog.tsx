@@ -79,14 +79,20 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
   const effectiveBranchId = activeBranch ? activeBranch.id : null;
 
   // Fetch zones when sector changes
+  const [zonesLoading, setZonesLoading] = useState(false);
   useEffect(() => {
     setZoneId('');
     if (!sectorId) {
       setZones([]);
       return;
     }
+    setZonesLoading(true);
     supabase.from('sector_zones').select('id, name, sector_id').eq('sector_id', sectorId).order('name')
-      .then(({ data }) => setZones(data || []));
+      .then(({ data, error }) => {
+        console.log('🔍 Zones fetch for sector', sectorId, ':', data, error);
+        setZones(data || []);
+        setZonesLoading(false);
+      });
   }, [sectorId]);
 
   // Completion percentage
@@ -331,7 +337,11 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* --- Section 1: Basic Info --- */}
-          <div className="space-y-4 border-b pb-4">
+          <div className="space-y-4 rounded-xl border-2 border-primary/20 bg-primary/5 p-4">
+            <Label className="font-bold flex items-center gap-2 text-sm text-primary">
+              <User className="w-4 h-4" />
+              المعلومات الأساسية
+            </Label>
             <div className="space-y-2">
               <Label htmlFor="customer-name">{t('customers.name')} *</Label>
               <Input id="customer-name" value={name} onChange={(e) => setName(e.target.value)} onBlur={handleNameBlur} placeholder={t('customers.name')} className="text-right" autoFocus required />
@@ -388,7 +398,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
             </div>
 
             {/* Sales Representatives - multiple */}
-            <div className="border rounded-lg p-3 space-y-2 bg-muted/20">
+            <div className="border rounded-lg p-3 space-y-2 bg-background/60">
               <Label className="flex items-center gap-1 text-sm font-semibold">
                 <User className="w-3.5 h-3.5" />
                 مسؤول المبيعات / المشتريات (عند الزبون)
@@ -416,9 +426,9 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
           </div>
 
           {/* --- Section 2: Finance & Preferences --- */}
-          <div className="space-y-4 border-b pb-4">
-            <Label className="font-bold flex items-center gap-2 text-sm">
-              <CreditCard className="w-4 h-4 text-primary" />
+          <div className="space-y-4 rounded-xl border-2 border-amber-500/20 bg-amber-500/5 p-4">
+            <Label className="font-bold flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400">
+              <CreditCard className="w-4 h-4" />
               الوضعية المالية والتفضيلات
             </Label>
 
@@ -427,7 +437,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
               <Input type="number" min="0" step="0.01" value={debtAmount} onChange={(e) => setDebtAmount(e.target.value)} placeholder="0" className="text-right" dir="ltr" />
             </div>
 
-            <div className="border rounded-lg p-4 space-y-3">
+            <div className="border rounded-lg p-4 space-y-3 bg-background/60">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Shield className="w-4 h-4 text-primary" />
@@ -440,7 +450,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
               )}
             </div>
 
-            <div className="border rounded-lg p-4 space-y-3">
+            <div className="border rounded-lg p-4 space-y-3 bg-background/60">
               <div className="space-y-2">
                 <Label className="text-sm">نوع الشراء الافتراضي</Label>
                 <div className="grid grid-cols-2 gap-2">
@@ -462,9 +472,9 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
           </div>
 
           {/* --- Section 3: Location & Sector --- */}
-          <div className="space-y-4">
-            <Label className="font-bold flex items-center gap-2 text-sm">
-              <MapPin className="w-4 h-4 text-primary" />
+          <div className="space-y-4 rounded-xl border-2 border-emerald-500/20 bg-emerald-500/5 p-4">
+            <Label className="font-bold flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-400">
+              <MapPin className="w-4 h-4" />
               تفاصيل الموقع والسكتور
             </Label>
 
@@ -483,13 +493,16 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
               {!sectorId && <p className="text-xs text-destructive">يجب اختيار سكتور</p>}
             </div>
 
-            {/* Zone selection */}
-            {zones.length > 0 && (
+            {/* Zone selection - always show when sector selected */}
+            {sectorId && (
               <div className="space-y-2">
-                <Label>المنطقة داخل السكتور</Label>
-                <Select value={zoneId || 'none'} onValueChange={(val) => setZoneId(val === 'none' ? '' : val)}>
+                <Label className="flex items-center gap-1">
+                  المنطقة داخل السكتور
+                  {zonesLoading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+                </Label>
+                <Select value={zoneId || 'none'} onValueChange={(val) => setZoneId(val === 'none' ? '' : val)} disabled={zonesLoading}>
                   <SelectTrigger>
-                    <SelectValue placeholder="اختر المنطقة" />
+                    <SelectValue placeholder={zonesLoading ? 'جاري التحميل...' : zones.length === 0 ? 'لا توجد مناطق' : 'اختر المنطقة'} />
                   </SelectTrigger>
                   <SelectContent position="popper" className="bg-popover z-[10050] max-h-60">
                     <SelectItem value="none">بدون تحديد</SelectItem>
@@ -516,7 +529,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
             </div>
 
             {role === 'admin' && activeBranch && (
-              <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
+              <div className="p-3 bg-background/60 rounded-lg border">
                 <p className="text-sm text-muted-foreground">{t('nav.branches')}</p>
                 <p className="font-medium">{activeBranch.name}</p>
               </div>

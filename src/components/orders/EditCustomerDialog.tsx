@@ -77,22 +77,24 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
 
   // Fetch zones when sector changes
   const pendingZoneId = React.useRef<string>('');
+  const [zonesLoading, setZonesLoading] = useState(false);
   useEffect(() => {
     if (!sectorId) {
       setZones([]);
       return;
     }
+    setZonesLoading(true);
     supabase.from('sector_zones').select('id, name, sector_id').eq('sector_id', sectorId).order('name')
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        console.log('🔍 Edit: Zones fetch for sector', sectorId, ':', data, error);
         setZones(data || []);
-        // If there's a pending zone from initial load, apply it
         if (pendingZoneId.current && data?.find(z => z.id === pendingZoneId.current)) {
           setZoneId(pendingZoneId.current);
           pendingZoneId.current = '';
         } else if (!data?.find(z => z.id === zoneId)) {
-          // Only clear if current zoneId isn't in the fetched list
           if (!pendingZoneId.current) setZoneId('');
         }
+        setZonesLoading(false);
       });
   }, [sectorId]);
 
@@ -334,7 +336,11 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* --- Section 1: Basic Info --- */}
-          <div className="space-y-4 border-b pb-4">
+          <div className="space-y-4 rounded-xl border-2 border-primary/20 bg-primary/5 p-4">
+            <Label className="font-bold flex items-center gap-2 text-sm text-primary">
+              <User className="w-4 h-4" />
+              المعلومات الأساسية
+            </Label>
             <div className="space-y-2">
               <Label htmlFor="edit-name">اسم العميل *</Label>
               <Input id="edit-name" value={name} onChange={(e) => setName(e.target.value)} onBlur={handleNameBlur} placeholder="أدخل اسم العميل" className="text-right" required />
@@ -391,7 +397,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
             </div>
 
             {/* Sales Representatives - multiple */}
-            <div className="border rounded-lg p-3 space-y-2 bg-muted/20">
+            <div className="border rounded-lg p-3 space-y-2 bg-background/60">
               <Label className="flex items-center gap-1 text-sm font-semibold">
                 <User className="w-3.5 h-3.5" />
                 مسؤول المبيعات / المشتريات (عند الزبون)
@@ -419,9 +425,9 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
           </div>
 
           {/* --- Section 2: Finance & Preferences --- */}
-          <div className="space-y-4 border-b pb-4">
-            <Label className="font-bold flex items-center gap-2 text-sm">
-              <CreditCard className="w-4 h-4 text-primary" />
+          <div className="space-y-4 rounded-xl border-2 border-amber-500/20 bg-amber-500/5 p-4">
+            <Label className="font-bold flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400">
+              <CreditCard className="w-4 h-4" />
               الوضعية المالية والتفضيلات
             </Label>
 
@@ -433,7 +439,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
               )}
             </div>
 
-            <div className="border rounded-lg p-4 space-y-3">
+            <div className="border rounded-lg p-4 space-y-3 bg-background/60">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Shield className="w-4 h-4 text-primary" />
@@ -446,7 +452,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
               )}
             </div>
 
-            <div className="border rounded-lg p-4 space-y-3">
+            <div className="border rounded-lg p-4 space-y-3 bg-background/60">
               <div className="space-y-2">
                 <Label className="text-sm">نوع الشراء الافتراضي</Label>
                 <div className="grid grid-cols-2 gap-2">
@@ -468,9 +474,9 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
           </div>
 
           {/* --- Section 3: Location & Sector --- */}
-          <div className="space-y-4">
-            <Label className="font-bold flex items-center gap-2 text-sm">
-              <MapPin className="w-4 h-4 text-primary" />
+          <div className="space-y-4 rounded-xl border-2 border-emerald-500/20 bg-emerald-500/5 p-4">
+            <Label className="font-bold flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-400">
+              <MapPin className="w-4 h-4" />
               تفاصيل الموقع والسكتور
             </Label>
 
@@ -481,7 +487,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
                   <SelectTrigger className={!sectorId ? 'border-destructive' : ''}>
                     <SelectValue placeholder="اختر السكتور" />
                   </SelectTrigger>
-                  <SelectContent className="bg-popover z-[100]">
+                  <SelectContent position="popper" className="bg-popover z-[10050] max-h-60">
                     {sectors.map(s => (
                       <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                     ))}
@@ -491,15 +497,18 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
               </div>
             )}
 
-            {/* Zone selection */}
-            {zones.length > 0 && (
+            {/* Zone selection - always show when sector selected */}
+            {sectorId && (
               <div className="space-y-2">
-                <Label>المنطقة داخل السكتور</Label>
-                <Select value={zoneId || 'none'} onValueChange={(val) => setZoneId(val === 'none' ? '' : val)}>
+                <Label className="flex items-center gap-1">
+                  المنطقة داخل السكتور
+                  {zonesLoading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+                </Label>
+                <Select value={zoneId || 'none'} onValueChange={(val) => setZoneId(val === 'none' ? '' : val)} disabled={zonesLoading}>
                   <SelectTrigger>
-                    <SelectValue placeholder="اختر المنطقة" />
+                    <SelectValue placeholder={zonesLoading ? 'جاري التحميل...' : zones.length === 0 ? 'لا توجد مناطق' : 'اختر المنطقة'} />
                   </SelectTrigger>
-                  <SelectContent className="bg-popover z-[100]">
+                  <SelectContent position="popper" className="bg-popover z-[10050] max-h-60">
                     <SelectItem value="none">بدون تحديد</SelectItem>
                     {zones.map(z => (
                       <SelectItem key={z.id} value={z.id}>{z.name}</SelectItem>
@@ -513,7 +522,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
               <Label htmlFor="edit-wilaya">الولاية</Label>
               <Select value={wilaya} onValueChange={setWilaya}>
                 <SelectTrigger><SelectValue placeholder="اختر الولاية" /></SelectTrigger>
-                <SelectContent position="popper" className="z-[100] bg-popover max-h-60">
+                <SelectContent position="popper" className="z-[10050] bg-popover max-h-60">
                   {ALGERIAN_WILAYAS.map((w) => (
                     <SelectItem key={w.code} value={w.name}>{w.name}</SelectItem>
                   ))}
@@ -548,8 +557,9 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
             {/* Location Picker */}
             <Collapsible open={showMap} onOpenChange={setShowMap}>
               <CollapsibleTrigger asChild>
-                <Button type="button" variant="outline" className={`w-full justify-between ${!(latitude && longitude) ? 'border-destructive' : ''}`}>
+                <Button type="button" variant="outline" className={`w-full justify-between ${!(latitude && longitude) ? 'border-destructive' : 'border-primary/30'} hover:bg-primary/5`}>
                   <span className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-primary" />
                     تحديد الموقع على الخريطة *
                     {latitude && longitude && <span className="text-xs bg-primary text-primary-foreground px-1.5 py-0.5 rounded">✓</span>}
                   </span>
