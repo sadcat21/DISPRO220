@@ -1,13 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import CustomerPickerDialog from './CustomerPickerDialog';
 import {
-    User, Check, ChevronsUpDown, ShoppingCart,
-    Banknote, Truck, Ban, Loader2, Search
+    ShoppingCart, Banknote, Truck, Ban, Loader2
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,19 +35,13 @@ const CustomerActionDialog: React.FC<CustomerActionDialogProps> = ({
 
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [selectedCustomerId, setSelectedCustomerId] = useState('');
-    const [customerDropdownOpen, setCustomerDropdownOpen] = useState(false);
-
-    const selectedCustomer = useMemo(() =>
-        customers.find(c => c.id === selectedCustomerId),
-        [customers, selectedCustomerId]
-    );
+    const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
     useEffect(() => {
         if (open) {
             fetchCustomers();
         } else {
-            setSelectedCustomerId('');
+            setSelectedCustomer(null);
         }
     }, [open, activeBranch]);
 
@@ -74,137 +65,81 @@ const CustomerActionDialog: React.FC<CustomerActionDialogProps> = ({
 
     const handleAction = (action: 'order' | 'sale' | 'delivery' | 'visit') => {
         if (!selectedCustomer) return;
-
         switch (action) {
-            case 'order':
-                onOrder?.(selectedCustomer);
-                break;
-            case 'sale':
-                onSale?.(selectedCustomer);
-                break;
-            case 'delivery':
-                onDelivery?.(selectedCustomer);
-                break;
-            case 'visit':
-                onVisitOnly?.(selectedCustomer);
-                break;
+            case 'order': onOrder?.(selectedCustomer); break;
+            case 'sale': onSale?.(selectedCustomer); break;
+            case 'delivery': onDelivery?.(selectedCustomer); break;
+            case 'visit': onVisitOnly?.(selectedCustomer); break;
         }
         onOpenChange(false);
     };
 
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md" dir={dir}>
-                <DialogHeader>
-                    <DialogTitle>{t('orders.select_customer')}</DialogTitle>
-                </DialogHeader>
+    // If no customer selected yet, show the picker directly
+    if (open && !selectedCustomer) {
+        return (
+            <CustomerPickerDialog
+                open={open}
+                onOpenChange={onOpenChange}
+                customers={customers}
+                isLoading={isLoading}
+                onSelect={(customer) => setSelectedCustomer(customer)}
+            />
+        );
+    }
 
-                <div className="space-y-6 py-4">
-                    <div className="space-y-2">
-                        <Popover open={customerDropdownOpen} onOpenChange={setCustomerDropdownOpen}>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    aria-expanded={customerDropdownOpen}
-                                    className="w-full justify-between h-12 text-lg"
-                                >
-                                    <div className="flex items-center gap-2 overflow-hidden">
-                                        <User className="w-5 h-5 opacity-50 shrink-0" />
-                                        <span className="truncate">
-                                            {selectedCustomer ? selectedCustomer.name : t('orders.select_customer')}
-                                        </span>
-                                    </div>
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                                <Command className="w-full">
-                                    <CommandInput placeholder={t('orders.search_customer')} className="h-12" />
-                                    <CommandList className="max-h-[300px] overflow-y-auto" onWheel={(e) => e.stopPropagation()}>
-                                        <CommandEmpty>
-                                            {isLoading ? (
-                                                <div className="flex items-center justify-center py-6">
-                                                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                                                </div>
-                                            ) : (
-                                                t('orders.no_customers')
-                                            )}
-                                        </CommandEmpty>
-                                        <CommandGroup>
-                                            {customers.map((customer) => (
-                                                <CommandItem
-                                                    key={customer.id}
-                                                    value={customer.name}
-                                                    onSelect={() => {
-                                                        setSelectedCustomerId(customer.id);
-                                                        setCustomerDropdownOpen(false);
-                                                    }}
-                                                    className="flex items-center justify-between py-3 cursor-pointer"
-                                                >
-                                                    <div className="flex items-center gap-2">
-                                                        <User className="w-4 h-4 opacity-50" />
-                                                        <span>{customer.name}</span>
-                                                    </div>
-                                                    {selectedCustomerId === customer.id && (
-                                                        <Check className="h-4 w-4 text-primary" />
-                                                    )}
-                                                </CommandItem>
-                                            ))}
-                                        </CommandGroup>
-                                    </CommandList>
-                                </Command>
-                            </PopoverContent>
-                        </Popover>
+    // Once customer is selected, show action buttons
+    return (
+        <Dialog open={open && !!selectedCustomer} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-md" dir={dir}>
+                <div className="space-y-4 py-2">
+                    {/* Selected customer info */}
+                    <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
+                            {selectedCustomer?.name?.charAt(0) || '?'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="font-bold text-sm">{selectedCustomer?.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                                {[selectedCustomer?.store_name, selectedCustomer?.phone].filter(Boolean).join(' • ')}
+                            </p>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs"
+                            onClick={() => setSelectedCustomer(null)}
+                        >
+                            تغيير
+                        </Button>
                     </div>
 
-                    {selectedCustomer && (
-                        <div className="grid grid-cols-1 gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
-                            {allowedActions.includes('order') && (
-                                <Button
-                                    onClick={() => handleAction('order')}
-                                    className="h-14 text-lg gap-3"
-                                    variant="default"
-                                >
-                                    <ShoppingCart className="w-6 h-6" />
-                                    {t('orders.new')}
-                                </Button>
-                            )}
-
-                            {allowedActions.includes('sale') && (
-                                <Button
-                                    onClick={() => handleAction('sale')}
-                                    className="h-14 text-lg gap-3 bg-green-600 hover:bg-green-700 text-white"
-                                    variant="outline"
-                                >
-                                    <Banknote className="w-6 h-6" />
-                                    {t('stock.direct_sale')}
-                                </Button>
-                            )}
-
-                            {allowedActions.includes('delivery') && (
-                                <Button
-                                    onClick={() => handleAction('delivery')}
-                                    className="h-14 text-lg gap-3 bg-blue-600 hover:bg-blue-700 text-white"
-                                    variant="outline"
-                                >
-                                    <Truck className="w-6 h-6" />
-                                    {t('deliveries.start_delivery')}
-                                </Button>
-                            )}
-
-                            {allowedActions.includes('visit') && (
-                                <Button
-                                    onClick={() => handleAction('visit')}
-                                    className="h-14 text-lg gap-3"
-                                    variant="secondary"
-                                >
-                                    <Ban className="w-6 h-6" />
-                                    {t('common.visit_only')}
-                                </Button>
-                            )}
-                        </div>
-                    )}
+                    {/* Action buttons */}
+                    <div className="grid grid-cols-1 gap-3">
+                        {allowedActions.includes('order') && (
+                            <Button onClick={() => handleAction('order')} className="h-14 text-lg gap-3" variant="default">
+                                <ShoppingCart className="w-6 h-6" />
+                                {t('orders.new')}
+                            </Button>
+                        )}
+                        {allowedActions.includes('sale') && (
+                            <Button onClick={() => handleAction('sale')} className="h-14 text-lg gap-3 bg-green-600 hover:bg-green-700 text-white" variant="outline">
+                                <Banknote className="w-6 h-6" />
+                                {t('stock.direct_sale')}
+                            </Button>
+                        )}
+                        {allowedActions.includes('delivery') && (
+                            <Button onClick={() => handleAction('delivery')} className="h-14 text-lg gap-3 bg-blue-600 hover:bg-blue-700 text-white" variant="outline">
+                                <Truck className="w-6 h-6" />
+                                {t('deliveries.start_delivery')}
+                            </Button>
+                        )}
+                        {allowedActions.includes('visit') && (
+                            <Button onClick={() => handleAction('visit')} className="h-14 text-lg gap-3" variant="secondary">
+                                <Ban className="w-6 h-6" />
+                                {t('common.visit_only')}
+                            </Button>
+                        )}
+                    </div>
                 </div>
             </DialogContent>
         </Dialog>
