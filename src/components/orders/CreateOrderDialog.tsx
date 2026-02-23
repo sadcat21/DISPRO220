@@ -98,9 +98,9 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
   useEffect(() => {
     if (open && workerId) {
       fetchData();
-      if (initialCustomerId) {
-        setSelectedCustomerId(initialCustomerId);
-      }
+    }
+    if (open && initialCustomerId) {
+      setSelectedCustomerId(initialCustomerId);
     }
   }, [open, workerId, activeBranch, initialCustomerId]);
 

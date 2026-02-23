@@ -483,7 +483,10 @@ const OrdersContent: React.FC = () => {
 
       <CreateOrderDialog
         open={showCreateDialog}
-        onOpenChange={setShowCreateDialog}
+        onOpenChange={(open) => {
+          setShowCreateDialog(open);
+          if (!open) setSelectedCustomer(null);
+        }}
         initialCustomerId={selectedCustomer?.id}
       />
 
