@@ -59,6 +59,7 @@ interface CustomersMapViewProps {
   customers: CustomerWithLocationType[];
   onCustomerClick?: (customer: CustomerWithLocationType) => void;
   branchWilaya?: string | null;
+  sectorFilter?: string;
 }
 
 type LocationFilterType = 'all' | 'store' | 'warehouse' | 'office';
