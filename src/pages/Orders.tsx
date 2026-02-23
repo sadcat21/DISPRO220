@@ -497,6 +497,7 @@ const OrdersContent: React.FC = () => {
       <CustomerActionDialog
         open={showActionDialog}
         onOpenChange={setShowActionDialog}
+        directAction="order"
         onOrder={(customer) => {
           setSelectedCustomer(customer);
           setShowCreateDialog(true);

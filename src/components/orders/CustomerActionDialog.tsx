@@ -19,6 +19,8 @@ interface CustomerActionDialogProps {
     onDelivery?: (customer: Customer) => void;
     onVisitOnly?: (customer: Customer) => void;
     allowedActions?: ('order' | 'sale' | 'delivery' | 'visit')[];
+    /** When set, selecting a customer immediately triggers this action without showing action buttons */
+    directAction?: 'order' | 'sale' | 'delivery' | 'visit';
 }
 
 const CustomerActionDialog: React.FC<CustomerActionDialogProps> = ({
@@ -28,7 +30,8 @@ const CustomerActionDialog: React.FC<CustomerActionDialogProps> = ({
     onSale,
     onDelivery,
     onVisitOnly,
-    allowedActions = ['order', 'sale', 'delivery', 'visit']
+    allowedActions = ['order', 'sale', 'delivery', 'visit'],
+    directAction,
 }) => {
     const { t, dir } = useLanguage();
     const { activeBranch } = useAuth();
@@ -90,7 +93,22 @@ const CustomerActionDialog: React.FC<CustomerActionDialogProps> = ({
         onOpenChange(false);
     };
 
-    // If no customer selected yet, show the picker directly
+    const handleCustomerSelect = (customer: Customer) => {
+        if (directAction) {
+            // Directly trigger the action without showing action buttons
+            switch (directAction) {
+                case 'order': onOrder?.(customer); break;
+                case 'sale': onSale?.(customer); break;
+                case 'delivery': onDelivery?.(customer); break;
+                case 'visit': onVisitOnly?.(customer); break;
+            }
+            onOpenChange(false);
+        } else {
+            setSelectedCustomer(customer);
+        }
+    };
+
+    // If no customer selected yet (or directAction mode), show the picker directly
     if (open && !selectedCustomer) {
         return (
             <CustomerPickerDialog
@@ -99,7 +117,7 @@ const CustomerActionDialog: React.FC<CustomerActionDialogProps> = ({
                 customers={customers}
                 sectors={sectors}
                 isLoading={isLoading}
-                onSelect={(customer) => setSelectedCustomer(customer)}
+                onSelect={handleCustomerSelect}
             />
         );
     }
