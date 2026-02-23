@@ -76,6 +76,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
   const [defaultPriceSubtype, setDefaultPriceSubtype] = useState<string>('gros');
 
   // Fetch zones when sector changes
+  const pendingZoneId = React.useRef<string>('');
   useEffect(() => {
     if (!sectorId) {
       setZones([]);
@@ -84,8 +85,13 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
     supabase.from('sector_zones').select('id, name, sector_id').eq('sector_id', sectorId).order('name')
       .then(({ data }) => {
         setZones(data || []);
-        if (data && !data.find(z => z.id === zoneId)) {
-          setZoneId('');
+        // If there's a pending zone from initial load, apply it
+        if (pendingZoneId.current && data?.find(z => z.id === pendingZoneId.current)) {
+          setZoneId(pendingZoneId.current);
+          pendingZoneId.current = '';
+        } else if (!data?.find(z => z.id === zoneId)) {
+          // Only clear if current zoneId isn't in the fetched list
+          if (!pendingZoneId.current) setZoneId('');
         }
       });
   }, [sectorId]);
@@ -126,6 +132,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
       setStoreNameFr((customer as any).store_name_fr || '');
       setInternalName(customer.internal_name || '');
       setSectorId(customer.sector_id || '');
+      pendingZoneId.current = customer.zone_id || '';
       setZoneId(customer.zone_id || '');
       // Parse multiple phones
       const phoneList = customer.phone ? customer.phone.split(/\s*\/\s*/).filter(Boolean) : [''];
