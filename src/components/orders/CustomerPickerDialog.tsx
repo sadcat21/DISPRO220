@@ -61,7 +61,9 @@ const CustomerPickerDialog: React.FC<CustomerPickerDialogProps> = ({
     const q = search.toLowerCase();
     return customers.filter(c =>
       c.name?.toLowerCase().includes(q) ||
+      c.name_fr?.toLowerCase().includes(q) ||
       c.store_name?.toLowerCase().includes(q) ||
+      (c as any).store_name_fr?.toLowerCase().includes(q) ||
       c.phone?.includes(q) ||
       c.wilaya?.toLowerCase().includes(q) ||
       c.internal_name?.toLowerCase().includes(q) ||

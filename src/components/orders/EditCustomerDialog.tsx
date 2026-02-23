@@ -185,8 +185,16 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
   const handleNameBlur = async () => {
     if (!name.trim()) return;
     setTranslatingName(true);
-    const result = await translateText(name.trim(), 'ar', 'fr');
-    if (result) setNameFr(result);
+    if (isArabic(name.trim())) {
+      const result = await translateText(name.trim(), 'ar', 'fr');
+      if (result) setNameFr(result);
+    } else {
+      const arResult = await translateText(name.trim(), 'fr', 'ar');
+      if (arResult) {
+        setNameFr(name.trim());
+        setName(arResult);
+      }
+    }
     setTranslatingName(false);
   };
 

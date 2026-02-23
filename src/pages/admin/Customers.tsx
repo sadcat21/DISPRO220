@@ -28,13 +28,33 @@ import CustomerProfileDialog from '@/components/customers/CustomerProfileDialog'
 import CustomerApprovalTab from '@/components/customers/CustomerApprovalTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
+// Collapsible sector group component
+const SectorCustomerGroup: React.FC<{ label: string; count: number; defaultOpen: boolean; children: React.ReactNode }> = ({ label, count, defaultOpen, children }) => {
+  const [isOpen, setIsOpen] = React.useState(defaultOpen);
+  React.useEffect(() => { setIsOpen(defaultOpen); }, [defaultOpen]);
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <CollapsibleTrigger asChild>
+        <button className="sticky top-0 z-10 w-full bg-muted/80 backdrop-blur-sm px-4 py-2 border-b border-t flex items-center justify-between rounded-lg">
+          <p className="text-xs font-bold text-primary">{label} ({count})</p>
+          {isOpen ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="space-y-3 mt-2">{children}</div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
 
 const Customers: React.FC = () => {
   const navigate = useNavigate();
   const { workerId, activeBranch, role } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { sectors } = useSectors();
   const { trackVisit } = useTrackVisit();
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -117,7 +137,10 @@ const Customers: React.FC = () => {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(c =>
         c.name.toLowerCase().includes(query) ||
+        c.name_fr?.toLowerCase().includes(query) ||
         c.internal_name?.toLowerCase().includes(query) ||
+        c.store_name?.toLowerCase().includes(query) ||
+        (c as any).store_name_fr?.toLowerCase().includes(query) ||
         c.phone?.includes(searchQuery) ||
         c.wilaya?.toLowerCase().includes(query)
       );
@@ -134,18 +157,18 @@ const Customers: React.FC = () => {
 
   const fetchLastOrders = async () => {
     try {
+      // Fetch last orders with item count
       const { data, error } = await supabase
         .from('orders')
-        .select('id, customer_id, created_at, total_amount, payment_status, status')
+        .select('id, customer_id, created_at, total_amount, payment_status, status, order_items(id)')
         .eq('status', 'delivered')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      // Group by customer_id, keep only the latest
       const map: Record<string, any> = {};
       for (const order of (data || [])) {
         if (!map[order.customer_id]) {
-          map[order.customer_id] = order;
+          map[order.customer_id] = { ...order, itemCount: order.order_items?.length || 0 };
         }
       }
       setLastOrders(map);
@@ -318,12 +341,43 @@ const Customers: React.FC = () => {
         )}
       </div>
 
-      {/* Customers List */}
-      <div className="space-y-3">
-        {filteredCustomers.map((customer) => {
-          const { percent, missing } = getCustomerCompletion(customer);
-          const lastOrder = lastOrders[customer.id];
-          return (
+      {/* Customers List - Grouped by Sector */}
+      <div className="space-y-2">
+        {(() => {
+          // Build sector groups
+          const sectorGroups = new Map<string | null, Customer[]>();
+          filteredCustomers.forEach(c => {
+            const key = c.sector_id || null;
+            if (!sectorGroups.has(key)) sectorGroups.set(key, []);
+            sectorGroups.get(key)!.push(c);
+          });
+
+          const sectorIds = Array.from(sectorGroups.keys()).filter(k => k !== null) as string[];
+          sectorIds.sort((a, b) => {
+            const nameA = getSectorName(a) || '';
+            const nameB = getSectorName(b) || '';
+            return nameA.localeCompare(nameB, 'ar');
+          });
+
+          const groups: { key: string; label: string; customers: Customer[] }[] = [];
+          sectorIds.forEach(sid => {
+            groups.push({ key: sid, label: getSectorName(sid) || 'غير معروف', customers: sectorGroups.get(sid)! });
+          });
+          if (sectorGroups.has(null) && sectorGroups.get(null)!.length > 0) {
+            groups.push({ key: 'no-sector', label: 'بدون سكتور', customers: sectorGroups.get(null)! });
+          }
+
+          return groups.map(group => (
+            <SectorCustomerGroup
+              key={group.key}
+              label={group.label}
+              count={group.customers.length}
+              defaultOpen={!!searchQuery.trim()}
+            >
+              {group.customers.map((customer) => {
+                const { percent, missing } = getCustomerCompletion(customer);
+                const lastOrder = lastOrders[customer.id];
+                return (
           <Card key={customer.id}>
             <CardContent className="p-3">
               {/* Customer Info Row */}
@@ -332,7 +386,15 @@ const Customers: React.FC = () => {
                   <User className="w-4 h-4 text-primary" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-bold text-sm leading-tight">{customer.name}</p>
+                  <p className="font-bold text-sm leading-tight">
+                    {language === 'fr' && customer.name_fr ? customer.name_fr : customer.name}
+                  </p>
+                  {customer.store_name && (
+                    <p className="text-[11px] text-muted-foreground">
+                      <Store className="w-2.5 h-2.5 inline ml-0.5" />
+                      {language === 'fr' && (customer as any).store_name_fr ? (customer as any).store_name_fr : customer.store_name}
+                    </p>
+                  )}
                   <div className="flex items-center gap-1 flex-wrap mt-1">
                     {getSectorName(customer.sector_id) && (
                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
@@ -383,13 +445,14 @@ const Customers: React.FC = () => {
                   )}
                   {/* Last Order Date */}
                   {lastOrder && (
-                    <div className="flex items-center gap-1.5 mt-1">
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-0.5 border-primary/20">
                         <Calendar className="w-2.5 h-2.5" />
                         آخر طلبية: {format(new Date(lastOrder.created_at), 'dd MMM yyyy', { locale: ar })}
+                        {' '}({differenceInDays(new Date(), new Date(lastOrder.created_at))} يوم)
                       </Badge>
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-0.5">
-                        {Number(lastOrder.total_amount || 0).toLocaleString()} دج
+                        {Number(lastOrder.total_amount || 0).toLocaleString()} دج ({lastOrder.itemCount || 0} منتج)
                       </Badge>
                     </div>
                   )}
@@ -468,9 +531,12 @@ const Customers: React.FC = () => {
                 </Button>
               </div>
             </CardContent>
-          </Card>
-          );
-        })}
+           </Card>
+           );
+              })}
+            </SectorCustomerGroup>
+          ));
+        })()}
 
         {filteredCustomers.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
@@ -638,11 +704,17 @@ const Customers: React.FC = () => {
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div className="bg-muted/50 rounded-lg p-2">
                   <p className="text-[10px] text-muted-foreground">التاريخ</p>
-                  <p className="font-semibold text-xs">{format(new Date(lastOrderDetails.created_at), 'dd MMM yyyy', { locale: ar })}</p>
+                  <p className="font-semibold text-xs">
+                    {format(new Date(lastOrderDetails.created_at), 'dd MMM yyyy', { locale: ar })}
+                    {' '}({differenceInDays(new Date(), new Date(lastOrderDetails.created_at))} يوم)
+                  </p>
                 </div>
                 <div className="bg-muted/50 rounded-lg p-2">
                   <p className="text-[10px] text-muted-foreground">المبلغ الإجمالي</p>
-                  <p className="font-semibold text-xs">{Number(lastOrderDetails.total_amount || 0).toLocaleString()} دج</p>
+                  <p className="font-semibold text-xs">
+                    {Number(lastOrderDetails.total_amount || 0).toLocaleString()} دج
+                    {' '}({lastOrderDetails.items?.length || 0} منتج)
+                  </p>
                 </div>
                 <div className="bg-muted/50 rounded-lg p-2">
                   <p className="text-[10px] text-muted-foreground">حالة الدفع</p>

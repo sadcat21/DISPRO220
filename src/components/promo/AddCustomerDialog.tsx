@@ -185,12 +185,20 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
     return null;
   };
 
-  // Auto-translate Arabic name to French on blur (always re-translate)
+  // Auto-translate name on blur (bidirectional like store name)
   const handleNameBlur = async () => {
     if (!name.trim()) return;
     setTranslatingName(true);
-    const result = await translateText(name.trim(), 'ar', 'fr');
-    if (result) setNameFr(result);
+    if (isArabic(name.trim())) {
+      const result = await translateText(name.trim(), 'ar', 'fr');
+      if (result) setNameFr(result);
+    } else {
+      const arResult = await translateText(name.trim(), 'fr', 'ar');
+      if (arResult) {
+        setNameFr(name.trim());
+        setName(arResult);
+      }
+    }
     setTranslatingName(false);
   };
 
