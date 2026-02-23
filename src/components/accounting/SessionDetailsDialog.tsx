@@ -385,6 +385,24 @@ const SessionDetailsDialog: React.FC<SessionDetailsDialogProps> = ({ open, onOpe
                 periodEnd={session.period_end}
               />
             </div>
+
+            {/* Promo Tracking Section */}
+            {liveCalc && liveCalc.promoTracking.length > 0 && (
+              <div className="border-2 rounded-xl p-3.5">
+                <SectionHeader
+                  icon={<Tag className="w-4 h-4 text-purple-600" />}
+                  title="تتبع العروض"
+                />
+                <PromoTrackingSummary
+                  items={liveCalc.promoTracking}
+                  totalGiftValue={liveCalc.giftOfferValue}
+                />
+              </div>
+            )}
+                periodStart={session.period_start}
+                periodEnd={session.period_end}
+              />
+            </div>
           </div>
         </ScrollArea>
       </DialogContent>
