@@ -13,7 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Plus, User, Loader2, Trash2, Phone, MapPin, Search, Pencil, Building2, ChevronDown, ChevronUp, Navigation, Shield, Tag, UserCircle, Store, CreditCard, Warehouse, Eye, PlusCircle, Banknote, Truck } from 'lucide-react';
+import { Plus, User, Loader2, Trash2, Phone, MapPin, Search, Pencil, Building2, ChevronDown, ChevronUp, Navigation, Shield, Tag, UserCircle, Store, CreditCard, Warehouse, Eye, PlusCircle, Banknote, Truck, AlertTriangle } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { ALGERIAN_WILAYAS, DEFAULT_WILAYA } from '@/data/algerianWilayas';
 import LazyLocationPicker from '@/components/map/LazyLocationPicker';
@@ -465,6 +466,29 @@ const Customers: React.FC = () => {
     }
   };
 
+  const getCustomerCompletion = (customer: Customer) => {
+    const required = [
+      { key: 'name', label: 'الاسم', icon: User, filled: !!customer.name?.trim() },
+      { key: 'phone', label: 'الهاتف', icon: Phone, filled: !!customer.phone?.trim() },
+      { key: 'store_name', label: 'المحل', icon: Store, filled: !!customer.store_name?.trim() },
+      { key: 'sector_id', label: 'السكتور', icon: MapPin, filled: !!customer.sector_id },
+      { key: 'location', label: 'الموقع GPS', icon: Navigation, filled: !!(customer.latitude && customer.longitude) },
+    ];
+    const optional = [
+      { key: 'address', filled: !!customer.address?.trim() },
+      { key: 'wilaya', filled: !!customer.wilaya },
+      { key: 'name_fr', filled: !!customer.name_fr?.trim() },
+      { key: 'internal_name', filled: !!customer.internal_name?.trim() },
+      { key: 'sales_rep_name', filled: !!customer.sales_rep_name?.trim() },
+      { key: 'zone_id', filled: !!customer.zone_id },
+    ];
+    const total = required.length + optional.length;
+    const filled = [...required, ...optional].filter(f => f.filled).length;
+    const percent = Math.round((filled / total) * 100);
+    const missing = required.filter(f => !f.filled);
+    return { percent, missing };
+  };
+
   const renderCustomersList = () => (
     <div className="space-y-4">
       {/* Search and Filter */}
@@ -496,7 +520,9 @@ const Customers: React.FC = () => {
 
       {/* Customers List */}
       <div className="space-y-3">
-        {filteredCustomers.map((customer) => (
+        {filteredCustomers.map((customer) => {
+          const { percent, missing } = getCustomerCompletion(customer);
+          return (
           <Card key={customer.id}>
             <CardContent className="p-3">
               {/* Customer Info Row */}
@@ -556,6 +582,26 @@ const Customers: React.FC = () => {
                   )}
                 </div>
               </div>
+              {/* Completion & Missing Fields */}
+              {(percent < 100 || missing.length > 0) && (
+                <div className="mt-2 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Progress value={percent} className="h-1.5 flex-1" />
+                    <span className={`text-[10px] font-semibold ${percent === 100 ? 'text-primary' : percent >= 60 ? 'text-muted-foreground' : 'text-destructive'}`}>{percent}%</span>
+                  </div>
+                  {missing.length > 0 && (
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <AlertTriangle className="w-3 h-3 text-destructive shrink-0" />
+                      {missing.map(m => (
+                        <Badge key={m.key} variant="outline" className="text-[9px] px-1 py-0 border-destructive/40 text-destructive gap-0.5">
+                          <m.icon className="w-2.5 h-2.5" />
+                          {m.label}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               {/* Action Buttons - compact grid */}
               <div className="flex items-center justify-end gap-0 mt-2 border-t pt-1.5 flex-wrap">
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
@@ -605,7 +651,8 @@ const Customers: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
 
         {filteredCustomers.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
