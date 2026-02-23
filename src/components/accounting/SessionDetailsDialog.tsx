@@ -399,10 +399,6 @@ const SessionDetailsDialog: React.FC<SessionDetailsDialogProps> = ({ open, onOpe
                 />
               </div>
             )}
-                periodStart={session.period_start}
-                periodEnd={session.period_end}
-              />
-            </div>
           </div>
         </ScrollArea>
       </DialogContent>
