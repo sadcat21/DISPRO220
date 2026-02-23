@@ -436,9 +436,9 @@ const CustomerApprovalTab: React.FC = () => {
                                     {showMap && (
                                         <div className="h-48 rounded-lg overflow-hidden border">
                                             <LazyLocationPicker
+                                                latitude={editPayload.latitude || 36.7}
+                                                longitude={editPayload.longitude || 3.08}
                                                 onLocationChange={(lat, lng) => setEditPayload((p: any) => ({ ...p, latitude: lat, longitude: lng }))}
-                                                initialLat={editPayload.latitude || 36.7}
-                                                initialLng={editPayload.longitude || 3.08}
                                             />
                                         </div>
                                     )}
