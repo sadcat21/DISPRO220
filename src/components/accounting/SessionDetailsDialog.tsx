@@ -11,7 +11,9 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import ProductStockSummary from './ProductStockSummary';
 import SalesDetailsSummary from './SalesDetailsSummary';
+import PromoTrackingSummary from './PromoTrackingSummary';
 import CreateSessionDialog from './CreateSessionDialog';
+import { useSessionCalculations } from '@/hooks/useSessionCalculations';
 
 interface SessionDetailsDialogProps {
   open: boolean;
