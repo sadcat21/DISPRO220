@@ -32,6 +32,7 @@ export interface Customer {
   name_fr?: string | null;
   internal_name?: string | null;
   store_name?: string | null;
+  store_name_fr?: string | null;
   phone: string | null;
   address: string | null;
   wilaya: string | null;

@@ -681,6 +681,7 @@ export type Database = {
           sector_id: string | null
           status: string
           store_name: string | null
+          store_name_fr: string | null
           trust_notes: string | null
           wilaya: string | null
           zone_id: string | null
@@ -707,6 +708,7 @@ export type Database = {
           sector_id?: string | null
           status?: string
           store_name?: string | null
+          store_name_fr?: string | null
           trust_notes?: string | null
           wilaya?: string | null
           zone_id?: string | null
@@ -733,6 +735,7 @@ export type Database = {
           sector_id?: string | null
           status?: string
           store_name?: string | null
+          store_name_fr?: string | null
           trust_notes?: string | null
           wilaya?: string | null
           zone_id?: string | null

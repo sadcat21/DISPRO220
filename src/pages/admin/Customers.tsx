@@ -7,37 +7,35 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Plus, User, Loader2, Trash2, Phone, MapPin, Search, Pencil, Building2, ChevronDown, ChevronUp, Navigation, Shield, Tag, UserCircle, Store, CreditCard, Warehouse, Eye, PlusCircle, Banknote, Truck, AlertTriangle } from 'lucide-react';
+import { Plus, User, Loader2, Trash2, Phone, MapPin, Search, Pencil, Building2, ChevronDown, ChevronUp, Navigation, Shield, Tag, UserCircle, Store, CreditCard, Warehouse, Eye, PlusCircle, Banknote, Truck, AlertTriangle, ShoppingBag, Calendar, Package } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { ALGERIAN_WILAYAS, DEFAULT_WILAYA } from '@/data/algerianWilayas';
 import LazyLocationPicker from '@/components/map/LazyLocationPicker';
 import AddCustomerDialog from '@/components/promo/AddCustomerDialog';
+import EditCustomerDialog from '@/components/orders/EditCustomerDialog';
 import LazyCustomersMapView from '@/components/map/LazyCustomersMapView';
 import CustomerSpecialPricesDialog from '@/components/customers/CustomerSpecialPricesDialog';
 import ManageSectorsDialog from '@/components/customers/ManageSectorsDialog';
 import { useSectors } from '@/hooks/useSectors';
-import { useCustomerDebtSummary, useCreateDebt, useUpdateDebtPayment } from '@/hooks/useCustomerDebts';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
 import CustomerProfileDialog from '@/components/customers/CustomerProfileDialog';
 import CustomerApprovalTab from '@/components/customers/CustomerApprovalTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
+import { ar } from 'date-fns/locale';
 
-// Force rebuild
 const Customers: React.FC = () => {
   const navigate = useNavigate();
   const { workerId, activeBranch, role } = useAuth();
   const { t } = useLanguage();
   const { sectors } = useSectors();
-  const createDebt = useCreateDebt();
-  const updateDebtPayment = useUpdateDebtPayment();
   const { trackVisit } = useTrackVisit();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -47,29 +45,7 @@ const Customers: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sectorFilter, setSectorFilter] = useState<string>('all');
 
-  // Edit form state
-  const [name, setName] = useState('');
-  const [internalName, setInternalName] = useState('');
-  const [storeName, setStoreName] = useState('');
-  const [sectorId, setSectorId] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [wilaya, setWilaya] = useState(DEFAULT_WILAYA);
-  const [branchId, setBranchId] = useState<string>('');
-  const [latitude, setLatitude] = useState<number | null>(null);
-  const [longitude, setLongitude] = useState<number | null>(null);
-  const [showMap, setShowMap] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isTrusted, setIsTrusted] = useState(false);
-  const [trustNotes, setTrustNotes] = useState('');
-  const [defaultPaymentType, setDefaultPaymentType] = useState<string>('without_invoice');
-  const [defaultPriceSubtype, setDefaultPriceSubtype] = useState<string>('gros');
-  const [salesRepName, setSalesRepName] = useState('');
-  const [salesRepPhone, setSalesRepPhone] = useState('');
-  const [debtAmount, setDebtAmount] = useState('');
-  const [locationType, setLocationType] = useState<'store' | 'warehouse' | 'office'>('store');
-  const [searchAddressQuery, setSearchAddressQuery] = useState('');
-  // Edit state
+  // Edit dialog state
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
 
@@ -85,6 +61,12 @@ const Customers: React.FC = () => {
   const isManager = role === 'admin' || role === 'branch_admin';
   const [activeTab, setActiveTab] = useState('list');
   const [requestsCount, setRequestsCount] = useState(0);
+
+  // Last orders cache
+  const [lastOrders, setLastOrders] = useState<Record<string, any>>({});
+  const [lastOrderDialogCustomer, setLastOrderDialogCustomer] = useState<Customer | null>(null);
+  const [lastOrderDetails, setLastOrderDetails] = useState<any>(null);
+  const [loadingLastOrder, setLoadingLastOrder] = useState(false);
 
   useEffect(() => {
     if (isManager) {
@@ -107,14 +89,6 @@ const Customers: React.FC = () => {
     }
   };
 
-  const { data: editDebtSummary } = useCustomerDebtSummary(editingCustomer?.id || null);
-
-  // Sync debt amount when summary loads
-  useEffect(() => {
-    if (editDebtSummary) {
-      setDebtAmount(editDebtSummary.totalDebt.toString());
-    }
-  }, [editDebtSummary]);
   useEffect(() => {
     fetchData();
   }, []);
@@ -131,7 +105,6 @@ const Customers: React.FC = () => {
   const filteredCustomers = useMemo(() => {
     let filtered = filteredByBranch;
 
-    // Sector filter
     if (sectorFilter !== 'all') {
       if (sectorFilter === 'none') {
         filtered = filtered.filter(c => !c.sector_id);
@@ -140,7 +113,6 @@ const Customers: React.FC = () => {
       }
     }
 
-    // Search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(c =>
@@ -152,6 +124,35 @@ const Customers: React.FC = () => {
     }
     return filtered;
   }, [searchQuery, filteredByBranch, sectorFilter]);
+
+  // Fetch last delivered orders for all customers
+  useEffect(() => {
+    if (customers.length > 0) {
+      fetchLastOrders();
+    }
+  }, [customers]);
+
+  const fetchLastOrders = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('id, customer_id, created_at, total_amount, payment_status, status')
+        .eq('status', 'delivered')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      // Group by customer_id, keep only the latest
+      const map: Record<string, any> = {};
+      for (const order of (data || [])) {
+        if (!map[order.customer_id]) {
+          map[order.customer_id] = order;
+        }
+      }
+      setLastOrders(map);
+    } catch {
+      // Silent fail
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -188,240 +189,25 @@ const Customers: React.FC = () => {
     setShowAddDialog(false);
   };
 
-  const handleEditCustomer = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!editingCustomer || !name.trim()) {
-      toast.error(t('customers.name'));
-      return;
-    }
-
-    setIsSaving(true);
-    const isManager = role === 'admin' || role === 'branch_admin';
-
-    if (isManager) {
-      try {
-        const { error } = await supabase
-          .from('customers')
-          .update({
-            name: name.trim(),
-            internal_name: internalName.trim() || null,
-            store_name: storeName.trim() || null,
-            phone: phone.trim() || null,
-            address: address.trim() || null,
-            wilaya: wilaya,
-            branch_id: branchId && branchId !== 'none' ? branchId : null,
-            latitude: latitude,
-            longitude: longitude,
-            location_type: locationType,
-            is_trusted: isTrusted,
-            trust_notes: trustNotes.trim() || null,
-            default_payment_type: defaultPaymentType,
-            default_price_subtype: defaultPriceSubtype,
-            sector_id: sectorId && sectorId !== 'none' ? sectorId : null,
-            sales_rep_name: salesRepName.trim() || null,
-            sales_rep_phone: salesRepPhone.trim() || null,
-          })
-          .eq('id', editingCustomer.id);
-
-        if (error) throw error;
-
-        // Handle debt changes
-        const currentDebt = editDebtSummary?.totalDebt || 0;
-        const newDebt = parseFloat(debtAmount) || 0;
-        const difference = newDebt - currentDebt;
-
-        if (difference > 0 && workerId) {
-          try {
-            await createDebt.mutateAsync({
-              customer_id: editingCustomer.id,
-              worker_id: workerId,
-              branch_id: activeBranch?.id || editingCustomer.branch_id || undefined,
-              total_amount: difference,
-              paid_amount: 0,
-              notes: 'تعديل دين من بيانات العميل',
-            });
-            toast.success(`تم إضافة دين بقيمة ${difference} دج`);
-          } catch (debtError: any) {
-            console.error('Error creating debt:', debtError);
-            toast.error('فشل في إنشاء الدين: ' + (debtError.message || ''));
-          }
-        } else if (difference < 0 && workerId) {
-          const absDiff = Math.abs(difference);
-          try {
-            const { data: activeDebts } = await supabase
-              .from('customer_debts')
-              .select('id, total_amount, paid_amount, remaining_amount')
-              .eq('customer_id', editingCustomer.id)
-              .eq('status', 'active')
-              .order('created_at', { ascending: true });
-
-            if (activeDebts && activeDebts.length > 0) {
-              let remainingPayment = absDiff;
-              for (const debt of activeDebts) {
-                if (remainingPayment <= 0) break;
-                const debtRemaining = Number(debt.remaining_amount) || (Number(debt.total_amount) - Number(debt.paid_amount));
-                const payAmount = Math.min(remainingPayment, debtRemaining);
-                if (payAmount > 0) {
-                  await updateDebtPayment.mutateAsync({
-                    debtId: debt.id,
-                    amount: payAmount,
-                    workerId,
-                    paymentMethod: 'cash',
-                    notes: 'تخفيض دين من بيانات العميل',
-                  });
-                  remainingPayment -= payAmount;
-                }
-              }
-              toast.success(`تم تخفيض الدين بقيمة ${absDiff} دج`);
-            }
-          } catch (debtError: any) {
-            console.error('Error updating debt:', debtError);
-            toast.error('فشل في تحديث الدين: ' + (debtError.message || ''));
-          }
-        }
-
-        toast.success(t('common.save') + ' ✓');
-        setShowEditDialog(false);
-        setEditingCustomer(null);
-        resetForm();
-        fetchData();
-      } catch (error: any) {
-        console.error('Error updating customer:', error);
-        toast.error(error.message);
-      } finally {
-        setIsSaving(false);
-      }
-    } else {
-      // Worker/Sales_rep case: Create update approval request
-      try {
-        const payload = {
-          name: name.trim(),
-          internal_name: internalName.trim() || null,
-          store_name: storeName.trim() || null,
-          phone: phone.trim() || null,
-          address: address.trim() || null,
-          wilaya: wilaya,
-          branch_id: branchId && branchId !== 'none' ? branchId : null,
-          latitude: latitude,
-          longitude: longitude,
-          location_type: locationType,
-          is_trusted: isTrusted,
-          trust_notes: trustNotes.trim() || null,
-          default_payment_type: defaultPaymentType,
-          default_price_subtype: defaultPriceSubtype,
-          sector_id: sectorId && sectorId !== 'none' ? sectorId : null,
-          sales_rep_name: salesRepName.trim() || null,
-          sales_rep_phone: salesRepPhone.trim() || null,
-          debtAmount: parseFloat(debtAmount) || 0,
-        };
-
-        const { error } = await supabase
-          .from('customer_approval_requests' as any)
-          .insert({
-            operation_type: 'update',
-            customer_id: editingCustomer.id,
-            payload,
-            requested_by: workerId,
-            branch_id: activeBranch?.id || editingCustomer.branch_id || null,
-            status: 'pending'
-          } as any);
-
-        if (error) throw error;
-
-        // Track the visit even if it's pending approval
-        trackVisit({
-          customerId: editingCustomer.id,
-          operationType: 'update_customer',
-          notes: `طلب تعديل زبون: ${name.trim()}`
-        });
-
-        toast.info('تم إرسال طلب تعديل العميل للمراجعة. بانتظار موافقة المدير.');
-        setShowEditDialog(false);
-        setEditingCustomer(null);
-        resetForm();
-      } catch (error: any) {
-        console.error('Error creating update request:', error);
-        toast.error(error.message);
-      } finally {
-        setIsSaving(false);
-      }
-    }
-  };
-
-  const handleLocationChange = (lat: number, lng: number, addressFromMap?: string) => {
-    setLatitude(lat);
-    setLongitude(lng);
-    if (addressFromMap) {
-      // Format address with dashes: حي الاستقلال - ماماش - مستغانم
-      const parts = addressFromMap.split(',').map(p => p.trim()).filter(Boolean);
-      const formattedAddress = parts.join(' - ');
-      setAddress(formattedAddress);
-    }
+  const handleCustomerUpdated = (updatedCustomer: Customer) => {
+    setCustomers(prev => prev.map(c => c.id === updatedCustomer.id ? updatedCustomer : c));
+    setShowEditDialog(false);
+    setEditingCustomer(null);
   };
 
   const openEditDialog = (customer: Customer) => {
     setEditingCustomer(customer);
-    setName(customer.name);
-    setInternalName(customer.internal_name || '');
-    setStoreName(customer.store_name || '');
-    setSectorId(customer.sector_id || '');
-    setPhone(customer.phone || '');
-    setAddress(customer.address || '');
-    setWilaya(customer.wilaya || DEFAULT_WILAYA);
-    setBranchId(customer.branch_id || '');
-    setLatitude(customer.latitude);
-    setLongitude(customer.longitude);
-    setIsTrusted(customer.is_trusted || false);
-    setTrustNotes(customer.trust_notes || '');
-    setDefaultPaymentType(customer.default_payment_type || 'without_invoice');
-    setDefaultPriceSubtype(customer.default_price_subtype || 'gros');
-    setSalesRepName(customer.sales_rep_name || '');
-    setSalesRepPhone(customer.sales_rep_phone || '');
-    setLocationType((customer.location_type as 'store' | 'warehouse' | 'office') || 'store');
-    setDebtAmount('0');
-    setShowMap(!!(customer.latitude && customer.longitude));
     setShowEditDialog(true);
-  };
-
-  const resetForm = () => {
-    setName('');
-    setInternalName('');
-    setStoreName('');
-    setSectorId('');
-    setPhone('');
-    setAddress('');
-    setWilaya(DEFAULT_WILAYA);
-    setBranchId('');
-    setLatitude(null);
-    setLongitude(null);
-    setShowMap(false);
-    setIsTrusted(false);
-    setTrustNotes('');
-    setDefaultPaymentType('without_invoice');
-    setDefaultPriceSubtype('gros');
-    setSalesRepName('');
-    setSalesRepPhone('');
-    setDebtAmount('');
-    setLocationType('store');
-    setSearchAddressQuery('');
   };
 
   const handleDeleteCustomer = async () => {
     if (!customerToDelete) return;
 
-    const isManager = role === 'admin' || role === 'branch_admin';
-
     if (isManager) {
       setIsDeleting(true);
       try {
-        const { error } = await supabase
-          .from('customers')
-          .delete()
-          .eq('id', customerToDelete.id);
-
+        const { error } = await supabase.from('customers').delete().eq('id', customerToDelete.id);
         if (error) throw error;
-
         toast.success(t('common.delete') + ' ✓');
         setCustomerToDelete(null);
         fetchData();
@@ -432,7 +218,6 @@ const Customers: React.FC = () => {
         setIsDeleting(false);
       }
     } else {
-      // Worker/Sales_rep case: Create delete approval request
       setIsDeleting(true);
       try {
         const { error } = await supabase
@@ -445,17 +230,9 @@ const Customers: React.FC = () => {
             branch_id: activeBranch?.id || customerToDelete.branch_id || null,
             status: 'pending'
           } as any);
-
         if (error) throw error;
-
-        // Track the visit even if it's pending approval
-        trackVisit({
-          customerId: customerToDelete.id,
-          operationType: 'delete_customer',
-          notes: `طلب حذف زبون: ${customerToDelete.name}`
-        });
-
-        toast.info('تم إرسال طلب حذف العميل للمراجعة. بانتظار موافقة المدير.');
+        trackVisit({ customerId: customerToDelete.id, operationType: 'delete_customer', notes: `طلب حذف زبون: ${customerToDelete.name}` });
+        toast.info('تم إرسال طلب حذف العميل للمراجعة.');
         setCustomerToDelete(null);
       } catch (error: any) {
         console.error('Error creating delete request:', error);
@@ -463,6 +240,29 @@ const Customers: React.FC = () => {
       } finally {
         setIsDeleting(false);
       }
+    }
+  };
+
+  // Fetch last order details
+  const openLastOrderDetails = async (customer: Customer) => {
+    const lastOrder = lastOrders[customer.id];
+    if (!lastOrder) {
+      toast.info('لا توجد طلبيات سابقة لهذا العميل');
+      return;
+    }
+    setLastOrderDialogCustomer(customer);
+    setLoadingLastOrder(true);
+    try {
+      const { data, error } = await supabase
+        .from('order_items')
+        .select('*, product:products(name)')
+        .eq('order_id', lastOrder.id);
+      if (error) throw error;
+      setLastOrderDetails({ ...lastOrder, items: data || [] });
+    } catch {
+      setLastOrderDetails(lastOrder);
+    } finally {
+      setLoadingLastOrder(false);
     }
   };
 
@@ -522,6 +322,7 @@ const Customers: React.FC = () => {
       <div className="space-y-3">
         {filteredCustomers.map((customer) => {
           const { percent, missing } = getCustomerCompletion(customer);
+          const lastOrder = lastOrders[customer.id];
           return (
           <Card key={customer.id}>
             <CardContent className="p-3">
@@ -580,6 +381,18 @@ const Customers: React.FC = () => {
                   {customer.address && (
                     <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{customer.address}</p>
                   )}
+                  {/* Last Order Date */}
+                  {lastOrder && (
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-0.5 border-primary/20">
+                        <Calendar className="w-2.5 h-2.5" />
+                        آخر طلبية: {format(new Date(lastOrder.created_at), 'dd MMM yyyy', { locale: ar })}
+                      </Badge>
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-0.5">
+                        {Number(lastOrder.total_amount || 0).toLocaleString()} دج
+                      </Badge>
+                    </div>
+                  )}
                 </div>
               </div>
               {/* Completion & Missing Fields */}
@@ -602,7 +415,7 @@ const Customers: React.FC = () => {
                   )}
                 </div>
               )}
-              {/* Action Buttons - compact grid */}
+              {/* Action Buttons */}
               <div className="flex items-center justify-end gap-0 mt-2 border-t pt-1.5 flex-wrap">
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
                   onClick={() => { setProfileCustomer(customer); setIsProfileOpen(true); }} title={t('customers.profile.title')}>
@@ -629,6 +442,11 @@ const Customers: React.FC = () => {
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
                   onClick={() => navigate('/orders', { state: { customerId: customer.id, action: 'delivery' } })} title={t('deliveries.title')}>
                   <Truck className="w-3.5 h-3.5" />
+                </Button>
+                {/* Last Order Details button */}
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                  onClick={() => openLastOrderDetails(customer)} title="آخر طلبية">
+                  <ShoppingBag className="w-3.5 h-3.5" />
                 </Button>
                 {customer.latitude && customer.longitude && (
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
@@ -749,341 +567,23 @@ const Customers: React.FC = () => {
         renderCustomersList()
       )}
 
-      {/* Add Customer Dialog - Using unified component */}
+      {/* Add Customer Dialog */}
       <AddCustomerDialog
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         onSuccess={handleCustomerAdded}
       />
 
-      {/* Edit Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={(open) => {
-        setShowEditDialog(open);
-        if (!open) {
-          setEditingCustomer(null);
-          resetForm();
-        }
-      }}>
-        <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto" dir="rtl">
-          <DialogHeader>
-            <DialogTitle>{t('customers.edit')}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleEditCustomer} className="space-y-4">
-            {/* --- Section 1: Basic Info & Contact (المعلومات الأساسية واتصال) --- */}
-            <div className="space-y-4 border-b pb-4">
-              <div className="space-y-2">
-                <Label>{t('customers.name')} *</Label>
-                <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={t('customers.name')}
-                  className="text-right"
-                  autoFocus
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>{t('common.phone')} الخاص بالزبون</Label>
-                <Input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder={t('common.phone')}
-                  className="text-right"
-                  dir="ltr"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Store className="w-4 h-4 text-primary" />
-                  اسم المحل
-                </Label>
-                <Input
-                  value={storeName}
-                  onChange={(e) => setStoreName(e.target.value)}
-                  placeholder="اسم المحل التجاري"
-                  className="text-right"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <UserCircle className="w-4 h-4 text-primary" />
-                  الاسم الداخلي (للفريق فقط)
-                </Label>
-                <Input
-                  value={internalName}
-                  onChange={(e) => setInternalName(e.target.value)}
-                  placeholder="اسم مختصر أو لقب داخلي..."
-                  className="text-right"
-                />
-                <p className="text-xs text-muted-foreground">هذا الاسم يظهر لفريق العمل فقط ولا يراه التاجر</p>
-              </div>
-
-              {/* Sales Representative */}
-              <div className="border rounded-lg p-3 space-y-2 bg-muted/20">
-                <Label className="flex items-center gap-1 text-sm font-semibold">
-                  <User className="w-3.5 h-3.5" />
-                  مسؤول المبيعات / المشتريات (عند الزبون)
-                </Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <Input
-                    value={salesRepName}
-                    onChange={(e) => setSalesRepName(e.target.value)}
-                    placeholder="الاسم"
-                    className="text-right text-sm"
-                  />
-                  <Input
-                    value={salesRepPhone}
-                    onChange={(e) => setSalesRepPhone(e.target.value)}
-                    placeholder="رقم الهاتف"
-                    className="text-right text-sm"
-                    dir="ltr"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* --- Section 2: Finance & Preferences (المالية والتفضيلات) --- */}
-            <div className="space-y-4 border-b pb-4">
-              <Label className="font-bold flex items-center gap-2 text-sm">
-                <CreditCard className="w-4 h-4 text-primary" />
-                الوضعية المالية والتفضيلات
-              </Label>
-
-              <div className="space-y-2">
-                <Label className="text-xs">الدين الحالي (دج)</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={debtAmount}
-                  onChange={(e) => setDebtAmount(e.target.value)}
-                  placeholder="0"
-                  className="text-right"
-                  dir="ltr"
-                />
-                {editDebtSummary && editDebtSummary.count > 0 && (
-                  <p className="text-xs text-muted-foreground">{editDebtSummary.count} سند(ات) نشطة</p>
-                )}
-              </div>
-
-              <div className="border rounded-lg p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-primary" />
-                    <Label htmlFor="trust-switch">عميل موثوق (البيع بالدين)</Label>
-                  </div>
-                  <Switch
-                    id="trust-switch"
-                    checked={isTrusted}
-                    onCheckedChange={setIsTrusted}
-                  />
-                </div>
-                {isTrusted && (
-                  <Input
-                    value={trustNotes}
-                    onChange={(e) => setTrustNotes(e.target.value)}
-                    placeholder="ملاحظات حول حالة الثقة (اختياري)"
-                    className="text-right"
-                  />
-                )}
-              </div>
-
-              <div className="border rounded-lg p-4 space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-sm">نوع الشراء الافتراضي</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      type="button"
-                      variant={defaultPaymentType === 'with_invoice' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setDefaultPaymentType('with_invoice')}
-                    >
-                      فاتورة 1
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={defaultPaymentType === 'without_invoice' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setDefaultPaymentType('without_invoice')}
-                    >
-                      فاتورة 2
-                    </Button>
-                  </div>
-                </div>
-                {defaultPaymentType === 'without_invoice' && (
-                  <div className="space-y-2">
-                    <Label className="text-sm">تسعير فاتورة 2</Label>
-                    <div className="grid grid-cols-3 gap-2">
-                      <Button
-                        type="button"
-                        variant={defaultPriceSubtype === 'super_gros' ? 'default' : 'outline'}
-                        size="sm"
-                        className="text-xs"
-                        onClick={() => setDefaultPriceSubtype('super_gros')}
-                      >
-                        سوبر غرو
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={defaultPriceSubtype === 'gros' ? 'default' : 'outline'}
-                        size="sm"
-                        className="text-xs"
-                        onClick={() => setDefaultPriceSubtype('gros')}
-                      >
-                        غرو
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={defaultPriceSubtype === 'retail' ? 'default' : 'outline'}
-                        size="sm"
-                        className="text-xs"
-                        onClick={() => setDefaultPriceSubtype('retail')}
-                      >
-                        تجزئة
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* --- Section 3: Location & Sector (الموقع والسكتور) --- */}
-            <div className="space-y-4">
-              <Label className="font-bold flex items-center gap-2 text-sm">
-                <MapPin className="w-4 h-4 text-primary" />
-                تفاصيل الموقع والسكتور
-              </Label>
-
-              {sectors.length > 0 && (
-                <div className="space-y-2">
-                  <Label>السكتور</Label>
-                  <Select value={sectorId} onValueChange={setSectorId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر السكتور" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">بدون سكتور</SelectItem>
-                      {sectors.map(s => (
-                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label>{t('customers.wilaya')}</Label>
-                <Select value={wilaya} onValueChange={setWilaya}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('customers.select_wilaya')} />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60">
-                    {ALGERIAN_WILAYAS.map((w) => (
-                      <SelectItem key={w.code} value={w.name}>
-                        {w.code} - {w.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {role === 'admin' && (
-                <div className="space-y-2">
-                  <Label>{t('nav.branches')}</Label>
-                  <Select value={branchId} onValueChange={setBranchId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('branches.select_branch')} />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-60">
-                      <SelectItem value="none">بدون فرع</SelectItem>
-                      {branches.map((branch) => (
-                        <SelectItem key={branch.id} value={branch.id}>
-                          {branch.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label>نوع الموقع</Label>
-                <div className="flex gap-2">
-                  <Button type="button" variant={locationType === 'store' ? 'default' : 'outline'} size="sm" className="flex-1" onClick={() => setLocationType('store')}>
-                    <Store className="w-4 h-4 ml-1" />
-                    محل
-                  </Button>
-                  <Button type="button" variant={locationType === 'warehouse' ? 'default' : 'outline'} size="sm" className="flex-1" onClick={() => setLocationType('warehouse')}>
-                    <Warehouse className="w-4 h-4 ml-1" />
-                    مخزن
-                  </Button>
-                  <Button type="button" variant={locationType === 'office' ? 'default' : 'outline'} size="sm" className="flex-1" onClick={() => setLocationType('office')}>
-                    <Building2 className="w-4 h-4 ml-1" />
-                    مكتب
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>{t('common.address')}</Label>
-                <Input
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder={t('common.address')}
-                  className="text-right"
-                />
-              </div>
-
-              {/* Location Map Section - GPS Feature */}
-              <Collapsible open={showMap} onOpenChange={setShowMap}>
-                <CollapsibleTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full justify-between border-primary/30 hover:bg-primary/5"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Navigation className="w-4 h-4 text-primary" />
-                      <span>تحديد الموقع على الخريطة (GPS)</span>
-                      {latitude && longitude && (
-                        <span className="text-xs bg-primary text-primary-foreground px-1.5 py-0.5 rounded">✓</span>
-                      )}
-                    </span>
-                    {showMap ? (
-                      <ChevronUp className="w-4 h-4" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4" />
-                    )}
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pt-3">
-                  <LazyLocationPicker
-                    latitude={latitude}
-                    longitude={longitude}
-                    onLocationChange={handleLocationChange}
-                    initialSearchQuery={searchAddressQuery}
-                    addressToSearch={address}
-                    defaultWilaya={activeBranch?.wilaya}
-                  />
-                </CollapsibleContent>
-              </Collapsible>
-
-            </div>
-
-            <Button type="submit" className="w-full" disabled={isSaving}>
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                  {t('common.loading')}
-                </>
-              ) : (
-                t('common.save')
-              )}
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Edit Customer Dialog - using unified component */}
+      <EditCustomerDialog
+        open={showEditDialog}
+        onOpenChange={(open) => {
+          setShowEditDialog(open);
+          if (!open) setEditingCustomer(null);
+        }}
+        customer={editingCustomer}
+        onSuccess={handleCustomerUpdated}
+      />
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!customerToDelete} onOpenChange={() => setCustomerToDelete(null)}>
@@ -1101,14 +601,7 @@ const Customers: React.FC = () => {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={isDeleting}
             >
-              {isDeleting ? (
-                <>
-                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                  {t('common.loading')}
-                </>
-              ) : (
-                t('common.delete')
-              )}
+              {isDeleting ? (<><Loader2 className="w-4 h-4 ml-2 animate-spin" />{t('common.loading')}</>) : t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1126,7 +619,75 @@ const Customers: React.FC = () => {
         open={isProfileOpen}
         onOpenChange={setIsProfileOpen}
       />
-    </div >
+
+      {/* Last Order Details Dialog */}
+      <Dialog open={!!lastOrderDialogCustomer} onOpenChange={(open) => { if (!open) { setLastOrderDialogCustomer(null); setLastOrderDetails(null); } }}>
+        <DialogContent className="max-w-sm max-h-[80vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-sm">
+              <ShoppingBag className="w-4 h-4 text-primary" />
+              آخر طلبية - {lastOrderDialogCustomer?.name}
+            </DialogTitle>
+          </DialogHeader>
+          {loadingLastOrder ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : lastOrderDetails ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="bg-muted/50 rounded-lg p-2">
+                  <p className="text-[10px] text-muted-foreground">التاريخ</p>
+                  <p className="font-semibold text-xs">{format(new Date(lastOrderDetails.created_at), 'dd MMM yyyy', { locale: ar })}</p>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-2">
+                  <p className="text-[10px] text-muted-foreground">المبلغ الإجمالي</p>
+                  <p className="font-semibold text-xs">{Number(lastOrderDetails.total_amount || 0).toLocaleString()} دج</p>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-2">
+                  <p className="text-[10px] text-muted-foreground">حالة الدفع</p>
+                  <p className="font-semibold text-xs">
+                    {lastOrderDetails.payment_status === 'cash' ? '💰 نقدي' :
+                      lastOrderDetails.payment_status === 'credit' ? '📋 دين' :
+                        lastOrderDetails.payment_status === 'check' ? '🏦 شيك' :
+                          lastOrderDetails.payment_status === 'partial' ? '⚖️ جزئي' : '⏳ معلق'}
+                  </p>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-2">
+                  <p className="text-[10px] text-muted-foreground">عدد المنتجات</p>
+                  <p className="font-semibold text-xs">{lastOrderDetails.items?.length || 0}</p>
+                </div>
+              </div>
+              {/* Items */}
+              {lastOrderDetails.items && lastOrderDetails.items.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold flex items-center gap-1">
+                    <Package className="w-3.5 h-3.5" />
+                    المنتجات
+                  </Label>
+                  {lastOrderDetails.items.map((item: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between bg-muted/30 rounded-lg px-2 py-1.5 text-xs">
+                      <span className="font-medium">{item.product?.name || 'منتج'}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">{item.quantity} وحدة</span>
+                        <span className="font-semibold">{Number(item.total_price || 0).toLocaleString()} دج</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-center text-muted-foreground py-4 text-sm">لا توجد طلبيات سابقة</p>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <ManageSectorsDialog
+        open={showSectorsDialog}
+        onOpenChange={setShowSectorsDialog}
+      />
+    </div>
   );
 };
 

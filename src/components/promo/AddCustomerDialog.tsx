@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UserPlus, Loader2, MapPin, ChevronDown, ChevronUp, Store, Building2, Warehouse, CreditCard, User, UserCircle, Shield, Languages } from 'lucide-react';
+import { UserPlus, Loader2, MapPin, ChevronDown, ChevronUp, Store, Building2, Warehouse, CreditCard, User, UserCircle, Shield, Languages, Plus, Trash2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { Customer } from '@/types/database';
@@ -32,6 +32,14 @@ interface SectorZone {
   sector_id: string;
 }
 
+interface SalesRep {
+  name: string;
+  phone: string;
+}
+
+// Detect if text is Arabic
+const isArabic = (text: string) => /[\u0600-\u06FF]/.test(text);
+
 const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
   open,
   onOpenChange,
@@ -46,10 +54,12 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
   const [nameFr, setNameFr] = useState('');
   const [translatingName, setTranslatingName] = useState(false);
   const [storeName, setStoreName] = useState('');
+  const [storeNameFr, setStoreNameFr] = useState('');
+  const [translatingStore, setTranslatingStore] = useState(false);
   const [sectorId, setSectorId] = useState('');
   const [zoneId, setZoneId] = useState('');
   const [zones, setZones] = useState<SectorZone[]>([]);
-  const [phone, setPhone] = useState('');
+  const [phones, setPhones] = useState<string[]>(['']);
   const [address, setAddress] = useState('');
   const [addressLoading, setAddressLoading] = useState(false);
   const [wilaya, setWilaya] = useState(DEFAULT_WILAYA);
@@ -60,8 +70,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
   const [searchAddressQuery, setSearchAddressQuery] = useState('');
   const [locationType, setLocationType] = useState<'store' | 'warehouse' | 'office'>('store');
   const [debtAmount, setDebtAmount] = useState('');
-  const [salesRepName, setSalesRepName] = useState('');
-  const [salesRepPhone, setSalesRepPhone] = useState('');
+  const [salesReps, setSalesReps] = useState<SalesRep[]>([{ name: '', phone: '' }]);
   const [internalName, setInternalName] = useState('');
   const [isTrusted, setIsTrusted] = useState(false);
   const [trustNotes, setTrustNotes] = useState('');
@@ -84,7 +93,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
   const completionPercent = useMemo(() => {
     const requiredFields = [
       !!name.trim(),
-      !!phone.trim(),
+      !!phones[0]?.trim(),
       !!storeName.trim(),
       !!(sectorId && sectorId !== 'none'),
       !!(latitude && longitude),
@@ -94,13 +103,13 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
       !!wilaya,
       !!nameFr.trim(),
       !!internalName.trim(),
-      !!salesRepName.trim(),
+      !!salesReps[0]?.name.trim(),
       !!zoneId,
     ];
     const total = requiredFields.length + optionalFields.length;
     const filled = [...requiredFields, ...optionalFields].filter(Boolean).length;
     return Math.round((filled / total) * 100);
-  }, [name, phone, storeName, sectorId, latitude, longitude, address, wilaya, nameFr, internalName, salesRepName, zoneId]);
+  }, [name, phones, storeName, sectorId, latitude, longitude, address, wilaya, nameFr, internalName, salesReps, zoneId]);
 
   useEffect(() => {
     if (open) {
@@ -108,10 +117,11 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
       setName('');
       setNameFr('');
       setStoreName('');
+      setStoreNameFr('');
       setSectorId('');
       setZoneId('');
       setZones([]);
-      setPhone('');
+      setPhones(['']);
       setAddress('');
       setWilaya(DEFAULT_WILAYA);
       setLatitude(null);
@@ -120,8 +130,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
       setSearchAddressQuery('');
       setLocationType('store');
       setDebtAmount('');
-      setSalesRepName('');
-      setSalesRepPhone('');
+      setSalesReps([{ name: '', phone: '' }]);
       setInternalName('');
       setIsTrusted(false);
       setTrustNotes('');
@@ -135,7 +144,6 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
             const lng = position.coords.longitude;
             setLatitude(lat);
             setLongitude(lng);
-            // Auto-fetch address from coordinates
             fetchAddressFromCoords(lat, lng);
           },
           (err) => {
@@ -150,7 +158,6 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
     }
   }, [open]);
 
-  // Auto-fetch address from coordinates
   const fetchAddressFromCoords = useCallback(async (lat: number, lng: number) => {
     setAddressLoading(true);
     try {
@@ -165,22 +172,48 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
     }
   }, []);
 
-  // Auto-translate Arabic name to French on blur
-  const handleNameBlur = async () => {
-    if (!name.trim() || nameFr.trim()) return;
-    setTranslatingName(true);
+  // Translate helper
+  const translateText = async (text: string, sourceLang: string, targetLang: string): Promise<string | null> => {
     try {
       const { data, error } = await supabase.functions.invoke('translate-text', {
-        body: { text: name.trim(), sourceLang: 'ar', targetLangs: ['fr'] },
+        body: { text: text.trim(), sourceLang, targetLangs: [targetLang] },
       });
-      if (!error && data?.translations?.fr) {
-        setNameFr(data.translations.fr);
+      if (!error && data?.translations?.[targetLang]) {
+        return data.translations[targetLang];
       }
-    } catch {
-      // Silent fail
-    } finally {
-      setTranslatingName(false);
+    } catch { /* Silent */ }
+    return null;
+  };
+
+  // Auto-translate Arabic name to French on blur (always re-translate)
+  const handleNameBlur = async () => {
+    if (!name.trim()) return;
+    setTranslatingName(true);
+    const result = await translateText(name.trim(), 'ar', 'fr');
+    if (result) setNameFr(result);
+    setTranslatingName(false);
+  };
+
+  // Auto-translate store name on blur (bidirectional)
+  const handleStoreNameBlur = async () => {
+    if (!storeName.trim()) return;
+    setTranslatingStore(true);
+    if (isArabic(storeName.trim())) {
+      // Arabic → French
+      const result = await translateText(storeName.trim(), 'ar', 'fr');
+      if (result) setStoreNameFr(result);
+    } else {
+      // French/English → Arabic
+      const result = await translateText(storeName.trim(), 'fr', 'ar');
+      if (result) setStoreNameFr(storeName.trim()); // keep original as "fr"
+      // Actually swap: the original is FR, translate to AR
+      const arResult = await translateText(storeName.trim(), 'fr', 'ar');
+      if (arResult) {
+        setStoreNameFr(storeName.trim()); // original goes to FR field
+        setStoreName(arResult); // Arabic version in main field
+      }
     }
+    setTranslatingStore(false);
   };
 
   const handleLocationChange = (lat: number, lng: number, addressFromMap?: string) => {
@@ -190,27 +223,44 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
       const parts = addressFromMap.split(',').map(p => p.trim()).filter(Boolean);
       setAddress(parts.join(' - '));
     } else {
-      // Use reverseGeocode for better address
       fetchAddressFromCoords(lat, lng);
     }
   };
+
+  // Phone helpers
+  const addPhone = () => setPhones(prev => [...prev, '']);
+  const removePhone = (idx: number) => setPhones(prev => prev.filter((_, i) => i !== idx));
+  const updatePhone = (idx: number, val: string) => setPhones(prev => prev.map((p, i) => i === idx ? val : p));
+
+  // Sales rep helpers
+  const addSalesRep = () => setSalesReps(prev => [...prev, { name: '', phone: '' }]);
+  const removeSalesRep = (idx: number) => setSalesReps(prev => prev.filter((_, i) => i !== idx));
+  const updateSalesRep = (idx: number, field: keyof SalesRep, val: string) =>
+    setSalesReps(prev => prev.map((r, i) => i === idx ? { ...r, [field]: val } : r));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!name.trim()) { toast.error('الرجاء إدخال اسم العميل'); return; }
-    if (!phone.trim()) { toast.error('الرجاء إدخال رقم هاتف العميل'); return; }
+    if (!phones[0]?.trim()) { toast.error('الرجاء إدخال رقم هاتف العميل'); return; }
     if (!storeName.trim()) { toast.error('الرجاء إدخال اسم المحل'); return; }
     if (!sectorId || sectorId === 'none') { toast.error('الرجاء اختيار السكتور'); return; }
     if (!latitude || !longitude) { toast.error('يرجى تحديد الموقع الجغرافي على الخريطة'); return; }
 
     setIsLoading(true);
     try {
+      // Combine phones with separator
+      const phoneStr = phones.filter(p => p.trim()).join(' / ');
+      // Combine sales reps
+      const repsNames = salesReps.filter(r => r.name.trim()).map(r => r.name.trim()).join(' / ');
+      const repsPhones = salesReps.filter(r => r.phone.trim()).map(r => r.phone.trim()).join(' / ');
+
       const payload = {
         name: name.trim(),
         name_fr: nameFr.trim() || null,
         store_name: storeName.trim() || null,
-        phone: phone.trim() || null,
+        store_name_fr: storeNameFr.trim() || null,
+        phone: phoneStr || null,
         address: address.trim() || null,
         wilaya,
         branch_id: effectiveBranchId,
@@ -219,8 +269,8 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
         location_type: locationType,
         sector_id: sectorId,
         zone_id: zoneId || null,
-        sales_rep_name: salesRepName.trim() || null,
-        sales_rep_phone: salesRepPhone.trim() || null,
+        sales_rep_name: repsNames || null,
+        sales_rep_phone: repsPhones || null,
         internal_name: internalName.trim() || null,
         is_trusted: isTrusted,
         trust_notes: trustNotes.trim() || null,
@@ -288,14 +338,36 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
               <Input id="customer-name-fr" value={nameFr} onChange={(e) => setNameFr(e.target.value)} placeholder="Nom du client (Français)" className="text-left" dir="ltr" />
             </div>
 
+            {/* Phone numbers - multiple */}
             <div className="space-y-2">
-              <Label htmlFor="customer-phone">{t('common.phone')} الخاص بالزبون *</Label>
-              <Input id="customer-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t('common.phone')} className="text-right" dir="ltr" required />
+              <Label>{t('common.phone')} الخاص بالزبون *</Label>
+              {phones.map((ph, idx) => (
+                <div key={idx} className="flex gap-1.5">
+                  <Input type="tel" value={ph} onChange={(e) => updatePhone(idx, e.target.value)} placeholder={`هاتف ${idx + 1}`} className="text-right flex-1" dir="ltr" required={idx === 0} />
+                  {idx > 0 && (
+                    <Button type="button" variant="ghost" size="icon" className="h-10 w-10 text-destructive shrink-0" onClick={() => removePhone(idx)}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button type="button" variant="outline" size="sm" className="w-full text-xs" onClick={addPhone}>
+                <Plus className="w-3 h-3 ml-1" /> إضافة رقم هاتف آخر
+              </Button>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="store-name">اسم المحل *</Label>
-              <Input id="store-name" value={storeName} onChange={(e) => setStoreName(e.target.value)} placeholder="اسم المحل التجاري" className="text-right" required />
+              <Input id="store-name" value={storeName} onChange={(e) => setStoreName(e.target.value)} onBlur={handleStoreNameBlur} placeholder="اسم المحل (عربي أو فرنسي)" className="text-right" required />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="store-name-fr" className="flex items-center gap-1">
+                <Languages className="w-3.5 h-3.5" />
+                اسم المحل بالفرنسية
+                {translatingStore && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+              </Label>
+              <Input id="store-name-fr" value={storeNameFr} onChange={(e) => setStoreNameFr(e.target.value)} placeholder="Nom du magasin (Français)" className="text-left" dir="ltr" />
             </div>
 
             <div className="space-y-2">
@@ -307,15 +379,31 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
               <p className="text-xs text-muted-foreground">هذا الاسم يظهر لفريق العمل فقط ولا يراه التاجر</p>
             </div>
 
+            {/* Sales Representatives - multiple */}
             <div className="border rounded-lg p-3 space-y-2 bg-muted/20">
               <Label className="flex items-center gap-1 text-sm font-semibold">
                 <User className="w-3.5 h-3.5" />
                 مسؤول المبيعات / المشتريات (عند الزبون)
               </Label>
-              <div className="grid grid-cols-2 gap-2">
-                <Input value={salesRepName} onChange={(e) => setSalesRepName(e.target.value)} placeholder="الاسم" className="text-right text-sm" />
-                <Input value={salesRepPhone} onChange={(e) => setSalesRepPhone(e.target.value)} placeholder="رقم الهاتف" className="text-right text-sm" dir="ltr" />
-              </div>
+              {salesReps.map((rep, idx) => (
+                <div key={idx} className="space-y-1.5">
+                  {idx > 0 && <div className="border-t pt-1.5" />}
+                  <div className="flex gap-1.5">
+                    <div className="grid grid-cols-2 gap-1.5 flex-1">
+                      <Input value={rep.name} onChange={(e) => updateSalesRep(idx, 'name', e.target.value)} placeholder="الاسم" className="text-right text-sm" />
+                      <Input value={rep.phone} onChange={(e) => updateSalesRep(idx, 'phone', e.target.value)} placeholder="رقم الهاتف" className="text-right text-sm" dir="ltr" />
+                    </div>
+                    {idx > 0 && (
+                      <Button type="button" variant="ghost" size="icon" className="h-10 w-10 text-destructive shrink-0" onClick={() => removeSalesRep(idx)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              <Button type="button" variant="outline" size="sm" className="w-full text-xs" onClick={addSalesRep}>
+                <Plus className="w-3 h-3 ml-1" /> إضافة مسؤول آخر
+              </Button>
             </div>
           </div>
 
@@ -387,7 +475,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
               {!sectorId && <p className="text-xs text-destructive">يجب اختيار سكتور</p>}
             </div>
 
-            {/* Zone selection - appears when sector has zones */}
+            {/* Zone selection */}
             {zones.length > 0 && (
               <div className="space-y-2">
                 <Label>المنطقة داخل السكتور</Label>
