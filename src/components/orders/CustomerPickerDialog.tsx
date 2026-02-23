@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, UserPlus, User, ChevronLeft, Loader2, X } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Search, UserPlus, User, ChevronLeft, ChevronDown, ChevronUp, Loader2, X } from 'lucide-react';
 import { Customer, Sector } from '@/types/database';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -37,9 +38,22 @@ const CustomerPickerDialog: React.FC<CustomerPickerDialogProps> = ({
 }) => {
   const { t, dir } = useLanguage();
   const [search, setSearch] = useState('');
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+
+  const toggleGroup = (key: string) => {
+    setOpenGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   React.useEffect(() => {
-    if (open) setSearch('');
+    if (open) {
+      setSearch('');
+      setOpenGroups(new Set());
+    }
   }, [open]);
 
   const filteredCustomers = useMemo(() => {
@@ -163,59 +177,60 @@ const CustomerPickerDialog: React.FC<CustomerPickerDialogProps> = ({
             </div>
           ) : (
             <div>
-              {groupedCustomers.map((group) => (
-                <div key={group.sectorId || 'no-sector'}>
-                  {/* Sector header */}
-                  <div className="sticky top-0 z-10 bg-muted/80 backdrop-blur-sm px-4 py-2 border-b border-t">
-                    <p className="text-xs font-bold text-primary">
-                      {group.sectorName} ({group.customers.length})
-                    </p>
-                  </div>
-                  {/* Customers in this sector */}
-                  <div className="divide-y divide-border">
-                    {group.customers.map((customer) => {
-                      const isSelected = selectedCustomerId === customer.id;
-                      const sectorName = getSectorName(customer.sector_id);
-                      const subtitle = [customer.store_name, customer.phone].filter(Boolean).join(' • ');
-                      return (
-                        <button
-                          key={customer.id}
-                          className={cn(
-                            "w-full flex items-center gap-3 px-4 py-3 text-right transition-colors",
-                            "hover:bg-accent/50 active:bg-accent",
-                            isSelected && "bg-primary/5"
-                          )}
-                          onClick={() => {
-                            onSelect(customer);
-                            onOpenChange(false);
-                          }}
-                        >
-                          {/* Arrow */}
-                          <ChevronLeft className="w-4 h-4 text-muted-foreground shrink-0" />
-
-                          {/* Info */}
-                          <div className="flex-1 min-w-0 text-right">
-                            <div className="flex items-center gap-2 justify-end">
-                              <p className="font-bold text-sm truncate">{customer.name}</p>
-                            </div>
-                            {subtitle && (
-                              <p className="text-xs text-muted-foreground truncate mt-0.5">{subtitle}</p>
-                            )}
-                          </div>
-
-                          {/* Avatar */}
-                          <div className={cn(
-                            "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
-                            isSelected ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                          )}>
-                            <User className="w-5 h-5" />
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
+              {groupedCustomers.map((group) => {
+                const groupKey = group.sectorId || 'no-sector';
+                const isOpen = search.trim() ? true : openGroups.has(groupKey);
+                return (
+                  <Collapsible key={groupKey} open={isOpen} onOpenChange={() => toggleGroup(groupKey)}>
+                    {/* Sector header */}
+                    <CollapsibleTrigger asChild>
+                      <button className="sticky top-0 z-10 w-full bg-muted/80 backdrop-blur-sm px-4 py-2 border-b border-t flex items-center justify-between">
+                        <p className="text-xs font-bold text-primary">
+                          {group.sectorName} ({group.customers.length})
+                        </p>
+                        {isOpen ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                      </button>
+                    </CollapsibleTrigger>
+                    {/* Customers in this sector */}
+                    <CollapsibleContent>
+                      <div className="divide-y divide-border">
+                        {group.customers.map((customer) => {
+                          const isSelected = selectedCustomerId === customer.id;
+                          const subtitle = [customer.store_name, customer.phone].filter(Boolean).join(' • ');
+                          return (
+                            <button
+                              key={customer.id}
+                              className={cn(
+                                "w-full flex items-center gap-3 px-4 py-3 text-right transition-colors",
+                                "hover:bg-accent/50 active:bg-accent",
+                                isSelected && "bg-primary/5"
+                              )}
+                              onClick={() => {
+                                onSelect(customer);
+                                onOpenChange(false);
+                              }}
+                            >
+                              <ChevronLeft className="w-4 h-4 text-muted-foreground shrink-0" />
+                              <div className="flex-1 min-w-0 text-right">
+                                <p className="font-bold text-sm truncate">{customer.name}</p>
+                                {subtitle && (
+                                  <p className="text-xs text-muted-foreground truncate mt-0.5">{subtitle}</p>
+                                )}
+                              </div>
+                              <div className={cn(
+                                "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
+                                isSelected ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                              )}>
+                                <User className="w-5 h-5" />
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                );
+              })}
             </div>
           )}
         </ScrollArea>
