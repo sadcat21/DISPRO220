@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Calendar, User, Receipt, Banknote, ArrowDownCircle, Wallet, CreditCard, TrendingDown, ArrowUpCircle, Coins, AlertTriangle, Pencil, Package, ShoppingBag, Calculator } from 'lucide-react';
+import { Loader2, Calendar, User, Receipt, Banknote, ArrowDownCircle, Wallet, CreditCard, TrendingDown, ArrowUpCircle, Coins, AlertTriangle, Pencil, Package, ShoppingBag, Calculator, Gift, Tag } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useSessionItems, AccountingSession, AccountingSessionItem } from '@/hooks/useAccountingSessions';
 import { useCreateWorkerDebt } from '@/hooks/useWorkerDebts';
