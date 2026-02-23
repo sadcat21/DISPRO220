@@ -23,35 +23,30 @@ export interface DebtCollectionBreakdown {
   receipt: number;
 }
 
-export interface SessionCalculations {
-  // 1. Total sales
-  totalSales: number;
+export interface PromoTrackingItem {
+  productName: string;
+  productId: string;
+  quantitySold: number;
+  giftQuantity: number;
+  offerName: string;
+}
 
-  // 2. Breakdown: paid vs new debts
+export interface SessionCalculations {
+  totalSales: number;
   totalPaid: number;
   newDebts: number;
-
-  // 3. Invoice 1 payments (facture)
   invoice1: PaymentMethodBreakdown & { total: number };
-
-  // 4. Invoice 2 payments (sans facture) - always cash
   invoice2: { total: number; cash: number };
-
-  // 5. Debt collections breakdown
   debtCollections: DebtCollectionBreakdown;
-
-  // 6. Physical cash total (Invoice2 cash + Invoice1 espaceCash + debt collection cash - cash expenses)
   physicalCash: number;
-
-  // 7. Expenses (all)
   expenses: number;
-
-  // 8. Cash expenses only (subtracted from physical cash)
   cashExpenses: number;
-
-  // 9. Sales debt collections breakdown (new sales vs old debt)
   salesDebtCollectionsCash: number;
   salesDebtCollectionsNonCash: number;
+  // NEW: gift offer monetary value
+  giftOfferValue: number;
+  // NEW: promo tracking
+  promoTracking: PromoTrackingItem[];
 }
 
 export const useSessionCalculations = (params: SessionCalcParams | null) => {
@@ -62,26 +57,24 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
       if (!params) return getEmptyCalculations();
 
       const { workerId, periodStart, periodEnd } = params;
-      // Support both date-only (yyyy-MM-dd) and datetime-local (yyyy-MM-ddTHH:mm) formats
-      // Append Algeria timezone (+01:00) for proper comparison
       const toTimestampTz = (v: string, isEnd: boolean) => {
-        if (v.includes('+') || v.includes('Z')) return v; // already has timezone
+        if (v.includes('+') || v.includes('Z')) return v;
         if (v.includes('T')) return v + ':00+01:00';
         return isEnd ? v + 'T23:59:59+01:00' : v + 'T00:00:00+01:00';
       };
       const periodStartTz = toTimestampTz(periodStart, false);
       const periodEndTz = toTimestampTz(periodEnd, true);
 
-      // 1. Fetch delivered orders with their items and product prices
+      // 1. Fetch delivered orders with items
       const { data: orders } = await supabase
         .from('orders')
-        .select('id, total_amount, payment_status, payment_type, invoice_payment_method, partial_amount, order_items(quantity, unit_price, total_price, product:products(price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box))')
+        .select('id, total_amount, payment_status, payment_type, invoice_payment_method, partial_amount, order_items(quantity, unit_price, total_price, gift_quantity, gift_offer_id, product_id, product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box))')
         .eq('assigned_worker_id', workerId)
         .eq('status', 'delivered')
         .gte('updated_at', periodStartTz)
         .lte('updated_at', periodEndTz);
 
-      // 2. Fetch debt payments (collections) in period
+      // 2. Fetch debt payments
       const { data: debtPayments } = await supabase
         .from('debt_payments')
         .select('amount, payment_method')
@@ -89,7 +82,7 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
         .gte('collected_at', periodStartTz)
         .lte('collected_at', periodEndTz);
 
-      // 3. Fetch expenses with payment_method
+      // 3. Fetch expenses
       const { data: expenseData } = await supabase
         .from('expenses')
         .select('amount, payment_method, category:expense_categories(name)')
@@ -98,7 +91,26 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
         .gte('expense_date', periodStart)
         .lte('expense_date', periodEnd);
 
-      // Helper: calculate box price from product data
+      // 4. Fetch offer names for gift items
+      const giftOfferIds = new Set<string>();
+      (orders || []).forEach(o => {
+        (o.order_items || []).forEach((item: any) => {
+          if (item.gift_offer_id && item.gift_quantity > 0) {
+            giftOfferIds.add(item.gift_offer_id);
+          }
+        });
+      });
+
+      let offerNamesMap: Record<string, string> = {};
+      if (giftOfferIds.size > 0) {
+        const { data: offers } = await supabase
+          .from('product_offers')
+          .select('id, name')
+          .in('id', Array.from(giftOfferIds));
+        (offers || []).forEach(o => { offerNamesMap[o.id] = o.name; });
+      }
+
+      // Helpers
       const calcBoxPrice = (p: any): number => {
         const rawPrice = Number(p?.price_gros || p?.price_super_gros || p?.price_retail || p?.price_invoice || 0);
         if (!rawPrice) return 0;
@@ -108,49 +120,70 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
         return rawPrice;
       };
 
-      // Helper: calculate order total from items when total_amount is 0
       const calcOrderTotal = (order: any): number => {
         const storedTotal = Number(order.total_amount || 0);
         if (storedTotal > 0) return storedTotal;
-        // Calculate from order_items
         const items = order.order_items || [];
         return items.reduce((sum: number, item: any) => {
           const itemTotal = Number(item.total_price || 0);
           if (itemTotal > 0) return sum + itemTotal;
-          // Calculate from product price
           const boxPrice = calcBoxPrice(item.product);
           return sum + (Number(item.quantity || 0) * boxPrice);
         }, 0);
       };
 
-      // === Calculate sales breakdown ===
+      // === Calculate ===
       let totalSales = 0;
       let totalPaid = 0;
       let newDebts = 0;
+      let giftOfferValue = 0;
 
       const invoice1: PaymentMethodBreakdown & { total: number } = {
         total: 0, check: 0, transfer: 0, receipt: 0, espaceCash: 0,
       };
       const invoice2 = { total: 0, cash: 0 };
 
+      // Promo tracking aggregation: key = productId_offerId
+      const promoMap: Record<string, PromoTrackingItem> = {};
+
       for (const order of (orders || [])) {
         const totalAmount = calcOrderTotal(order);
         totalSales += totalAmount;
 
-        // Determine paid amount for this order
         let paidAmount = 0;
         const paymentStatus = order.payment_status || 'pending';
-
         if (paymentStatus === 'cash' || paymentStatus === 'check') {
           paidAmount = totalAmount;
         } else if (paymentStatus === 'partial') {
           paidAmount = Number(order.partial_amount || 0);
         }
-        // credit or pending = 0
 
         const debtAmount = totalAmount - paidAmount;
         totalPaid += paidAmount;
         newDebts += debtAmount;
+
+        // Calculate gift value and promo tracking from items
+        for (const item of (order.order_items || [])) {
+          const giftQty = Number(item.gift_quantity || 0);
+          if (giftQty > 0) {
+            const boxPrice = calcBoxPrice(item.product);
+            giftOfferValue += giftQty * boxPrice;
+
+            const offerId = item.gift_offer_id || 'unknown';
+            const key = `${item.product_id}_${offerId}`;
+            if (!promoMap[key]) {
+              promoMap[key] = {
+                productName: (item as any).product?.name || '',
+                productId: item.product_id,
+                quantitySold: 0,
+                giftQuantity: 0,
+                offerName: offerNamesMap[offerId] || '',
+              };
+            }
+            promoMap[key].quantitySold += Number(item.quantity || 0);
+            promoMap[key].giftQuantity += giftQty;
+          }
+        }
 
         if (paidAmount <= 0) continue;
 
@@ -158,9 +191,7 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
         const invoiceMethod = order.invoice_payment_method;
 
         if (paymentType === 'with_invoice') {
-          // Invoice 1
           invoice1.total += paidAmount;
-
           if (paymentStatus === 'check' || invoiceMethod === 'check') {
             invoice1.check += paidAmount;
           } else if (invoiceMethod === 'transfer') {
@@ -170,44 +201,31 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
           } else if (invoiceMethod === 'cash') {
             invoice1.espaceCash += paidAmount;
           } else {
-            // Default: if no method specified, treat as espace cash
             invoice1.espaceCash += paidAmount;
           }
         } else {
-          // Invoice 2 - always cash
           invoice2.total += paidAmount;
           invoice2.cash += paidAmount;
         }
       }
 
-      // === Debt collections breakdown ===
+      // Debt collections
       const debtCollections: DebtCollectionBreakdown = {
         total: 0, cash: 0, check: 0, transfer: 0, receipt: 0,
       };
-
       for (const dp of (debtPayments || [])) {
         const amount = Number(dp.amount || 0);
         debtCollections.total += amount;
-
         const method = dp.payment_method || 'cash';
-        if (method === 'cash') {
-          debtCollections.cash += amount;
-        } else if (method === 'check') {
-          debtCollections.check += amount;
-        } else if (method === 'transfer') {
-          debtCollections.transfer += amount;
-        } else if (method === 'receipt') {
-          debtCollections.receipt += amount;
-        } else {
-          debtCollections.cash += amount;
-        }
+        if (method === 'cash') debtCollections.cash += amount;
+        else if (method === 'check') debtCollections.check += amount;
+        else if (method === 'transfer') debtCollections.transfer += amount;
+        else if (method === 'receipt') debtCollections.receipt += amount;
+        else debtCollections.cash += amount;
       }
 
-      // === Physical cash = Invoice2 cash + Invoice1 espace cash + debt collections cash - cash expenses ===
-      // === Expenses ===
+      // Expenses
       const expenses = expenseData?.reduce((sum, e) => sum + Number(e.amount || 0), 0) || 0;
-      
-      // Cash expenses: only expenses paid by cash (not card)
       const cashExpenses = expenseData?.reduce((sum, e) => {
         const paymentMethod = (e as any).payment_method || 'cash';
         if (paymentMethod === 'cash') return sum + Number(e.amount || 0);
@@ -228,6 +246,8 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
         cashExpenses,
         salesDebtCollectionsCash: debtCollections.cash,
         salesDebtCollectionsNonCash: debtCollections.total - debtCollections.cash,
+        giftOfferValue,
+        promoTracking: Object.values(promoMap).sort((a, b) => b.giftQuantity - a.giftQuantity),
       };
     },
     enabled: !!params,
@@ -247,5 +267,7 @@ function getEmptyCalculations(): SessionCalculations {
     cashExpenses: 0,
     salesDebtCollectionsCash: 0,
     salesDebtCollectionsNonCash: 0,
+    giftOfferValue: 0,
+    promoTracking: [],
   };
 }

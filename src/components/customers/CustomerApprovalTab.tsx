@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -42,6 +43,7 @@ interface SectorZone {
 const CustomerApprovalTab: React.FC = () => {
     const { workerId, role, activeBranch } = useAuth();
     const { t } = useLanguage();
+    const queryClient = useQueryClient();
     const createDebt = useCreateDebt();
     const updateDebtPayment = useUpdateDebtPayment();
     const { trackVisit } = useTrackVisit();
@@ -176,6 +178,10 @@ const CustomerApprovalTab: React.FC = () => {
 
             setReviewRequest(null);
             fetchRequests();
+            // Real-time invalidation
+            queryClient.invalidateQueries({ queryKey: ['customers'] });
+            queryClient.invalidateQueries({ queryKey: ['customer-approval-requests'] });
+            queryClient.invalidateQueries({ queryKey: ['worker-request-summaries'] });
         } catch (error: any) {
             console.error('Error approving request:', error);
             toast.error('فشل في تنفيذ الموافقة: ' + error.message);
@@ -195,6 +201,7 @@ const CustomerApprovalTab: React.FC = () => {
             toast.info('تم رفض الطلب');
             setReviewRequest(null);
             fetchRequests();
+            queryClient.invalidateQueries({ queryKey: ['worker-request-summaries'] });
         } catch (error: any) {
             toast.error('فشل في رفض الطلب');
         } finally {

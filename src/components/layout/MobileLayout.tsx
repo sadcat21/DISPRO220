@@ -16,7 +16,7 @@ import BranchSelectionDialog from '@/components/auth/BranchSelectionDialog';
 import OffersNotification from '@/components/offers/OffersNotification';
 import StockAlertsNotification from '@/components/stock/StockAlertsNotification';
 import TasksPopover from '@/components/tasks/TasksPopover';
-import RequestsPopover from '@/components/tasks/RequestsPopover';
+import WorkerRequestsPopover from '@/components/tasks/WorkerRequestsPopover';
 import DebtCollectionsPopover from '@/components/debts/DebtCollectionsPopover';
 import SectorCustomersPopover from '@/components/sectors/SectorCustomersPopover';
 import ReceiptModificationsNotification from '@/components/printing/ReceiptModificationsNotification';
@@ -108,7 +108,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
           </div>
           
           <div className="flex items-center gap-1 shrink-0">
-            <RequestsPopover />
+            <WorkerRequestsPopover />
             <TasksPopover />
             <SectorCustomersPopover />
             <DebtCollectionsPopover />

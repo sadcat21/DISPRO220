@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Calculator, Receipt, Banknote, CreditCard, ArrowDownCircle, ArrowUpCircle, Wallet, TrendingDown, Coins, AlertTriangle, Package, ShoppingBag, RefreshCw } from 'lucide-react';
+import { Loader2, Calculator, Receipt, Banknote, CreditCard, ArrowDownCircle, ArrowUpCircle, Wallet, TrendingDown, Coins, AlertTriangle, Package, ShoppingBag, RefreshCw, Gift, Tag } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSessionCalculations, SessionCalculations } from '@/hooks/useSessionCalculations';
@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import ProductStockSummary from './ProductStockSummary';
 import SalesDetailsSummary from './SalesDetailsSummary';
+import PromoTrackingSummary from './PromoTrackingSummary';
 
 interface CreateSessionDialogProps {
   open: boolean;
@@ -414,7 +415,16 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                   </div>
                 </div>
 
-                {/* === Section 7: Expenses === */}
+                {/* === Section 7: Gift Offer Value === */}
+                <SectionCard
+                  icon={<Gift className="w-4 h-4 text-purple-600" />}
+                  title="القيمة المالية لهدايا العروض"
+                  value={calc.giftOfferValue}
+                  color="purple"
+                  small
+                />
+
+                {/* === Section 8: Expenses === */}
                 <SectionCard
                   icon={<CreditCard className="w-4 h-4 text-muted-foreground" />}
                   title={t('accounting.expenses')}
@@ -464,6 +474,19 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                     periodEnd={periodEnd}
                   />
                 </div>
+                {/* Promo Tracking */}
+                {calc && calc.promoTracking.length > 0 && (
+                  <div className="border-2 rounded-xl p-3.5">
+                    <SectionDividerWithIcon
+                      icon={<Tag className="w-4 h-4 text-purple-600" />}
+                      label="تتبع العروض"
+                    />
+                    <PromoTrackingSummary
+                      items={calc.promoTracking}
+                      totalGiftValue={calc.giftOfferValue}
+                    />
+                  </div>
+                )}
               </>
             )}
 
@@ -526,6 +549,7 @@ const SectionCard: React.FC<{
       color === 'green' ? 'text-green-600' : 
       color === 'red' ? 'text-destructive' : 
       color === 'orange' ? 'text-orange-600' : 
+      color === 'purple' ? 'text-purple-600' :
       'text-primary'
     }`}>
       {fmt(value)} DA
