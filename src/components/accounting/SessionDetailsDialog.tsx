@@ -235,6 +235,17 @@ const SessionDetailsDialog: React.FC<SessionDetailsDialogProps> = ({ open, onOpe
           <span className="ms-auto font-bold text-sm">{fmt(coinAmountItem.actual)} DA</span>
         </div>
 
+        {/* Gift Offer Value */}
+        {liveCalc && liveCalc.giftOfferValue > 0 && (
+          <div className="border-2 border-purple-200 dark:border-purple-800 rounded-xl p-3.5 flex items-center gap-3 bg-purple-50/50 dark:bg-purple-950/20">
+            <div className="w-7 h-7 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+              <Gift className="w-4 h-4 text-purple-600" />
+            </div>
+            <span className="text-sm font-semibold">القيمة المالية للهدايا</span>
+            <span className="ms-auto font-bold text-sm text-purple-600">{fmt(liveCalc.giftOfferValue)} DA</span>
+          </div>
+        )}
+
         {/* Expenses */}
         <ValueCard icon={<CreditCard className="w-4 h-4 text-muted-foreground" />} title={t('accounting.expenses')} value={expenses.expected} small />
       </div>
