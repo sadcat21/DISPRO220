@@ -21,7 +21,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCreateOrder, useMyOrders } from '@/hooks/useOrders';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
-import { Customer, Product, PaymentType, PriceSubType } from '@/types/database';
+import { Customer, Product, PaymentType, PriceSubType, Sector } from '@/types/database';
 import { InvoicePaymentMethod, INVOICE_PAYMENT_METHODS } from '@/types/stamp';
 import { useActiveStampTiers, calculateStampAmount } from '@/hooks/useStampTiers';
 import ProductQuantityDialog, { PerItemPricing } from './ProductQuantityDialog';
@@ -65,6 +65,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [shortageProductIds, setShortageProductIds] = useState<Set<string>>(new Set());
+  const [sectors, setSectors] = useState<Sector[]>([]);
   const [offerProductIds, setOfferProductIds] = useState<Set<string>>(new Set());
   const [warehouseStockProductIds, setWarehouseStockProductIds] = useState<Set<string>>(new Set());
 
@@ -110,7 +111,12 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
       let customersQuery = supabase.from('customers').select('*').eq('status', 'active').order('name');
 
       if (activeBranch) {
-        customersQuery = customersQuery.eq('branch_id', activeBranch.id);
+        customersQuery = customersQuery.or(`branch_id.eq.${activeBranch.id},branch_id.is.null`);
+      }
+
+      let sectorsQuery = supabase.from('sectors').select('*').order('name');
+      if (activeBranch) {
+        sectorsQuery = sectorsQuery.eq('branch_id', activeBranch.id);
       }
 
       let shortageQuery = supabase
@@ -132,7 +138,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
         warehouseStockQuery = warehouseStockQuery.eq('branch_id', activeBranch.id);
       }
 
-      const [customersRes, productsRes, shortageRes, offersRes, warehouseStockRes] = await Promise.all([
+      const [customersRes, productsRes, shortageRes, offersRes, warehouseStockRes, sectorsRes] = await Promise.all([
         customersQuery,
         supabase.from('products').select('*').eq('is_active', true).order('name'),
         shortageQuery,
@@ -141,6 +147,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
           .or(`start_date.is.null,start_date.lte.${today}`)
           .or(`end_date.is.null,end_date.gte.${today}`),
         warehouseStockQuery,
+        sectorsQuery,
       ]);
 
       if (customersRes.error) throw customersRes.error;
@@ -148,6 +155,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
 
       setCustomers(customersRes.data || []);
       setProducts(productsRes.data || []);
+      setSectors((sectorsRes.data || []) as Sector[]);
       setShortageProductIds(new Set((shortageRes.data || []).map(s => s.product_id)));
       setOfferProductIds(new Set((offersRes.data || []).map(o => o.product_id)));
       setWarehouseStockProductIds(new Set((warehouseStockRes.data || []).map(s => s.product_id)));
@@ -433,6 +441,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                   open={customerDropdownOpen}
                   onOpenChange={setCustomerDropdownOpen}
                   customers={customers}
+                  sectors={sectors}
                   isLoading={isLoadingData}
                   selectedCustomerId={selectedCustomerId}
                   onSelect={(customer) => {

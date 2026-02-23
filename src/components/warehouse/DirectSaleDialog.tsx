@@ -20,7 +20,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Customer, Product, PaymentType, PriceSubType } from '@/types/database';
+import { Customer, Product, PaymentType, PriceSubType, Sector } from '@/types/database';
 import { InvoicePaymentMethod } from '@/types/stamp';
 import { useActiveStampTiers, calculateStampAmount } from '@/hooks/useStampTiers';
 import { useCreateDebt } from '@/hooks/useCustomerDebts';
@@ -84,6 +84,7 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
   // Pricing groups
   const [pricingGroupMappings, setPricingGroupMappings] = useState<{ group_id: string; product_id: string }[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [sectors, setSectors] = useState<Sector[]>([]);
 
   // Dialogs
   const [customerDropdownOpen, setCustomerDropdownOpen] = useState(false);
@@ -123,15 +124,20 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
     setIsLoadingData(true);
     try {
       let customersQuery = supabase.from('customers').select('*').eq('status', 'active').order('name');
-      if (activeBranch) customersQuery = customersQuery.eq('branch_id', activeBranch.id);
+      if (activeBranch) customersQuery = customersQuery.or(`branch_id.eq.${activeBranch.id},branch_id.is.null`);
 
-      const [customersRes, mappingsRes, productsRes] = await Promise.all([
+      let sectorsQuery = supabase.from('sectors').select('*').order('name');
+      if (activeBranch) sectorsQuery = sectorsQuery.eq('branch_id', activeBranch.id);
+
+      const [customersRes, mappingsRes, productsRes, sectorsRes] = await Promise.all([
         customersQuery,
         supabase.from('product_pricing_groups').select('group_id, product_id'),
         supabase.from('products').select('*').eq('is_active', true),
+        sectorsQuery,
       ]);
 
       setCustomers(customersRes.data || []);
+      setSectors((sectorsRes.data || []) as Sector[]);
       setPricingGroupMappings(mappingsRes.data || []);
       setAllProducts(productsRes.data || []);
     } catch (error) {
@@ -606,6 +612,7 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
                   open={customerDropdownOpen}
                   onOpenChange={setCustomerDropdownOpen}
                   customers={customers}
+                  sectors={sectors}
                   isLoading={isLoadingData}
                   selectedCustomerId={selectedCustomerId}
                   onSelect={(customer) => {
