@@ -29,6 +29,7 @@ export type PriceSubType = 'super_gros' | 'gros' | 'retail';
 export interface Customer {
   id: string;
   name: string;
+  name_fr?: string | null;
   internal_name?: string | null;
   store_name?: string | null;
   phone: string | null;

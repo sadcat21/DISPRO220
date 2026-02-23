@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UserPlus, Loader2, MapPin, ChevronDown, ChevronUp, Store, Building2, Warehouse, CreditCard, User, UserCircle, Shield, Tag } from 'lucide-react';
+import { UserPlus, Loader2, MapPin, ChevronDown, ChevronUp, Store, Building2, Warehouse, CreditCard, User, UserCircle, Shield, Tag, Languages } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { Progress } from '@/components/ui/progress';
 import { Customer, Branch } from '@/types/database';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -36,6 +36,8 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
   const createDebt = useCreateDebt();
   const { trackVisit } = useTrackVisit();
   const [name, setName] = useState('');
+  const [nameFr, setNameFr] = useState('');
+  const [translatingName, setTranslatingName] = useState(false);
   const [storeName, setStoreName] = useState('');
   const [sectorId, setSectorId] = useState('');
   const [phone, setPhone] = useState('');
@@ -57,10 +59,33 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
   const [defaultPriceSubtype, setDefaultPriceSubtype] = useState<string>('gros');
   const effectiveBranchId = activeBranch ? activeBranch.id : null;
 
+  // Completion percentage
+  const completionPercent = useMemo(() => {
+    const requiredFields = [
+      !!name.trim(),
+      !!phone.trim(),
+      !!storeName.trim(),
+      !!(sectorId && sectorId !== 'none'),
+      !!(latitude && longitude),
+    ];
+    const optionalFields = [
+      !!address.trim(),
+      !!wilaya,
+      !!nameFr.trim(),
+      !!internalName.trim(),
+      !!salesRepName.trim(),
+    ];
+    const filledRequired = requiredFields.filter(Boolean).length;
+    const filledOptional = optionalFields.filter(Boolean).length;
+    const total = requiredFields.length + optionalFields.length;
+    return Math.round(((filledRequired + filledOptional) / total) * 100);
+  }, [name, phone, storeName, sectorId, latitude, longitude, address, wilaya, nameFr, internalName, salesRepName]);
+
   useEffect(() => {
     if (open) {
       fetchSectors().catch(() => { });
       setName('');
+      setNameFr('');
       setStoreName('');
       setSectorId('');
       setPhone('');
@@ -98,6 +123,24 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
     }
   }, [open]);
 
+  // Auto-translate Arabic name to French on blur
+  const handleNameBlur = async () => {
+    if (!name.trim() || nameFr.trim()) return; // Don't overwrite if already filled
+    setTranslatingName(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('translate-text', {
+        body: { text: name.trim(), sourceLang: 'ar', targetLangs: ['fr'] },
+      });
+      if (!error && data?.translations?.fr) {
+        setNameFr(data.translations.fr);
+      }
+    } catch {
+      // Silent fail
+    } finally {
+      setTranslatingName(false);
+    }
+  };
+
   const handleLocationChange = (lat: number, lng: number, addressFromMap?: string) => {
     setLatitude(lat);
     setLongitude(lng);
@@ -112,21 +155,31 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
     e.preventDefault();
 
     if (!name.trim()) {
-      toast.error(t('customers.name'));
+      toast.error('الرجاء إدخال اسم العميل');
       return;
     }
-
+    if (!phone.trim()) {
+      toast.error('الرجاء إدخال رقم هاتف العميل');
+      return;
+    }
+    if (!storeName.trim()) {
+      toast.error('الرجاء إدخال اسم المحل');
+      return;
+    }
+    if (!sectorId || sectorId === 'none') {
+      toast.error('الرجاء اختيار السكتور');
+      return;
+    }
     if (!latitude || !longitude) {
-      toast.error('يرجى تفعيل خدمة الموقع (GPS) لتحديد موقع العميل');
+      toast.error('يرجى تحديد الموقع الجغرافي على الخريطة');
       return;
     }
 
     setIsLoading(true);
     try {
-      // Debug: log selected sector and payload
-      console.debug('AddCustomer: selected sectorId=', sectorId);
       const payload = {
         name: name.trim(),
+        name_fr: nameFr.trim() || null,
         store_name: storeName.trim() || null,
         phone: phone.trim() || null,
         address: address.trim() || null,
@@ -136,7 +189,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
         latitude: latitude,
         longitude: longitude,
         location_type: locationType,
-        sector_id: sectorId && sectorId !== 'none' ? sectorId : null,
+        sector_id: sectorId,
         sales_rep_name: salesRepName.trim() || null,
         sales_rep_phone: salesRepPhone.trim() || null,
         internal_name: internalName.trim() || null,
@@ -146,7 +199,6 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
         default_price_subtype: defaultPriceSubtype,
       };
 
-      // All roles can add customers directly
       const { data, error } = await supabase
         .from('customers')
         .insert(payload)
@@ -169,7 +221,6 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
       }
 
       toast.success(t('customers.add') + ' ✓');
-      // Track add customer visit GPS
       trackVisit({ customerId: data.id, operationType: 'add_customer', operationId: data.id });
       onSuccess(data as Customer);
     } catch (error: any) {
@@ -190,8 +241,17 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
           </DialogTitle>
         </DialogHeader>
 
+        {/* Completion Bar */}
+        <div className="space-y-1">
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-muted-foreground">اكتمال البيانات</span>
+            <span className="text-xs font-semibold text-primary">{completionPercent}%</span>
+          </div>
+          <Progress value={completionPercent} className="h-2" />
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* --- Section 1: Basic Info & Contact (المعلومات الأساسية واتصال) --- */}
+          {/* --- Section 1: Basic Info & Contact --- */}
           <div className="space-y-4 border-b pb-4">
             <div className="space-y-2">
               <Label htmlFor="customer-name">{t('customers.name')} *</Label>
@@ -199,14 +259,32 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
                 id="customer-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                onBlur={handleNameBlur}
                 placeholder={t('customers.name')}
                 className="text-right"
                 autoFocus
+                required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="customer-phone">{t('common.phone')} الخاص بالزبون</Label>
+              <Label htmlFor="customer-name-fr" className="flex items-center gap-1">
+                <Languages className="w-3.5 h-3.5" />
+                اسم العميل بالفرنسية
+                {translatingName && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+              </Label>
+              <Input
+                id="customer-name-fr"
+                value={nameFr}
+                onChange={(e) => setNameFr(e.target.value)}
+                placeholder="Nom du client (Français)"
+                className="text-left"
+                dir="ltr"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="customer-phone">{t('common.phone')} الخاص بالزبون *</Label>
               <Input
                 id="customer-phone"
                 type="tel"
@@ -215,17 +293,19 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
                 placeholder={t('common.phone')}
                 className="text-right"
                 dir="ltr"
+                required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="store-name">اسم المحل</Label>
+              <Label htmlFor="store-name">اسم المحل *</Label>
               <Input
                 id="store-name"
                 value={storeName}
                 onChange={(e) => setStoreName(e.target.value)}
                 placeholder="اسم المحل التجاري"
                 className="text-right"
+                required
               />
             </div>
 
@@ -266,7 +346,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
             </div>
           </div>
 
-          {/* --- Section 2: Finance & Preferences (المالية والتفضيلات) --- */}
+          {/* --- Section 2: Finance & Preferences --- */}
           <div className="space-y-4 border-b pb-4">
             <Label className="font-bold flex items-center gap-2 text-sm">
               <CreditCard className="w-4 h-4 text-primary" />
@@ -368,7 +448,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
             </div>
           </div>
 
-          {/* --- Section 3: Location & Sector (الموقع والسكتور) --- */}
+          {/* --- Section 3: Location & Sector --- */}
           <div className="space-y-4">
             <Label className="font-bold flex items-center gap-2 text-sm">
               <MapPin className="w-4 h-4 text-primary" />
@@ -376,18 +456,18 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
             </Label>
 
             <div className="space-y-2">
-              <Label>السكتور</Label>
-              <Select value={sectorId || 'none'} onValueChange={(val) => setSectorId(val === 'none' ? '' : val)}>
-                <SelectTrigger>
+              <Label>السكتور *</Label>
+              <Select value={sectorId || ''} onValueChange={(val) => setSectorId(val)}>
+                <SelectTrigger className={!sectorId ? 'border-destructive' : ''}>
                   <SelectValue placeholder="اختر السكتور" />
                 </SelectTrigger>
                 <SelectContent position="popper" className="bg-popover z-[10050] max-h-60">
-                  <SelectItem value="none">بدون سكتور</SelectItem>
                   {sectors.map(s => (
                     <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {!sectorId && <p className="text-xs text-destructive">يجب اختيار سكتور</p>}
             </div>
 
             <div className="space-y-2">
@@ -456,10 +536,10 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
               }}
             >
               <CollapsibleTrigger asChild>
-                <Button type="button" variant="outline" className="w-full justify-between border-primary/30 hover:bg-primary/5">
+                <Button type="button" variant="outline" className={`w-full justify-between ${!(latitude && longitude) ? 'border-destructive' : 'border-primary/30'} hover:bg-primary/5`}>
                   <span className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-primary" />
-                    <span>تحديد الموقع على الخريطة (GPS)</span>
+                    <span>تحديد الموقع على الخريطة (GPS) *</span>
                     {latitude && longitude && (
                       <span className="text-xs bg-primary text-primary-foreground px-1.5 py-0.5 rounded">✓</span>
                     )}
@@ -478,6 +558,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
                 />
               </CollapsibleContent>
             </Collapsible>
+            {!(latitude && longitude) && <p className="text-xs text-destructive">يجب تحديد الموقع الجغرافي</p>}
 
           </div>
 
@@ -497,8 +578,8 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
             </Button>
           </div>
         </form>
-      </DialogContent >
-    </Dialog >
+      </DialogContent>
+    </Dialog>
   );
 };
 

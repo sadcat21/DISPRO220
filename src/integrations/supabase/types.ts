@@ -673,6 +673,7 @@ export type Database = {
           location_type: string | null
           longitude: number | null
           name: string
+          name_fr: string | null
           pending_changes: Json | null
           phone: string | null
           sales_rep_name: string | null
@@ -697,6 +698,7 @@ export type Database = {
           location_type?: string | null
           longitude?: number | null
           name: string
+          name_fr?: string | null
           pending_changes?: Json | null
           phone?: string | null
           sales_rep_name?: string | null
@@ -721,6 +723,7 @@ export type Database = {
           location_type?: string | null
           longitude?: number | null
           name?: string
+          name_fr?: string | null
           pending_changes?: Json | null
           phone?: string | null
           sales_rep_name?: string | null

@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Store, Building2, Warehouse, ChevronDown, ChevronUp, CreditCard, User } from 'lucide-react';
+import { Loader2, Store, Building2, Warehouse, ChevronDown, ChevronUp, CreditCard, User, Languages } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { Customer } from '@/types/database';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -34,6 +35,8 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
   const updateDebtPayment = useUpdateDebtPayment();
   const { workerId } = useAuth();
   const [name, setName] = useState('');
+  const [nameFr, setNameFr] = useState('');
+  const [translatingName, setTranslatingName] = useState(false);
   const [storeName, setStoreName] = useState('');
   const [sectorId, setSectorId] = useState('');
   const [phone, setPhone] = useState('');
@@ -48,6 +51,26 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
   const [salesRepPhone, setSalesRepPhone] = useState('');
   const [debtAmount, setDebtAmount] = useState('');
 
+  // Completion percentage
+  const completionPercent = useMemo(() => {
+    const requiredFields = [
+      !!name.trim(),
+      !!phone.trim(),
+      !!storeName.trim(),
+      !!(sectorId && sectorId !== 'none'),
+      !!(latitude && longitude),
+    ];
+    const optionalFields = [
+      !!address.trim(),
+      !!wilaya,
+      !!nameFr.trim(),
+      !!salesRepName.trim(),
+    ];
+    const total = requiredFields.length + optionalFields.length;
+    const filled = [...requiredFields, ...optionalFields].filter(Boolean).length;
+    return Math.round((filled / total) * 100);
+  }, [name, phone, storeName, sectorId, latitude, longitude, address, wilaya, nameFr, salesRepName]);
+
   // Sync debt amount when summary loads
   useEffect(() => {
     if (debtSummary) {
@@ -58,6 +81,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
   useEffect(() => {
     if (open && customer) {
       setName(customer.name || '');
+      setNameFr(customer.name_fr || '');
       setStoreName(customer.store_name || '');
       setSectorId(customer.sector_id || '');
       setPhone(customer.phone || '');
@@ -71,6 +95,24 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
       setShowMap(!!(customer.latitude && customer.longitude));
     }
   }, [open, customer]);
+
+  // Auto-translate Arabic name to French on blur
+  const handleNameBlur = async () => {
+    if (!name.trim() || nameFr.trim()) return;
+    setTranslatingName(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('translate-text', {
+        body: { text: name.trim(), sourceLang: 'ar', targetLangs: ['fr'] },
+      });
+      if (!error && data?.translations?.fr) {
+        setNameFr(data.translations.fr);
+      }
+    } catch {
+      // Silent fail
+    } finally {
+      setTranslatingName(false);
+    }
+  };
 
   const handleLocationChange = (lat: number, lng: number, addressText?: string) => {
     setLatitude(lat);
@@ -90,14 +132,29 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
       toast.error('الرجاء إدخال اسم العميل');
       return;
     }
+    if (!phone.trim()) {
+      toast.error('الرجاء إدخال رقم هاتف العميل');
+      return;
+    }
+    if (!storeName.trim()) {
+      toast.error('الرجاء إدخال اسم المحل');
+      return;
+    }
+    if (!sectorId || sectorId === 'none') {
+      toast.error('الرجاء اختيار السكتور');
+      return;
+    }
+    if (!latitude || !longitude) {
+      toast.error('يرجى تحديد الموقع الجغرافي على الخريطة');
+      return;
+    }
 
     setIsLoading(true);
 
     try {
-      // Debug: log selected sector and payload for update
-      console.debug('EditCustomer: selected sectorId=', sectorId);
       const payload = {
         name: name.trim(),
+        name_fr: nameFr.trim() || null,
         store_name: storeName.trim() || null,
         phone: phone.trim() || null,
         address: address.trim() || null,
@@ -105,19 +162,16 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
         latitude,
         longitude,
         location_type: locationType,
-        sector_id: sectorId && sectorId !== 'none' ? sectorId : null,
+        sector_id: sectorId,
         sales_rep_name: salesRepName.trim() || null,
         sales_rep_phone: salesRepPhone.trim() || null,
       };
-      console.debug('EditCustomer: payload=', payload);
       const { data, error } = await supabase
         .from('customers')
         .update(payload)
         .eq('id', customer.id)
         .select()
         .single();
-
-      console.debug('EditCustomer: response', { data, error });
 
       if (error) throw error;
 
@@ -127,7 +181,6 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
       const difference = newDebt - currentDebt;
 
       if (difference > 0 && workerId) {
-        // Increase: create new debt for the difference
         await createDebt.mutateAsync({
           customer_id: customer.id,
           worker_id: workerId,
@@ -136,9 +189,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
           notes: 'تعديل دين من بيانات العميل',
         });
       } else if (difference < 0 && workerId) {
-        // Decrease: apply payment to active debts
         const absDiff = Math.abs(difference);
-        // Get active debts to apply payment
         const { data: activeDebts } = await supabase
           .from('customer_debts')
           .select('id, total_amount, paid_amount, remaining_amount')
@@ -189,6 +240,16 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
         <DialogHeader>
           <DialogTitle>تعديل بيانات العميل</DialogTitle>
         </DialogHeader>
+
+        {/* Completion Bar */}
+        <div className="space-y-1">
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-muted-foreground">اكتمال البيانات</span>
+            <span className="text-xs font-semibold text-primary">{completionPercent}%</span>
+          </div>
+          <Progress value={completionPercent} className="h-2" />
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="edit-name">اسم العميل *</Label>
@@ -196,6 +257,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
               id="edit-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              onBlur={handleNameBlur}
               placeholder="أدخل اسم العميل"
               className="text-right"
               required
@@ -203,34 +265,52 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-store-name">اسم المحل</Label>
+            <Label htmlFor="edit-name-fr" className="flex items-center gap-1">
+              <Languages className="w-3.5 h-3.5" />
+              اسم العميل بالفرنسية
+              {translatingName && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+            </Label>
+            <Input
+              id="edit-name-fr"
+              value={nameFr}
+              onChange={(e) => setNameFr(e.target.value)}
+              placeholder="Nom du client (Français)"
+              className="text-left"
+              dir="ltr"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-store-name">اسم المحل *</Label>
             <Input
               id="edit-store-name"
               value={storeName}
               onChange={(e) => setStoreName(e.target.value)}
               placeholder="اسم المحل التجاري"
               className="text-right"
+              required
             />
           </div>
 
           {sectors.length > 0 && (
             <div className="space-y-2">
-              <Label>السكتور</Label>
-              <Select value={sectorId} onValueChange={setSectorId}>
-                <SelectTrigger>
+              <Label>السكتور *</Label>
+              <Select value={sectorId || ''} onValueChange={setSectorId}>
+                <SelectTrigger className={!sectorId ? 'border-destructive' : ''}>
                   <SelectValue placeholder="اختر السكتور" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover z-[100]">
-                  <SelectItem value="none">بدون سكتور</SelectItem>
                   {sectors.map(s => (
                     <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {!sectorId && <p className="text-xs text-destructive">يجب اختيار سكتور</p>}
             </div>
           )}
 
           <div className="space-y-2">
+            <Label htmlFor="edit-phone">هاتف العميل *</Label>
             <Input
               id="edit-phone"
               value={phone}
@@ -238,6 +318,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
               placeholder="0XXX XXX XXX"
               className="text-right"
               dir="ltr"
+              required
             />
           </div>
 
@@ -331,8 +412,13 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
           {/* Location Picker */}
           <Collapsible open={showMap} onOpenChange={setShowMap}>
             <CollapsibleTrigger asChild>
-              <Button type="button" variant="outline" className="w-full justify-between">
-                <span>تحديد الموقع على الخريطة</span>
+              <Button type="button" variant="outline" className={`w-full justify-between ${!(latitude && longitude) ? 'border-destructive' : ''}`}>
+                <span className="flex items-center gap-2">
+                  تحديد الموقع على الخريطة *
+                  {latitude && longitude && (
+                    <span className="text-xs bg-primary text-primary-foreground px-1.5 py-0.5 rounded">✓</span>
+                  )}
+                </span>
                 {showMap ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </Button>
             </CollapsibleTrigger>
@@ -352,6 +438,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
               )}
             </CollapsibleContent>
           </Collapsible>
+          {!(latitude && longitude) && <p className="text-xs text-destructive">يجب تحديد الموقع الجغرافي</p>}
 
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
