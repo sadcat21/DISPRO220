@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Calculator, Receipt, Banknote, CreditCard, ArrowDownCircle, ArrowUpCircle, Wallet, TrendingDown, Coins, AlertTriangle, Package, ShoppingBag, RefreshCw } from 'lucide-react';
+import { Loader2, Calculator, Receipt, Banknote, CreditCard, ArrowDownCircle, ArrowUpCircle, Wallet, TrendingDown, Coins, AlertTriangle, Package, ShoppingBag, RefreshCw, Gift, Tag } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSessionCalculations, SessionCalculations } from '@/hooks/useSessionCalculations';
