@@ -58,7 +58,6 @@ const CollectDebtDialog: React.FC<CollectDebtDialogProps> = ({
     }
   }, [open, defaultAmount]);
 
-  // Show warning when manual date is set and schedule exists
   useEffect(() => {
     if (nextDueDate && hasSchedule && !scheduleOverrideConfirmed) {
       setShowScheduleWarning(true);
@@ -69,6 +68,10 @@ const CollectDebtDialog: React.FC<CollectDebtDialogProps> = ({
 
   const numAmount = Number(amount) || 0;
   const isPartial = numAmount > 0 && numAmount < remainingAmount;
+  const isFullPayment = numAmount > 0 && numAmount >= remainingAmount;
+  const liveRemaining = Math.max(0, remainingAmount - numAmount);
+  // Next due date is mandatory when partial payment or visit without collection
+  const needsNextDate = isPartial;
 
   const scheduleLabel = collectionType === 'daily'
     ? t('debts.schedule_type_daily')
@@ -96,6 +99,11 @@ const CollectDebtDialog: React.FC<CollectDebtDialogProps> = ({
       toast.error(`المبلغ أكبر من المتبقي (${remainingAmount})`);
       return;
     }
+    // Require next due date for partial payment
+    if (isPartial && !nextDueDate) {
+      toast.error('يجب تحديد موعد التحصيل القادم');
+      return;
+    }
 
     try {
       await updatePayment.mutateAsync({
@@ -111,7 +119,6 @@ const CollectDebtDialog: React.FC<CollectDebtDialogProps> = ({
       toast.success(t('debts.payment_success'));
       trackVisit({ operationType: 'debt_collection', operationId: debtId });
 
-      // Build receipt data with debt-specific fields
       setReceiptDataState({
         receiptType: 'debt_payment' as ReceiptType,
         orderId: null,
@@ -127,10 +134,9 @@ const CollectDebtDialog: React.FC<CollectDebtDialogProps> = ({
         totalAmount: numAmount,
         discountAmount: 0,
         paidAmount: numAmount,
-        remainingAmount: remainingAmount - numAmount,
+        remainingAmount: liveRemaining,
         paymentMethod: paymentMethod,
         notes: notes || null,
-        // Debt-specific
         debtTotalAmount: totalDebtAmount,
         debtPaidBefore: paidAmountBefore,
         collectorName: user?.full_name || '',
@@ -188,6 +194,17 @@ const CollectDebtDialog: React.FC<CollectDebtDialogProps> = ({
             </div>
           </div>
 
+          {/* Live remaining amount indicator */}
+          {numAmount > 0 && (
+            <div className={`rounded-md p-2 text-center text-sm font-bold ${isFullPayment ? 'bg-green-100 dark:bg-green-900/20 text-green-700' : 'bg-orange-100 dark:bg-orange-900/20 text-orange-700'}`}>
+              {isFullPayment ? (
+                <span>✓ تسديد كامل</span>
+              ) : (
+                <span>المتبقي بعد التحصيل: {liveRemaining.toLocaleString()} DA</span>
+              )}
+            </div>
+          )}
+
           {/* Payment method */}
           {numAmount > 0 && (
             <div className="space-y-1">
@@ -204,7 +221,7 @@ const CollectDebtDialog: React.FC<CollectDebtDialogProps> = ({
             </div>
           )}
 
-          {/* Partial payment: next due date section */}
+          {/* Next due date section - show for partial */}
           {isPartial && (
             <div className="space-y-2 border-t pt-2">
               {hasSchedule && (
@@ -215,19 +232,20 @@ const CollectDebtDialog: React.FC<CollectDebtDialogProps> = ({
               )}
 
               <div className="space-y-1">
-                <Label className="text-xs">{t('debts.quick_day_pick')}</Label>
+                <Label className="text-xs font-semibold text-destructive">{t('debts.quick_day_pick')} *</Label>
                 <QuickDayPicker onSelectDate={setNextDueDate} selectedDate={nextDueDate} />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <Label className="text-xs">{t('debts.next_due_date')}</Label>
+                  <Label className="text-xs">{t('debts.next_due_date')} *</Label>
                   <Input
                     type="date"
                     value={nextDueDate}
                     onChange={e => setNextDueDate(e.target.value)}
                     min={new Date().toISOString().split('T')[0]}
                     className="h-9 text-sm"
+                    required
                   />
                 </div>
                 {nextDueDate && (
@@ -264,7 +282,7 @@ const CollectDebtDialog: React.FC<CollectDebtDialogProps> = ({
           <Button
             className="w-full h-9"
             onClick={handleSubmit}
-            disabled={updatePayment.isPending || !amount || numAmount <= 0 || showScheduleWarning}
+            disabled={updatePayment.isPending || !amount || numAmount <= 0 || showScheduleWarning || (isPartial && !nextDueDate)}
           >
             {updatePayment.isPending && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
             {t('debts.collect')}
@@ -273,7 +291,6 @@ const CollectDebtDialog: React.FC<CollectDebtDialogProps> = ({
       </DialogContent>
     </Dialog>
 
-    {/* Receipt Dialog */}
     {receiptDataState && (
       <ReceiptDialog
         open={showReceiptDialog}

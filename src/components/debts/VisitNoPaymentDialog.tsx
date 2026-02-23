@@ -75,7 +75,7 @@ const VisitNoPaymentDialog: React.FC<VisitNoPaymentDialogProps> = ({
 
   const handleSubmit = async () => {
     if (!nextDueDate) {
-      toast.error('يجب تحديد تاريخ الزيارة القادمة');
+      toast.error('يجب تحديد موعد التحصيل القادم');
       return;
     }
     if (!workerId) return;
@@ -115,7 +115,6 @@ const VisitNoPaymentDialog: React.FC<VisitNoPaymentDialogProps> = ({
         </DialogHeader>
 
         <div className="space-y-2.5">
-          {/* Schedule info badge */}
           {hasSchedule && (
             <div className="bg-primary/10 border border-primary/30 rounded-md px-2 py-1.5 flex items-center gap-1.5 text-[11px]">
               <AlertTriangle className="w-3.5 h-3.5 text-primary shrink-0" />
@@ -136,8 +135,7 @@ const VisitNoPaymentDialog: React.FC<VisitNoPaymentDialogProps> = ({
                     : 'bg-background hover:bg-muted border-input'
                 }`}
               >
-                <MapPin className="w-3.5 h-3.5" />
-                {t('debts.visit_in_person')}
+                <MapPin className="w-3.5 h-3.5" />{t('debts.visit_in_person')}
               </button>
               <button
                 type="button"
@@ -148,28 +146,28 @@ const VisitNoPaymentDialog: React.FC<VisitNoPaymentDialogProps> = ({
                     : 'bg-background hover:bg-muted border-input'
                 }`}
               >
-                <Phone className="w-3.5 h-3.5" />
-                {t('debts.visit_phone')}
+                <Phone className="w-3.5 h-3.5" />{t('debts.visit_phone')}
               </button>
             </div>
           </div>
 
           {/* Quick day picker */}
           <div className="space-y-1">
-            <Label className="text-xs">{t('debts.quick_day_pick')}</Label>
+            <Label className="text-xs font-semibold text-destructive">{t('debts.quick_day_pick')} *</Label>
             <QuickDayPicker onSelectDate={setNextDueDate} selectedDate={nextDueDate} />
           </div>
 
-          {/* Date & Time in one row */}
+          {/* Date & Time */}
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <Label className="text-xs">{t('debts.next_due_date')}</Label>
+              <Label className="text-xs">{t('debts.next_due_date')} *</Label>
               <Input
                 type="date"
                 value={nextDueDate}
                 onChange={e => setNextDueDate(e.target.value)}
                 min={new Date().toISOString().split('T')[0]}
                 className="h-9 text-sm"
+                required
               />
             </div>
             <div className="space-y-1">
@@ -183,7 +181,6 @@ const VisitNoPaymentDialog: React.FC<VisitNoPaymentDialogProps> = ({
             </div>
           </div>
 
-          {/* Schedule override alert - separate dialog */}
           <ScheduleOverrideAlert
             open={showScheduleWarning}
             onConfirm={handleConfirmOverride}
@@ -191,7 +188,6 @@ const VisitNoPaymentDialog: React.FC<VisitNoPaymentDialogProps> = ({
             scheduleLabel={scheduleLabel}
           />
 
-          {/* Notes */}
           <Textarea
             value={notes}
             onChange={e => setNotes(e.target.value)}
