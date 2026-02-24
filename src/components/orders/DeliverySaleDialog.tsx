@@ -260,6 +260,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
               quantity: item.quantity,
               unit_price: item.unitPrice,
               total_price: item.totalPrice,
+              gift_quantity: item.giftQuantity || 0,
             }).eq('id', item.originalItemId);
             changes.push({ منتج: item.productName, من: item.originalQuantity, إلى: item.quantity });
           }
@@ -271,6 +272,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
             quantity: item.quantity,
             unit_price: item.unitPrice,
             total_price: item.totalPrice,
+            gift_quantity: item.giftQuantity || 0,
           });
           changes.push({ منتج: item.productName, كمية: item.quantity, عملية: 'إضافة جديد' });
         }

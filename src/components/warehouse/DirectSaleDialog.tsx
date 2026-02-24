@@ -481,6 +481,8 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
         quantity: item.quantity,
         unit_price: item.unitPrice,
         total_price: item.totalPrice,
+        gift_quantity: item.giftQuantity || 0,
+        gift_offer_id: item.giftOfferId || null,
       }));
 
       await supabase.from('order_items').insert(orderItemsData);
