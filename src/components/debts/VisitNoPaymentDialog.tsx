@@ -10,6 +10,7 @@ import ScheduleOverrideAlert from './ScheduleOverrideAlert';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUpdateDebtPayment } from '@/hooks/useCustomerDebts';
+import { useLocationCheck } from '@/hooks/useLocationCheck';
 import { toast } from 'sonner';
 
 interface VisitNoPaymentDialogProps {
@@ -19,15 +20,19 @@ interface VisitNoPaymentDialogProps {
   customerName: string;
   collectionType?: string | null;
   collectionDays?: string[] | null;
+  customerLatitude?: number | null;
+  customerLongitude?: number | null;
 }
 
 const VisitNoPaymentDialog: React.FC<VisitNoPaymentDialogProps> = ({
   open, onOpenChange, debtId, customerName,
   collectionType, collectionDays,
+  customerLatitude, customerLongitude,
 }) => {
   const { t, dir } = useLanguage();
   const { workerId } = useAuth();
   const updatePayment = useUpdateDebtPayment();
+  const { checkLocation, isChecking } = useLocationCheck({ customerLatitude, customerLongitude });
   const [nextDueDate, setNextDueDate] = useState('');
   const [nextDueTime, setNextDueTime] = useState('');
   const [visitType, setVisitType] = useState<'in_person' | 'phone'>('in_person');
@@ -79,6 +84,9 @@ const VisitNoPaymentDialog: React.FC<VisitNoPaymentDialogProps> = ({
       return;
     }
     if (!workerId) return;
+
+    const allowed = await checkLocation();
+    if (!allowed) return;
 
     const dueDateValue = nextDueTime 
       ? `${nextDueDate}T${nextDueTime}` 
@@ -199,9 +207,9 @@ const VisitNoPaymentDialog: React.FC<VisitNoPaymentDialogProps> = ({
           <Button
             className="w-full h-9"
             onClick={handleSubmit}
-            disabled={updatePayment.isPending || !nextDueDate || showScheduleWarning}
+            disabled={updatePayment.isPending || isChecking || !nextDueDate || showScheduleWarning}
           >
-            {updatePayment.isPending && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
+            {(updatePayment.isPending || isChecking) && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
             {t('debts.record_visit')}
           </Button>
         </div>

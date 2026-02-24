@@ -258,6 +258,8 @@ const DebtCollectionsPopover: React.FC = () => {
           customerName={selectedDebt.customer?.name || '—'}
           collectionType={selectedDebt.collection_type}
           collectionDays={selectedDebt.collection_days}
+          customerLatitude={selectedDebt.customer?.latitude}
+          customerLongitude={selectedDebt.customer?.longitude}
         />
       )}
     </>

@@ -268,6 +268,8 @@ const DebtDetailsDialog: React.FC<DebtDetailsDialogProps> = ({
           customerName={customerName}
           collectionType={visitDebt.collection_type}
           collectionDays={visitDebt.collection_days}
+          customerLatitude={visitDebt.customer?.latitude}
+          customerLongitude={visitDebt.customer?.longitude}
         />
       )}
     </>

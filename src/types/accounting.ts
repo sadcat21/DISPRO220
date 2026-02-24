@@ -18,7 +18,7 @@ export interface CustomerDebt {
 }
 
 export interface CustomerDebtWithDetails extends CustomerDebt {
-  customer?: { id: string; name: string; phone: string | null; wilaya: string | null };
+  customer?: { id: string; name: string; phone: string | null; wilaya: string | null; latitude?: number | null; longitude?: number | null };
   worker?: { id: string; full_name: string; username: string };
 }
 

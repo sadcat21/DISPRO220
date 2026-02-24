@@ -16,7 +16,7 @@ export const useCustomerDebts = (filters?: {
         .from('customer_debts')
         .select(`
           *,
-          customer:customers(id, name, phone, wilaya),
+          customer:customers(id, name, phone, wilaya, latitude, longitude),
           worker:workers!customer_debts_worker_id_fkey(id, full_name, username)
         `)
         .order('created_at', { ascending: false });
