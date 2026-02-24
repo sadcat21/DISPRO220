@@ -38,34 +38,36 @@ const WorkerPermissionsSection: React.FC = () => {
     },
   });
 
-  // Get all worker_permissions records
+  // Get all worker_permissions records with granted field
   const { data: allWorkerPerms, isLoading: permsLoading } = useQuery({
     queryKey: ['all-worker-individual-permissions'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('worker_permissions')
-        .select('worker_id, permission_id');
+        .select('worker_id, permission_id, granted');
       if (error) throw error;
-      return data;
+      return data as { worker_id: string; permission_id: string; granted: boolean }[];
     },
   });
 
-  // Only data_scope permissions are relevant for individual assignment
-  const individualPermissions = permissions?.filter(p => p.category === 'data_scope') || [];
+  // All permissions are available for individual assignment
+  const individualPermissions = permissions || [];
 
   const filteredWorkers = workers?.filter(w =>
     w.full_name.includes(search) || w.username.includes(search)
   ) || [];
 
-  const hasPermission = (workerId: string, permissionId: string) => {
-    return allWorkerPerms?.some(wp => wp.worker_id === workerId && wp.permission_id === permissionId) ?? false;
+  const getPermissionState = (workerId: string, permissionId: string): boolean => {
+    const record = allWorkerPerms?.find(wp => wp.worker_id === workerId && wp.permission_id === permissionId);
+    return record?.granted ?? false;
   };
 
-  const handleToggle = async (workerId: string, permissionId: string, currentlyGranted: boolean) => {
+  const handleToggle = async (workerId: string, permissionId: string) => {
+    const current = getPermissionState(workerId, permissionId);
     await togglePermission.mutateAsync({
       workerId,
       permissionId,
-      grant: !currentlyGranted,
+      grant: !current,
     });
   };
 
@@ -118,8 +120,8 @@ const WorkerPermissionsSection: React.FC = () => {
                       <div key={perm.id} className="flex items-center justify-between gap-2">
                         <label className="text-xs text-muted-foreground">{perm.name_ar}</label>
                         <Switch
-                          checked={hasPermission(worker.id, perm.id)}
-                          onCheckedChange={() => handleToggle(worker.id, perm.id, hasPermission(worker.id, perm.id))}
+                          checked={getPermissionState(worker.id, perm.id)}
+                          onCheckedChange={() => handleToggle(worker.id, perm.id)}
                           disabled={togglePermission.isPending}
                         />
                       </div>

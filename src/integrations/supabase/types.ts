@@ -2992,6 +2992,7 @@ export type Database = {
       worker_permissions: {
         Row: {
           created_at: string
+          granted: boolean
           granted_by: string | null
           id: string
           permission_id: string
@@ -2999,6 +3000,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          granted?: boolean
           granted_by?: string | null
           id?: string
           permission_id: string
@@ -3006,6 +3008,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          granted?: boolean
           granted_by?: string | null
           id?: string
           permission_id?: string

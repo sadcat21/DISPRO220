@@ -236,19 +236,14 @@ export const useToggleWorkerPermission = () => {
 
   return useMutation({
     mutationFn: async ({ workerId, permissionId, grant }: { workerId: string; permissionId: string; grant: boolean }) => {
-      if (grant) {
-        const { error } = await supabase
-          .from('worker_permissions')
-          .insert({ worker_id: workerId, permission_id: permissionId, granted_by: grantedBy });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('worker_permissions')
-          .delete()
-          .eq('worker_id', workerId)
-          .eq('permission_id', permissionId);
-        if (error) throw error;
-      }
+      // Upsert: set granted=true or granted=false (individual override always exists)
+      const { error } = await supabase
+        .from('worker_permissions')
+        .upsert(
+          { worker_id: workerId, permission_id: permissionId, granted_by: grantedBy, granted: grant },
+          { onConflict: 'worker_id,permission_id' }
+        );
+      if (error) throw error;
     },
     onSuccess: (_, { workerId }) => {
       queryClient.invalidateQueries({ queryKey: ['worker-individual-permissions', workerId] });
