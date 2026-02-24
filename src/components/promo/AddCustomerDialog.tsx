@@ -164,7 +164,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
             setGpsGranted(false);
             setGpsLoading(false);
           },
-          { enableHighAccuracy: true, timeout: 10000 }
+          { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
         );
       } else {
         setGpsGranted(false);
@@ -398,7 +398,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
                           setGpsLoading(false);
                           toast.error('فشل الحصول على الموقع. تأكد من تفعيل GPS في إعدادات الجهاز');
                         },
-                        { enableHighAccuracy: true, timeout: 15000 }
+                        { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
                       );
                     } else {
                       setGpsLoading(false);
