@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Store, Building2, Warehouse, ChevronDown, ChevronUp, CreditCard, User, Languages, MapPin, UserCircle, Shield, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Store, Building2, Warehouse, ChevronDown, ChevronUp, CreditCard, User, Languages, MapPin, UserCircle, Shield, Plus, Trash2, Type, BookOpen } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { Customer } from '@/types/database';
@@ -55,6 +55,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
   const [storeName, setStoreName] = useState('');
   const [storeNameFr, setStoreNameFr] = useState('');
   const [translatingStore, setTranslatingStore] = useState(false);
+  const [translationMode, setTranslationMode] = useState<'transliterate' | 'translate'>('transliterate');
   const [sectorId, setSectorId] = useState('');
   const [zoneId, setZoneId] = useState('');
   const [zones, setZones] = useState<SectorZone[]>([]);
@@ -182,7 +183,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
   const translateText = async (text: string, sourceLang: string, targetLang: string): Promise<string | null> => {
     try {
       const { data, error } = await supabase.functions.invoke('translate-text', {
-        body: { text: text.trim(), sourceLang, targetLangs: [targetLang] },
+        body: { text: text.trim(), sourceLang, targetLangs: [targetLang], mode: translationMode },
       });
       if (!error && data?.translations?.[targetLang]) {
         return data.translations[targetLang];
@@ -405,6 +406,34 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
                 {translatingStore && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
               </Label>
               <Input id="edit-store-name-fr" value={storeNameFr} onChange={(e) => setStoreNameFr(e.target.value)} placeholder="Nom du magasin (Français)" className="text-left" dir="ltr" />
+            </div>
+
+            {/* Translation mode toggle */}
+            <div className="flex rounded-md border border-input overflow-hidden">
+              <button
+                type="button"
+                className={`flex items-center gap-1 px-2 py-1.5 text-xs flex-1 transition-colors ${
+                  translationMode === 'transliterate'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-background text-muted-foreground hover:bg-muted'
+                }`}
+                onClick={() => setTranslationMode('transliterate')}
+              >
+                <Type className="w-3 h-3" />
+                ترجمة حرفية (نطق)
+              </button>
+              <button
+                type="button"
+                className={`flex items-center gap-1 px-2 py-1.5 text-xs flex-1 transition-colors ${
+                  translationMode === 'translate'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-background text-muted-foreground hover:bg-muted'
+                }`}
+                onClick={() => setTranslationMode('translate')}
+              >
+                <BookOpen className="w-3 h-3" />
+                ترجمة المعنى
+              </button>
             </div>
 
             <div className="space-y-2">
