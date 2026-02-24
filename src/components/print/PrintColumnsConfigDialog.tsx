@@ -17,6 +17,7 @@ export const DEFAULT_PRINT_COLUMNS: PrintColumnConfig[] = [
   { id: 'order_id', labelKey: 'print.header.order_id', visible: false },
   { id: 'qr', labelKey: 'print.header.qr', visible: false },
   { id: 'customer', labelKey: 'print.header.customer', visible: true },
+  { id: 'store_name', labelKey: 'print.header.store_name', visible: false },
   { id: 'phone', labelKey: 'print.header.phone', visible: true },
   { id: 'address', labelKey: 'print.header.address', visible: true },
   { id: 'delivery_worker', labelKey: 'print.header.delivery_worker', visible: true },

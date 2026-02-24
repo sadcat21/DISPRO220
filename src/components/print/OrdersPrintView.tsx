@@ -56,7 +56,7 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
     };
 
     // Count visible static columns for totals row colspan
-    const staticColIds = ['number', 'order_id', 'qr', 'customer', 'phone', 'address', 'delivery_worker', 'payment_info'];
+    const staticColIds = ['number', 'order_id', 'qr', 'customer', 'store_name', 'phone', 'address', 'delivery_worker', 'payment_info'];
     const visibleStaticCols = staticColIds.filter(id => isColVisible(id)).length;
 
     useEffect(() => {
@@ -292,6 +292,7 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
               {isColVisible('order_id') && <th style={{ width: '55px' }}>{tp('print.header.order_id')}</th>}
               {isColVisible('qr') && <th style={{ width: '45px' }}>{tp('print.header.qr')}</th>}
               {isColVisible('customer') && <th>{tp('print.header.customer')}</th>}
+              {isColVisible('store_name') && <th>{tp('print.header.store_name')}</th>}
               {isColVisible('phone') && <th style={{ width: '90px' }}>{tp('print.header.phone')}</th>}
               {isColVisible('address') && <th>{tp('print.header.address')}</th>}
               {isColVisible('delivery_worker') && <th style={{ width: '80px' }}>{tp('print.header.delivery_worker')}</th>}
@@ -337,6 +338,7 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
                     )}
                   </td>
                 )}
+                {isColVisible('store_name') && <td className="small-text">{order.customer?.store_name || ''}</td>}
                 {isColVisible('phone') && <td className="ltr-text">{order.customer?.phone || ''}</td>}
                 {isColVisible('address') && <td className="small-text">{order.customer?.address || ''}</td>}
                 {isColVisible('delivery_worker') && <td className="small-text">{order.assigned_worker?.full_name || '-'}</td>}

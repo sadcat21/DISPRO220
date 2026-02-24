@@ -639,6 +639,7 @@ export const translations: Translations = {
   'print.header.order_id': { ar: 'رقم الطلب', fr: 'N° commande', en: 'Order ID' },
   'print.header.qr': { ar: 'QR', fr: 'QR', en: 'QR' },
   'print.header.customer': { ar: 'العميل', fr: 'Client', en: 'Customer' },
+  'print.header.store_name': { ar: 'المحل', fr: 'Magasin', en: 'Store' },
   'print.header.phone': { ar: 'الهاتف', fr: 'Téléphone', en: 'Phone' },
   'print.header.address': { ar: 'العنوان', fr: 'Adresse', en: 'Address' },
   'print.header.delivery_worker': { ar: 'عامل التوصيل', fr: 'Livreur', en: 'Delivery Worker' },
