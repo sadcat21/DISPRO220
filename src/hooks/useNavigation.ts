@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Home, Users, Package, BarChart3, Settings, FileSpreadsheet, UserCheck, Building2, Shield, ShoppingCart, Truck, Activity, Store, BookOpen, UserCog, Gift, Wallet, Warehouse, ClipboardList, Banknote, Calculator, MapPin, Navigation, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkerPermissions } from '@/hooks/usePermissions';
+import { useMyUIOverrides } from '@/hooks/useUIOverrides';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LucideIcon } from 'lucide-react';
 
@@ -14,7 +15,12 @@ export interface NavItem {
 export const useNavigation = () => {
   const { role } = useAuth();
   const { data: permissions, isLoading } = useWorkerPermissions();
+  const { data: uiOverrides } = useMyUIOverrides();
   const { t } = useLanguage();
+
+  const isPageHidden = (path: string) => {
+    return uiOverrides?.some(o => o.element_type === 'page' && o.element_key === path && o.is_hidden) ?? false;
+  };
 
   const hasPermission = (code: string) => {
     // Admin and branch_admin have all permissions
@@ -165,5 +171,14 @@ export const useNavigation = () => {
     return { main: mainItems, more: moreItems };
   }, [role, permissions, t]);
 
-  return { ...navItems, isLoading, hasPermission };
+  // Apply UI overrides to filter hidden pages
+  const filteredNavItems = useMemo(() => {
+    if (!uiOverrides || uiOverrides.length === 0) return navItems;
+    return {
+      main: navItems.main.filter(item => !isPageHidden(item.path)),
+      more: navItems.more.filter(item => !isPageHidden(item.path)),
+    };
+  }, [navItems, uiOverrides]);
+
+  return { ...filteredNavItems, isLoading, hasPermission, isPageHidden };
 };

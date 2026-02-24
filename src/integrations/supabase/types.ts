@@ -3164,6 +3164,65 @@ export type Database = {
           },
         ]
       }
+      worker_ui_overrides: {
+        Row: {
+          created_at: string
+          element_key: string
+          element_type: string
+          id: string
+          is_hidden: boolean
+          updated_by: string | null
+          worker_id: string
+        }
+        Insert: {
+          created_at?: string
+          element_key: string
+          element_type: string
+          id?: string
+          is_hidden?: boolean
+          updated_by?: string | null
+          worker_id: string
+        }
+        Update: {
+          created_at?: string
+          element_key?: string
+          element_type?: string
+          id?: string
+          is_hidden?: boolean
+          updated_by?: string | null
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "worker_ui_overrides_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "worker_ui_overrides_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "worker_ui_overrides_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "worker_ui_overrides_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workers: {
         Row: {
           branch_id: string | null

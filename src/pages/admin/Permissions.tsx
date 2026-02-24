@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Shield, Trash2, Edit, Save, X, ChevronDown, ChevronUp, Briefcase, User } from 'lucide-react';
+import { Plus, Shield, Trash2, Edit, Save, X, ChevronDown, ChevronUp, Briefcase, User, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,6 +39,7 @@ import { Permission, PERMISSION_CATEGORIES, RESOURCE_NAMES, PermissionCategory, 
 import { Loader2 } from 'lucide-react';
 import RoleCard from '@/components/permissions/RoleCard';
 import WorkerPermissionsSection from '@/components/permissions/WorkerPermissionsSection';
+import WorkerUIOverridesSection from '@/components/permissions/WorkerUIOverridesSection';
 
 const Permissions: React.FC = () => {
   const { toast } = useToast();
@@ -179,6 +180,10 @@ const Permissions: React.FC = () => {
             <User className="w-4 h-4" />
             صلاحيات فردية
           </TabsTrigger>
+          <TabsTrigger value="ui-overrides" className="flex-1 gap-1.5">
+            <EyeOff className="w-4 h-4" />
+            إخفاء العناصر
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="roles" className="space-y-6 mt-4">
@@ -301,6 +306,10 @@ const Permissions: React.FC = () => {
 
         <TabsContent value="individual" className="mt-4">
           <WorkerPermissionsSection />
+        </TabsContent>
+
+        <TabsContent value="ui-overrides" className="mt-4">
+          <WorkerUIOverridesSection />
         </TabsContent>
       </Tabs>
 
