@@ -34,11 +34,14 @@ const WorkerHome: React.FC = () => {
   const [selectedCustomerForAction, setSelectedCustomerForAction] = useState<Customer | null>(null);
 
   const { trackVisit } = useTrackVisit();
-  const isDirectSaleHidden = useIsElementHidden('button', 'direct_sale');
-  const isCreateOrderHidden = useIsElementHidden('button', 'create_order');
-  const isAddCustomerHidden = useIsElementHidden('button', 'add_customer');
-  const isAddPromoHidden = useIsElementHidden('button', 'add_promo');
-  const isCollectDebtHidden = useIsElementHidden('button', 'collect_debt');
+  const isDirectSaleHidden = useIsElementHidden('button', 'home_direct_sale');
+  const isCreateOrderHidden = useIsElementHidden('button', 'home_orders');
+  const isAddCustomerHidden = useIsElementHidden('button', 'home_customers');
+  const isAddPromoHidden = useIsElementHidden('button', 'home_promos');
+  const isCollectDebtHidden = useIsElementHidden('button', 'home_debts');
+  const isDeliveriesHidden = useIsElementHidden('button', 'home_deliveries');
+  const isMyStockHidden = useIsElementHidden('button', 'home_my_stock');
+  const isExpensesHidden = useIsElementHidden('button', 'home_expenses');
   const isOrdersPageHidden = useIsElementHidden('page', '/orders');
   const isDeliveriesPageHidden = useIsElementHidden('page', '/my-deliveries');
   const isMyStockPageHidden = useIsElementHidden('page', '/my-stock');
@@ -187,7 +190,7 @@ const WorkerHome: React.FC = () => {
 
           {hasDeliveryAccess && (
             <div className="grid grid-cols-3 gap-2">
-              {!isDeliveriesPageHidden && (
+              {!isDeliveriesPageHidden && !isDeliveriesHidden && (
                 <button
                   onClick={() => navigate('/my-deliveries')}
                   className="rounded-xl bg-gradient-to-l from-primary to-primary/85 text-primary-foreground p-3 flex flex-col items-center justify-center gap-2 shadow-md active:scale-[0.97] transition-all duration-200 group"
@@ -211,7 +214,7 @@ const WorkerHome: React.FC = () => {
                 </button>
               )}
 
-              {!isMyStockPageHidden && (
+              {!isMyStockPageHidden && !isMyStockHidden && (
                 <button
                   onClick={() => navigate('/my-stock')}
                   className="rounded-xl border border-border bg-card text-card-foreground p-3 flex flex-col items-center justify-center gap-2 shadow-md active:scale-[0.97] transition-all duration-200 group"
@@ -239,7 +242,7 @@ const WorkerHome: React.FC = () => {
 
           {hasOrdersAccess && (
             <div className="grid grid-cols-2 gap-2">
-              {!isOrdersPageHidden && (
+              {!isOrdersPageHidden && !isCreateOrderHidden && (
                 <button
                   onClick={() => navigate('/orders')}
                   className="rounded-xl bg-gradient-to-l from-primary to-primary/85 text-primary-foreground p-3 flex flex-col items-center justify-center gap-2 shadow-md active:scale-[0.97] transition-all duration-200 group"
@@ -266,7 +269,7 @@ const WorkerHome: React.FC = () => {
 
           {/* Quick actions: Customers & Expenses */}
           <div className="grid grid-cols-2 gap-2">
-            {hasCustomerAccess && !isCustomersPageHidden && (
+            {hasCustomerAccess && !isCustomersPageHidden && !isAddCustomerHidden && (
               <button
                 onClick={() => navigate('/customers')}
                 className="rounded-xl border border-border bg-card text-card-foreground p-3 flex flex-col items-center justify-center gap-2 shadow-md active:scale-[0.97] transition-all duration-200 group"
@@ -277,7 +280,7 @@ const WorkerHome: React.FC = () => {
                 <span className="text-xs font-bold">{t('nav.customers')}</span>
               </button>
             )}
-            {hasExpenseAccess && !isExpensesPageHidden && (
+            {hasExpenseAccess && !isExpensesPageHidden && !isExpensesHidden && (
               <button
                 onClick={() => navigate('/expenses')}
                 className="rounded-xl border border-border bg-card text-card-foreground p-3 flex flex-col items-center justify-center gap-2 shadow-md active:scale-[0.97] transition-all duration-200 group"
