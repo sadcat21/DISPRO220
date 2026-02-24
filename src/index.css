@@ -107,6 +107,40 @@
   [dir="rtl"] {
     text-align: right;
   }
+
+  [dir="rtl"] input,
+  [dir="rtl"] textarea,
+  [dir="rtl"] select {
+    text-align: right;
+    direction: rtl;
+  }
+
+  [dir="rtl"] input[type="number"],
+  [dir="rtl"] input[type="tel"],
+  [dir="rtl"] input[type="email"],
+  [dir="rtl"] input[type="url"] {
+    text-align: left;
+    direction: ltr;
+  }
+
+  [dir="rtl"] .flex-row-reverse {
+    flex-direction: row;
+  }
+
+  [dir="rtl"] [data-radix-popper-content-wrapper] {
+    direction: rtl;
+    text-align: right;
+  }
+
+  [dir="rtl"] [role="dialog"],
+  [dir="rtl"] [role="alertdialog"] {
+    direction: rtl;
+    text-align: right;
+  }
+
+  [dir="rtl"] .recharts-wrapper {
+    direction: ltr;
+  }
 }
 
 @layer components {
