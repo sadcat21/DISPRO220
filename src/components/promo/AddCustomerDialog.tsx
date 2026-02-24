@@ -76,7 +76,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
   const [isTrusted, setIsTrusted] = useState(false);
   const [trustNotes, setTrustNotes] = useState('');
   const [defaultPaymentType, setDefaultPaymentType] = useState<string>('without_invoice');
-  const [defaultPriceSubtype, setDefaultPriceSubtype] = useState<string>('gros');
+  const [defaultPriceSubtype, setDefaultPriceSubtype] = useState<string>('retail');
   const effectiveBranchId = activeBranch ? activeBranch.id : null;
 
   // Fetch zones when sector changes
@@ -142,7 +142,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
       setIsTrusted(false);
       setTrustNotes('');
       setDefaultPaymentType('without_invoice');
-      setDefaultPriceSubtype('gros');
+      setDefaultPriceSubtype('retail');
       // Auto-capture GPS
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(

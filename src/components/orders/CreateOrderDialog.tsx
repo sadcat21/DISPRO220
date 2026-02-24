@@ -105,6 +105,18 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
     }
   }, [open, workerId, activeBranch, initialCustomerId]);
 
+  // Apply customer defaults when selectedCustomer changes (e.g. from initialCustomerId)
+  useEffect(() => {
+    if (selectedCustomer) {
+      if (selectedCustomer.default_payment_type) {
+        setPaymentType(selectedCustomer.default_payment_type as PaymentType);
+      }
+      if (selectedCustomer.default_price_subtype) {
+        setPriceSubType(selectedCustomer.default_price_subtype as PriceSubType);
+      }
+    }
+  }, [selectedCustomer]);
+
   const fetchData = async () => {
     setIsLoadingData(true);
     try {
