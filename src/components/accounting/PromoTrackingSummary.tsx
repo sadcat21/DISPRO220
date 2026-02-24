@@ -19,15 +19,9 @@ const formatGiftDisplay = (giftPieces: number, piecesPerBox: number): string => 
   return `${boxes}.${piecesStr}`;
 };
 
-const formatGiftLabel = (giftPieces: number, piecesPerBox: number): string => {
-  if (piecesPerBox <= 0) return `${giftPieces} قطعة`;
-  const boxes = Math.floor(giftPieces / piecesPerBox);
-  const remainingPieces = giftPieces % piecesPerBox;
-  const parts: string[] = [];
-  if (boxes > 0) parts.push(`${boxes} صندوق`);
-  if (remainingPieces > 0) parts.push(`${remainingPieces} قطعة`);
-  if (parts.length === 0) return '0';
-  return parts.join(' و ');
+const formatGiftLabel = (giftPieces: number, _piecesPerBox: number): string => {
+  if (giftPieces <= 0) return '0';
+  return `${giftPieces} قطعة`;
 };
 
 const formatDate = (dateStr: string): string => {
