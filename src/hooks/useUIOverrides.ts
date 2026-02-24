@@ -117,7 +117,6 @@ export const useToggleUIOverride = () => {
 // Predefined UI elements that can be hidden
 export const UI_ELEMENTS = {
   pages: [
-    { key: '/', label: 'الرئيسية' },
     { key: '/orders', label: 'الطلبيات' },
     { key: '/my-deliveries', label: 'توصيلاتي' },
     { key: '/my-promos', label: 'عملياتي' },
@@ -147,7 +146,15 @@ export const UI_ELEMENTS = {
     { key: '/stats', label: 'الإحصائيات' },
     { key: '/guide', label: 'الدليل' },
     { key: '/available-offers', label: 'العروض المتاحة' },
-    { key: '/daily-receipts', label: 'الفواتير اليومية' },
+  ],
+  tabs: [
+    { key: '/', label: 'الرئيسية' },
+    { key: '/orders', label: 'الطلبيات' },
+    { key: '/my-deliveries', label: 'توصيلاتي' },
+    { key: '/my-promos', label: 'عملياتي' },
+    { key: '/my-stock', label: 'مخزوني' },
+    { key: '/expenses', label: 'مصاريفي' },
+    { key: '/customer-debts', label: 'ديون العملاء' },
   ],
   buttons: [
     { key: 'direct_sale', label: 'البيع المباشر' },
@@ -155,6 +162,11 @@ export const UI_ELEMENTS = {
     { key: 'add_customer', label: 'إضافة عميل' },
     { key: 'add_promo', label: 'إضافة عملية' },
     { key: 'load_stock', label: 'تحميل مخزون' },
+  ],
+  actions: [
     { key: 'collect_debt', label: 'تحصيل دين' },
+    { key: 'modify_order', label: 'تعديل طلبية' },
+    { key: 'delete_order', label: 'حذف طلبية' },
+    { key: 'print_receipt', label: 'طباعة فاتورة' },
   ],
 };

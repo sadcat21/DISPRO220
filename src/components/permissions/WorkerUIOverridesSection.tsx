@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
-import { User, Loader2, Search, Eye, EyeOff, ChevronRight, Layout, MousePointer } from 'lucide-react';
+import React, { useState } from 'react';
+import { User, Loader2, Search, Eye, EyeOff, ChevronRight, Layout, MousePointer, Layers, Zap } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useWorkerUIOverrides, useToggleUIOverride, UI_ELEMENTS } from '@/hooks/useUIOverrides';
 import { useQuery } from '@tanstack/react-query';
@@ -16,6 +17,13 @@ interface WorkerBasic {
   role: string;
   is_active: boolean;
 }
+
+const CATEGORIES = [
+  { key: 'pages', label: 'الصفحات', icon: Layout, type: 'page', items: UI_ELEMENTS.pages },
+  { key: 'tabs', label: 'التبويبات', icon: Layers, type: 'tab', items: UI_ELEMENTS.tabs },
+  { key: 'buttons', label: 'الأزرار', icon: MousePointer, type: 'button', items: UI_ELEMENTS.buttons },
+  { key: 'actions', label: 'الإجراءات', icon: Zap, type: 'action', items: UI_ELEMENTS.actions },
+];
 
 const WorkerUIOverridesSection: React.FC = () => {
   const toggleOverride = useToggleUIOverride();
@@ -37,7 +45,6 @@ const WorkerUIOverridesSection: React.FC = () => {
 
   const { data: overrides, isLoading: overridesLoading } = useWorkerUIOverrides(selectedWorkerId);
 
-  // Count hidden elements per worker
   const { data: allOverrides } = useQuery({
     queryKey: ['all-ui-overrides-summary'],
     queryFn: async () => {
@@ -157,72 +164,58 @@ const WorkerUIOverridesSection: React.FC = () => {
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
       ) : (
-        <ScrollArea className="h-[calc(100vh-20rem)]">
-          <div className="space-y-4 pb-4">
-            {/* Pages section */}
-            <Card>
-              <CardContent className="p-3 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Layout className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-semibold">الصفحات والتبويبات</span>
-                </div>
-                <p className="text-xs text-muted-foreground">قم بتعطيل المفتاح لإخفاء الصفحة من قائمة التنقل لهذا العامل</p>
-                {UI_ELEMENTS.pages.map(page => {
-                  const hidden = isElementHidden('page', page.key);
-                  return (
-                    <div key={page.key} className="flex items-center justify-between gap-2 py-1">
-                      <div className="flex items-center gap-2 min-w-0">
-                        {hidden ? (
-                          <EyeOff className="w-3.5 h-3.5 text-destructive shrink-0" />
-                        ) : (
-                          <Eye className="w-3.5 h-3.5 text-green-600 shrink-0" />
-                        )}
-                        <span className="text-xs truncate">{page.label}</span>
-                        <span className="text-[10px] text-muted-foreground" dir="ltr">{page.key}</span>
-                      </div>
-                      <Switch
-                        checked={!hidden}
-                        onCheckedChange={() => handleToggle('page', page.key)}
-                        disabled={toggleOverride.isPending}
-                      />
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
+        <Tabs defaultValue="pages" dir="rtl">
+          <TabsList className="w-full grid grid-cols-4">
+            {CATEGORIES.map(cat => {
+              const hiddenInCat = overrides?.filter(o => o.element_type === cat.type && o.is_hidden).length || 0;
+              return (
+                <TabsTrigger key={cat.key} value={cat.key} className="text-xs gap-1 relative">
+                  <cat.icon className="w-3.5 h-3.5" />
+                  <span>{cat.label}</span>
+                  {hiddenInCat > 0 && (
+                    <Badge variant="destructive" className="absolute -top-1.5 -left-1.5 h-4 min-w-4 text-[9px] p-0 flex items-center justify-center">
+                      {hiddenInCat}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
 
-            {/* Buttons section */}
-            <Card>
-              <CardContent className="p-3 space-y-3">
-                <div className="flex items-center gap-2">
-                  <MousePointer className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-semibold">الأزرار والإجراءات</span>
-                </div>
-                <p className="text-xs text-muted-foreground">قم بتعطيل المفتاح لإخفاء الزر من واجهة هذا العامل</p>
-                {UI_ELEMENTS.buttons.map(button => {
-                  const hidden = isElementHidden('button', button.key);
-                  return (
-                    <div key={button.key} className="flex items-center justify-between gap-2 py-1">
-                      <div className="flex items-center gap-2 min-w-0">
-                        {hidden ? (
-                          <EyeOff className="w-3.5 h-3.5 text-destructive shrink-0" />
-                        ) : (
-                          <Eye className="w-3.5 h-3.5 text-green-600 shrink-0" />
-                        )}
-                        <span className="text-xs truncate">{button.label}</span>
-                      </div>
-                      <Switch
-                        checked={!hidden}
-                        onCheckedChange={() => handleToggle('button', button.key)}
-                        disabled={toggleOverride.isPending}
-                      />
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-          </div>
-        </ScrollArea>
+          {CATEGORIES.map(cat => (
+            <TabsContent key={cat.key} value={cat.key}>
+              <ScrollArea className="h-[calc(100vh-22rem)]">
+                <Card>
+                  <CardContent className="p-3 space-y-1">
+                    {cat.items.map(item => {
+                      const hidden = isElementHidden(cat.type, item.key);
+                      return (
+                        <div key={item.key} className="flex items-center justify-between gap-2 py-1.5 border-b border-border/50 last:border-0">
+                          <div className="flex items-center gap-2 min-w-0">
+                            {hidden ? (
+                              <EyeOff className="w-3.5 h-3.5 text-destructive shrink-0" />
+                            ) : (
+                              <Eye className="w-3.5 h-3.5 text-green-600 shrink-0" />
+                            )}
+                            <span className="text-xs truncate">{item.label}</span>
+                            {item.key.startsWith('/') && (
+                              <span className="text-[10px] text-muted-foreground" dir="ltr">{item.key}</span>
+                            )}
+                          </div>
+                          <Switch
+                            checked={!hidden}
+                            onCheckedChange={() => handleToggle(cat.type, item.key)}
+                            disabled={toggleOverride.isPending}
+                          />
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+              </ScrollArea>
+            </TabsContent>
+          ))}
+        </Tabs>
       )}
     </div>
   );
