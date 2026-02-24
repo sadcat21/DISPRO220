@@ -100,6 +100,21 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
         .gte('promo_date', periodStartTz)
         .lte('promo_date', periodEndTz);
 
+      // 4b. Fetch active offers to determine gift_quantity_unit per product
+      const promoProductIds = [...new Set((promosData || []).map(p => p.product_id))];
+      let offerUnitMap: Record<string, string> = {}; // productId -> gift_quantity_unit
+      if (promoProductIds.length > 0) {
+        const { data: productOffers } = await supabase
+          .from('product_offers')
+          .select('id, product_id, gift_quantity_unit')
+          .in('product_id', promoProductIds)
+          .eq('is_active', true);
+        (productOffers || []).forEach(o => {
+          // Use last active offer's unit for each product
+          offerUnitMap[o.product_id] = o.gift_quantity_unit || 'piece';
+        });
+      }
+
       // 5. Fetch offer names for gift items
       const giftOfferIds = new Set<string>();
       (orders || []).forEach(o => {
@@ -229,22 +244,26 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
         orderItemsGiftByProduct[p.productId] = (orderItemsGiftByProduct[p.productId] || 0) + p.giftQuantity;
       });
 
-      // Aggregate all promos by product_id first
-      const promosByProduct: Record<string, { totalGift: number; totalVente: number; product: any }> = {};
+      // Aggregate all promos by product_id first, normalizing to pieces
+      const promosByProduct: Record<string, { totalGiftPieces: number; totalVente: number; product: any }> = {};
       for (const promo of (promosData || [])) {
         const giftQty = Number(promo.gratuite_quantity || 0);
         if (giftQty <= 0) continue;
         if (!promosByProduct[promo.product_id]) {
-          promosByProduct[promo.product_id] = { totalGift: 0, totalVente: 0, product: promo.product };
+          promosByProduct[promo.product_id] = { totalGiftPieces: 0, totalVente: 0, product: promo.product };
         }
-        promosByProduct[promo.product_id].totalGift += giftQty;
+        // Convert to pieces based on the offer's gift_quantity_unit
+        const giftUnit = offerUnitMap[promo.product_id] || 'piece';
+        const piecesPerBox = Number((promo.product as any)?.pieces_per_box || 1);
+        const giftInPieces = giftUnit === 'box' ? giftQty * piecesPerBox : giftQty;
+        promosByProduct[promo.product_id].totalGiftPieces += giftInPieces;
         promosByProduct[promo.product_id].totalVente += Number(promo.vente_quantity || 0);
       }
 
       // Now add any promos that aren't fully covered by order_items
       for (const [productId, promoAgg] of Object.entries(promosByProduct)) {
         const alreadyTrackedGifts = orderItemsGiftByProduct[productId] || 0;
-        const extraGifts = promoAgg.totalGift - alreadyTrackedGifts;
+        const extraGifts = promoAgg.totalGiftPieces - alreadyTrackedGifts;
         if (extraGifts <= 0) continue; // Already fully tracked via order_items
 
         const key = `${productId}_promo`;
@@ -257,7 +276,7 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
           piecesPerBox: Number(product?.pieces_per_box || 1),
           offerName: 'عرض ترويجي',
         };
-        // Add gift value for extra gifts only (gifts are stored as pieces)
+        // Add gift value for extra gifts (now normalized to pieces)
         if (product) {
           const boxPrice = calcBoxPrice(product);
           const piecesPerBox = Number(product?.pieces_per_box || 1);
