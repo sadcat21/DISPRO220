@@ -23,6 +23,14 @@ export interface DebtCollectionBreakdown {
   receipt: number;
 }
 
+export interface PromoCustomerDetail {
+  customerId: string;
+  customerName: string;
+  quantitySold: number;
+  giftPieces: number;
+  date: string;
+}
+
 export interface PromoTrackingItem {
   productName: string;
   productId: string;
@@ -30,6 +38,7 @@ export interface PromoTrackingItem {
   giftQuantity: number;
   piecesPerBox: number;
   offerName: string;
+  customerDetails: PromoCustomerDetail[];
 }
 
 export interface SessionCalculations {
@@ -69,7 +78,7 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
       // 1. Fetch delivered orders with items
       const { data: orders } = await supabase
         .from('orders')
-        .select('id, total_amount, payment_status, payment_type, invoice_payment_method, partial_amount, order_items(quantity, unit_price, total_price, gift_quantity, gift_offer_id, product_id, product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box))')
+        .select('id, total_amount, payment_status, payment_type, invoice_payment_method, partial_amount, customer_id, customer:customers(name), updated_at, order_items(quantity, unit_price, total_price, gift_quantity, gift_offer_id, product_id, product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box))')
         .eq('assigned_worker_id', workerId)
         .eq('status', 'delivered')
         .gte('updated_at', periodStartTz)
@@ -95,7 +104,7 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
       // 4. Fetch promos from promos table (fallback/complement to order_items gift data)
       const { data: promosData } = await supabase
         .from('promos')
-        .select('product_id, vente_quantity, gratuite_quantity, product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box)')
+        .select('product_id, vente_quantity, gratuite_quantity, promo_date, customer_id, customer:customers(name), product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box)')
         .eq('worker_id', workerId)
         .gte('promo_date', periodStartTz)
         .lte('promo_date', periodEndTz);
@@ -206,10 +215,20 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
                 giftQuantity: 0,
                 piecesPerBox: piecesPerBox,
                 offerName: offerNamesMap[offerId] || '',
+                customerDetails: [],
               };
             }
             promoMap[key].quantitySold += Number(item.quantity || 0);
             promoMap[key].giftQuantity += giftQty;
+            // Add customer detail
+            const customerName = (order as any).customer?.name || '';
+            promoMap[key].customerDetails.push({
+              customerId: (order as any).customer_id || '',
+              customerName,
+              quantitySold: Number(item.quantity || 0),
+              giftPieces: giftQty,
+              date: (order as any).updated_at || '',
+            });
           }
         }
 
@@ -245,12 +264,12 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
       });
 
       // Aggregate all promos by product_id first, normalizing to pieces
-      const promosByProduct: Record<string, { totalGiftPieces: number; totalVente: number; product: any }> = {};
+      const promosByProduct: Record<string, { totalGiftPieces: number; totalVente: number; product: any; customers: PromoCustomerDetail[] }> = {};
       for (const promo of (promosData || [])) {
         const giftQty = Number(promo.gratuite_quantity || 0);
         if (giftQty <= 0) continue;
         if (!promosByProduct[promo.product_id]) {
-          promosByProduct[promo.product_id] = { totalGiftPieces: 0, totalVente: 0, product: promo.product };
+          promosByProduct[promo.product_id] = { totalGiftPieces: 0, totalVente: 0, product: promo.product, customers: [] };
         }
         // Convert to pieces based on the offer's gift_quantity_unit
         const giftUnit = offerUnitMap[promo.product_id] || 'piece';
@@ -258,6 +277,13 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
         const giftInPieces = giftUnit === 'box' ? giftQty * piecesPerBox : giftQty;
         promosByProduct[promo.product_id].totalGiftPieces += giftInPieces;
         promosByProduct[promo.product_id].totalVente += Number(promo.vente_quantity || 0);
+        promosByProduct[promo.product_id].customers.push({
+          customerId: (promo as any).customer_id || '',
+          customerName: (promo as any).customer?.name || '',
+          quantitySold: Number(promo.vente_quantity || 0),
+          giftPieces: giftInPieces,
+          date: (promo as any).promo_date || '',
+        });
       }
 
       // Now add any promos that aren't fully covered by order_items
@@ -275,6 +301,7 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
           giftQuantity: extraGifts,
           piecesPerBox: Number(product?.pieces_per_box || 1),
           offerName: 'عرض ترويجي',
+          customerDetails: promoAgg.customers,
         };
         // Add gift value for extra gifts (now normalized to pieces)
         if (product) {

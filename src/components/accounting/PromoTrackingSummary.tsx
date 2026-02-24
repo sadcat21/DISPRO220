@@ -1,5 +1,5 @@
-import React from 'react';
-import { Gift, Package } from 'lucide-react';
+import React, { useState } from 'react';
+import { Gift, Package, ChevronDown, ChevronUp, User, Calendar } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { PromoTrackingItem } from '@/hooks/useSessionCalculations';
 
@@ -8,12 +8,6 @@ interface PromoTrackingSummaryProps {
   totalGiftValue: number;
 }
 
-/**
- * Format gift quantity as mixed boxes.pieces display
- * Integer part = boxes, decimal part = pieces (padded to 2 digits)
- * e.g. 7 pieces (ppb=24) → "0.07", 10 pieces → "0.10", 
- *      24 pieces (ppb=24) → "1.00", 29 pieces → "1.05"
- */
 const formatGiftDisplay = (giftPieces: number, piecesPerBox: number): string => {
   if (piecesPerBox <= 0) return `${giftPieces} قطعة`;
   const boxes = Math.floor(giftPieces / piecesPerBox);
@@ -33,8 +27,19 @@ const formatGiftLabel = (giftPieces: number, piecesPerBox: number): string => {
   return parts.join(' و ');
 };
 
+const formatDate = (dateStr: string): string => {
+  if (!dateStr) return '-';
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('ar-DZ', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return dateStr;
+  }
+};
+
 const PromoTrackingSummary: React.FC<PromoTrackingSummaryProps> = ({ items, totalGiftValue }) => {
   const { t } = useLanguage();
+  const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
 
   if (items.length === 0) {
     return (
@@ -65,26 +70,72 @@ const PromoTrackingSummary: React.FC<PromoTrackingSummaryProps> = ({ items, tota
           <span className="col-span-3 text-center">الهدايا</span>
           <span className="col-span-3 text-end">العرض</span>
         </div>
-        {items.map((item, idx) => (
-          <div key={idx} className="grid grid-cols-12 gap-1 text-xs p-2 border-b border-dashed last:border-0 items-center">
-            <div className="col-span-4 flex items-center gap-1.5">
-              <Package className="w-3 h-3 text-muted-foreground shrink-0" />
-              <span className="text-wrap">{item.productName}</span>
-            </div>
-            <span className="col-span-2 text-center font-bold">{item.quantitySold}</span>
-            <div className="col-span-3 text-center">
-              <span className="font-bold text-purple-600" title={formatGiftLabel(item.giftQuantity, item.piecesPerBox)}>
-                {formatGiftDisplay(item.giftQuantity, item.piecesPerBox)} 🎁
-              </span>
-              <div className="text-[9px] text-muted-foreground">
-                {formatGiftLabel(item.giftQuantity, item.piecesPerBox)}
+        {items.map((item, idx) => {
+          const isExpanded = expandedIdx === idx;
+          const hasDetails = item.customerDetails && item.customerDetails.length > 0;
+          return (
+            <div key={idx}>
+              <div
+                className={`grid grid-cols-12 gap-1 text-xs p-2 border-b border-dashed last:border-0 items-center ${hasDetails ? 'cursor-pointer hover:bg-muted/50 transition-colors' : ''}`}
+                onClick={() => hasDetails && setExpandedIdx(isExpanded ? null : idx)}
+              >
+                <div className="col-span-4 flex items-center gap-1.5">
+                  {hasDetails ? (
+                    isExpanded ? <ChevronUp className="w-3 h-3 text-primary shrink-0" /> : <ChevronDown className="w-3 h-3 text-primary shrink-0" />
+                  ) : (
+                    <Package className="w-3 h-3 text-muted-foreground shrink-0" />
+                  )}
+                  <span className="text-wrap">{item.productName}</span>
+                </div>
+                <span className="col-span-2 text-center font-bold">{item.quantitySold}</span>
+                <div className="col-span-3 text-center">
+                  <span className="font-bold text-purple-600" title={formatGiftLabel(item.giftQuantity, item.piecesPerBox)}>
+                    {formatGiftDisplay(item.giftQuantity, item.piecesPerBox)} 🎁
+                  </span>
+                  <div className="text-[9px] text-muted-foreground">
+                    {formatGiftLabel(item.giftQuantity, item.piecesPerBox)}
+                  </div>
+                </div>
+                <span className="col-span-3 text-end text-muted-foreground text-[10px]">
+                  {item.offerName || '-'}
+                </span>
               </div>
+
+              {/* Expanded customer details */}
+              {isExpanded && hasDetails && (
+                <div className="bg-accent/30 border-t border-border">
+                  <div className="grid grid-cols-12 gap-1 text-[9px] text-muted-foreground font-medium px-3 py-1.5 border-b border-border/50">
+                    <span className="col-span-4">العميل</span>
+                    <span className="col-span-2 text-center">الكمية</span>
+                    <span className="col-span-3 text-center">الهدية</span>
+                    <span className="col-span-3 text-end">التاريخ</span>
+                  </div>
+                  {item.customerDetails.map((cd, cdIdx) => (
+                    <div key={cdIdx} className="grid grid-cols-12 gap-1 text-[11px] px-3 py-1.5 border-b border-dashed border-border/30 last:border-0 items-center">
+                      <div className="col-span-4 flex items-center gap-1">
+                        <User className="w-3 h-3 text-muted-foreground shrink-0" />
+                        <span className="truncate">{cd.customerName || '-'}</span>
+                      </div>
+                      <span className="col-span-2 text-center font-semibold">{cd.quantitySold}</span>
+                      <div className="col-span-3 text-center">
+                        <span className="font-semibold text-purple-600">
+                          {formatGiftDisplay(cd.giftPieces, item.piecesPerBox)}
+                        </span>
+                        <div className="text-[8px] text-muted-foreground">
+                          {formatGiftLabel(cd.giftPieces, item.piecesPerBox)}
+                        </div>
+                      </div>
+                      <div className="col-span-3 text-end flex items-center justify-end gap-0.5 text-muted-foreground">
+                        <Calendar className="w-2.5 h-2.5 shrink-0" />
+                        <span className="text-[9px]">{formatDate(cd.date)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <span className="col-span-3 text-end text-muted-foreground text-[10px]">
-              {item.offerName || '-'}
-            </span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
