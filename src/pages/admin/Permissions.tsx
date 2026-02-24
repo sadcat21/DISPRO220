@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   Dialog,
@@ -166,125 +167,142 @@ const Permissions: React.FC = () => {
           <Shield className="w-6 h-6 text-primary" />
           <h1 className="text-2xl font-bold">{t('permissions.title')}</h1>
         </div>
-        
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="w-4 h-4" />
-              {t('permissions.add_role')}
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t('permissions.add_role')}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div>
-                <label className="text-sm font-medium">{t('permissions.role_code')}</label>
-                <Input
-                  value={newRole.code}
-                  onChange={(e) => setNewRole(prev => ({ ...prev, code: e.target.value.toLowerCase().replace(/\s/g, '_') }))}
-                  placeholder={t('permissions.role_code_example')}
-                  dir="ltr"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">{t('permissions.role_name')}</label>
-                <Input
-                  value={newRole.name_ar}
-                  onChange={(e) => setNewRole(prev => ({ ...prev, name_ar: e.target.value }))}
-                  placeholder={t('permissions.role_name_example')}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">{t('permissions.role_description')}</label>
-                <Input
-                  value={newRole.description_ar}
-                  onChange={(e) => setNewRole(prev => ({ ...prev, description_ar: e.target.value }))}
-                  placeholder={t('permissions.role_description_placeholder')}
-                />
-              </div>
-              <Button onClick={handleCreateRole} className="w-full" disabled={createRole.isPending}>
-                {createRole.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : t('permissions.create_role')}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
 
-      {/* System Roles Section */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Shield className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold">{t('permissions.system_roles')}</h2>
-        </div>
-        {roles?.filter(role => SYSTEM_ROLE_CODES.includes(role.code)).map(role => (
-          <RoleCard 
-            key={role.id}
-            role={role}
-            isExpanded={expandedRoles.has(role.id)}
-            onToggle={() => toggleRole(role.id)}
-            rolePermissions={rolePermissions}
-            groupedPermissions={groupedPermissions}
-            onTogglePermission={togglePermission}
-            onSave={handleSavePermissions}
-            onDelete={setDeleteRoleId}
-            isSaving={updateRolePermissions.isPending}
-          />
-        ))}
-      </div>
+      <Tabs defaultValue="roles" dir="rtl">
+        <TabsList className="w-full">
+          <TabsTrigger value="roles" className="flex-1 gap-1.5">
+            <Shield className="w-4 h-4" />
+            صلاحيات الأدوار
+          </TabsTrigger>
+          <TabsTrigger value="individual" className="flex-1 gap-1.5">
+            <User className="w-4 h-4" />
+            صلاحيات فردية
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Functional Roles Section */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Briefcase className="w-5 h-5 text-accent-foreground" />
-          <h2 className="text-lg font-semibold">{t('permissions.functional_roles')}</h2>
-          <Badge variant="outline" className="text-xs">{t('workers.for_workers')}</Badge>
-        </div>
-        {roles?.filter(role => FUNCTIONAL_ROLE_CODES.includes(role.code)).map(role => (
-          <RoleCard 
-            key={role.id}
-            role={role}
-            isExpanded={expandedRoles.has(role.id)}
-            onToggle={() => toggleRole(role.id)}
-            rolePermissions={rolePermissions}
-            groupedPermissions={groupedPermissions}
-            onTogglePermission={togglePermission}
-            onSave={handleSavePermissions}
-            onDelete={setDeleteRoleId}
-            isSaving={updateRolePermissions.isPending}
-            isFunctional
-          />
-        ))}
-      </div>
-
-      {/* Custom Roles Section (non-system, non-functional) */}
-      {roles?.filter(role => !SYSTEM_ROLE_CODES.includes(role.code) && !FUNCTIONAL_ROLE_CODES.includes(role.code)).length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Plus className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold">{t('permissions.custom_roles')}</h2>
+        <TabsContent value="roles" className="space-y-6 mt-4">
+          <div className="flex justify-end">
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  {t('permissions.add_role')}
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{t('permissions.add_role')}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div>
+                    <label className="text-sm font-medium">{t('permissions.role_code')}</label>
+                    <Input
+                      value={newRole.code}
+                      onChange={(e) => setNewRole(prev => ({ ...prev, code: e.target.value.toLowerCase().replace(/\s/g, '_') }))}
+                      placeholder={t('permissions.role_code_example')}
+                      dir="ltr"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">{t('permissions.role_name')}</label>
+                    <Input
+                      value={newRole.name_ar}
+                      onChange={(e) => setNewRole(prev => ({ ...prev, name_ar: e.target.value }))}
+                      placeholder={t('permissions.role_name_example')}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">{t('permissions.role_description')}</label>
+                    <Input
+                      value={newRole.description_ar}
+                      onChange={(e) => setNewRole(prev => ({ ...prev, description_ar: e.target.value }))}
+                      placeholder={t('permissions.role_description_placeholder')}
+                    />
+                  </div>
+                  <Button onClick={handleCreateRole} className="w-full" disabled={createRole.isPending}>
+                    {createRole.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : t('permissions.create_role')}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
-          {roles?.filter(role => !SYSTEM_ROLE_CODES.includes(role.code) && !FUNCTIONAL_ROLE_CODES.includes(role.code)).map(role => (
-            <RoleCard 
-              key={role.id}
-              role={role}
-              isExpanded={expandedRoles.has(role.id)}
-              onToggle={() => toggleRole(role.id)}
-              rolePermissions={rolePermissions}
-              groupedPermissions={groupedPermissions}
-              onTogglePermission={togglePermission}
-              onSave={handleSavePermissions}
-              onDelete={setDeleteRoleId}
-              isSaving={updateRolePermissions.isPending}
-            />
-          ))}
-        </div>
-      )}
 
+          {/* System Roles Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-primary" />
+              <h2 className="text-lg font-semibold">{t('permissions.system_roles')}</h2>
+            </div>
+            {roles?.filter(role => SYSTEM_ROLE_CODES.includes(role.code)).map(role => (
+              <RoleCard 
+                key={role.id}
+                role={role}
+                isExpanded={expandedRoles.has(role.id)}
+                onToggle={() => toggleRole(role.id)}
+                rolePermissions={rolePermissions}
+                groupedPermissions={groupedPermissions}
+                onTogglePermission={togglePermission}
+                onSave={handleSavePermissions}
+                onDelete={setDeleteRoleId}
+                isSaving={updateRolePermissions.isPending}
+              />
+            ))}
+          </div>
 
-      {/* Individual Worker Permissions */}
-      <WorkerPermissionsSection />
+          {/* Functional Roles Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Briefcase className="w-5 h-5 text-accent-foreground" />
+              <h2 className="text-lg font-semibold">{t('permissions.functional_roles')}</h2>
+              <Badge variant="outline" className="text-xs">{t('workers.for_workers')}</Badge>
+            </div>
+            {roles?.filter(role => FUNCTIONAL_ROLE_CODES.includes(role.code)).map(role => (
+              <RoleCard 
+                key={role.id}
+                role={role}
+                isExpanded={expandedRoles.has(role.id)}
+                onToggle={() => toggleRole(role.id)}
+                rolePermissions={rolePermissions}
+                groupedPermissions={groupedPermissions}
+                onTogglePermission={togglePermission}
+                onSave={handleSavePermissions}
+                onDelete={setDeleteRoleId}
+                isSaving={updateRolePermissions.isPending}
+                isFunctional
+              />
+            ))}
+          </div>
+
+          {/* Custom Roles Section */}
+          {roles?.filter(role => !SYSTEM_ROLE_CODES.includes(role.code) && !FUNCTIONAL_ROLE_CODES.includes(role.code)).length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Plus className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-semibold">{t('permissions.custom_roles')}</h2>
+              </div>
+              {roles?.filter(role => !SYSTEM_ROLE_CODES.includes(role.code) && !FUNCTIONAL_ROLE_CODES.includes(role.code)).map(role => (
+                <RoleCard 
+                  key={role.id}
+                  role={role}
+                  isExpanded={expandedRoles.has(role.id)}
+                  onToggle={() => toggleRole(role.id)}
+                  rolePermissions={rolePermissions}
+                  groupedPermissions={groupedPermissions}
+                  onTogglePermission={togglePermission}
+                  onSave={handleSavePermissions}
+                  onDelete={setDeleteRoleId}
+                  isSaving={updateRolePermissions.isPending}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="individual" className="mt-4">
+          <WorkerPermissionsSection />
+        </TabsContent>
+      </Tabs>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteRoleId} onOpenChange={() => setDeleteRoleId(null)}>
