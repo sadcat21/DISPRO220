@@ -57,6 +57,7 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
   const { t, dir } = useLanguage();
   const [quantity, setQuantity] = useState(1);
   const [giftPieces, setGiftPieces] = useState(0);
+  const [giftOfferId, setGiftOfferId] = useState<string | undefined>(undefined);
   const [offerApplied, setOfferApplied] = useState(false);
   const [isUnitSale, setIsUnitSale] = useState(false);
   const [showPricingOverride, setShowPricingOverride] = useState(false);
@@ -76,14 +77,22 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
         onConfirm(product.id, quantity, undefined, true, perItemPricing);
       } else {
         const giftBoxes = product.pieces_per_box > 0 ? Math.floor(giftPieces / product.pieces_per_box) : 0;
-        if (offerApplied && (giftPieces > 0 || giftBoxes > 0)) {
-          onConfirm(product.id, quantity, { giftQuantity: giftBoxes, giftPieces }, false, perItemPricing);
+        // Auto-include gifts if available (even if user didn't click "Apply Offer")
+        const hasGifts = giftPieces > 0 || giftBoxes > 0;
+        if (hasGifts) {
+          // If offer wasn't explicitly applied, auto-apply the quantity adjustment
+          let finalQuantity = quantity;
+          if (!offerApplied && giftBoxes > 0) {
+            finalQuantity = quantity + giftBoxes;
+          }
+          onConfirm(product.id, finalQuantity, { giftQuantity: giftBoxes, giftPieces, offerId: giftOfferId }, false, perItemPricing);
         } else {
           onConfirm(product.id, quantity, undefined, false, perItemPricing);
         }
       }
       setQuantity(1);
       setGiftPieces(0);
+      setGiftOfferId(undefined);
       setOfferApplied(false);
       setIsUnitSale(false);
       setShowPricingOverride(false);
@@ -96,8 +105,9 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
     setQuantity(Math.max(1, quantity + delta));
   };
 
-  const handleGiftCalculated = useCallback((pieces: number) => {
+  const handleGiftCalculated = useCallback((pieces: number, offerId?: string) => {
     setGiftPieces(pieces);
+    setGiftOfferId(offerId);
     setOfferApplied(false);
   }, []);
 
@@ -111,6 +121,7 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
       setGiftPieces(0);
+      setGiftOfferId(undefined);
       setQuantity(1);
       setOfferApplied(false);
       setIsUnitSale(false);

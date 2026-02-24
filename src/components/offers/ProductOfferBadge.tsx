@@ -23,7 +23,7 @@ interface ProductOfferBadgeProps {
   productId: string;
   quantity: number;
   piecesPerBox?: number;
-  onGiftCalculated?: (giftPieces: number) => void;
+  onGiftCalculated?: (giftPieces: number, offerId?: string) => void;
 }
 
 const ProductOfferBadge: React.FC<ProductOfferBadgeProps> = ({ 
@@ -180,12 +180,15 @@ const ProductOfferBadge: React.FC<ProductOfferBadgeProps> = ({
     return total + calculateGiftPieces(offer, quantity);
   }, 0);
 
+  // Find the primary applicable offer ID
+  const primaryOfferId = applicableOffers.length > 0 ? applicableOffers[0].id : undefined;
+
   // Notify parent of gift calculation
   useEffect(() => {
     if (onGiftCalculated) {
-      onGiftCalculated(totalGiftPieces);
+      onGiftCalculated(totalGiftPieces, primaryOfferId);
     }
-  }, [totalGiftPieces, onGiftCalculated]);
+  }, [totalGiftPieces, primaryOfferId, onGiftCalculated]);
 
   const handleOfferClick = (offer: ProductOfferWithDetails) => {
     setSelectedOffer(offer);
