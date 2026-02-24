@@ -167,7 +167,6 @@ export const useNavigation = () => {
 
     // Daily receipts - always available for workers
     moreItems.push({ path: '/daily-receipts', icon: FileText, label: 'الفواتير اليومية' });
-    moreItems.push({ path: '/expenses', icon: Wallet, label: t('expenses.my_expenses') });
 
     // Guide page - always available for workers
     moreItems.push({ path: '/guide', icon: BookOpen, label: t('nav.guide') });
