@@ -230,7 +230,7 @@ const SectorCustomersPopover: React.FC = () => {
           عملاء اليوم — {DAY_NAMES[todayName] || todayName}
         </div>
 
-        <Tabs defaultValue="delivery" className="flex flex-col flex-1 min-h-0">
+        <Tabs defaultValue="sales" className="flex flex-col flex-1 min-h-0">
           <TabsList className="w-full rounded-none border-b shrink-0">
             <TabsTrigger value="delivery" className="flex-1 gap-1 text-xs">
               <Truck className="w-3.5 h-3.5" />
@@ -244,8 +244,7 @@ const SectorCustomersPopover: React.FC = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="delivery" className="m-0 flex-1 min-h-0 overflow-hidden">
-            <ScrollArea className="h-full max-h-[55vh]">
+          <TabsContent value="delivery" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
               <CustomerList
                 customers={deliveryCustomers}
                 emptyMessage="لا توجد عمليات توصيل اليوم"
@@ -254,10 +253,9 @@ const SectorCustomersPopover: React.FC = () => {
                 showVisitButton={false}
                 checkingLocationFor={checkingLocationFor}
               />
-            </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="sales" className="m-0 flex-1 min-h-0 overflow-hidden">
+          <TabsContent value="sales" className="m-0 flex-1 min-h-0">
             <Tabs defaultValue="not-visited" className="flex flex-col h-full min-h-0">
               <TabsList className="w-full rounded-none border-b shrink-0 h-auto p-0.5 gap-0.5">
                 <TabsTrigger value="not-visited" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-orange-100 data-[state=active]:text-orange-700">
@@ -277,8 +275,7 @@ const SectorCustomersPopover: React.FC = () => {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="not-visited" className="m-0 flex-1 min-h-0 overflow-hidden">
-                <ScrollArea className="h-full max-h-[45vh]">
+              <TabsContent value="not-visited" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
                   <CustomerList
                     customers={salesNotVisited}
                     emptyMessage="تمت زيارة جميع العملاء ✓"
@@ -287,10 +284,8 @@ const SectorCustomersPopover: React.FC = () => {
                     showVisitButton={true}
                     checkingLocationFor={checkingLocationFor}
                   />
-                </ScrollArea>
               </TabsContent>
-              <TabsContent value="visited-no-order" className="m-0 flex-1 min-h-0 overflow-hidden">
-                <ScrollArea className="h-full max-h-[45vh]">
+              <TabsContent value="visited-no-order" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
                   <CustomerList
                     customers={salesVisitedNoOrder}
                     emptyMessage="لا توجد زيارات بدون طلبيات"
@@ -299,10 +294,8 @@ const SectorCustomersPopover: React.FC = () => {
                     showVisitButton={false}
                     checkingLocationFor={checkingLocationFor}
                   />
-                </ScrollArea>
               </TabsContent>
-              <TabsContent value="with-orders" className="m-0 flex-1 min-h-0 overflow-hidden">
-                <ScrollArea className="h-full max-h-[45vh]">
+              <TabsContent value="with-orders" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
                   <CustomerList
                     customers={salesWithOrders}
                     emptyMessage="لا توجد طلبيات بعد"
@@ -311,7 +304,6 @@ const SectorCustomersPopover: React.FC = () => {
                     showVisitButton={false}
                     checkingLocationFor={checkingLocationFor}
                   />
-                </ScrollArea>
               </TabsContent>
             </Tabs>
           </TabsContent>
