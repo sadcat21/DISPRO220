@@ -362,6 +362,33 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
               <User className="w-4 h-4" />
               المعلومات الأساسية
             </Label>
+            {/* Translation mode toggle */}
+            <div className="flex rounded-md border border-input overflow-hidden">
+              <button
+                type="button"
+                className={`flex items-center gap-1 px-2 py-1.5 text-xs flex-1 transition-colors ${
+                  translationMode === 'transliterate'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-background text-muted-foreground hover:bg-muted'
+                }`}
+                onClick={() => setTranslationMode('transliterate')}
+              >
+                <Type className="w-3 h-3" />
+                ترجمة حرفية (نطق)
+              </button>
+              <button
+                type="button"
+                className={`flex items-center gap-1 px-2 py-1.5 text-xs flex-1 transition-colors ${
+                  translationMode === 'translate'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-background text-muted-foreground hover:bg-muted'
+                }`}
+                onClick={() => setTranslationMode('translate')}
+              >
+                <BookOpen className="w-3 h-3" />
+                ترجمة المعنى
+              </button>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="edit-name">اسم العميل *</Label>
               <Input id="edit-name" value={name} onChange={(e) => setName(e.target.value)} onBlur={handleNameBlur} placeholder="أدخل اسم العميل" className="text-right" required />
@@ -395,7 +422,24 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-store-name">اسم المحل *</Label>
+              <Label htmlFor="edit-store-name" className="flex items-center gap-1">
+                اسم المحل *
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 shrink-0"
+                  title="نسخ اسم العميل إلى اسم المحل"
+                  onClick={() => {
+                    if (name.trim()) {
+                      setStoreName(name.trim());
+                      if (nameFr.trim()) setStoreNameFr(nameFr.trim());
+                    }
+                  }}
+                >
+                  <User className="w-3 h-3" />
+                </Button>
+              </Label>
               <Input id="edit-store-name" value={storeName} onChange={(e) => setStoreName(e.target.value)} onBlur={handleStoreNameBlur} placeholder="اسم المحل (عربي أو فرنسي)" className="text-right" required />
             </div>
 
@@ -408,33 +452,6 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
               <Input id="edit-store-name-fr" value={storeNameFr} onChange={(e) => setStoreNameFr(e.target.value)} placeholder="Nom du magasin (Français)" className="text-left" dir="ltr" />
             </div>
 
-            {/* Translation mode toggle */}
-            <div className="flex rounded-md border border-input overflow-hidden">
-              <button
-                type="button"
-                className={`flex items-center gap-1 px-2 py-1.5 text-xs flex-1 transition-colors ${
-                  translationMode === 'transliterate'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-background text-muted-foreground hover:bg-muted'
-                }`}
-                onClick={() => setTranslationMode('transliterate')}
-              >
-                <Type className="w-3 h-3" />
-                ترجمة حرفية (نطق)
-              </button>
-              <button
-                type="button"
-                className={`flex items-center gap-1 px-2 py-1.5 text-xs flex-1 transition-colors ${
-                  translationMode === 'translate'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-background text-muted-foreground hover:bg-muted'
-                }`}
-                onClick={() => setTranslationMode('translate')}
-              >
-                <BookOpen className="w-3 h-3" />
-                ترجمة المعنى
-              </button>
-            </div>
 
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
