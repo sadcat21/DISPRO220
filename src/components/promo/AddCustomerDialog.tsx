@@ -147,24 +147,33 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
       setDefaultPriceSubtype('retail');
       setGpsGranted(false);
       setGpsLoading(true);
-      // Auto-capture GPS
+      // Auto-capture GPS with fallback strategy
+      const onSuccess = (position: GeolocationPosition) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        setLatitude(lat);
+        setLongitude(lng);
+        setGpsGranted(true);
+        setGpsLoading(false);
+        fetchAddressFromCoords(lat, lng);
+      };
       if (navigator.geolocation) {
+        // Try fast (cached/network) first
         navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            setLatitude(lat);
-            setLongitude(lng);
-            setGpsGranted(true);
-            setGpsLoading(false);
-            fetchAddressFromCoords(lat, lng);
+          onSuccess,
+          () => {
+            // Fallback: try with high accuracy and longer timeout
+            navigator.geolocation.getCurrentPosition(
+              onSuccess,
+              (err) => {
+                console.warn('GPS failed:', err.message);
+                setGpsGranted(false);
+                setGpsLoading(false);
+              },
+              { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+            );
           },
-          (err) => {
-            console.warn('GPS auto-capture failed:', err.message);
-            setGpsGranted(false);
-            setGpsLoading(false);
-          },
-          { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
+          { enableHighAccuracy: false, timeout: 5000, maximumAge: 120000 }
         );
       } else {
         setGpsGranted(false);
@@ -384,21 +393,28 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
                   className="gap-2"
                   onClick={() => {
                     setGpsLoading(true);
+                    const onOk = (position: GeolocationPosition) => {
+                      setLatitude(position.coords.latitude);
+                      setLongitude(position.coords.longitude);
+                      setGpsGranted(true);
+                      setGpsLoading(false);
+                      fetchAddressFromCoords(position.coords.latitude, position.coords.longitude);
+                      toast.success('تم تحديد الموقع بنجاح');
+                    };
                     if (navigator.geolocation) {
                       navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                          setLatitude(position.coords.latitude);
-                          setLongitude(position.coords.longitude);
-                          setGpsGranted(true);
-                          setGpsLoading(false);
-                          fetchAddressFromCoords(position.coords.latitude, position.coords.longitude);
-                          toast.success('تم تحديد الموقع بنجاح');
-                        },
+                        onOk,
                         () => {
-                          setGpsLoading(false);
-                          toast.error('فشل الحصول على الموقع. تأكد من تفعيل GPS في إعدادات الجهاز');
+                          navigator.geolocation.getCurrentPosition(
+                            onOk,
+                            () => {
+                              setGpsLoading(false);
+                              toast.error('فشل الحصول على الموقع. تأكد من تفعيل GPS في إعدادات الجهاز');
+                            },
+                            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+                          );
                         },
-                        { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
+                        { enableHighAccuracy: false, timeout: 5000, maximumAge: 120000 }
                       );
                     } else {
                       setGpsLoading(false);
