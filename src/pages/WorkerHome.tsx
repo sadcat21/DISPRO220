@@ -187,59 +187,63 @@ const WorkerHome: React.FC = () => {
       ) : (hasOrdersAccess || hasDeliveryAccess || hasDebtAccess) ? (
         (() => {
           // Build visible actions dynamically
-          const quickActions: { key: string; icon: React.ReactNode; label: string; onClick: () => void; variant: 'primary' | 'secondary' | 'outline' | 'destructive' }[] = [];
+          const quickActions: { key: string; icon: React.ReactNode; label: string; onClick: () => void }[] = [];
 
           if (hasDeliveryAccess && !isDeliveriesPageHidden && !isDeliveriesHidden) {
-            quickActions.push({ key: 'deliveries', icon: <Truck className="w-5 h-5" />, label: t('deliveries.title'), onClick: () => navigate('/my-deliveries'), variant: 'primary' });
+            quickActions.push({ key: 'deliveries', icon: <Truck className="w-6 h-6" />, label: t('deliveries.title'), onClick: () => navigate('/my-deliveries') });
           }
           if (hasDeliveryAccess && !isDirectSaleHidden) {
-            quickActions.push({ key: 'direct-sale', icon: <ShoppingBag className="w-5 h-5 text-primary" />, label: t('stock.direct_sale'), onClick: () => setShowActionDialog(true), variant: 'secondary' });
+            quickActions.push({ key: 'direct-sale', icon: <ShoppingBag className="w-6 h-6" />, label: t('stock.direct_sale'), onClick: () => setShowActionDialog(true) });
           }
           if (hasDeliveryAccess && !isMyStockPageHidden && !isMyStockHidden) {
-            quickActions.push({ key: 'my-stock', icon: <Package className="w-5 h-5 text-foreground" />, label: t('stock.my_stock'), onClick: () => navigate('/my-stock'), variant: 'outline' });
+            quickActions.push({ key: 'my-stock', icon: <Package className="w-6 h-6" />, label: t('stock.my_stock'), onClick: () => navigate('/my-stock') });
           }
           if (hasOrdersAccess && !isOrdersPageHidden && !isCreateOrderHidden) {
-            quickActions.push({ key: 'orders', icon: <ShoppingCart className="w-5 h-5" />, label: t('orders.manage'), onClick: () => navigate('/orders'), variant: 'primary' });
+            quickActions.push({ key: 'orders', icon: <ShoppingCart className="w-6 h-6" />, label: t('orders.manage'), onClick: () => navigate('/orders') });
           }
           if (hasOrdersAccess && !hasDeliveryAccess && !isMyPromosPageHidden) {
-            quickActions.push({ key: 'promos', icon: <Gift className="w-5 h-5 text-primary" />, label: t('promos.add_new'), onClick: () => navigate('/my-promos'), variant: 'secondary' });
+            quickActions.push({ key: 'promos', icon: <Gift className="w-6 h-6" />, label: t('promos.add_new'), onClick: () => navigate('/my-promos') });
           }
           if (hasDebtAccess && !isCollectDebtHidden && !isDebtsPageHidden) {
-            quickActions.push({ key: 'debts', icon: <Banknote className="w-5 h-5 text-destructive" />, label: t('debts.title'), onClick: () => navigate('/customer-debts'), variant: 'destructive' });
+            quickActions.push({ key: 'debts', icon: <Banknote className="w-6 h-6" />, label: t('debts.title'), onClick: () => navigate('/customer-debts') });
           }
           if (hasCustomerAccess && !isCustomersPageHidden && !isAddCustomerHidden) {
-            quickActions.push({ key: 'customers', icon: <Users className="w-5 h-5 text-foreground" />, label: t('nav.customers'), onClick: () => navigate('/customers'), variant: 'outline' });
+            quickActions.push({ key: 'customers', icon: <Users className="w-6 h-6" />, label: t('nav.customers'), onClick: () => navigate('/customers') });
           }
           if (hasExpenseAccess && !isExpensesPageHidden && !isExpensesHidden) {
-            quickActions.push({ key: 'expenses', icon: <Wallet className="w-5 h-5 text-foreground" />, label: t('expenses.my_expenses'), onClick: () => navigate('/expenses'), variant: 'outline' });
+            quickActions.push({ key: 'expenses', icon: <Wallet className="w-6 h-6" />, label: t('expenses.my_expenses'), onClick: () => navigate('/expenses') });
           }
 
-          const variantStyles: Record<string, { container: string; iconBg: string }> = {
-            primary: { container: 'bg-gradient-to-l from-primary to-primary/85 text-primary-foreground', iconBg: 'bg-primary-foreground/20' },
-            secondary: { container: 'bg-secondary text-secondary-foreground', iconBg: 'bg-primary/20' },
-            outline: { container: 'border border-border bg-card text-card-foreground', iconBg: 'bg-muted' },
-            destructive: { container: 'bg-destructive/10 border border-destructive/30 text-foreground', iconBg: 'bg-destructive/20' },
+          const colorSchemes: Record<string, { bg: string; iconBg: string; iconColor: string; text: string; border: string }> = {
+            deliveries: { bg: 'bg-gradient-to-br from-blue-500 to-blue-600', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
+            'direct-sale': { bg: 'bg-gradient-to-br from-emerald-500 to-teal-600', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
+            'my-stock': { bg: 'bg-gradient-to-br from-violet-500 to-purple-600', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
+            orders: { bg: 'bg-gradient-to-br from-primary to-primary/80', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-primary-foreground', border: '' },
+            promos: { bg: 'bg-gradient-to-br from-amber-400 to-orange-500', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
+            debts: { bg: 'bg-gradient-to-br from-rose-500 to-red-600', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
+            customers: { bg: 'bg-gradient-to-br from-cyan-500 to-sky-600', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
+            expenses: { bg: 'bg-gradient-to-br from-fuchsia-500 to-pink-600', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
           };
 
-          // Determine grid cols based on count
           const gridCols = quickActions.length === 1 ? 'grid-cols-1' : quickActions.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
 
           return quickActions.length > 0 ? (
             <div className="p-4 space-y-4">
               <h3 className="text-base font-bold">{t('common.quick_actions')}</h3>
-              <div className={`grid ${gridCols} gap-2`}>
-                {quickActions.map((action) => {
-                  const style = variantStyles[action.variant];
+              <div className={`grid ${gridCols} gap-3`}>
+                {quickActions.map((action, index) => {
+                  const scheme = colorSchemes[action.key] || colorSchemes['orders'];
                   return (
                     <button
                       key={action.key}
                       onClick={action.onClick}
-                      className={`rounded-xl p-3 flex flex-col items-center justify-center gap-2 shadow-md active:scale-[0.97] transition-all duration-200 group ${style.container}`}
+                      className={`${scheme.bg} ${scheme.border} rounded-2xl p-4 flex flex-col items-center justify-center gap-2.5 shadow-lg hover:shadow-xl active:scale-[0.96] transition-all duration-300 group animate-in fade-in slide-in-from-bottom-2`}
+                      style={{ animationDelay: `${index * 60}ms` }}
                     >
-                      <div className={`${style.iconBg} rounded-lg p-2 group-hover:scale-110 transition-transform duration-200`}>
-                        {action.icon}
+                      <div className={`${scheme.iconBg} rounded-xl p-2.5 group-hover:scale-110 transition-transform duration-300`}>
+                        {React.cloneElement(action.icon as React.ReactElement, { className: `w-6 h-6 ${scheme.iconColor}` })}
                       </div>
-                      <span className="text-xs font-bold">{action.label}</span>
+                      <span className={`text-xs font-bold ${scheme.text} text-center leading-tight`}>{action.label}</span>
                     </button>
                   );
                 })}
