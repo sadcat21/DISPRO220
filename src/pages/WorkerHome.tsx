@@ -191,7 +191,7 @@ const WorkerHome: React.FC = () => {
                 <div className="bg-primary/20 rounded-lg p-2 group-hover:scale-110 transition-transform duration-200">
                   <ShoppingBag className="w-5 h-5 text-primary" />
                 </div>
-                <span className="text-xs font-bold">{t('common.add_new')}</span>
+                <span className="text-xs font-bold">{t('stock.direct_sale')}</span>
               </button>
 
               <button
@@ -299,28 +299,12 @@ const WorkerHome: React.FC = () => {
       <CustomerActionDialog
         open={showActionDialog}
         onOpenChange={setShowActionDialog}
-        onOrder={(customer) => {
-          setSelectedCustomerForAction(customer);
-          setShowCreateOrderDialog(true);
-        }}
         onSale={(customer) => {
           setSelectedCustomerForAction(customer);
           setShowDirectSaleDialog(true);
         }}
-        onVisitOnly={async (customer) => {
-          try {
-            await trackVisit({ customerId: customer.id, operationType: 'visit' });
-            toast.success(t('debts.visit_recorded'));
-          } catch (error) {
-            console.error('Error recording visit:', error);
-            toast.error(t('common.error'));
-          }
-        }}
-        allowedActions={[
-          hasOrdersAccess ? 'order' : null,
-          hasDeliveryAccess ? 'sale' : null, // Workers with delivery access usually do direct sales
-          'visit'
-        ].filter(Boolean) as any}
+        directAction="sale"
+        allowedActions={['sale']}
       />
     </div>
   );
