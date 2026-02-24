@@ -26,6 +26,8 @@ export interface DebtCollectionBreakdown {
 export interface PromoCustomerDetail {
   customerId: string;
   customerName: string;
+  customerPhone: string;
+  customerAddress: string;
   quantitySold: number;
   giftPieces: number;
   date: string;
@@ -78,7 +80,7 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
       // 1. Fetch delivered orders with items
       const { data: orders } = await supabase
         .from('orders')
-        .select('id, total_amount, payment_status, payment_type, invoice_payment_method, partial_amount, customer_id, customer:customers(name), updated_at, order_items(quantity, unit_price, total_price, gift_quantity, gift_offer_id, product_id, product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box))')
+        .select('id, total_amount, payment_status, payment_type, invoice_payment_method, partial_amount, customer_id, customer:customers(name, phone, address), updated_at, order_items(quantity, unit_price, total_price, gift_quantity, gift_offer_id, product_id, product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box))')
         .eq('assigned_worker_id', workerId)
         .eq('status', 'delivered')
         .gte('updated_at', periodStartTz)
@@ -104,7 +106,7 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
       // 4. Fetch promos from promos table (fallback/complement to order_items gift data)
       const { data: promosData } = await supabase
         .from('promos')
-        .select('product_id, vente_quantity, gratuite_quantity, promo_date, customer_id, customer:customers(name), product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box)')
+        .select('product_id, vente_quantity, gratuite_quantity, promo_date, customer_id, customer:customers(name, phone, address), product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box)')
         .eq('worker_id', workerId)
         .gte('promo_date', periodStartTz)
         .lte('promo_date', periodEndTz);
@@ -225,6 +227,8 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
             promoMap[key].customerDetails.push({
               customerId: (order as any).customer_id || '',
               customerName,
+              customerPhone: (order as any).customer?.phone || '',
+              customerAddress: (order as any).customer?.address || '',
               quantitySold: Number(item.quantity || 0),
               giftPieces: giftQty,
               date: (order as any).updated_at || '',
@@ -280,6 +284,8 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
         promosByProduct[promo.product_id].customers.push({
           customerId: (promo as any).customer_id || '',
           customerName: (promo as any).customer?.name || '',
+          customerPhone: (promo as any).customer?.phone || '',
+          customerAddress: (promo as any).customer?.address || '',
           quantitySold: Number(promo.vente_quantity || 0),
           giftPieces: giftInPieces,
           date: (promo as any).promo_date || '',
