@@ -103,7 +103,7 @@ const WorkerPermissionsSection: React.FC = () => {
           <ScrollArea className="max-h-[400px]">
             <div className="divide-y">
               {filteredWorkers.map(worker => (
-                <div key={worker.id} className="flex items-center justify-between px-4 py-3 gap-3">
+                <div key={worker.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-3 sm:px-4 py-3 gap-2 sm:gap-3">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                       <User className="w-4 h-4 text-primary" />
@@ -113,7 +113,7 @@ const WorkerPermissionsSection: React.FC = () => {
                       <p className="text-xs text-muted-foreground" dir="ltr">@{worker.username}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0 mr-10 sm:mr-0">
                     {individualPermissions.map(perm => (
                       <div key={perm.id} className="flex items-center gap-1.5">
                         <label className="text-xs text-muted-foreground whitespace-nowrap">{perm.name_ar}</label>
