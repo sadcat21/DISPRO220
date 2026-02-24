@@ -485,7 +485,8 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
         gift_offer_id: item.giftOfferId || null,
       }));
 
-      await supabase.from('order_items').insert(orderItemsData);
+      const { error: itemsErr } = await supabase.from('order_items').insert(orderItemsData);
+      if (itemsErr) throw new Error('فشل في حفظ بنود الطلب: ' + itemsErr.message);
 
       // Deduct from worker stock & log movements
       for (const item of orderItems) {

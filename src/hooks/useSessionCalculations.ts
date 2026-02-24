@@ -91,7 +91,15 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
         .gte('expense_date', periodStart)
         .lte('expense_date', periodEnd);
 
-      // 4. Fetch offer names for gift items
+      // 4. Fetch promos from promos table (fallback/complement to order_items gift data)
+      const { data: promosData } = await supabase
+        .from('promos')
+        .select('product_id, vente_quantity, gratuite_quantity, product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box)')
+        .eq('worker_id', workerId)
+        .gte('promo_date', periodStartTz)
+        .lte('promo_date', periodEndTz);
+
+      // 5. Fetch offer names for gift items
       const giftOfferIds = new Set<string>();
       (orders || []).forEach(o => {
         (o.order_items || []).forEach((item: any) => {
@@ -206,6 +214,35 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
         } else {
           invoice2.total += paidAmount;
           invoice2.cash += paidAmount;
+        }
+      }
+
+      // Supplement promo tracking from promos table (catches promos not in order_items)
+      for (const promo of (promosData || [])) {
+        const giftQty = Number(promo.gratuite_quantity || 0);
+        if (giftQty <= 0) continue;
+        const key = `${promo.product_id}_promo`;
+        if (!promoMap[key]) {
+          // Check if already tracked via order_items
+          const alreadyTracked = Object.values(promoMap).some(
+            p => p.productId === promo.product_id && p.giftQuantity >= giftQty
+          );
+          if (alreadyTracked) continue;
+          const product = promo.product as any;
+          promoMap[key] = {
+            productName: product?.name || '',
+            productId: promo.product_id,
+            quantitySold: Number(promo.vente_quantity || 0),
+            giftQuantity: 0,
+            offerName: 'عرض ترويجي',
+          };
+        }
+        promoMap[key].giftQuantity += giftQty;
+        // Add gift value from promos table
+        const product = promo.product as any;
+        if (product) {
+          const boxPrice = calcBoxPrice(product);
+          giftOfferValue += giftQty * boxPrice;
         }
       }
 
