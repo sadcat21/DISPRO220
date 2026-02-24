@@ -136,18 +136,19 @@ const CustomerApprovalTab: React.FC = () => {
             } : reviewRequest.payload;
 
             if (reviewRequest.operation_type === 'insert') {
-                const { debtAmount, ...customerData } = payload;
+                const { debtAmount, initial_debt, ...customerData } = payload;
+                const finalDebtAmount = debtAmount || initial_debt || 0;
                 const { data: newCustomer, error: insertError } = await supabase
                     .from('customers').insert(customerData).select().single();
 
                 if (insertError) throw insertError;
 
-                if (debtAmount > 0 && workerId) {
+                if (finalDebtAmount > 0 && workerId) {
                     await createDebt.mutateAsync({
                         customer_id: newCustomer.id,
                         worker_id: reviewRequest.requested_by,
                         branch_id: reviewRequest.branch_id || undefined,
-                        total_amount: debtAmount,
+                        total_amount: finalDebtAmount,
                         paid_amount: 0,
                         notes: 'دين أولي عند إنشاء العميل (عبر نظام الموافقة)',
                     });
@@ -157,7 +158,7 @@ const CustomerApprovalTab: React.FC = () => {
                 toast.success(applyEdits ? 'تمت الموافقة مع حفظ التعديلات' : 'تمت الموافقة وإضافة العميل بنجاح');
             }
             else if (reviewRequest.operation_type === 'update' && reviewRequest.customer_id) {
-                const { debtAmount, ...updateData } = payload;
+                const { debtAmount, initial_debt: _id, ...updateData } = payload;
                 const { error: updateError } = await supabase
                     .from('customers').update(updateData).eq('id', reviewRequest.customer_id);
                 if (updateError) throw updateError;
