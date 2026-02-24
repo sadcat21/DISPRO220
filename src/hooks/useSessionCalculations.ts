@@ -175,7 +175,10 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
           const giftQty = Number(item.gift_quantity || 0);
           if (giftQty > 0) {
             const boxPrice = calcBoxPrice(item.product);
-            giftOfferValue += giftQty * boxPrice;
+            const piecesPerBox = Number((item as any).product?.pieces_per_box || 1);
+            // gift_quantity is stored as pieces, calculate piece price
+            const piecePrice = piecesPerBox > 0 ? boxPrice / piecesPerBox : boxPrice;
+            giftOfferValue += giftQty * piecePrice;
 
             const offerId = item.gift_offer_id || 'unknown';
             const key = `${item.product_id}_${offerId}`;
@@ -251,10 +254,12 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
           giftQuantity: extraGifts,
           offerName: 'عرض ترويجي',
         };
-        // Add gift value for extra gifts only
+        // Add gift value for extra gifts only (gifts are stored as pieces)
         if (product) {
           const boxPrice = calcBoxPrice(product);
-          giftOfferValue += extraGifts * boxPrice;
+          const piecesPerBox = Number(product?.pieces_per_box || 1);
+          const piecePrice = piecesPerBox > 0 ? boxPrice / piecesPerBox : boxPrice;
+          giftOfferValue += extraGifts * piecePrice;
         }
       }
 

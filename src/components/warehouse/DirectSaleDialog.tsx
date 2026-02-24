@@ -481,7 +481,7 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
         quantity: item.quantity,
         unit_price: item.unitPrice,
         total_price: item.totalPrice,
-        gift_quantity: item.giftQuantity || 0,
+        gift_quantity: item.giftPieces || item.giftQuantity || 0,
         gift_offer_id: item.giftOfferId || null,
       }));
 
@@ -510,12 +510,13 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
       // Record gifts in promos table
       const giftItems = orderItems.filter(i => (i.giftQuantity && i.giftQuantity > 0) || (i.giftPieces && i.giftPieces > 0));
       for (const item of giftItems) {
+        const giftInPieces = item.giftPieces || item.giftQuantity || 0;
         await supabase.from('promos').insert({
           worker_id: workerId!,
           customer_id: selectedCustomerId,
           product_id: item.productId,
           vente_quantity: item.quantity - (item.giftQuantity || 0),
-          gratuite_quantity: item.giftQuantity || 0,
+          gratuite_quantity: giftInPieces,
           has_bonus: false,
           bonus_amount: 0,
           notes: `هدية عرض - بيع مباشر ${order.id.slice(0, 8)}`,
