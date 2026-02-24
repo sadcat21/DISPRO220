@@ -28,6 +28,7 @@ export interface PromoTrackingItem {
   productId: string;
   quantitySold: number;
   giftQuantity: number;
+  piecesPerBox: number;
   offerName: string;
 }
 
@@ -188,6 +189,7 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
                 productId: item.product_id,
                 quantitySold: 0,
                 giftQuantity: 0,
+                piecesPerBox: piecesPerBox,
                 offerName: offerNamesMap[offerId] || '',
               };
             }
@@ -252,6 +254,7 @@ export const useSessionCalculations = (params: SessionCalcParams | null) => {
           productId: productId,
           quantitySold: promoAgg.totalVente,
           giftQuantity: extraGifts,
+          piecesPerBox: Number(product?.pieces_per_box || 1),
           offerName: 'عرض ترويجي',
         };
         // Add gift value for extra gifts only (gifts are stored as pieces)
