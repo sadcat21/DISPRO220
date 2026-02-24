@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { text, sourceLang, targetLangs } = await req.json();
+    const { text, sourceLang, targetLangs, mode } = await req.json();
 
     if (!text || !sourceLang || !targetLangs || targetLangs.length === 0) {
       return new Response(JSON.stringify({ error: 'Missing required fields: text, sourceLang, targetLangs' }), {
@@ -34,12 +34,29 @@ serve(async (req) => {
     const sourceLangName = langNames[sourceLang] || sourceLang;
     const targetLangNames = targetLangs.map((l: string) => `${langNames[l] || l} (key: ${l})`).join(', ');
 
-    const systemPrompt = `You are a professional translator. Translate the given text accurately and naturally. 
+    const isTransliterate = mode === 'transliterate';
+
+    const systemPrompt = isTransliterate
+      ? `You are a transliteration expert. Your job is to transliterate (write the pronunciation) of names from one script to another.
+Do NOT translate the meaning. Just write how the name sounds using the target language's script/alphabet.
+For example: "محمد" → "Mohamed" (not "praised one"), "Boulangerie" → "بولانجري" (not "مخبزة").
+For names, always keep the original pronunciation as close as possible.
+Always respond with valid JSON only, no extra text.`
+      : `You are a professional translator. Translate the given text accurately and naturally. 
 For short labels/categories, keep translations concise.
 For Arabic text with Algerian dialect, translate to standard but natural language.
 Always respond with valid JSON only, no extra text.`;
 
-    const userPrompt = `Translate the following text from ${sourceLangName} to ${targetLangNames}.
+    const userPrompt = isTransliterate
+      ? `Transliterate the following name/text from ${sourceLangName} to ${targetLangNames}.
+Do NOT translate the meaning, just write how it sounds in the target script.
+
+Text: "${text}"
+
+Respond with JSON format: { "lang_code": "transliterated text" }
+Example for "محمد": { "fr": "Mohamed", "en": "Mohamed" }
+Example for "Carrefour": { "ar": "كارفور" }`
+      : `Translate the following text from ${sourceLangName} to ${targetLangNames}.
 
 Text: "${text}"
 

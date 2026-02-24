@@ -812,6 +812,8 @@ export const translations: Translations = {
 
   // ==================== Translation System ====================
   'translation.translate': { ar: 'ترجمة تلقائية', fr: 'Traduction automatique', en: 'Auto Translate' },
+  'translation.transliterate': { ar: 'ترجمة حرفية (نطق)', fr: 'Translittération', en: 'Transliteration' },
+  'translation.meaning': { ar: 'ترجمة المعنى', fr: 'Traduction du sens', en: 'Translate meaning' },
   'translation.enter_text_first': { ar: 'أدخل النص في إحدى اللغات أولاً', fr: 'Entrez le texte dans une langue d\'abord', en: 'Enter text in one language first' },
   'translation.all_filled': { ar: 'جميع الحقول ممتلئة بالفعل', fr: 'Tous les champs sont déjà remplis', en: 'All fields are already filled' },
   'translation.success': { ar: 'تمت الترجمة بنجاح', fr: 'Traduction réussie', en: 'Translation successful' },
