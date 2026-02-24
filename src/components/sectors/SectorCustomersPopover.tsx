@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { MapPin, User, Truck, ShoppingCart, MapPinOff, Navigation, Loader2 } from 'lucide-react';
+import { MapPin, User, Truck, ShoppingCart, MapPinOff, Navigation, Loader2, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -71,6 +71,45 @@ const SectorCustomersPopover: React.FC = () => {
     enabled: !!workerId,
   });
 
+  // Fetch today's visits for this worker
+  const todayStart = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString();
+  }, []);
+
+  const { data: todayVisits = [] } = useQuery({
+    queryKey: ['today-visits', workerId, todayStart],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('visit_tracking')
+        .select('customer_id, operation_type')
+        .eq('worker_id', workerId!)
+        .gte('created_at', todayStart);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!workerId && isOpen,
+    refetchInterval: 10000,
+  });
+
+  // Fetch today's orders by this worker
+  const { data: todayOrders = [] } = useQuery({
+    queryKey: ['today-orders-customers', workerId, todayStart],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('customer_id')
+        .eq('created_by', workerId!)
+        .gte('created_at', todayStart)
+        .not('status', 'eq', 'cancelled');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!workerId && isOpen,
+    refetchInterval: 10000,
+  });
+
   const mySectors = useMemo(() => {
     return sectors.filter(s => 
       s.delivery_worker_id === workerId || s.sales_worker_id === workerId
@@ -95,6 +134,27 @@ const SectorCustomersPopover: React.FC = () => {
     return customers.filter(c => c.sector_id && sectorIds.has(c.sector_id));
   }, [customers, todaySalesSectors]);
 
+  // Categorize sales customers into sub-tabs
+  const visitedCustomerIds = useMemo(() => {
+    return new Set(todayVisits.map(v => v.customer_id).filter(Boolean));
+  }, [todayVisits]);
+
+  const orderedCustomerIds = useMemo(() => {
+    return new Set(todayOrders.map(o => o.customer_id).filter(Boolean));
+  }, [todayOrders]);
+
+  const salesNotVisited = useMemo(() => {
+    return salesCustomers.filter(c => !visitedCustomerIds.has(c.id) && !orderedCustomerIds.has(c.id));
+  }, [salesCustomers, visitedCustomerIds, orderedCustomerIds]);
+
+  const salesVisitedNoOrder = useMemo(() => {
+    return salesCustomers.filter(c => visitedCustomerIds.has(c.id) && !orderedCustomerIds.has(c.id));
+  }, [salesCustomers, visitedCustomerIds, orderedCustomerIds]);
+
+  const salesWithOrders = useMemo(() => {
+    return salesCustomers.filter(c => orderedCustomerIds.has(c.id));
+  }, [salesCustomers, orderedCustomerIds]);
+
   const totalCount = deliveryCustomers.length + salesCustomers.length;
 
   if (mySectors.length === 0) return null;
@@ -102,7 +162,6 @@ const SectorCustomersPopover: React.FC = () => {
   const handleCustomerClick = (customer: any, tab: 'delivery' | 'sales') => {
     setIsOpen(false);
     if (tab === 'sales') {
-      // Navigate to create order for this customer
       navigate('/orders', { state: { customerId: customer.id } });
     }
   };
@@ -165,13 +224,13 @@ const SectorCustomersPopover: React.FC = () => {
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-0 max-h-[70vh] flex flex-col">
+      <PopoverContent align="end" className="w-[340px] p-0 max-h-[75vh] flex flex-col">
         <div className="p-3 border-b font-bold text-sm flex items-center gap-2">
           <MapPin className="w-4 h-4 text-blue-500" />
           عملاء اليوم — {DAY_NAMES[todayName] || todayName}
         </div>
 
-        <Tabs defaultValue="delivery" className="flex flex-col flex-1 overflow-hidden">
+        <Tabs defaultValue="delivery" className="flex flex-col flex-1 min-h-0">
           <TabsList className="w-full rounded-none border-b shrink-0">
             <TabsTrigger value="delivery" className="flex-1 gap-1 text-xs">
               <Truck className="w-3.5 h-3.5" />
@@ -184,25 +243,77 @@ const SectorCustomersPopover: React.FC = () => {
               {salesCustomers.length > 0 && <Badge variant="secondary" className="text-[10px] px-1">{salesCustomers.length}</Badge>}
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="delivery" className="m-0 flex-1 overflow-hidden">
-            <CustomerList
-              customers={deliveryCustomers}
-              emptyMessage="لا توجد عمليات توصيل اليوم"
-              onCustomerClick={(c) => handleCustomerClick(c, 'delivery')}
-              onVisitWithoutOrder={handleVisitWithoutOrder}
-              showVisitButton={false}
-              checkingLocationFor={checkingLocationFor}
-            />
+
+          <TabsContent value="delivery" className="m-0 flex-1 min-h-0 overflow-hidden">
+            <ScrollArea className="h-full max-h-[55vh]">
+              <CustomerList
+                customers={deliveryCustomers}
+                emptyMessage="لا توجد عمليات توصيل اليوم"
+                onCustomerClick={(c) => handleCustomerClick(c, 'delivery')}
+                onVisitWithoutOrder={handleVisitWithoutOrder}
+                showVisitButton={false}
+                checkingLocationFor={checkingLocationFor}
+              />
+            </ScrollArea>
           </TabsContent>
-          <TabsContent value="sales" className="m-0 flex-1 overflow-hidden">
-            <CustomerList
-              customers={salesCustomers}
-              emptyMessage="لا توجد طلبات لجمعها اليوم"
-              onCustomerClick={(c) => handleCustomerClick(c, 'sales')}
-              onVisitWithoutOrder={handleVisitWithoutOrder}
-              showVisitButton={true}
-              checkingLocationFor={checkingLocationFor}
-            />
+
+          <TabsContent value="sales" className="m-0 flex-1 min-h-0 overflow-hidden">
+            <Tabs defaultValue="not-visited" className="flex flex-col h-full min-h-0">
+              <TabsList className="w-full rounded-none border-b shrink-0 h-auto p-0.5 gap-0.5">
+                <TabsTrigger value="not-visited" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-orange-100 data-[state=active]:text-orange-700">
+                  <EyeOff className="w-3 h-3" />
+                  بدون زيارة
+                  {salesNotVisited.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-orange-500">{salesNotVisited.length}</Badge>}
+                </TabsTrigger>
+                <TabsTrigger value="visited-no-order" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-amber-100 data-[state=active]:text-amber-700">
+                  <Eye className="w-3 h-3" />
+                  بدون طلبية
+                  {salesVisitedNoOrder.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-amber-500">{salesVisitedNoOrder.length}</Badge>}
+                </TabsTrigger>
+                <TabsTrigger value="with-orders" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-green-100 data-[state=active]:text-green-700">
+                  <CheckCircle className="w-3 h-3" />
+                  بطلبيات
+                  {salesWithOrders.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-green-500">{salesWithOrders.length}</Badge>}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="not-visited" className="m-0 flex-1 min-h-0 overflow-hidden">
+                <ScrollArea className="h-full max-h-[45vh]">
+                  <CustomerList
+                    customers={salesNotVisited}
+                    emptyMessage="تمت زيارة جميع العملاء ✓"
+                    onCustomerClick={(c) => handleCustomerClick(c, 'sales')}
+                    onVisitWithoutOrder={handleVisitWithoutOrder}
+                    showVisitButton={true}
+                    checkingLocationFor={checkingLocationFor}
+                  />
+                </ScrollArea>
+              </TabsContent>
+              <TabsContent value="visited-no-order" className="m-0 flex-1 min-h-0 overflow-hidden">
+                <ScrollArea className="h-full max-h-[45vh]">
+                  <CustomerList
+                    customers={salesVisitedNoOrder}
+                    emptyMessage="لا توجد زيارات بدون طلبيات"
+                    onCustomerClick={(c) => handleCustomerClick(c, 'sales')}
+                    onVisitWithoutOrder={handleVisitWithoutOrder}
+                    showVisitButton={false}
+                    checkingLocationFor={checkingLocationFor}
+                  />
+                </ScrollArea>
+              </TabsContent>
+              <TabsContent value="with-orders" className="m-0 flex-1 min-h-0 overflow-hidden">
+                <ScrollArea className="h-full max-h-[45vh]">
+                  <CustomerList
+                    customers={salesWithOrders}
+                    emptyMessage="لا توجد طلبيات بعد"
+                    onCustomerClick={(c) => handleCustomerClick(c, 'sales')}
+                    onVisitWithoutOrder={handleVisitWithoutOrder}
+                    showVisitButton={false}
+                    checkingLocationFor={checkingLocationFor}
+                  />
+                </ScrollArea>
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         </Tabs>
       </PopoverContent>
@@ -223,60 +334,57 @@ const CustomerList: React.FC<{
   }
 
   return (
-    <ScrollArea className="max-h-[50vh]">
-      <div className="divide-y">
-        {customers.map(c => (
-          <div key={c.id} className="p-3 hover:bg-muted/50 transition-colors">
-            <button
-              className="w-full flex items-center gap-2 text-start"
-              onClick={() => onCustomerClick(c)}
-            >
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <User className="w-4 h-4 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm truncate">{c.name}</p>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  {c.store_name && <span>{c.store_name}</span>}
-                  {c.phone && <span>• {c.phone}</span>}
-                  {c.wilaya && <span>• {c.wilaya}</span>}
-                </div>
-              </div>
-            </button>
-            {/* Action buttons */}
-            <div className="flex items-center gap-1 mt-1.5 justify-end">
-              {c.latitude && c.longitude && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 text-[10px] px-1.5 gap-0.5"
-                  onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.latitude},${c.longitude}`, '_blank')}
-                >
-                  <Navigation className="w-3 h-3" />
-                  الموقع
-                </Button>
-              )}
-              {showVisitButton && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 text-[10px] px-1.5 gap-0.5 text-orange-600"
-                  onClick={() => onVisitWithoutOrder(c)}
-                  disabled={checkingLocationFor === c.id}
-                >
-                  {checkingLocationFor === c.id ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <MapPinOff className="w-3 h-3" />
-                  )}
-                  زيارة بدون طلبية
-                </Button>
-              )}
+    <div className="divide-y">
+      {customers.map(c => (
+        <div key={c.id} className="p-3 hover:bg-muted/50 transition-colors">
+          <button
+            className="w-full flex items-center gap-2 text-start"
+            onClick={() => onCustomerClick(c)}
+          >
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <User className="w-4 h-4 text-primary" />
             </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm truncate">{c.name}</p>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                {c.store_name && <span>{c.store_name}</span>}
+                {c.phone && <span>• {c.phone}</span>}
+                {c.wilaya && <span>• {c.wilaya}</span>}
+              </div>
+            </div>
+          </button>
+          <div className="flex items-center gap-1 mt-1.5 justify-end">
+            {c.latitude && c.longitude && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-[10px] px-1.5 gap-0.5"
+                onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.latitude},${c.longitude}`, '_blank')}
+              >
+                <Navigation className="w-3 h-3" />
+                الموقع
+              </Button>
+            )}
+            {showVisitButton && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-[10px] px-1.5 gap-0.5 text-orange-600"
+                onClick={() => onVisitWithoutOrder(c)}
+                disabled={checkingLocationFor === c.id}
+              >
+                {checkingLocationFor === c.id ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <MapPinOff className="w-3 h-3" />
+                )}
+                زيارة بدون طلبية
+              </Button>
+            )}
           </div>
-        ))}
-      </div>
-    </ScrollArea>
+        </div>
+      ))}
+    </div>
   );
 };
 
