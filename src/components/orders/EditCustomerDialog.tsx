@@ -422,24 +422,25 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-store-name" className="flex items-center gap-1">
-                اسم المحل *
+              <div className="flex items-center justify-between">
+                <Label htmlFor="edit-store-name">اسم المحل *</Label>
                 <Button
                   type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-5 w-5 shrink-0"
-                  title="نسخ اسم العميل إلى اسم المحل"
+                  variant="outline"
+                  size="sm"
+                  className="h-6 px-2 text-[10px] gap-1"
                   onClick={() => {
                     if (name.trim()) {
                       setStoreName(name.trim());
                       if (nameFr.trim()) setStoreNameFr(nameFr.trim());
+                      toast.success('تم نسخ اسم العميل إلى المحل');
                     }
                   }}
                 >
                   <User className="w-3 h-3" />
+                  نسخ اسم العميل
                 </Button>
-              </Label>
+              </div>
               <Input id="edit-store-name" value={storeName} onChange={(e) => setStoreName(e.target.value)} onBlur={handleStoreNameBlur} placeholder="اسم المحل (عربي أو فرنسي)" className="text-right" required />
             </div>
 
