@@ -22,6 +22,7 @@ import { ACTION_TYPES, ENTITY_TYPES } from '@/types/activityLog';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import PermissionGate from '@/components/auth/PermissionGate';
+import { useIsElementHidden } from '@/hooks/useUIOverrides';
 
 const getDateLocale = (language: string) => {
   switch (language) {
@@ -57,6 +58,11 @@ const MyPromosContent: React.FC = () => {
 
   const logActivity = useLogActivity();
   const { data: myLogs } = useMyActivityLogs();
+
+  // UI override checks
+  const isAddPromoHidden = useIsElementHidden('button', 'add_promo');
+  const isEditPromoHidden = useIsElementHidden('action', 'edit_promo');
+  const isDeletePromoHidden = useIsElementHidden('action', 'delete_promo');
 
   useEffect(() => {
     if (workerId) {
@@ -219,14 +225,16 @@ const MyPromosContent: React.FC = () => {
       </div>
 
       {/* Add New Promo Button */}
-      <Button 
-        onClick={() => setShowAddDialog(true)} 
-        className="w-full gap-2"
-        size="lg"
-      >
-        <Plus className="w-5 h-5" />
-        {t('promos.add_new')}
-      </Button>
+      {!isAddPromoHidden && (
+        <Button 
+          onClick={() => setShowAddDialog(true)} 
+          className="w-full gap-2"
+          size="lg"
+        >
+          <Plus className="w-5 h-5" />
+          {t('promos.add_new')}
+        </Button>
+      )}
 
       {/* Tabs */}
       <Tabs defaultValue="promos" className="w-full">
@@ -293,22 +301,26 @@ const MyPromosContent: React.FC = () => {
                         
                         {/* Action buttons */}
                         <div className="flex flex-col gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => handleEdit(promo)}
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8 text-destructive"
-                            onClick={() => setDeletePromo(promo)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          {!isEditPromoHidden && (
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleEdit(promo)}
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {!isDeletePromoHidden && (
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8 text-destructive"
+                              onClick={() => setDeletePromo(promo)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </CardContent>

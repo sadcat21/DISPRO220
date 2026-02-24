@@ -27,6 +27,7 @@ import OrderSearchDialog from '@/components/orders/OrderSearchDialog';
 import ModifyOrderDialog from '@/components/orders/ModifyOrderDialog';
 import DeliverySaleDialog from '@/components/orders/DeliverySaleDialog';
 import { useLocationBroadcast } from '@/hooks/useWorkerLocation';
+import { useIsElementHidden } from '@/hooks/useUIOverrides';
 
 const MyDeliveries: React.FC = () => {
   const { t, language, loadPrintSettingsFromDB } = useLanguage();
@@ -51,6 +52,11 @@ const MyDeliveries: React.FC = () => {
   const { data: locationThreshold } = useLocationThreshold();
   const canBypassLocation = useHasPermission('bypass_location_check');
   const [checkingLocation, setCheckingLocation] = useState(false);
+
+  // UI override checks
+  const isSearchHidden = useIsElementHidden('button', 'deliveries_search');
+  const isModifyHidden = useIsElementHidden('action', 'modify_delivery');
+  const isCancelHidden = useIsElementHidden('action', 'cancel_delivery');
 
   // Auto-start location broadcasting when there are active orders
   useEffect(() => {
@@ -173,13 +179,15 @@ const MyDeliveries: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">{t('deliveries.title')}</h2>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => setShowSearchDialog(true)}
-        >
-          <Search className="w-4 h-4" />
-        </Button>
+        {!isSearchHidden && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowSearchDialog(true)}
+          >
+            <Search className="w-4 h-4" />
+          </Button>
+        )}
       </div>
 
       {/* Stats */}
@@ -331,13 +339,15 @@ const MyDeliveries: React.FC = () => {
                             <Route className="w-4 h-4" />
                           </Button>
                         )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setModifyOrder(order)}
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
+                        {!isModifyHidden && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setModifyOrder(order)}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           onClick={() => handleUpdateStatus(order.id, 'in_progress')}
@@ -345,14 +355,16 @@ const MyDeliveries: React.FC = () => {
                         >
                           <Truck className="w-4 h-4" />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleCancelOrder(order.id)}
-                          disabled={cancelOrder.isPending}
-                        >
-                          <XCircle className="w-4 h-4" />
-                        </Button>
+                        {!isCancelHidden && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleCancelOrder(order.id)}
+                            disabled={cancelOrder.isPending}
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </Button>
+                        )}
                       </>
                     )}
                     
@@ -373,13 +385,15 @@ const MyDeliveries: React.FC = () => {
                             <Route className="w-4 h-4" />
                           </Button>
                         )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setModifyOrder(order)}
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
+                        {!isModifyHidden && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setModifyOrder(order)}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           className="bg-green-600 hover:bg-green-700"
@@ -388,14 +402,16 @@ const MyDeliveries: React.FC = () => {
                         >
                           <CheckCircle className="w-4 h-4" />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleCancelWithLocationCheck(order)}
-                          disabled={cancelOrder.isPending || checkingLocation}
-                        >
-                          {checkingLocation ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
-                        </Button>
+                        {!isCancelHidden && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleCancelWithLocationCheck(order)}
+                            disabled={cancelOrder.isPending || checkingLocation}
+                          >
+                            {checkingLocation ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+                          </Button>
+                        )}
                       </>
                     )}
                   </div>

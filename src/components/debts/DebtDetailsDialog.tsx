@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import CollectDebtDialog from './CollectDebtDialog';
 import VisitNoPaymentDialog from './VisitNoPaymentDialog';
 import DebtScheduleSection from './DebtScheduleSection';
+import { useIsElementHidden } from '@/hooks/useUIOverrides';
 
 interface DebtDetailsDialogProps {
   open: boolean;
@@ -29,6 +30,7 @@ const DebtDetailsDialog: React.FC<DebtDetailsDialogProps> = ({
   const [collectDebt, setCollectDebt] = useState<CustomerDebtWithDetails | null>(null);
   const [visitDebt, setVisitDebt] = useState<CustomerDebtWithDetails | null>(null);
   const { data: payments, isLoading: paymentsLoading } = useDebtPayments(selectedDebtId);
+  const isCollectDebtHidden = useIsElementHidden('action', 'collect_debt');
 
   const totalRemaining = debts.reduce((sum, d) => sum + Number(d.remaining_amount), 0);
 
@@ -215,14 +217,16 @@ const DebtDetailsDialog: React.FC<DebtDetailsDialogProps> = ({
                   {debt.status !== 'paid' && (
                     <>
                       <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => handleCollect(debt)}
-                        >
-                          <Banknote className="w-4 h-4 ml-1" />
-                          {t('debts.collect')}
-                        </Button>
+                        {!isCollectDebtHidden && (
+                          <Button
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => handleCollect(debt)}
+                          >
+                            <Banknote className="w-4 h-4 ml-1" />
+                            {t('debts.collect')}
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"

@@ -29,6 +29,7 @@ import CustomerActionDialog from '@/components/orders/CustomerActionDialog';
 import DirectSaleDialog from '@/components/warehouse/DirectSaleDialog';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
 import { Customer } from '@/types/database';
+import { useIsElementHidden } from '@/hooks/useUIOverrides';
 
 const getDateLocale = (lang: string) => {
   switch (lang) {
@@ -96,6 +97,15 @@ const OrdersContent: React.FC = () => {
   const deleteOrder = useDeleteOrder();
   const cancelOrder = useCancelOrder();
   const { trackVisit } = useTrackVisit();
+
+  // UI override checks for actions
+  const isCreateOrderHidden = useIsElementHidden('button', 'create_order');
+  const isSearchHidden = useIsElementHidden('button', 'orders_search');
+  const isPrintHidden = useIsElementHidden('button', 'orders_print');
+  const isDeleteOrderHidden = useIsElementHidden('action', 'delete_order');
+  const isCancelOrderHidden = useIsElementHidden('action', 'cancel_order');
+  const isAssignOrderHidden = useIsElementHidden('action', 'assign_order');
+  const isModifyOrderHidden = useIsElementHidden('action', 'modify_order');
 
   useEffect(() => {
     if (workerId) {
@@ -532,26 +542,32 @@ const OrdersContent: React.FC = () => {
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold">{t('orders.title')}</h2>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowSearchDialog(true)}
-            >
-              <Search className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowPrintDialog(true)}
-              disabled={!orders || orders.length === 0}
-            >
-              <Printer className="w-4 h-4 ml-2" />
-              {t('common.print')}
-            </Button>
-            <Button size="sm" onClick={() => setShowActionDialog(true)}>
-              <ShoppingCart className="w-4 h-4 ml-2" />
-              {t('orders.new')}
-            </Button>
+            {!isSearchHidden && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSearchDialog(true)}
+              >
+                <Search className="w-4 h-4" />
+              </Button>
+            )}
+            {!isPrintHidden && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPrintDialog(true)}
+                disabled={!orders || orders.length === 0}
+              >
+                <Printer className="w-4 h-4 ml-2" />
+                {t('common.print')}
+              </Button>
+            )}
+            {!isCreateOrderHidden && (
+              <Button size="sm" onClick={() => setShowActionDialog(true)}>
+                <ShoppingCart className="w-4 h-4 ml-2" />
+                {t('orders.new')}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -680,28 +696,32 @@ const OrdersContent: React.FC = () => {
 
                     {order.status === 'pending' && (
                       <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedOrderId(order.id);
-                            setShowAssignDialog(true);
-                          }}
-                        >
-                          <UserCheck className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-destructive"
-                          onClick={() => handleDeleteOrder(order.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {!isAssignOrderHidden && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedOrderId(order.id);
+                              setShowAssignDialog(true);
+                            }}
+                          >
+                            <UserCheck className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {!isDeleteOrderHidden && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-destructive"
+                            onClick={() => handleDeleteOrder(order.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </>
                     )}
 
-                    {(order.status === 'assigned' || order.status === 'in_progress' || order.status === 'delivered') && (
+                    {!isCancelOrderHidden && (order.status === 'assigned' || order.status === 'in_progress' || order.status === 'delivered') && (
                       <Button
                         variant="outline"
                         size="sm"

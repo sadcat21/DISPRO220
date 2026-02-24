@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useIsElementHidden } from '@/hooks/useUIOverrides';
 
 const Expenses: React.FC = () => {
   const { workerId, role } = useAuth();
@@ -29,6 +30,10 @@ const Expenses: React.FC = () => {
   const { data: expenses, isLoading } = useExpenses(isManager ? null : workerId);
   const deleteExpense = useDeleteExpense();
 
+  // UI override checks
+  const isAddExpenseHidden = useIsElementHidden('button', 'add_expense');
+  const isDeleteExpenseHidden = useIsElementHidden('action', 'delete_expense');
+
   const filtered = expenses?.filter(e =>
     statusFilter === 'all' ? true : e.status === statusFilter
   );
@@ -39,10 +44,12 @@ const Expenses: React.FC = () => {
         <h1 className="text-xl font-bold">
           {isManager ? t('expenses.title') : t('expenses.my_expenses')}
         </h1>
-        <Button size="sm" onClick={() => setShowAdd(true)}>
-          <Plus className="w-4 h-4 me-1" />
-          {t('expenses.add')}
-        </Button>
+        {!isAddExpenseHidden && (
+          <Button size="sm" onClick={() => setShowAdd(true)}>
+            <Plus className="w-4 h-4 me-1" />
+            {t('expenses.add')}
+          </Button>
+        )}
       </div>
 
       <div className="flex gap-2">
@@ -80,6 +87,7 @@ const Expenses: React.FC = () => {
               onDelete={() => deleteExpense.mutate(expense.id)}
               language={language}
               t={t}
+              hideDelete={isDeleteExpenseHidden}
             />
           ))}
         </div>
@@ -103,7 +111,8 @@ const ExpenseCard: React.FC<{
   onDelete: () => void;
   language: string;
   t: (key: string) => string;
-}> = ({ expense, isManager, isOwner, onDelete, language, t }) => {
+  hideDelete?: boolean;
+}> = ({ expense, isManager, isOwner, onDelete, language, t, hideDelete }) => {
   const status = STATUS_MAP_KEYS[expense.status] || STATUS_MAP_KEYS.pending;
   const receiptUrls = expense.receipt_urls?.length ? expense.receipt_urls : (expense.receipt_url ? [expense.receipt_url] : []);
 
@@ -163,7 +172,7 @@ const ExpenseCard: React.FC<{
       )}
 
       <div className="flex gap-2 pt-1">
-        {isOwner && expense.status === 'pending' && (
+        {isOwner && expense.status === 'pending' && !hideDelete && (
           <Button variant="destructive" size="sm" onClick={onDelete}>
             <Trash2 className="w-3 h-3 me-1" />
             {t('common.delete')}

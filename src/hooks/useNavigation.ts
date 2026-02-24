@@ -22,6 +22,10 @@ export const useNavigation = () => {
     return uiOverrides?.some(o => o.element_type === 'page' && o.element_key === path && o.is_hidden) ?? false;
   };
 
+  const isTabHidden = (path: string) => {
+    return uiOverrides?.some(o => o.element_type === 'tab' && o.element_key === path && o.is_hidden) ?? false;
+  };
+
   const hasPermission = (code: string) => {
     // Admin and branch_admin have all permissions
     if (role === 'admin' || role === 'branch_admin') return true;
@@ -175,10 +179,10 @@ export const useNavigation = () => {
   const filteredNavItems = useMemo(() => {
     if (!uiOverrides || uiOverrides.length === 0) return navItems;
     return {
-      main: navItems.main.filter(item => !isPageHidden(item.path)),
+      main: navItems.main.filter(item => !isPageHidden(item.path) && !isTabHidden(item.path)),
       more: navItems.more.filter(item => !isPageHidden(item.path)),
     };
   }, [navItems, uiOverrides]);
 
-  return { ...filteredNavItems, isLoading, hasPermission, isPageHidden };
+  return { ...filteredNavItems, isLoading, hasPermission, isPageHidden, isTabHidden };
 };
