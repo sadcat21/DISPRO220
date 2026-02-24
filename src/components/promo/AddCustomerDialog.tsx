@@ -75,8 +75,8 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
   const [internalName, setInternalName] = useState('');
   const [isTrusted, setIsTrusted] = useState(false);
   const [trustNotes, setTrustNotes] = useState('');
-  const [defaultPaymentType, setDefaultPaymentType] = useState<string>('without_invoice');
-  const [defaultPriceSubtype, setDefaultPriceSubtype] = useState<string>('retail');
+  const [defaultPaymentType, setDefaultPaymentType] = useState<string>('without_invoice'); // default: فاتورة 2
+  const [defaultPriceSubtype, setDefaultPriceSubtype] = useState<string>('retail'); // default: تجزئة
   const effectiveBranchId = activeBranch ? activeBranch.id : null;
 
   // Fetch zones when sector changes
