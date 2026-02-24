@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { MapPin, User, Truck, ShoppingCart, MapPinOff, Navigation } from 'lucide-react';
+import { MapPin, User, Truck, ShoppingCart, MapPinOff, Navigation, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -14,6 +14,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
 import { toast } from 'sonner';
+import { useLocationThreshold } from '@/hooks/useLocationSettings';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { calculateDistance } from '@/utils/geoUtils';
 
 const DAY_NAMES: Record<string, string> = {
   saturday: 'السبت',
@@ -38,8 +41,11 @@ const SectorCustomersPopover: React.FC = () => {
   const { workerId, activeBranch } = useAuth();
   const navigate = useNavigate();
   const { trackVisit } = useTrackVisit();
+  const { data: locationThreshold } = useLocationThreshold();
+  const canBypassLocation = useHasPermission('bypass_location_check');
   const todayName = JS_DAY_TO_NAME[new Date().getDay()] || '';
   const [isOpen, setIsOpen] = useState(false);
+  const [checkingLocationFor, setCheckingLocationFor] = useState<string | null>(null);
 
   const { data: sectors = [] } = useQuery({
     queryKey: ['sectors-with-customers', workerId, activeBranch?.id],
@@ -101,7 +107,37 @@ const SectorCustomersPopover: React.FC = () => {
     }
   };
 
+  const checkLocationBeforeAction = async (customer: any): Promise<boolean> => {
+    if (canBypassLocation) return true;
+    if (!customer.latitude || !customer.longitude) return true;
+
+    const threshold = locationThreshold ?? 100;
+    setCheckingLocationFor(customer.id);
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        if (!navigator.geolocation) { reject(); return; }
+        navigator.geolocation.getCurrentPosition(resolve, () => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: false, timeout: 10000, maximumAge: 120000 });
+        }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 });
+      });
+      const distanceKm = calculateDistance(position.coords.latitude, position.coords.longitude, customer.latitude, customer.longitude);
+      const distanceMeters = distanceKm * 1000;
+      if (distanceMeters > threshold) {
+        toast.error(`أنت بعيد عن موقع العميل (${Math.round(distanceMeters)} متر). يجب أن تكون على بُعد ${threshold} متر أو أقل.`);
+        return false;
+      }
+      return true;
+    } catch {
+      toast.error('تعذر تحديد موقعك. يرجى تفعيل خدمة الموقع.');
+      return false;
+    } finally {
+      setCheckingLocationFor(null);
+    }
+  };
+
   const handleVisitWithoutOrder = async (customer: any) => {
+    const allowed = await checkLocationBeforeAction(customer);
+    if (!allowed) return;
     try {
       await trackVisit({
         customerId: customer.id,
@@ -155,6 +191,7 @@ const SectorCustomersPopover: React.FC = () => {
               onCustomerClick={(c) => handleCustomerClick(c, 'delivery')}
               onVisitWithoutOrder={handleVisitWithoutOrder}
               showVisitButton={false}
+              checkingLocationFor={checkingLocationFor}
             />
           </TabsContent>
           <TabsContent value="sales" className="m-0 flex-1 overflow-hidden">
@@ -164,6 +201,7 @@ const SectorCustomersPopover: React.FC = () => {
               onCustomerClick={(c) => handleCustomerClick(c, 'sales')}
               onVisitWithoutOrder={handleVisitWithoutOrder}
               showVisitButton={true}
+              checkingLocationFor={checkingLocationFor}
             />
           </TabsContent>
         </Tabs>
@@ -178,7 +216,8 @@ const CustomerList: React.FC<{
   onCustomerClick: (c: any) => void;
   onVisitWithoutOrder: (c: any) => void;
   showVisitButton: boolean;
-}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, showVisitButton }) => {
+  checkingLocationFor: string | null;
+}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, showVisitButton, checkingLocationFor }) => {
   if (customers.length === 0) {
     return <div className="p-6 text-center text-sm text-muted-foreground">{emptyMessage}</div>;
   }
@@ -223,8 +262,13 @@ const CustomerList: React.FC<{
                   size="sm"
                   className="h-6 text-[10px] px-1.5 gap-0.5 text-orange-600"
                   onClick={() => onVisitWithoutOrder(c)}
+                  disabled={checkingLocationFor === c.id}
                 >
-                  <MapPinOff className="w-3 h-3" />
+                  {checkingLocationFor === c.id ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <MapPinOff className="w-3 h-3" />
+                  )}
                   زيارة بدون طلبية
                 </Button>
               )}

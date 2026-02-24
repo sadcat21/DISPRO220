@@ -14,6 +14,9 @@ import {
 import { toast } from 'sonner';
 import { useAssignedOrders, useOrderItems, useUpdateOrderStatus, useCancelOrder } from '@/hooks/useOrders';
 import { useLogActivity } from '@/hooks/useActivityLogs';
+import { useLocationThreshold } from '@/hooks/useLocationSettings';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { calculateDistance } from '@/utils/geoUtils';
 import { useLanguage, Language } from '@/contexts/LanguageContext';
 import { OrderStatus, OrderWithDetails } from '@/types/database';
 import { format } from 'date-fns';
@@ -45,6 +48,9 @@ const MyDeliveries: React.FC = () => {
   const cancelOrder = useCancelOrder();
   const logActivity = useLogActivity();
   const { isTracking, startTracking } = useLocationBroadcast();
+  const { data: locationThreshold } = useLocationThreshold();
+  const canBypassLocation = useHasPermission('bypass_location_check');
+  const [checkingLocation, setCheckingLocation] = useState(false);
 
   // Auto-start location broadcasting when there are active orders
   useEffect(() => {
@@ -76,6 +82,42 @@ const MyDeliveries: React.FC = () => {
   const handleDeliverClick = (order: OrderWithDetails) => {
     setPendingDeliveryOrder(order);
     setShowDeliverySaleDialog(true);
+  };
+
+  const checkLocationForOrder = async (order: OrderWithDetails): Promise<boolean> => {
+    if (canBypassLocation) return true;
+    const lat = order.customer?.latitude;
+    const lng = order.customer?.longitude;
+    if (!lat || !lng) return true;
+
+    const threshold = locationThreshold ?? 100;
+    setCheckingLocation(true);
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        if (!navigator.geolocation) { reject(); return; }
+        navigator.geolocation.getCurrentPosition(resolve, () => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: false, timeout: 10000, maximumAge: 120000 });
+        }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 });
+      });
+      const distanceKm = calculateDistance(position.coords.latitude, position.coords.longitude, lat, lng);
+      const distanceMeters = distanceKm * 1000;
+      if (distanceMeters > threshold) {
+        toast.error(`أنت بعيد عن موقع العميل (${Math.round(distanceMeters)} متر). يجب أن تكون على بُعد ${threshold} متر أو أقل.`);
+        return false;
+      }
+      return true;
+    } catch {
+      toast.error('تعذر تحديد موقعك. يرجى تفعيل خدمة الموقع.');
+      return false;
+    } finally {
+      setCheckingLocation(false);
+    }
+  };
+
+  const handleCancelWithLocationCheck = async (order: OrderWithDetails) => {
+    const allowed = await checkLocationForOrder(order);
+    if (!allowed) return;
+    setConfirmCancelOrderId(order.id);
   };
 
   const handleCancelOrder = async (orderId: string) => {
@@ -349,10 +391,10 @@ const MyDeliveries: React.FC = () => {
                         <Button
                           size="sm"
                           variant="destructive"
-                          onClick={() => setConfirmCancelOrderId(order.id)}
-                          disabled={cancelOrder.isPending}
+                          onClick={() => handleCancelWithLocationCheck(order)}
+                          disabled={cancelOrder.isPending || checkingLocation}
                         >
-                          <XCircle className="w-4 h-4" />
+                          {checkingLocation ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
                         </Button>
                       </>
                     )}
