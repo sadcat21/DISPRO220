@@ -4,6 +4,7 @@ import { Product } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useWorkerPermissions } from '@/hooks/usePermissions';
+import { useIsElementHidden } from '@/hooks/useUIOverrides';
 import ProductGrid from '@/components/promo/ProductGrid';
 import AddPromoDialog from '@/components/promo/AddPromoDialog';
 import DirectSaleDialog from '@/components/warehouse/DirectSaleDialog';
@@ -33,6 +34,11 @@ const WorkerHome: React.FC = () => {
   const [selectedCustomerForAction, setSelectedCustomerForAction] = useState<Customer | null>(null);
 
   const { trackVisit } = useTrackVisit();
+  const isDirectSaleHidden = useIsElementHidden('button', 'direct_sale');
+  const isCreateOrderHidden = useIsElementHidden('button', 'create_order');
+  const isAddCustomerHidden = useIsElementHidden('button', 'add_customer');
+  const isAddPromoHidden = useIsElementHidden('button', 'add_promo');
+  const isCollectDebtHidden = useIsElementHidden('button', 'collect_debt');
 
   const { data: stockItems } = useQuery({
     queryKey: ['my-worker-stock', workerId],
@@ -184,15 +190,17 @@ const WorkerHome: React.FC = () => {
                 <span className="text-xs font-bold">{t('deliveries.title')}</span>
               </button>
 
-              <button
-                onClick={() => setShowActionDialog(true)}
-                className="rounded-xl bg-secondary text-secondary-foreground p-3 flex flex-col items-center justify-center gap-2 shadow-md active:scale-[0.97] transition-all duration-200 group"
-              >
-                <div className="bg-primary/20 rounded-lg p-2 group-hover:scale-110 transition-transform duration-200">
-                  <ShoppingBag className="w-5 h-5 text-primary" />
-                </div>
-                <span className="text-xs font-bold">{t('stock.direct_sale')}</span>
-              </button>
+              {!isDirectSaleHidden && (
+                <button
+                  onClick={() => setShowActionDialog(true)}
+                  className="rounded-xl bg-secondary text-secondary-foreground p-3 flex flex-col items-center justify-center gap-2 shadow-md active:scale-[0.97] transition-all duration-200 group"
+                >
+                  <div className="bg-primary/20 rounded-lg p-2 group-hover:scale-110 transition-transform duration-200">
+                    <ShoppingBag className="w-5 h-5 text-primary" />
+                  </div>
+                  <span className="text-xs font-bold">{t('stock.direct_sale')}</span>
+                </button>
+              )}
 
               <button
                 onClick={() => navigate('/my-stock')}
