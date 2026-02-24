@@ -68,6 +68,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
   const [longitude, setLongitude] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [gpsGranted, setGpsGranted] = useState(false);
+  const [gpsLoading, setGpsLoading] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [searchAddressQuery, setSearchAddressQuery] = useState('');
   const [locationType, setLocationType] = useState<'store' | 'warehouse' | 'office'>('store');
@@ -145,6 +146,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
       setDefaultPaymentType('without_invoice');
       setDefaultPriceSubtype('retail');
       setGpsGranted(false);
+      setGpsLoading(true);
       // Auto-capture GPS
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -154,16 +156,19 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
             setLatitude(lat);
             setLongitude(lng);
             setGpsGranted(true);
+            setGpsLoading(false);
             fetchAddressFromCoords(lat, lng);
           },
           (err) => {
             console.warn('GPS auto-capture failed:', err.message);
             setGpsGranted(false);
+            setGpsLoading(false);
           },
           { enableHighAccuracy: true, timeout: 10000 }
         );
       } else {
         setGpsGranted(false);
+        setGpsLoading(false);
       }
     }
   }, [open]);
@@ -357,40 +362,54 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
         {/* GPS Required Gate */}
         {!gpsGranted ? (
           <div className="flex flex-col items-center justify-center py-12 space-y-4 text-center">
-            <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
-              <MapPin className="w-8 h-8 text-destructive" />
-            </div>
-            <div className="space-y-2">
-              <h3 className="font-bold text-lg">يجب تفعيل خدمة الموقع (GPS)</h3>
-              <p className="text-sm text-muted-foreground max-w-[250px]">
-                لا يمكن إضافة عميل جديد بدون تحديد الموقع الجغرافي. يرجى تفعيل GPS والمحاولة مرة أخرى.
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="default"
-              className="gap-2"
-              onClick={() => {
-                if (navigator.geolocation) {
-                  navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                      setLatitude(position.coords.latitude);
-                      setLongitude(position.coords.longitude);
-                      setGpsGranted(true);
-                      fetchAddressFromCoords(position.coords.latitude, position.coords.longitude);
-                      toast.success('تم تفعيل الموقع بنجاح');
-                    },
-                    () => {
-                      toast.error('فشل الحصول على الموقع. تأكد من تفعيل GPS في إعدادات الجهاز');
-                    },
-                    { enableHighAccuracy: true, timeout: 15000 }
-                  );
-                }
-              }}
-            >
-              <MapPin className="w-4 h-4" />
-              إعادة المحاولة
-            </Button>
+            {gpsLoading ? (
+              <>
+                <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">جارٍ تحديد موقعك الحالي...</p>
+              </>
+            ) : (
+              <>
+                <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <MapPin className="w-8 h-8 text-destructive" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="font-bold text-lg">يجب تفعيل خدمة الموقع (GPS)</h3>
+                  <p className="text-sm text-muted-foreground max-w-[250px]">
+                    لا يمكن إضافة عميل جديد بدون تحديد الموقع الجغرافي. يرجى تفعيل GPS والمحاولة مرة أخرى.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="default"
+                  className="gap-2"
+                  onClick={() => {
+                    setGpsLoading(true);
+                    if (navigator.geolocation) {
+                      navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                          setLatitude(position.coords.latitude);
+                          setLongitude(position.coords.longitude);
+                          setGpsGranted(true);
+                          setGpsLoading(false);
+                          fetchAddressFromCoords(position.coords.latitude, position.coords.longitude);
+                          toast.success('تم تحديد الموقع بنجاح');
+                        },
+                        () => {
+                          setGpsLoading(false);
+                          toast.error('فشل الحصول على الموقع. تأكد من تفعيل GPS في إعدادات الجهاز');
+                        },
+                        { enableHighAccuracy: true, timeout: 15000 }
+                      );
+                    } else {
+                      setGpsLoading(false);
+                    }
+                  }}
+                >
+                  <MapPin className="w-4 h-4" />
+                  إعادة المحاولة
+                </Button>
+              </>
+            )}
           </div>
         ) : (
         <>
