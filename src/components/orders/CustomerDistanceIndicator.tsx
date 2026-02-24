@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
 import { calculateDistance, formatDistance } from '@/utils/geoUtils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CustomerDistanceIndicatorProps {
   customerLatitude?: number | null;
@@ -13,6 +14,8 @@ const CustomerDistanceIndicator: React.FC<CustomerDistanceIndicatorProps> = ({
   customerLongitude,
   thresholdMeters = 100,
 }) => {
+  const { dir } = useLanguage();
+  const isRtl = dir === 'rtl';
   const [workerPosition, setWorkerPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -59,7 +62,7 @@ const CustomerDistanceIndicator: React.FC<CustomerDistanceIndicatorProps> = ({
 
   if (loading) {
     return (
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground py-1">
+      <div className={`flex items-center gap-1.5 text-xs text-muted-foreground py-1 ${isRtl ? 'flex-row-reverse justify-end' : ''}`}>
         <Loader2 className="w-3.5 h-3.5 animate-spin" />
         <span>جارٍ تحديد المسافة...</span>
       </div>
@@ -68,7 +71,7 @@ const CustomerDistanceIndicator: React.FC<CustomerDistanceIndicatorProps> = ({
 
   if (error || !workerPosition) {
     return (
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground py-1">
+      <div className={`flex items-center gap-1.5 text-xs text-muted-foreground py-1 ${isRtl ? 'flex-row-reverse justify-end' : ''}`}>
         <MapPin className="w-3.5 h-3.5" />
         <span>تعذر تحديد موقعك الحالي</span>
       </div>
@@ -85,7 +88,9 @@ const CustomerDistanceIndicator: React.FC<CustomerDistanceIndicatorProps> = ({
   const isFar = distanceMeters > thresholdMeters;
 
   return (
-    <div className={`flex items-center gap-1.5 text-xs py-1 px-2 rounded-md ${
+    <div dir={dir} className={`flex items-center gap-1.5 text-xs py-1 px-2 rounded-md w-full ${
+      isRtl ? 'flex-row-reverse justify-end text-right' : ''
+    } ${
       isFar 
         ? 'bg-destructive/10 text-destructive' 
         : 'bg-green-500/10 text-green-700 dark:text-green-400'
