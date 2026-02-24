@@ -158,16 +158,44 @@ export const UI_ELEMENTS = {
   ],
   buttons: [
     // الرئيسية (WorkerHome)
-    { key: 'direct_sale', label: 'بيع مباشر', group: 'الرئيسية' },
-    { key: 'create_order', label: 'إنشاء طلبية', group: 'الرئيسية' },
-    { key: 'add_customer', label: 'إضافة عميل', group: 'العملاء' },
+    { key: 'home_direct_sale', label: 'بيع مباشر', group: 'الرئيسية' },
+    { key: 'home_deliveries', label: 'توصيلاتي', group: 'الرئيسية' },
+    { key: 'home_my_stock', label: 'رصيدي من المنتجات', group: 'الرئيسية' },
+    { key: 'home_debts', label: 'إدارة الديون', group: 'الرئيسية' },
+    { key: 'home_orders', label: 'إدارة الطلبيات', group: 'الرئيسية' },
+    { key: 'home_promos', label: 'عملياتي', group: 'الرئيسية' },
+    { key: 'home_customers', label: 'العملاء', group: 'الرئيسية' },
+    { key: 'home_expenses', label: 'مصاريفي', group: 'الرئيسية' },
+    // الطلبيات (Orders)
+    { key: 'create_order', label: 'إنشاء طلبية', group: 'الطلبيات' },
+    { key: 'orders_search', label: 'بحث في الطلبيات', group: 'الطلبيات' },
+    { key: 'orders_print', label: 'طباعة الطلبيات', group: 'الطلبيات' },
+    // توصيلاتي (MyDeliveries)
+    { key: 'deliveries_search', label: 'بحث في التوصيلات', group: 'توصيلاتي' },
+    // رصيدي من المنتجات (MyStock)
+    { key: 'stock_direct_sale', label: 'بيع مباشر', group: 'رصيدي من المنتجات' },
+    // عملياتي (MyPromos)
     { key: 'add_promo', label: 'إضافة عملية', group: 'عملياتي' },
+    // مصاريفي (Expenses)
+    { key: 'add_expense', label: 'إضافة مصروف', group: 'مصاريفي' },
+    // العملاء (Customers)
+    { key: 'add_customer', label: 'إضافة عميل', group: 'العملاء' },
+    // تحميل للعامل (LoadStock)
     { key: 'load_stock', label: 'تحميل مخزون', group: 'تحميل للعامل' },
+    // عروض المنتجات (ProductOffers)
+    { key: 'add_offer', label: 'إضافة عرض', group: 'عروض المنتجات' },
   ],
   actions: [
     { key: 'collect_debt', label: 'تحصيل دين', group: 'ديون العملاء' },
     { key: 'modify_order', label: 'تعديل طلبية', group: 'الطلبيات' },
     { key: 'delete_order', label: 'حذف طلبية', group: 'الطلبيات' },
+    { key: 'cancel_order', label: 'إلغاء طلبية', group: 'الطلبيات' },
     { key: 'print_receipt', label: 'طباعة فاتورة', group: 'الطلبيات' },
+    { key: 'assign_order', label: 'تعيين عامل للطلبية', group: 'الطلبيات' },
+    { key: 'modify_delivery', label: 'تعديل توصيلة', group: 'توصيلاتي' },
+    { key: 'cancel_delivery', label: 'إلغاء توصيلة', group: 'توصيلاتي' },
+    { key: 'edit_promo', label: 'تعديل عملية', group: 'عملياتي' },
+    { key: 'delete_promo', label: 'حذف عملية', group: 'عملياتي' },
+    { key: 'delete_expense', label: 'حذف مصروف', group: 'مصاريفي' },
   ],
 };
