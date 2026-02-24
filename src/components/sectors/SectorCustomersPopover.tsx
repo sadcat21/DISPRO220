@@ -182,7 +182,12 @@ const SectorCustomersPopover: React.FC = () => {
       const distanceKm = calculateDistance(position.coords.latitude, position.coords.longitude, customer.latitude, customer.longitude);
       const distanceMeters = distanceKm * 1000;
       if (distanceMeters > threshold) {
-        toast.error(`أنت بعيد عن موقع العميل (${Math.round(distanceMeters)} متر). يجب أن تكون على بُعد ${threshold} متر أو أقل.`);
+        const formattedDistance = distanceMeters >= 1000 
+          ? `${(distanceMeters / 1000).toFixed(1)} كم` 
+          : `${Math.round(distanceMeters)} متر`;
+        toast.error(`📍 أنت بعيد عن العميل بمسافة ${formattedDistance}`, {
+          description: `يجب أن تكون على بُعد ${threshold} متر أو أقل من موقع العميل`,
+        });
         return false;
       }
       return true;
