@@ -396,6 +396,7 @@ const SessionDetailsDialog: React.FC<SessionDetailsDialogProps> = ({ open, onOpe
                 <PromoTrackingSummary
                   items={liveCalc.promoTracking}
                   totalGiftValue={liveCalc.giftOfferValue}
+                  workerName={session.worker?.full_name}
                 />
               </div>
             )}

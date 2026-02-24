@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
-import { Gift, Package, ChevronDown, ChevronUp, User, Calendar } from 'lucide-react';
+import React, { useState, useRef, useCallback } from 'react';
+import { Gift, Package, ChevronDown, ChevronUp, User, Calendar, Printer } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { PromoTrackingItem } from '@/hooks/useSessionCalculations';
+import { Button } from '@/components/ui/button';
+import PromoDetailsPrintView from '@/components/print/PromoDetailsPrintView';
 
 interface PromoTrackingSummaryProps {
   items: PromoTrackingItem[];
   totalGiftValue: number;
+  workerName?: string;
 }
 
 const formatGiftDisplay = (giftPieces: number, piecesPerBox: number): string => {
@@ -37,9 +40,19 @@ const formatDate = (dateStr: string): string => {
   }
 };
 
-const PromoTrackingSummary: React.FC<PromoTrackingSummaryProps> = ({ items, totalGiftValue }) => {
+const PromoTrackingSummary: React.FC<PromoTrackingSummaryProps> = ({ items, totalGiftValue, workerName }) => {
   const { t } = useLanguage();
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+  const [printingIdx, setPrintingIdx] = useState<number | null>(null);
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = useCallback((idx: number) => {
+    setPrintingIdx(idx);
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => setPrintingIdx(null), 500);
+    }, 300);
+  }, []);
 
   if (items.length === 0) {
     return (
@@ -48,6 +61,8 @@ const PromoTrackingSummary: React.FC<PromoTrackingSummaryProps> = ({ items, tota
       </p>
     );
   }
+
+  const printItem = printingIdx !== null ? items[printingIdx] : null;
 
   return (
     <div className="space-y-2">
@@ -104,6 +119,21 @@ const PromoTrackingSummary: React.FC<PromoTrackingSummaryProps> = ({ items, tota
               {/* Expanded customer details */}
               {isExpanded && hasDetails && (
                 <div className="bg-accent/30 border-t border-border">
+                  {/* Print button */}
+                  <div className="flex justify-end px-3 pt-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 text-[10px] h-7 rounded-lg print:hidden"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePrint(idx);
+                      }}
+                    >
+                      <Printer className="w-3 h-3" />
+                      طباعة
+                    </Button>
+                  </div>
                   <div className="grid grid-cols-12 gap-1 text-[9px] text-muted-foreground font-medium px-3 py-1.5 border-b border-border/50">
                     <span className="col-span-4">العميل</span>
                     <span className="col-span-2 text-center">الكمية</span>
@@ -137,6 +167,18 @@ const PromoTrackingSummary: React.FC<PromoTrackingSummaryProps> = ({ items, tota
           );
         })}
       </div>
+
+      {/* Print view (hidden, rendered via portal) */}
+      {printItem && (
+        <PromoDetailsPrintView
+          ref={printRef}
+          productName={printItem.productName}
+          workerName={workerName}
+          piecesPerBox={printItem.piecesPerBox}
+          customerDetails={printItem.customerDetails}
+          isVisible={printingIdx !== null}
+        />
+      )}
     </div>
   );
 };
