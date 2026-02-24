@@ -182,39 +182,63 @@ const WorkerUIOverridesSection: React.FC = () => {
             })}
           </TabsList>
 
-          {CATEGORIES.map(cat => (
-            <TabsContent key={cat.key} value={cat.key}>
-              <ScrollArea className="h-[calc(100vh-22rem)]">
-                <Card>
-                  <CardContent className="p-3 space-y-1">
-                    {cat.items.map(item => {
-                      const hidden = isElementHidden(cat.type, item.key);
-                      return (
-                        <div key={item.key} className="flex items-center justify-between gap-2 py-1.5 border-b border-border/50 last:border-0">
-                          <div className="flex items-center gap-2 min-w-0">
-                            {hidden ? (
-                              <EyeOff className="w-3.5 h-3.5 text-destructive shrink-0" />
-                            ) : (
-                              <Eye className="w-3.5 h-3.5 text-green-600 shrink-0" />
-                            )}
-                            <span className="text-xs truncate">{item.label}</span>
-                            {item.key.startsWith('/') && (
-                              <span className="text-[10px] text-muted-foreground" dir="ltr">{item.key}</span>
-                            )}
-                          </div>
-                          <Switch
-                            checked={!hidden}
-                            onCheckedChange={() => handleToggle(cat.type, item.key)}
-                            disabled={toggleOverride.isPending}
-                          />
-                        </div>
-                      );
-                    })}
-                  </CardContent>
-                </Card>
-              </ScrollArea>
-            </TabsContent>
-          ))}
+          {CATEGORIES.map(cat => {
+            // Group items by 'group' property if available
+            const hasGroups = cat.items.some((item: any) => item.group);
+            const groups = hasGroups
+              ? Object.entries(
+                  cat.items.reduce((acc: Record<string, typeof cat.items>, item: any) => {
+                    const g = item.group || 'أخرى';
+                    if (!acc[g]) acc[g] = [];
+                    acc[g].push(item);
+                    return acc;
+                  }, {} as Record<string, typeof cat.items>)
+                )
+              : [['', cat.items] as [string, typeof cat.items]];
+
+            return (
+              <TabsContent key={cat.key} value={cat.key}>
+                <ScrollArea className="h-[calc(100vh-22rem)]">
+                  <div className="space-y-3">
+                    {groups.map(([groupName, items]) => (
+                      <Card key={groupName || 'all'}>
+                        <CardContent className="p-3 space-y-1">
+                          {groupName && (
+                            <p className="text-xs font-semibold text-primary mb-2 pb-1 border-b border-primary/20">
+                              📍 {groupName}
+                            </p>
+                          )}
+                          {items.map(item => {
+                            const hidden = isElementHidden(cat.type, item.key);
+                            return (
+                              <div key={item.key} className="flex items-center justify-between gap-2 py-1.5 border-b border-border/50 last:border-0">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  {hidden ? (
+                                    <EyeOff className="w-3.5 h-3.5 text-destructive shrink-0" />
+                                  ) : (
+                                    <Eye className="w-3.5 h-3.5 text-green-600 shrink-0" />
+                                  )}
+                                  <span className="text-xs truncate">{item.label}</span>
+                                  {item.key.startsWith('/') && (
+                                    <span className="text-[10px] text-muted-foreground" dir="ltr">{item.key}</span>
+                                  )}
+                                </div>
+                                <Switch
+                                  checked={!hidden}
+                                  onCheckedChange={() => handleToggle(cat.type, item.key)}
+                                  disabled={toggleOverride.isPending}
+                                />
+                              </div>
+                            );
+                          })}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+            );
+          })}
         </Tabs>
       )}
     </div>

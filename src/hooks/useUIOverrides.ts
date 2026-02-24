@@ -157,16 +157,17 @@ export const UI_ELEMENTS = {
     { key: '/customer-debts', label: 'ديون العملاء' },
   ],
   buttons: [
-    { key: 'direct_sale', label: 'البيع المباشر' },
-    { key: 'create_order', label: 'إنشاء طلبية' },
-    { key: 'add_customer', label: 'إضافة عميل' },
-    { key: 'add_promo', label: 'إضافة عملية' },
-    { key: 'load_stock', label: 'تحميل مخزون' },
+    // الرئيسية (WorkerHome)
+    { key: 'direct_sale', label: 'بيع مباشر', group: 'الرئيسية' },
+    { key: 'create_order', label: 'إنشاء طلبية', group: 'الرئيسية' },
+    { key: 'add_customer', label: 'إضافة عميل', group: 'العملاء' },
+    { key: 'add_promo', label: 'إضافة عملية', group: 'عملياتي' },
+    { key: 'load_stock', label: 'تحميل مخزون', group: 'تحميل للعامل' },
   ],
   actions: [
-    { key: 'collect_debt', label: 'تحصيل دين' },
-    { key: 'modify_order', label: 'تعديل طلبية' },
-    { key: 'delete_order', label: 'حذف طلبية' },
-    { key: 'print_receipt', label: 'طباعة فاتورة' },
+    { key: 'collect_debt', label: 'تحصيل دين', group: 'ديون العملاء' },
+    { key: 'modify_order', label: 'تعديل طلبية', group: 'الطلبيات' },
+    { key: 'delete_order', label: 'حذف طلبية', group: 'الطلبيات' },
+    { key: 'print_receipt', label: 'طباعة فاتورة', group: 'الطلبيات' },
   ],
 };
