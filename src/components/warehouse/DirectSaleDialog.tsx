@@ -29,6 +29,7 @@ import InvoicePaymentMethodSelect from '@/components/orders/InvoicePaymentMethod
 import DeliveryPaymentDialog from '@/components/orders/DeliveryPaymentDialog';
 import StockOverflowDialog from '@/components/warehouse/StockOverflowDialog';
 import { cn } from '@/lib/utils';
+import CustomerDistanceIndicator from '@/components/orders/CustomerDistanceIndicator';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
 
@@ -665,6 +666,10 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
                         </div>
                       </div>
                     </div>
+                    <CustomerDistanceIndicator
+                      customerLatitude={selectedCustomer.latitude}
+                      customerLongitude={selectedCustomer.longitude}
+                    />
                   </div>
                 )}
               </section>

@@ -27,6 +27,7 @@ import { useActiveStampTiers, calculateStampAmount } from '@/hooks/useStampTiers
 import ProductQuantityDialog, { PerItemPricing } from './ProductQuantityDialog';
 import AssignWorkerAfterSaveDialog from './AssignWorkerAfterSaveDialog';
 import AddCustomerDialog from '@/components/promo/AddCustomerDialog';
+import CustomerDistanceIndicator from './CustomerDistanceIndicator';
 import EditCustomerDialog from './EditCustomerDialog';
 import CustomerRecentOrders from './CustomerRecentOrders';
 import InvoicePaymentMethodSelect from './InvoicePaymentMethodSelect';
@@ -504,6 +505,11 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                         <Edit2 className="w-4 h-4" />
                       </Button>
                     </div>
+
+                    <CustomerDistanceIndicator
+                      customerLatitude={selectedCustomer.latitude}
+                      customerLongitude={selectedCustomer.longitude}
+                    />
 
                     {orders && orders.length > 0 && (
                       <CustomerRecentOrders

@@ -26,6 +26,7 @@ import { useOrderItems } from '@/hooks/useOrders';
 import DeliveryPaymentDialog from '@/components/orders/DeliveryPaymentDialog';
 import ProductQuantityDialog from '@/components/orders/ProductQuantityDialog';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
+import CustomerDistanceIndicator from './CustomerDistanceIndicator';
 
 interface DeliverySaleDialogProps {
   open: boolean;
@@ -461,6 +462,10 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
                     </p>
                   </div>
                 </div>
+                <CustomerDistanceIndicator
+                  customerLatitude={order.customer?.latitude}
+                  customerLongitude={order.customer?.longitude}
+                />
               </div>
 
               {/* Current Items */}
