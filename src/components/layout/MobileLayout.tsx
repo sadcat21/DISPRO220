@@ -211,7 +211,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                 className={cn(
                   'flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors',
                   isActive
-                    ? 'text-primary bg-primary/10'
+                    ? 'text-primary-foreground bg-primary'
                     : 'text-secondary-foreground hover:text-primary'
                 )}
               >
@@ -229,7 +229,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                   className={cn(
                     'flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors',
                     isMoreActive
-                      ? 'text-primary bg-primary/10'
+                      ? 'text-primary-foreground bg-primary'
                       : 'text-secondary-foreground hover:text-primary'
                   )}
                 >
