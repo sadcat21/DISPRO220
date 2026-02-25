@@ -566,7 +566,7 @@ const Customers: React.FC = () => {
           </div>
           <div className="min-w-0">
             <h2 className="text-lg font-bold leading-tight">{t('customers.title')}</h2>
-            <p className="text-xs text-muted-foreground">{filteredByBranch.length} {t('customers.total')}</p>
+            <p className="text-xs text-muted-foreground">{filteredByBranch.length}/{filteredCustomers.length}</p>
           </div>
         </div>
         <div className="flex gap-1.5 shrink-0">
