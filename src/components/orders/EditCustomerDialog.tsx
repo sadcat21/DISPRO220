@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Store, Building2, Warehouse, ChevronDown, ChevronUp, CreditCard, User, Languages, MapPin, UserCircle, Shield, Plus, Trash2, Type, BookOpen } from 'lucide-react';
+import { Loader2, Store, Building2, Warehouse, ChevronDown, ChevronUp, CreditCard, User, Languages, MapPin, UserCircle, Shield, Plus, Trash2, Type, BookOpen, X } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { Customer } from '@/types/database';
@@ -84,15 +84,14 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
   // Fetch zones when sector changes
   const pendingZoneId = React.useRef<string>('');
   const [zonesLoading, setZonesLoading] = useState(false);
-  useEffect(() => {
-    if (!sectorId) {
-      setZones([]);
-      return;
-    }
+  const [addingZone, setAddingZone] = useState(false);
+  const [newZoneName, setNewZoneName] = useState('');
+  const [savingZone, setSavingZone] = useState(false);
+
+  const fetchZones = useCallback((sid: string) => {
     setZonesLoading(true);
-    supabase.from('sector_zones').select('id, name, sector_id').eq('sector_id', sectorId).order('name')
-      .then(({ data, error }) => {
-        console.log('🔍 Edit: Zones fetch for sector', sectorId, ':', data, error);
+    supabase.from('sector_zones').select('id, name, sector_id').eq('sector_id', sid).order('name')
+      .then(({ data }) => {
         setZones(data || []);
         if (pendingZoneId.current && data?.find(z => z.id === pendingZoneId.current)) {
           setZoneId(pendingZoneId.current);
@@ -102,7 +101,31 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
         }
         setZonesLoading(false);
       });
-  }, [sectorId]);
+  }, [zoneId]);
+
+  useEffect(() => {
+    setAddingZone(false);
+    if (!sectorId) { setZones([]); return; }
+    fetchZones(sectorId);
+  }, [sectorId, fetchZones]);
+
+  const handleAddZone = async () => {
+    if (!newZoneName.trim() || !sectorId) return;
+    setSavingZone(true);
+    try {
+      const { data, error } = await supabase.from('sector_zones').insert({ name: newZoneName.trim(), sector_id: sectorId }).select().single();
+      if (error) throw error;
+      toast.success(`تمت إضافة المنطقة: ${newZoneName.trim()}`);
+      setNewZoneName('');
+      setAddingZone(false);
+      fetchZones(sectorId);
+      if (data) setZoneId(data.id);
+    } catch (err: any) {
+      toast.error('فشل في إضافة المنطقة: ' + err.message);
+    } finally {
+      setSavingZone(false);
+    }
+  };
 
   // Completion percentage
   const completionPercent = useMemo(() => {
@@ -606,17 +629,41 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
                   المنطقة داخل السكتور
                   {zonesLoading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
                 </Label>
-                <Select value={zoneId || 'none'} onValueChange={(val) => setZoneId(val === 'none' ? '' : val)} disabled={zonesLoading}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={zonesLoading ? 'جاري التحميل...' : zones.length === 0 ? 'لا توجد مناطق' : 'اختر المنطقة'} />
-                  </SelectTrigger>
-                  <SelectContent position="popper" className="bg-popover z-[10050] max-h-60">
-                    <SelectItem value="none">بدون تحديد</SelectItem>
-                    {zones.map(z => (
-                      <SelectItem key={z.id} value={z.id}>{z.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {addingZone ? (
+                  <div className="flex gap-2">
+                    <Input
+                      value={newZoneName}
+                      onChange={(e) => setNewZoneName(e.target.value)}
+                      placeholder="اسم المنطقة الجديدة"
+                      autoFocus
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddZone()}
+                    />
+                    <Button size="sm" onClick={handleAddZone} disabled={savingZone || !newZoneName.trim()}>
+                      {savingZone ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setAddingZone(false); setNewZoneName(''); }}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Select value={zoneId || 'none'} onValueChange={(val) => {
+                    if (val === '__add_new') { setAddingZone(true); return; }
+                    setZoneId(val === 'none' ? '' : val);
+                  }} disabled={zonesLoading}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={zonesLoading ? 'جاري التحميل...' : zones.length === 0 ? 'لا توجد مناطق' : 'اختر المنطقة'} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" className="bg-popover z-[10050] max-h-60">
+                      <SelectItem value="none">بدون تحديد</SelectItem>
+                      {zones.map(z => (
+                        <SelectItem key={z.id} value={z.id}>{z.name}</SelectItem>
+                      ))}
+                      <SelectItem value="__add_new" className="text-primary font-semibold">
+                        <span className="flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> إضافة منطقة جديدة</span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             )}
 

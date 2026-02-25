@@ -60,21 +60,47 @@ const CustomerApprovalTab: React.FC = () => {
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [phones, setPhones] = useState<string[]>(['']);
     const [salesReps, setSalesReps] = useState<{name: string; phone: string}[]>([{name: '', phone: ''}]);
+    const [addingZone, setAddingZone] = useState(false);
+    const [newZoneName, setNewZoneName] = useState('');
+    const [savingZone, setSavingZone] = useState(false);
 
     useEffect(() => {
         fetchRequests();
     }, [activeBranch]);
 
+    const fetchZones = useCallback((sectorId: string) => {
+        supabase.from('sector_zones').select('id, name, sector_id')
+            .eq('sector_id', sectorId).order('name')
+            .then(({ data }) => setZones(data || []));
+    }, []);
+
     // Fetch zones when sector changes
     useEffect(() => {
+        setAddingZone(false);
         if (!editPayload.sector_id) {
             setZones([]);
             return;
         }
-        supabase.from('sector_zones').select('id, name, sector_id')
-            .eq('sector_id', editPayload.sector_id).order('name')
-            .then(({ data }) => setZones(data || []));
-    }, [editPayload.sector_id]);
+        fetchZones(editPayload.sector_id);
+    }, [editPayload.sector_id, fetchZones]);
+
+    const handleAddZoneApproval = async () => {
+        if (!newZoneName.trim() || !editPayload.sector_id) return;
+        setSavingZone(true);
+        try {
+            const { data, error } = await supabase.from('sector_zones').insert({ name: newZoneName.trim(), sector_id: editPayload.sector_id }).select().single();
+            if (error) throw error;
+            toast.success(`تمت إضافة المنطقة: ${newZoneName.trim()}`);
+            setNewZoneName('');
+            setAddingZone(false);
+            fetchZones(editPayload.sector_id);
+            if (data) setEditPayload((p: any) => ({ ...p, zone_id: data.id }));
+        } catch (err: any) {
+            toast.error('فشل في إضافة المنطقة: ' + err.message);
+        } finally {
+            setSavingZone(false);
+        }
+    };
 
     const autoApproveInsertRequests = async (requests: any[]) => {
         const insertRequests = requests.filter((r: any) => r.operation_type === 'insert');
@@ -458,18 +484,36 @@ const CustomerApprovalTab: React.FC = () => {
                                             </Select>
                                         </div>
                                     )}
-                                    {zones.length > 0 && (
+                                    {editPayload.sector_id && (
                                         <div className="space-y-2">
-                                            <Label className="text-xs">الزون</Label>
-                                            <Select value={editPayload.zone_id || 'none'} onValueChange={(v) => setEditPayload((p: any) => ({ ...p, zone_id: v === 'none' ? null : v }))}>
-                                                <SelectTrigger><SelectValue placeholder="اختر الزون" /></SelectTrigger>
-                                                <SelectContent className="bg-popover z-[10050]">
-                                                    <SelectItem value="none">بدون زون</SelectItem>
-                                                    {zones.map(z => (
-                                                        <SelectItem key={z.id} value={z.id}>{z.name}</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                            <Label className="text-xs">المنطقة داخل السكتور</Label>
+                                            {addingZone ? (
+                                                <div className="flex gap-2">
+                                                    <Input value={newZoneName} onChange={(e) => setNewZoneName(e.target.value)} placeholder="اسم المنطقة الجديدة" autoFocus onKeyDown={(e) => e.key === 'Enter' && handleAddZoneApproval()} />
+                                                    <Button size="sm" onClick={handleAddZoneApproval} disabled={savingZone || !newZoneName.trim()}>
+                                                        {savingZone ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                                                    </Button>
+                                                    <Button size="sm" variant="ghost" onClick={() => { setAddingZone(false); setNewZoneName(''); }}>
+                                                        <X className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <Select value={editPayload.zone_id || 'none'} onValueChange={(v) => {
+                                                    if (v === '__add_new') { setAddingZone(true); return; }
+                                                    setEditPayload((p: any) => ({ ...p, zone_id: v === 'none' ? null : v }));
+                                                }}>
+                                                    <SelectTrigger><SelectValue placeholder="اختر المنطقة" /></SelectTrigger>
+                                                    <SelectContent className="bg-popover z-[10050]">
+                                                        <SelectItem value="none">بدون تحديد</SelectItem>
+                                                        {zones.map(z => (
+                                                            <SelectItem key={z.id} value={z.id}>{z.name}</SelectItem>
+                                                        ))}
+                                                        <SelectItem value="__add_new" className="text-primary font-semibold">
+                                                            <span className="flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> إضافة منطقة جديدة</span>
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
                                         </div>
                                     )}
 
