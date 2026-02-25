@@ -37,10 +37,19 @@ serve(async (req) => {
     const isTransliterate = mode === 'transliterate';
 
     const systemPrompt = isTransliterate
-      ? `You are a transliteration expert. Your job is to transliterate (write the pronunciation) of names from one script to another.
-Do NOT translate the meaning. Just write how the name sounds using the target language's script/alphabet.
-For example: "محمد" → "Mohamed" (not "praised one"), "Boulangerie" → "بولانجري" (not "مخبزة").
-For names, always keep the original pronunciation as close as possible.
+      ? `You are a transliteration expert for store/shop names, especially in the Algerian context.
+Your job is to transliterate (write the pronunciation) of names from one script to another.
+
+IMPORTANT EXCEPTION: When Arabic text contains words that are originally borrowed from French (like سبيرات/سوبيرات = Supérette, شوب = Shop/Choppe, بوتيك = Boutique, كروسيري = Grosserie, مول = Mall, بريموار = Primeur, أليمونتار = Alimentaire, طابا = Tabac, بولانجري = Boulangerie, كافيتيريا = Cafétéria, فارماسي = Pharmacie, ليبرري = Librairie, كوافور = Coiffeur/Coiffeuse, ريستورون = Restaurant, بيتزيريا = Pizzeria, كريميري = Crèmerie, باتيسري = Pâtisserie, فريب = Friperie, مرشي = Marché, ديبو = Dépôt, ميني مارشي = Mini Marché, سوبر مارشي = Supermarché), you MUST write the CORRECT original French/English spelling, NOT a phonetic transliteration.
+
+For proper names (people names, unique brand names), transliterate phonetically as usual.
+
+Examples:
+- "سوبيرات الحلال" → { "fr": "Supérette El Halal" } (NOT "Soubirat Al Halal")
+- "شوب محمد" → { "fr": "Shop Mohamed" }
+- "بوتيك أمين" → { "fr": "Boutique Amine" }
+- "محمد" → { "fr": "Mohamed" }
+
 Always respond with valid JSON only, no extra text.`
       : `You are a professional translator. Translate the given text accurately and naturally. 
 For short labels/categories, keep translations concise.
@@ -48,14 +57,15 @@ For Arabic text with Algerian dialect, translate to standard but natural languag
 Always respond with valid JSON only, no extra text.`;
 
     const userPrompt = isTransliterate
-      ? `Transliterate the following name/text from ${sourceLangName} to ${targetLangNames}.
-Do NOT translate the meaning, just write how it sounds in the target script.
+      ? `Transliterate the following store/shop name from ${sourceLangName} to ${targetLangNames}.
+For words borrowed from French (like سبيرات, شوب, بوتيك, etc.), use the correct original French spelling.
+For proper names, transliterate phonetically.
 
 Text: "${text}"
 
 Respond with JSON format: { "lang_code": "transliterated text" }
-Example for "محمد": { "fr": "Mohamed", "en": "Mohamed" }
-Example for "Carrefour": { "ar": "كارفور" }`
+Example: "سوبيرات الحلال" → { "fr": "Supérette El Halal" }
+Example: "محمد" → { "fr": "Mohamed", "en": "Mohamed" }`
       : `Translate the following text from ${sourceLangName} to ${targetLangNames}.
 
 Text: "${text}"
