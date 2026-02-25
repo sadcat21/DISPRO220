@@ -76,6 +76,42 @@ const CustomerApprovalTab: React.FC = () => {
             .then(({ data }) => setZones(data || []));
     }, [editPayload.sector_id]);
 
+    const autoApproveInsertRequests = async (requests: any[]) => {
+        const insertRequests = requests.filter((r: any) => r.operation_type === 'insert');
+        for (const req of insertRequests) {
+            try {
+                const payload = req.payload;
+                const { debtAmount, initial_debt, ...customerData } = payload;
+                const finalDebtAmount = debtAmount || initial_debt || 0;
+                const { data: newCustomer, error: insertError } = await supabase
+                    .from('customers').insert(customerData).select().single();
+                if (insertError) throw insertError;
+
+                if (finalDebtAmount > 0 && workerId) {
+                    await createDebt.mutateAsync({
+                        customer_id: newCustomer.id,
+                        worker_id: req.requested_by,
+                        branch_id: req.branch_id || undefined,
+                        total_amount: finalDebtAmount,
+                        paid_amount: 0,
+                        notes: 'دين أولي عند إنشاء العميل (موافقة تلقائية)',
+                    });
+                }
+
+                await supabase
+                    .from('customer_approval_requests')
+                    .update({ status: 'approved', reviewed_by: workerId, reviewed_at: new Date().toISOString() })
+                    .eq('id', req.id);
+
+                trackVisit({ customerId: newCustomer.id, operationType: 'add_customer', operationId: newCustomer.id });
+                toast.success(`تمت الموافقة التلقائية على إضافة: ${payload.store_name || payload.name}`);
+            } catch (err: any) {
+                console.error('Auto-approve insert failed:', err);
+            }
+        }
+        return requests.filter((r: any) => r.operation_type !== 'insert');
+    };
+
     const fetchRequests = async () => {
         setIsLoading(true);
         try {
@@ -92,10 +128,17 @@ const CustomerApprovalTab: React.FC = () => {
             const { data, error } = await query;
             if (error) throw error;
 
-            setRequests((data || []).map((r: any) => ({
+            // Auto-approve any pending insert requests
+            const allRequests = (data || []).map((r: any) => ({
                 ...r,
                 requester_name: r.workers?.full_name
-            })));
+            }));
+            const remaining = await autoApproveInsertRequests(allRequests);
+            setRequests(remaining);
+            if (remaining.length < allRequests.length) {
+                queryClient.invalidateQueries({ queryKey: ['customers'] });
+                queryClient.invalidateQueries({ queryKey: ['worker-request-summaries'] });
+            }
         } catch (error: any) {
             console.error('Error fetching approval requests:', error);
             toast.error('خطأ في جلب طلبات الموافقة');
@@ -260,8 +303,8 @@ const CustomerApprovalTab: React.FC = () => {
                                         </span>
                                     </div>
                                     <h3 className="text-lg font-bold flex items-center gap-2">
-                                        <User className="w-5 h-5 text-primary" />
-                                        {request.payload.name || request.payload.customerName}
+                                        <Store className="w-5 h-5 text-primary" />
+                                        {request.payload.store_name || request.payload.name || request.payload.customerName}
                                     </h3>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm text-muted-foreground">
                                         {request.payload.phone && (

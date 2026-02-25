@@ -437,9 +437,9 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                   ) : selectedCustomer ? (
                     <span className="flex items-center gap-2">
                       <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
-                        {selectedCustomer.name?.charAt(0) || '?'}
+                        {(selectedCustomer.store_name || selectedCustomer.name)?.charAt(0) || '?'}
                       </div>
-                      <span className="truncate">{selectedCustomer.name}</span>
+                      <span className="truncate">{selectedCustomer.store_name || selectedCustomer.name}</span>
                       {selectedCustomer.wilaya && (
                         <span className="text-xs text-muted-foreground">({selectedCustomer.wilaya})</span>
                       )}
@@ -477,10 +477,11 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
-                          {selectedCustomer.name?.charAt(0) || '?'}
+                          {(selectedCustomer.store_name || selectedCustomer.name)?.charAt(0) || '?'}
                         </div>
                         <div>
-                          <p className="font-bold">{selectedCustomer.name}</p>
+                          <p className="font-bold">{selectedCustomer.store_name || selectedCustomer.name}</p>
+                          {selectedCustomer.store_name && <p className="text-xs text-muted-foreground">{selectedCustomer.name}</p>}
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <p className="text-xs text-muted-foreground">
                               {selectedCustomer.wilaya}

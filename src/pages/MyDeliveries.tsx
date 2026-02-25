@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { 
-  ShoppingCart, Loader2, Package, User, Calendar, 
+  ShoppingCart, Loader2, Package, User, Calendar, Store,
   CheckCircle, Clock, Truck, XCircle, UserCheck, Phone, MapPin, ChevronDown, ChevronUp, Navigation, Search, Edit2,
   Receipt, Banknote, Route, Gift, Trash2
 } from 'lucide-react';
@@ -224,10 +224,13 @@ const MyDeliveries: React.FC = () => {
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1">
                     {/* Customer Info */}
-                    <div className="flex items-center gap-2 mb-2">
-                      <User className="w-4 h-4 text-muted-foreground" />
-                      <span className="font-bold">{order.customer?.name}</span>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Store className="w-4 h-4 text-muted-foreground" />
+                      <span className="font-bold">{order.customer?.store_name || order.customer?.name}</span>
                     </div>
+                    {order.customer?.store_name && order.customer?.name && (
+                      <p className="text-xs text-muted-foreground mr-6 mb-2">{order.customer.name}</p>
+                    )}
                     
                     {order.customer?.phone && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
@@ -439,7 +442,8 @@ const MyDeliveries: React.FC = () => {
             {/* Customer Details */}
             {selectedOrder?.customer && (
               <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-                <p className="font-bold">{selectedOrder.customer.name}</p>
+                <p className="font-bold">{selectedOrder.customer.store_name || selectedOrder.customer.name}</p>
+                {selectedOrder.customer.store_name && <p className="text-xs text-muted-foreground">{selectedOrder.customer.name}</p>}
                 {selectedOrder.customer.phone && (
                   <a href={`tel:${selectedOrder.customer.phone}`} className="flex items-center gap-2 text-primary">
                     <Phone className="w-4 h-4" />

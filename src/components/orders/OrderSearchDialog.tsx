@@ -632,7 +632,7 @@ const OrderSearchDialog: React.FC<OrderSearchDialogProps> = ({ open, onOpenChang
       if (isContinuousMode) {
         // Add to scanned orders list
         setScannedOrders(prev => [...prev, foundOrder]);
-        toast.success(`تم إضافة طلبية ${foundOrder.customer?.name || 'غير معروف'}`);
+        toast.success(`تم إضافة طلبية ${foundOrder.customer?.store_name || foundOrder.customer?.name || 'غير معروف'}`);
       } else {
         setOrder(foundOrder);
         if (!itemsError && items) {
@@ -769,7 +769,7 @@ const OrderSearchDialog: React.FC<OrderSearchDialogProps> = ({ open, onOpenChang
                 <div className="mt-2 max-h-32 overflow-y-auto space-y-1">
                   {scannedOrders.map((o, i) => (
                     <div key={o.id} className="flex items-center justify-between text-sm bg-background/50 p-2 rounded">
-                      <span>{i + 1}. {o.customer?.name}</span>
+                      <span>{i + 1}. {o.customer?.store_name || o.customer?.name}</span>
                       <span className="text-muted-foreground font-mono">{o.id.substring(0, 8).toUpperCase()}</span>
                     </div>
                   ))}

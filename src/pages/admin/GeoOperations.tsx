@@ -374,7 +374,7 @@ const GeoOperations: React.FC = () => {
                             }}
                           >
                             <MapPin className="w-3 h-3" />
-                            {customer.name} ({formatDistance(customer.dist)})
+                            {customer.store_name || customer.name} ({formatDistance(customer.dist)})
                           </Button>
                         ))}
                       </div>

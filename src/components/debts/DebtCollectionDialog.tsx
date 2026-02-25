@@ -87,7 +87,7 @@ const DebtCollectionDialog: React.FC<DebtCollectionDialogProps> = ({ open, onOpe
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm" dir={dir}>
         <DialogHeader>
-          <DialogTitle className="text-base">استحقاق دين - {debt.customer?.name}</DialogTitle>
+          <DialogTitle className="text-base">استحقاق دين - {debt.customer?.store_name || debt.customer?.name}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">

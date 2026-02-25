@@ -635,8 +635,11 @@ const OrdersContent: React.FC = () => {
                           setShowCreateDialog(true);
                         }}
                       >
-                        {order.customer?.name}
+                        {order.customer?.store_name || order.customer?.name}
                       </button>
+                      {order.customer?.store_name && order.customer?.name && (
+                        <p className="text-xs text-muted-foreground mr-6">{order.customer.name}</p>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap">

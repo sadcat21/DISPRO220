@@ -17,7 +17,7 @@ export const useReceipts = (filters?: {
         .from('receipts')
         .select(`
           *,
-          customer:customers(id, name, phone, wilaya),
+          customer:customers(id, name, store_name, phone, wilaya),
           worker:workers!receipts_worker_id_fkey(id, full_name, username)
         `)
         .order('created_at', { ascending: false });
