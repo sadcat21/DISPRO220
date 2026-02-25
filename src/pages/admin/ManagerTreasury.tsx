@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Banknote, CreditCard, Receipt, ArrowUpRight, Plus, Send } from 'lucide-react';
+import { Banknote, CreditCard, Receipt, ArrowUpRight, Plus, Send, Coins } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -188,14 +188,20 @@ const ManagerTreasury = () => {
         <Card className="border-green-500/30 bg-green-500/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDetailsCategory('cash_invoice1')}>
           <CardContent className="p-3 text-center">
             <Banknote className="w-5 h-5 mx-auto mb-1 text-green-500" />
-            <p className="text-xs text-muted-foreground">كاش فاتورة 1</p>
+            <p className="text-xs text-muted-foreground">كاش فاتورة 1 ({summary?.cash_invoice1_count || 0})</p>
             <p className="text-lg font-bold text-green-500">{summary?.cash_invoice1?.toLocaleString() || 0} د.ج</p>
+            {(summary?.cash_invoice1_stamp || 0) > 0 && (
+              <p className="text-[10px] text-amber-600 flex items-center justify-center gap-1 mt-1">
+                <Coins className="w-3 h-3" />
+                طابع: {summary.cash_invoice1_stamp.toLocaleString()} د.ج
+              </p>
+            )}
           </CardContent>
         </Card>
         <Card className="border-emerald-500/30 bg-emerald-500/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDetailsCategory('cash_invoice2')}>
           <CardContent className="p-3 text-center">
             <Banknote className="w-5 h-5 mx-auto mb-1 text-emerald-500" />
-            <p className="text-xs text-muted-foreground">كاش فاتورة 2</p>
+            <p className="text-xs text-muted-foreground">كاش فاتورة 2 ({summary?.cash_invoice2_count || 0})</p>
             <p className="text-lg font-bold text-emerald-500">{summary?.cash_invoice2?.toLocaleString() || 0} د.ج</p>
           </CardContent>
         </Card>

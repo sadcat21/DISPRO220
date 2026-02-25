@@ -41,7 +41,10 @@ export interface HandoverEntry {
 
 export interface TreasurySummary {
   cash_invoice1: number;
+  cash_invoice1_count: number;
+  cash_invoice1_stamp: number;
   cash_invoice2: number;
+  cash_invoice2_count: number;
   check: number;
   checkCount: number;
   bank_receipt: number;
@@ -82,7 +85,7 @@ export const useTreasurySummary = () => {
       // Get delivered orders to calculate payment method totals
       let oQuery = supabase
         .from('orders')
-        .select('payment_type, invoice_payment_method, payment_status, total_amount, partial_amount')
+        .select('id, payment_type, invoice_payment_method, payment_status, total_amount, partial_amount, order_items(total_price)')
         .eq('status', 'delivered');
       if (activeBranch?.id) oQuery = oQuery.eq('branch_id', activeBranch.id);
       const { data: orders, error: oErr } = await oQuery;
@@ -95,7 +98,8 @@ export const useTreasurySummary = () => {
       if (hErr) throw hErr;
 
       const summary: TreasurySummary = {
-        cash_invoice1: 0, cash_invoice2: 0,
+        cash_invoice1: 0, cash_invoice1_count: 0, cash_invoice1_stamp: 0,
+        cash_invoice2: 0, cash_invoice2_count: 0,
         check: 0, checkCount: 0,
         bank_receipt: 0, receiptCount: 0,
         bank_transfer: 0, transferCount: 0,
@@ -104,11 +108,15 @@ export const useTreasurySummary = () => {
 
       (orders || []).forEach((o: any) => {
         const amount = Number(o.total_amount || 0);
+        const itemsSubtotal = (o.order_items || []).reduce((s: number, i: any) => s + Number(i.total_price || 0), 0);
+        const stampAmount = Math.max(0, amount - itemsSubtotal);
+        
         if (o.payment_type === 'with_invoice') {
-          // فاتورة 1
           switch (o.invoice_payment_method) {
             case 'cash':
               summary.cash_invoice1 += amount;
+              summary.cash_invoice1_count++;
+              summary.cash_invoice1_stamp += stampAmount;
               break;
             case 'check':
               summary.check += amount;
@@ -124,11 +132,13 @@ export const useTreasurySummary = () => {
               break;
             default:
               summary.cash_invoice1 += amount;
+              summary.cash_invoice1_count++;
+              summary.cash_invoice1_stamp += stampAmount;
               break;
           }
         } else {
-          // فاتورة 2 (without_invoice) = كاش
           summary.cash_invoice2 += amount;
+          summary.cash_invoice2_count++;
         }
       });
 
