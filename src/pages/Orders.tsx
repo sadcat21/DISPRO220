@@ -602,21 +602,26 @@ const OrdersContent: React.FC = () => {
 
       {/* Status Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full grid grid-cols-5 h-9">
-          <TabsTrigger value="all" className="text-xs px-1">
-            {t('common.all')} ({orders?.length || 0})
+        <TabsList className="w-full grid grid-cols-5 h-10">
+          <TabsTrigger value="all" className="text-[10px] sm:text-xs px-0.5 sm:px-1 gap-0.5 flex flex-col sm:flex-row items-center">
+            <Package className="w-3.5 h-3.5 shrink-0" />
+            <span>{orders?.length || 0}</span>
           </TabsTrigger>
-          <TabsTrigger value="pending" className="text-xs px-1">
-            {t('orders.pending')} ({orders?.filter(o => o.status === 'pending' || o.status === 'assigned').length || 0})
+          <TabsTrigger value="pending" className="text-[10px] sm:text-xs px-0.5 sm:px-1 gap-0.5 flex flex-col sm:flex-row items-center">
+            <Clock className="w-3.5 h-3.5 shrink-0 text-yellow-600" />
+            <span>{orders?.filter(o => o.status === 'pending' || o.status === 'assigned').length || 0}</span>
           </TabsTrigger>
-          <TabsTrigger value="in_progress" className="text-xs px-1">
-            {t('orders.in_progress')} ({orders?.filter(o => o.status === 'in_progress').length || 0})
+          <TabsTrigger value="in_progress" className="text-[10px] sm:text-xs px-0.5 sm:px-1 gap-0.5 flex flex-col sm:flex-row items-center">
+            <Truck className="w-3.5 h-3.5 shrink-0 text-purple-600" />
+            <span>{orders?.filter(o => o.status === 'in_progress').length || 0}</span>
           </TabsTrigger>
-          <TabsTrigger value="delivered" className="text-xs px-1">
-            {t('orders.delivered')} ({orders?.filter(o => o.status === 'delivered').length || 0})
+          <TabsTrigger value="delivered" className="text-[10px] sm:text-xs px-0.5 sm:px-1 gap-0.5 flex flex-col sm:flex-row items-center">
+            <CheckCircle className="w-3.5 h-3.5 shrink-0 text-green-600" />
+            <span>{orders?.filter(o => o.status === 'delivered').length || 0}</span>
           </TabsTrigger>
-          <TabsTrigger value="cancelled" className="text-xs px-1">
-            {t('orders.cancelled')} ({orders?.filter(o => o.status === 'cancelled').length || 0})
+          <TabsTrigger value="cancelled" className="text-[10px] sm:text-xs px-0.5 sm:px-1 gap-0.5 flex flex-col sm:flex-row items-center">
+            <XCircle className="w-3.5 h-3.5 shrink-0 text-red-600" />
+            <span>{orders?.filter(o => o.status === 'cancelled').length || 0}</span>
           </TabsTrigger>
         </TabsList>
       </Tabs>
