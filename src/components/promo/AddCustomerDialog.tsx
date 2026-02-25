@@ -705,7 +705,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
                         <SelectItem key={z.id} value={z.id}>{z.name}</SelectItem>
                       ))}
                       <SelectItem value="__add_new" className="text-primary font-semibold">
-                        <span className="flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> إضافة منطقة لـ {sectors.find(s => s.id === sectorId)?.name || 'السكتور'}</span>
+                        <span className="flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> إضافة منطقة لـ <span className="text-foreground">{sectors.find(s => s.id === sectorId)?.name || 'السكتور'}</span></span>
                       </SelectItem>
                     </SelectContent>
                   </Select>
