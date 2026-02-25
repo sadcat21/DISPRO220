@@ -4,6 +4,7 @@ import { Loader2, MapPin, Users, Store, Warehouse, Building2 } from 'lucide-reac
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { WILAYA_COORDINATES, ALGERIA_CENTER } from '@/data/wilayaCoordinates';
+import { useCustomerTypes, getCustomerTypeColor } from '@/hooks/useCustomerTypes';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -14,17 +15,16 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
-// Location type colors
+// Location type colors (fallback when no customer_type)
 const LOCATION_COLORS = {
-  store: '#3b82f6',     // أزرق للمحلات
-  warehouse: '#f97316', // برتقالي للمخازن
-  office: '#22c55e',    // أخضر للمكاتب
-  default: '#6b7280',   // رمادي افتراضي
+  store: '#3b82f6',
+  warehouse: '#f97316',
+  office: '#22c55e',
+  default: '#6b7280',
 };
 
-// Custom marker icon with color based on location type
-const createCustomIcon = (locationType?: string | null) => {
-  const color = LOCATION_COLORS[locationType as keyof typeof LOCATION_COLORS] || LOCATION_COLORS.default;
+// Custom marker icon with color
+const createCustomIcon = (color: string) => {
   return L.divIcon({
     className: 'custom-marker',
     html: `<div style="
@@ -71,11 +71,28 @@ const CustomersMapView: React.FC<CustomersMapViewProps> = ({
 }) => {
   // Note: customers are already filtered by sector in the parent component
   const { t } = useLanguage();
+  const { customerTypes } = useCustomerTypes();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [locationFilter, setLocationFilter] = useState<LocationFilterType>('all');
+
+  // Build a map from customer_type (ar) to color
+  const typeColorMap = React.useMemo(() => {
+    const map: Record<string, string> = {};
+    customerTypes.forEach((ct, idx) => {
+      map[ct.ar] = getCustomerTypeColor(ct.short, idx);
+    });
+    return map;
+  }, [customerTypes]);
+
+  const getMarkerColor = (customer: CustomerWithLocationType) => {
+    if (customer.customer_type && typeColorMap[customer.customer_type]) {
+      return typeColorMap[customer.customer_type];
+    }
+    return LOCATION_COLORS[customer.location_type as keyof typeof LOCATION_COLORS] || LOCATION_COLORS.default;
+  };
 
   // Filter customers with valid coordinates
   const customersWithLocation = customers.filter(
@@ -136,7 +153,7 @@ const CustomersMapView: React.FC<CustomersMapViewProps> = ({
     markersRef.current = [];
     filteredCustomers.forEach((customer) => {
       const marker = L.marker([customer.latitude!, customer.longitude!], {
-        icon: createCustomIcon(customer.location_type),
+        icon: createCustomIcon(getMarkerColor(customer)),
       }).addTo(map);
 
       // Create popup content with location type
@@ -178,7 +195,7 @@ const CustomersMapView: React.FC<CustomersMapViewProps> = ({
         mapRef.current = null;
       }
     };
-  }, [filteredCustomers.length, locationFilter, branchWilaya]);
+  }, [filteredCustomers.length, locationFilter, branchWilaya, typeColorMap]);
 
   if (customers.length === 0) {
     return null;
@@ -264,19 +281,17 @@ const CustomersMapView: React.FC<CustomersMapViewProps> = ({
         )}
       </div>
 
-      {/* Legend */}
-      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+      {/* Legend - Customer Types */}
+      <div className="flex items-center gap-3 flex-wrap text-xs text-muted-foreground">
+        {customerTypes.map((ct, idx) => (
+          <div key={idx} className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getCustomerTypeColor(ct.short, idx) }} />
+            <span>{ct.short || ct.ar}</span>
+          </div>
+        ))}
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: LOCATION_COLORS.store }} />
-          <span>محل</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: LOCATION_COLORS.warehouse }} />
-          <span>مخزن</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: LOCATION_COLORS.office }} />
-          <span>مكتب</span>
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: LOCATION_COLORS.default }} />
+          <span>أخرى</span>
         </div>
       </div>
     </div>
