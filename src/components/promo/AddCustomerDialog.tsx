@@ -600,53 +600,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
             </div>
           </div>
 
-          {/* --- Section 2: Finance & Preferences --- */}
-          <div className="space-y-4 rounded-xl border-2 border-amber-500/20 bg-amber-500/5 p-4">
-            <Label className="font-bold flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400">
-              <CreditCard className="w-4 h-4" />
-              الوضعية المالية والتفضيلات
-            </Label>
-
-            <div className="space-y-2">
-              <Label className="text-xs">الدين الابتدائي (دج)</Label>
-              <Input type="number" min="0" step="0.01" value={debtAmount} onChange={(e) => setDebtAmount(e.target.value)} placeholder="0" className="text-right" dir="ltr" />
-            </div>
-
-            <div className="border rounded-lg p-4 space-y-3 bg-background/60">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-primary" />
-                  <Label htmlFor="trust-switch">عميل موثوق (البيع بالدين)</Label>
-                </div>
-                <Switch id="trust-switch" checked={isTrusted} onCheckedChange={setIsTrusted} />
-              </div>
-              {isTrusted && (
-                <Input value={trustNotes} onChange={(e) => setTrustNotes(e.target.value)} placeholder="ملاحظات حول حالة الثقة (اختياري)" className="text-right" />
-              )}
-            </div>
-
-            <div className="border rounded-lg p-4 space-y-3 bg-background/60">
-              <div className="space-y-2">
-                <Label className="text-sm">نوع الشراء الافتراضي</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button type="button" variant={defaultPaymentType === 'with_invoice' ? 'default' : 'outline'} size="sm" onClick={() => setDefaultPaymentType('with_invoice')}>فاتورة 1</Button>
-                  <Button type="button" variant={defaultPaymentType === 'without_invoice' ? 'default' : 'outline'} size="sm" onClick={() => setDefaultPaymentType('without_invoice')}>فاتورة 2</Button>
-                </div>
-              </div>
-              {defaultPaymentType === 'without_invoice' && (
-                <div className="space-y-2">
-                  <Label className="text-sm">تسعير فاتورة 2</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <Button type="button" variant={defaultPriceSubtype === 'super_gros' ? 'default' : 'outline'} size="sm" className="text-xs" onClick={() => setDefaultPriceSubtype('super_gros')}>سوبر غرو</Button>
-                    <Button type="button" variant={defaultPriceSubtype === 'gros' ? 'default' : 'outline'} size="sm" className="text-xs" onClick={() => setDefaultPriceSubtype('gros')}>غرو</Button>
-                    <Button type="button" variant={defaultPriceSubtype === 'retail' ? 'default' : 'outline'} size="sm" className="text-xs" onClick={() => setDefaultPriceSubtype('retail')}>تجزئة</Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* --- Section 3: Location & Sector --- */}
+          {/* --- Section: Location & Sector --- */}
           <div className="space-y-4 rounded-xl border-2 border-emerald-500/20 bg-emerald-500/5 p-4">
             <Label className="font-bold flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-400">
               <MapPin className="w-4 h-4" />
@@ -668,7 +622,6 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
               {!sectorId && <p className="text-xs text-destructive">يجب اختيار سكتور</p>}
             </div>
 
-            {/* Zone selection - always show when sector selected */}
             {sectorId && (
               <div className="space-y-2">
                 <Label className="flex items-center gap-1">
@@ -677,13 +630,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
                 </Label>
                 {addingZone ? (
                   <div className="flex gap-2" dir="rtl">
-                    <Input
-                      value={newZoneName}
-                      onChange={(e) => setNewZoneName(e.target.value)}
-                      placeholder="اسم المنطقة الجديدة"
-                      autoFocus
-                      onKeyDown={(e) => e.key === 'Enter' && handleAddZone()}
-                    />
+                    <Input value={newZoneName} onChange={(e) => setNewZoneName(e.target.value)} placeholder="اسم المنطقة الجديدة" autoFocus onKeyDown={(e) => e.key === 'Enter' && handleAddZone()} />
                     <Button size="sm" onClick={handleAddZone} disabled={savingZone || !newZoneName.trim()}>
                       {savingZone ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                     </Button>
@@ -749,9 +696,6 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
               </div>
             </div>
 
-
-
-
             <div className="space-y-2">
               <Label htmlFor="customer-address" className="flex items-center gap-1">
                 {t('common.address')}
@@ -761,7 +705,6 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
               <p className="text-xs text-muted-foreground">💡 يتم اقتراح العنوان تلقائياً من الإحداثيات مع إمكانية التعديل</p>
             </div>
 
-            {/* Location Map Section */}
             <Collapsible open={showMap} onOpenChange={(isOpen) => { setShowMap(isOpen); if (isOpen && address.trim()) setSearchAddressQuery(address.trim()); }}>
               <CollapsibleTrigger asChild>
                 <Button type="button" variant="outline" className={`w-full justify-between ${!(latitude && longitude) ? 'border-destructive' : 'border-primary/30'} hover:bg-primary/5`}>
@@ -778,6 +721,52 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
               </CollapsibleContent>
             </Collapsible>
             {!(latitude && longitude) && <p className="text-xs text-destructive">يجب تحديد الموقع الجغرافي</p>}
+          </div>
+
+          {/* --- Section: Finance & Preferences --- */}
+          <div className="space-y-4 rounded-xl border-2 border-amber-500/20 bg-amber-500/5 p-4">
+            <Label className="font-bold flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400">
+              <CreditCard className="w-4 h-4" />
+              الوضعية المالية والتفضيلات
+            </Label>
+
+            <div className="space-y-2">
+              <Label className="text-xs">الدين الابتدائي (دج)</Label>
+              <Input type="number" min="0" step="0.01" value={debtAmount} onChange={(e) => setDebtAmount(e.target.value)} placeholder="0" className="text-right" dir="ltr" />
+            </div>
+
+            <div className="border rounded-lg p-4 space-y-3 bg-background/60">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-primary" />
+                  <Label htmlFor="trust-switch">عميل موثوق (البيع بالدين)</Label>
+                </div>
+                <Switch id="trust-switch" checked={isTrusted} onCheckedChange={setIsTrusted} />
+              </div>
+              {isTrusted && (
+                <Input value={trustNotes} onChange={(e) => setTrustNotes(e.target.value)} placeholder="ملاحظات حول حالة الثقة (اختياري)" className="text-right" />
+              )}
+            </div>
+
+            <div className="border rounded-lg p-4 space-y-3 bg-background/60">
+              <div className="space-y-2">
+                <Label className="text-sm">نوع الشراء الافتراضي</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button type="button" variant={defaultPaymentType === 'with_invoice' ? 'default' : 'outline'} size="sm" onClick={() => setDefaultPaymentType('with_invoice')}>فاتورة 1</Button>
+                  <Button type="button" variant={defaultPaymentType === 'without_invoice' ? 'default' : 'outline'} size="sm" onClick={() => setDefaultPaymentType('without_invoice')}>فاتورة 2</Button>
+                </div>
+              </div>
+              {defaultPaymentType === 'without_invoice' && (
+                <div className="space-y-2">
+                  <Label className="text-sm">تسعير فاتورة 2</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button type="button" variant={defaultPriceSubtype === 'super_gros' ? 'default' : 'outline'} size="sm" className="text-xs" onClick={() => setDefaultPriceSubtype('super_gros')}>سوبر غرو</Button>
+                    <Button type="button" variant={defaultPriceSubtype === 'gros' ? 'default' : 'outline'} size="sm" className="text-xs" onClick={() => setDefaultPriceSubtype('gros')}>غرو</Button>
+                    <Button type="button" variant={defaultPriceSubtype === 'retail' ? 'default' : 'outline'} size="sm" className="text-xs" onClick={() => setDefaultPriceSubtype('retail')}>تجزئة</Button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex gap-2 pt-2 sticky bottom-0 bg-background pb-2 -mb-2 border-t mt-4 pt-3">
