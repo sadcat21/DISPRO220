@@ -212,7 +212,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                   'flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors',
                   isActive
                     ? 'text-primary bg-primary/10'
-                    : 'text-muted-foreground hover:text-foreground'
+                    : 'text-secondary-foreground hover:text-primary'
                 )}
               >
                 <item.icon className="w-5 h-5" />
@@ -230,7 +230,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                     'flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors',
                     isMoreActive
                       ? 'text-primary bg-primary/10'
-                      : 'text-muted-foreground hover:text-foreground'
+                      : 'text-secondary-foreground hover:text-primary'
                   )}
                 >
                   <MoreHorizontal className="w-5 h-5" />
