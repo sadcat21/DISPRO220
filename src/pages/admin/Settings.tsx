@@ -15,6 +15,7 @@ import PrintSettingsCard from '@/components/settings/PrintSettingsCard';
 import NavbarCustomization from '@/components/settings/NavbarCustomization';
 import DataManagement from '@/components/settings/DataManagement';
 import LocationSettingsCard from '@/components/settings/LocationSettingsCard';
+import CustomerTypesCard from '@/components/settings/CustomerTypesCard';
 
 const Settings: React.FC = () => {
   const { user, logout, role, activeBranch, availableRoles, switchRole, switchBranch, showRoleSelection, showBranchSelection, selectRole, selectBranch } = useAuth();
@@ -204,6 +205,9 @@ const Settings: React.FC = () => {
       )}
       {(role === 'admin' || role === 'branch_admin') && (
         <LocationSettingsCard />
+      )}
+      {(role === 'admin' || role === 'branch_admin') && (
+        <CustomerTypesCard />
       )}
 
       {/* User Info */}

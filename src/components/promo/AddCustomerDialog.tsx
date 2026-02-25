@@ -19,6 +19,7 @@ import { useSectors } from '@/hooks/useSectors';
 import { useCreateDebt } from '@/hooks/useCustomerDebts';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
 import { reverseGeocode } from '@/utils/geoUtils';
+import { useCustomerTypes } from '@/hooks/useCustomerTypes';
 
 interface AddCustomerDialogProps {
   open: boolean;
@@ -50,6 +51,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
   const { sectors, fetchSectors } = useSectors();
   const createDebt = useCreateDebt();
   const { trackVisit } = useTrackVisit();
+  const { customerTypes } = useCustomerTypes();
   const [name, setName] = useState('');
   const [nameFr, setNameFr] = useState('');
   const [translatingName, setTranslatingName] = useState(false);
@@ -74,6 +76,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
   const [locationType, setLocationType] = useState<'store' | 'warehouse' | 'office'>('store');
   const [debtAmount, setDebtAmount] = useState('');
   const [salesReps, setSalesReps] = useState<SalesRep[]>([{ name: '', phone: '' }]);
+  const [customerType, setCustomerType] = useState<string>('');
   const [internalName, setInternalName] = useState('');
   const [isTrusted, setIsTrusted] = useState(false);
   const [trustNotes, setTrustNotes] = useState('');
@@ -308,6 +311,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
         trust_notes: trustNotes.trim() || null,
         default_payment_type: defaultPaymentType,
         default_price_subtype: defaultPriceSubtype,
+        customer_type: customerType || null,
       };
 
       // All roles can add customers directly (approval only for edit/delete)
@@ -675,6 +679,26 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
                 </Button>
               </div>
             </div>
+
+            {/* Customer Type */}
+            {customerTypes.length > 0 && (
+              <div className="space-y-2">
+                <Label>نوع العميل</Label>
+                <div className="flex flex-wrap gap-2">
+                  {customerTypes.map((type) => (
+                    <Button
+                      key={type}
+                      type="button"
+                      variant={customerType === type ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setCustomerType(customerType === type ? '' : type)}
+                    >
+                      {type}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="customer-address" className="flex items-center gap-1">

@@ -664,6 +664,7 @@ export type Database = {
           branch_id: string | null
           created_at: string
           created_by: string | null
+          customer_type: string | null
           default_payment_type: string | null
           default_price_subtype: string | null
           id: string
@@ -691,6 +692,7 @@ export type Database = {
           branch_id?: string | null
           created_at?: string
           created_by?: string | null
+          customer_type?: string | null
           default_payment_type?: string | null
           default_price_subtype?: string | null
           id?: string
@@ -718,6 +720,7 @@ export type Database = {
           branch_id?: string | null
           created_at?: string
           created_by?: string | null
+          customer_type?: string | null
           default_payment_type?: string | null
           default_price_subtype?: string | null
           id?: string
