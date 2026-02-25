@@ -28,6 +28,11 @@ export interface HandoverEntry {
   amount: number;
   check_count: number;
   receipt_count: number;
+  cash_invoice1: number;
+  cash_invoice2: number;
+  checks_amount: number;
+  receipts_amount: number;
+  transfers_amount: number;
   notes: string | null;
   handover_date: string;
   created_at: string;
@@ -135,20 +140,31 @@ export const useCreateHandover = () => {
 
   return useMutation({
     mutationFn: async (params: {
-      payment_method: string;
-      amount: number;
+      cash_invoice1?: number;
+      cash_invoice2?: number;
+      checks_amount?: number;
       check_count?: number;
+      receipts_amount?: number;
       receipt_count?: number;
+      transfers_amount?: number;
       received_by?: string;
       notes?: string;
     }) => {
+      const total = (params.cash_invoice1 || 0) + (params.cash_invoice2 || 0) + 
+                    (params.checks_amount || 0) + (params.receipts_amount || 0) + 
+                    (params.transfers_amount || 0);
       const { error } = await supabase.from('manager_handovers').insert({
         manager_id: workerId!,
         branch_id: activeBranch?.id || null,
-        payment_method: params.payment_method,
-        amount: params.amount,
+        payment_method: 'mixed',
+        amount: total,
+        cash_invoice1: params.cash_invoice1 || 0,
+        cash_invoice2: params.cash_invoice2 || 0,
+        checks_amount: params.checks_amount || 0,
         check_count: params.check_count || 0,
+        receipts_amount: params.receipts_amount || 0,
         receipt_count: params.receipt_count || 0,
+        transfers_amount: params.transfers_amount || 0,
         received_by: params.received_by || null,
         notes: params.notes || null,
       });

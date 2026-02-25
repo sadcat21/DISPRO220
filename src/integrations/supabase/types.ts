@@ -1060,7 +1060,10 @@ export type Database = {
         Row: {
           amount: number
           branch_id: string | null
+          cash_invoice1: number
+          cash_invoice2: number
           check_count: number | null
+          checks_amount: number
           created_at: string
           handover_date: string
           id: string
@@ -1068,12 +1071,17 @@ export type Database = {
           notes: string | null
           payment_method: string
           receipt_count: number | null
+          receipts_amount: number
           received_by: string | null
+          transfers_amount: number
         }
         Insert: {
           amount?: number
           branch_id?: string | null
+          cash_invoice1?: number
+          cash_invoice2?: number
           check_count?: number | null
+          checks_amount?: number
           created_at?: string
           handover_date?: string
           id?: string
@@ -1081,12 +1089,17 @@ export type Database = {
           notes?: string | null
           payment_method: string
           receipt_count?: number | null
+          receipts_amount?: number
           received_by?: string | null
+          transfers_amount?: number
         }
         Update: {
           amount?: number
           branch_id?: string | null
+          cash_invoice1?: number
+          cash_invoice2?: number
           check_count?: number | null
+          checks_amount?: number
           created_at?: string
           handover_date?: string
           id?: string
@@ -1094,7 +1107,9 @@ export type Database = {
           notes?: string | null
           payment_method?: string
           receipt_count?: number | null
+          receipts_amount?: number
           received_by?: string | null
+          transfers_amount?: number
         }
         Relationships: [
           {

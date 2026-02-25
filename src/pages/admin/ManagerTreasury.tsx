@@ -33,7 +33,7 @@ const ManagerTreasury = () => {
   const [addOpen, setAddOpen] = useState(false);
   const [handoverOpen, setHandoverOpen] = useState(false);
   const [addForm, setAddForm] = useState({ payment_method: 'cash', amount: '', check_number: '', check_bank: '', receipt_number: '', transfer_reference: '', notes: '' });
-  const [handoverForm, setHandoverForm] = useState({ payment_method: 'cash', amount: '', check_count: '', receipt_count: '', notes: '' });
+  const [handoverForm, setHandoverForm] = useState({ cash_invoice1: '', cash_invoice2: '', checks_amount: '', check_count: '', receipts_amount: '', receipt_count: '', transfers_amount: '', notes: '' });
 
   const handleAddEntry = async () => {
     if (!addForm.amount || Number(addForm.amount) <= 0) {
@@ -59,21 +59,27 @@ const ManagerTreasury = () => {
   };
 
   const handleHandover = async () => {
-    if (!handoverForm.amount || Number(handoverForm.amount) <= 0) {
-      toast.error('أدخل مبلغاً صحيحاً');
+    const total = Number(handoverForm.cash_invoice1 || 0) + Number(handoverForm.cash_invoice2 || 0) +
+                  Number(handoverForm.checks_amount || 0) + Number(handoverForm.receipts_amount || 0) +
+                  Number(handoverForm.transfers_amount || 0);
+    if (total <= 0) {
+      toast.error('أدخل مبلغاً واحداً على الأقل');
       return;
     }
     try {
       await createHandover.mutateAsync({
-        payment_method: handoverForm.payment_method,
-        amount: Number(handoverForm.amount),
+        cash_invoice1: Number(handoverForm.cash_invoice1) || 0,
+        cash_invoice2: Number(handoverForm.cash_invoice2) || 0,
+        checks_amount: Number(handoverForm.checks_amount) || 0,
         check_count: Number(handoverForm.check_count) || 0,
+        receipts_amount: Number(handoverForm.receipts_amount) || 0,
         receipt_count: Number(handoverForm.receipt_count) || 0,
+        transfers_amount: Number(handoverForm.transfers_amount) || 0,
         notes: handoverForm.notes || undefined,
       });
       toast.success('تم تسجيل التسليم بنجاح');
       setHandoverOpen(false);
-      setHandoverForm({ payment_method: 'cash', amount: '', check_count: '', receipt_count: '', notes: '' });
+      setHandoverForm({ cash_invoice1: '', cash_invoice2: '', checks_amount: '', check_count: '', receipts_amount: '', receipt_count: '', transfers_amount: '', notes: '' });
     } catch {
       toast.error('حدث خطأ');
     }
@@ -127,27 +133,34 @@ const ManagerTreasury = () => {
             <DialogTrigger asChild>
               <Button size="sm"><Send className="w-4 h-4 ml-1" />تسليم</Button>
             </DialogTrigger>
-            <DialogContent dir="rtl">
-              <DialogHeader><DialogTitle>تسليم أموال</DialogTitle></DialogHeader>
-              <div className="space-y-3">
-                <div>
-                  <Label>طريقة الدفع</Label>
-                  <Select value={handoverForm.payment_method} onValueChange={v => setHandoverForm(f => ({ ...f, payment_method: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(paymentMethodLabels).map(([k, v]) => (
-                        <SelectItem key={k} value={k}>{v.ar}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+            <DialogContent dir="rtl" className="max-h-[90vh] overflow-y-auto">
+              <DialogHeader><DialogTitle>تسليم أموال للجهة العليا</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <div className="p-3 rounded-lg bg-muted/50 space-y-3">
+                  <p className="font-medium text-sm">💵 النقدي</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div><Label className="text-xs">كاش فاتورة 1</Label><Input type="number" placeholder="0" value={handoverForm.cash_invoice1} onChange={e => setHandoverForm(f => ({ ...f, cash_invoice1: e.target.value }))} /></div>
+                    <div><Label className="text-xs">كاش فاتورة 2</Label><Input type="number" placeholder="0" value={handoverForm.cash_invoice2} onChange={e => setHandoverForm(f => ({ ...f, cash_invoice2: e.target.value }))} /></div>
+                  </div>
                 </div>
-                <div><Label>المبلغ</Label><Input type="number" value={handoverForm.amount} onChange={e => setHandoverForm(f => ({ ...f, amount: e.target.value }))} /></div>
-                {handoverForm.payment_method === 'check' && (
-                  <div><Label>عدد الشيكات</Label><Input type="number" value={handoverForm.check_count} onChange={e => setHandoverForm(f => ({ ...f, check_count: e.target.value }))} /></div>
-                )}
-                {handoverForm.payment_method === 'bank_receipt' && (
-                  <div><Label>عدد الوصولات</Label><Input type="number" value={handoverForm.receipt_count} onChange={e => setHandoverForm(f => ({ ...f, receipt_count: e.target.value }))} /></div>
-                )}
+                <div className="p-3 rounded-lg bg-muted/50 space-y-3">
+                  <p className="font-medium text-sm">📝 شيكات</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div><Label className="text-xs">قيمة الشيكات</Label><Input type="number" placeholder="0" value={handoverForm.checks_amount} onChange={e => setHandoverForm(f => ({ ...f, checks_amount: e.target.value }))} /></div>
+                    <div><Label className="text-xs">عدد الشيكات</Label><Input type="number" placeholder="0" value={handoverForm.check_count} onChange={e => setHandoverForm(f => ({ ...f, check_count: e.target.value }))} /></div>
+                  </div>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/50 space-y-3">
+                  <p className="font-medium text-sm">🧾 وصولات تحويل بنكي</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div><Label className="text-xs">قيمة الوصولات</Label><Input type="number" placeholder="0" value={handoverForm.receipts_amount} onChange={e => setHandoverForm(f => ({ ...f, receipts_amount: e.target.value }))} /></div>
+                    <div><Label className="text-xs">عدد الوصولات</Label><Input type="number" placeholder="0" value={handoverForm.receipt_count} onChange={e => setHandoverForm(f => ({ ...f, receipt_count: e.target.value }))} /></div>
+                  </div>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/50 space-y-2">
+                  <p className="font-medium text-sm">🏦 تحويل بنكي مباشر</p>
+                  <div><Label className="text-xs">قيمة التحويلات</Label><Input type="number" placeholder="0" value={handoverForm.transfers_amount} onChange={e => setHandoverForm(f => ({ ...f, transfers_amount: e.target.value }))} /></div>
+                </div>
                 <div><Label>ملاحظات</Label><Textarea value={handoverForm.notes} onChange={e => setHandoverForm(f => ({ ...f, notes: e.target.value }))} /></div>
                 <Button onClick={handleHandover} disabled={createHandover.isPending} className="w-full">تسجيل التسليم</Button>
               </div>
@@ -256,29 +269,26 @@ const ManagerTreasury = () => {
           {(!handovers || handovers.length === 0) ? (
             <p className="text-center text-muted-foreground py-8">لا توجد تسليمات بعد</p>
           ) : handovers.map(h => {
-            const method = paymentMethodLabels[h.payment_method];
             return (
               <Card key={h.id}>
-                <CardContent className="p-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-red-500/10">
-                      <Send className="w-4 h-4 text-red-500" />
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Send className="w-4 h-4 text-destructive" />
+                      <p className="font-bold">{Number(h.amount).toLocaleString()} د.ج</p>
                     </div>
-                    <div>
-                      <p className="font-medium">{Number(h.amount).toLocaleString()} د.ج</p>
-                      <p className="text-xs text-muted-foreground">
-                        {method?.ar || h.payment_method}
-                        {h.check_count > 0 && ` - ${h.check_count} شيكات`}
-                        {h.receipt_count > 0 && ` - ${h.receipt_count} وصولات`}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-left">
                     <p className="text-xs text-muted-foreground">
                       {format(new Date(h.created_at), 'dd/MM/yyyy', { locale: ar })}
                     </p>
-                    {h.notes && <p className="text-xs text-muted-foreground">{h.notes}</p>}
                   </div>
+                  <div className="grid grid-cols-2 gap-1 text-xs">
+                    {Number(h.cash_invoice1 ?? 0) > 0 && <p>كاش ف1: {Number(h.cash_invoice1).toLocaleString()} د.ج</p>}
+                    {Number(h.cash_invoice2 ?? 0) > 0 && <p>كاش ف2: {Number(h.cash_invoice2).toLocaleString()} د.ج</p>}
+                    {Number(h.checks_amount ?? 0) > 0 && <p>شيكات: {Number(h.checks_amount).toLocaleString()} د.ج ({h.check_count ?? 0})</p>}
+                    {Number(h.receipts_amount ?? 0) > 0 && <p>وصولات: {Number(h.receipts_amount).toLocaleString()} د.ج ({h.receipt_count ?? 0})</p>}
+                    {Number(h.transfers_amount ?? 0) > 0 && <p>تحويلات: {Number(h.transfers_amount).toLocaleString()} د.ج</p>}
+                  </div>
+                  {h.notes && <p className="text-xs text-muted-foreground">{h.notes}</p>}
                 </CardContent>
               </Card>
             );
