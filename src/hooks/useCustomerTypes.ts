@@ -1,19 +1,21 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+
 const CUSTOMER_TYPES_KEY = 'customer_types';
 
 export interface CustomerTypeEntry {
   ar: string;
   fr: string;
   en: string;
+  short?: string;
 }
 
 const DEFAULT_TYPES: CustomerTypeEntry[] = [
-  { ar: 'محل', fr: 'Magasin', en: 'Store' },
-  { ar: 'سوبر ماركت', fr: 'Supermarché', en: 'Supermarket' },
-  { ar: 'مول', fr: 'Mall', en: 'Mall' },
-  { ar: 'كروسيست', fr: 'Grossiste', en: 'Wholesaler' },
+  { ar: 'محل', fr: 'Magasin', en: 'Store', short: 'mag' },
+  { ar: 'سوبر ماركت', fr: 'Supermarché', en: 'Supermarket', short: 'sup' },
+  { ar: 'مول', fr: 'Mall', en: 'Mall', short: 'mall' },
+  { ar: 'كروسيست', fr: 'Grossiste', en: 'Wholesaler', short: 'gros' },
 ];
 
 export const useCustomerTypes = () => {
@@ -33,7 +35,7 @@ export const useCustomerTypes = () => {
         const parsed = JSON.parse(data.value);
         // Handle legacy format (simple string array)
         if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'string') {
-          return (parsed as string[]).map(name => ({ ar: name, fr: name, en: name }));
+          return (parsed as string[]).map(name => ({ ar: name, fr: name, en: name, short: '' }));
         }
         return parsed as CustomerTypeEntry[];
       } catch {
