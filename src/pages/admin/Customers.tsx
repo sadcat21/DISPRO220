@@ -23,7 +23,7 @@ import LazyCustomersMapView from '@/components/map/LazyCustomersMapView';
 import CustomerSpecialPricesDialog from '@/components/customers/CustomerSpecialPricesDialog';
 import ManageSectorsDialog from '@/components/customers/ManageSectorsDialog';
 import { useSectors } from '@/hooks/useSectors';
-import { useCustomerTypes, getCustomerTypeLabel } from '@/hooks/useCustomerTypes';
+import { useCustomerTypes, getCustomerTypeLabel, getCustomerTypeColor } from '@/hooks/useCustomerTypes';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
 import CustomerProfileDialog from '@/components/customers/CustomerProfileDialog';
 import CustomerApprovalTab from '@/components/customers/CustomerApprovalTab';
@@ -356,21 +356,51 @@ const Customers: React.FC = () => {
           </Select>
         )}
         {customerTypes.length > 0 && (
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="فلترة حسب النوع" />
-            </SelectTrigger>
-            <SelectContent className="bg-popover z-[100]">
-              <SelectItem value="all">كل الأنواع</SelectItem>
-              <SelectItem value="none">بدون نوع</SelectItem>
-              {customerTypes.map((ct, idx) => (
-                <SelectItem key={idx} value={ct.ar}>
-                  <span className="font-mono uppercase text-xs">{ct.short || ct.ar}</span>
-                  <span className="text-muted-foreground mr-1">— {ct.fr || ct.ar}</span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex gap-1.5 flex-wrap">
+            <Button
+              type="button"
+              variant={typeFilter === 'all' ? 'default' : 'outline'}
+              size="sm"
+              className="text-xs h-7 px-2.5"
+              onClick={() => setTypeFilter('all')}
+            >
+              الكل
+            </Button>
+            <Button
+              type="button"
+              variant={typeFilter === 'none' ? 'default' : 'outline'}
+              size="sm"
+              className="text-xs h-7 px-2.5"
+              onClick={() => setTypeFilter('none')}
+            >
+              بدون
+            </Button>
+            {customerTypes.map((ct, idx) => {
+              const color = getCustomerTypeColor(ct.short, idx);
+              const isActive = typeFilter === ct.ar;
+              return (
+                <Button
+                  key={idx}
+                  type="button"
+                  variant={isActive ? 'default' : 'outline'}
+                  size="sm"
+                  className="text-xs h-7 px-2.5 font-mono uppercase"
+                  style={{
+                    ...(isActive
+                      ? { backgroundColor: color, borderColor: color, color: '#fff' }
+                      : { borderColor: color, color: color }),
+                  }}
+                  onClick={() => setTypeFilter(ct.ar)}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full inline-block shrink-0"
+                    style={{ backgroundColor: color, marginInlineEnd: '4px' }}
+                  />
+                  {ct.short || ct.ar}
+                </Button>
+              );
+            })}
+          </div>
         )}
       </div>
 
