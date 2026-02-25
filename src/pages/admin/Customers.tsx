@@ -401,7 +401,10 @@ const Customers: React.FC = () => {
                       const typeLabel = customer.customer_type
                         ? getCustomerTypeLabel(customerTypes, customer.customer_type, language)
                         : '';
-                      return typeLabel ? `${typeLabel} ${storeName}` : storeName;
+                      if (!typeLabel) return storeName;
+                      const nameContainsType = normalizeArabic(storeName.toLowerCase()).includes(normalizeArabic(typeLabel.toLowerCase()));
+                      if (nameContainsType) return storeName;
+                      return <><span className="text-primary">{typeLabel}</span>{' '}{storeName}</>;
                     })()}
                   </p>
                   <div className="flex items-center gap-1 flex-wrap mt-0.5">
