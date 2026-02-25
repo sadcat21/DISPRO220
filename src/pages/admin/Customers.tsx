@@ -573,9 +573,8 @@ const Customers: React.FC = () => {
           <Button size="icon" variant="outline" className="h-9 w-9" onClick={() => setShowSectorsDialog(true)} title={t('customers.sectors')}>
             <MapPin className="w-4 h-4" />
           </Button>
-          <Button size="sm" className="h-9 gap-1" onClick={() => setShowAddDialog(true)}>
+          <Button size="icon" className="h-9 w-9" onClick={() => setShowAddDialog(true)}>
             <Plus className="w-4 h-4" />
-            {t('customers.add')}
           </Button>
         </div>
       </div>
