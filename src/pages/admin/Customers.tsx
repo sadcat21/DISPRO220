@@ -336,115 +336,43 @@ const Customers: React.FC = () => {
   };
 
   const renderCustomersList = () => (
-    <div className="space-y-4">
-      {/* Search and Filter */}
-      <div className="space-y-2">
-        <div className="relative">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t('customers.search')}
-            className="pr-10 text-right"
-          />
-        </div>
-        {sectors.length > 0 && (
-          <Select value={sectorFilter} onValueChange={setSectorFilter}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder={t('customers.filter_by_sector')} />
-            </SelectTrigger>
-            <SelectContent className="bg-popover z-[100]">
-              <SelectItem value="all">{t('customers.all_sectors')}</SelectItem>
-              <SelectItem value="none">{t('customers.no_sector')}</SelectItem>
-              {sectors.map(s => (
-                <SelectItem key={s.id} value={s.id}>{getLocalizedName(s, language)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-        {customerTypes.length > 0 && (
-          <div className="flex gap-1.5 flex-wrap">
-            <Button
-              type="button"
-              variant={typeFilter === 'all' ? 'default' : 'outline'}
-              size="sm"
-              className="text-xs h-7 px-2.5"
-              onClick={() => setTypeFilter('all')}
-            >
-              {t('customers.all')}
-            </Button>
-            <Button
-              type="button"
-              variant={typeFilter === 'none' ? 'default' : 'outline'}
-              size="sm"
-              className="text-xs h-7 px-2.5"
-              onClick={() => setTypeFilter('none')}
-            >
-              {t('customers.none')}
-            </Button>
-            {customerTypes.map((ct, idx) => {
-              const colors = getCustomerTypeColor(ct.short, idx, ct);
-              const isActive = typeFilter === ct.ar;
+    <div className="space-y-2">
+      {(() => {
+        // Build sector groups
+        const sectorGroups = new Map<string | null, Customer[]>();
+        filteredCustomers.forEach(c => {
+          const key = c.sector_id || null;
+          if (!sectorGroups.has(key)) sectorGroups.set(key, []);
+          sectorGroups.get(key)!.push(c);
+        });
+
+        const sectorIds = Array.from(sectorGroups.keys()).filter(k => k !== null) as string[];
+        sectorIds.sort((a, b) => {
+          const nameA = getSectorName(a) || '';
+          const nameB = getSectorName(b) || '';
+          return nameA.localeCompare(nameB, 'ar');
+        });
+
+        const groups: { key: string; label: string; customers: Customer[] }[] = [];
+        sectorIds.forEach(sid => {
+          groups.push({ key: sid, label: getSectorName(sid) || t('customers.unknown'), customers: sectorGroups.get(sid)! });
+        });
+        if (sectorGroups.has(null) && sectorGroups.get(null)!.length > 0) {
+          groups.push({ key: 'no-sector', label: t('customers.no_sector'), customers: sectorGroups.get(null)! });
+        }
+
+        return groups.map(group => (
+          <SectorCustomerGroup
+            key={group.key}
+            label={group.label}
+            count={group.customers.length}
+            defaultOpen={!!searchQuery.trim()}
+            forceOpen={expandAllSectors}
+          >
+            {group.customers.map((customer) => {
+              const { percent, missing } = getCustomerCompletion(customer);
+              const lastOrder = lastOrders[customer.id];
               return (
-                <Button
-                  key={idx}
-                  type="button"
-                  variant="default"
-                  size="sm"
-                  className={`text-xs h-7 px-2.5 font-mono uppercase hover:opacity-100 ${isActive ? 'ring-2 ring-offset-1 ring-foreground/40' : ''}`}
-                  style={{ backgroundColor: colors.bg, borderColor: colors.bg, color: colors.text }}
-                  onClick={() => setTypeFilter(ct.ar)}
-                >
-                  {ct.short || ct.ar}
-                </Button>
-              );
-            })}
-          </div>
-        )}
-        <div className="flex items-center justify-between">
-          <label htmlFor="expand-all-sectors" className="text-xs text-muted-foreground">{t('customers.expand_all')}</label>
-          <Switch id="expand-all-sectors" checked={expandAllSectors} onCheckedChange={setExpandAllSectors} />
-        </div>
-      </div>
-
-      {/* Customers List - Grouped by Sector */}
-      <div className="space-y-2">
-        {(() => {
-          // Build sector groups
-          const sectorGroups = new Map<string | null, Customer[]>();
-          filteredCustomers.forEach(c => {
-            const key = c.sector_id || null;
-            if (!sectorGroups.has(key)) sectorGroups.set(key, []);
-            sectorGroups.get(key)!.push(c);
-          });
-
-          const sectorIds = Array.from(sectorGroups.keys()).filter(k => k !== null) as string[];
-          sectorIds.sort((a, b) => {
-            const nameA = getSectorName(a) || '';
-            const nameB = getSectorName(b) || '';
-            return nameA.localeCompare(nameB, 'ar');
-          });
-
-          const groups: { key: string; label: string; customers: Customer[] }[] = [];
-          sectorIds.forEach(sid => {
-            groups.push({ key: sid, label: getSectorName(sid) || t('customers.unknown'), customers: sectorGroups.get(sid)! });
-          });
-          if (sectorGroups.has(null) && sectorGroups.get(null)!.length > 0) {
-            groups.push({ key: 'no-sector', label: t('customers.no_sector'), customers: sectorGroups.get(null)! });
-          }
-
-          return groups.map(group => (
-            <SectorCustomerGroup
-              key={group.key}
-              label={group.label}
-              count={group.customers.length}
-              defaultOpen={!!searchQuery.trim()}
-              forceOpen={expandAllSectors}
-            >
-              {group.customers.map((customer) => {
-                const { percent, missing } = getCustomerCompletion(customer);
-                const lastOrder = lastOrders[customer.id];
-                return (
           <Card key={customer.id}>
             <CardContent className="p-3">
               {/* Customer Info Row */}
@@ -520,7 +448,6 @@ const Customers: React.FC = () => {
                   {customer.address && (
                     <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{customer.address}</p>
                   )}
-                  {/* Last Order Date */}
                   {lastOrder && (
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-0.5 border-primary/20">
@@ -535,7 +462,6 @@ const Customers: React.FC = () => {
                   )}
                 </div>
               </div>
-              {/* Completion & Missing Fields */}
               {(percent < 100 || missing.length > 0) && (
                 <div className="mt-2 space-y-1">
                   <div className="flex items-center gap-2">
@@ -555,7 +481,6 @@ const Customers: React.FC = () => {
                   )}
                 </div>
               )}
-              {/* Action Buttons */}
               <div className="flex items-center justify-end gap-0 mt-2 border-t pt-1.5 flex-wrap">
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
                   onClick={() => { setProfileCustomer(customer); setIsProfileOpen(true); }} title={t('customers.profile.title')}>
@@ -583,7 +508,6 @@ const Customers: React.FC = () => {
                   onClick={() => navigate('/orders', { state: { customerId: customer.id, action: 'delivery' } })} title={t('deliveries.title')}>
                   <Truck className="w-3.5 h-3.5" />
                 </Button>
-                {/* Last Order Details button */}
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
                   onClick={() => openLastOrderDetails(customer)} title={t('customers.last_order')}>
                   <ShoppingBag className="w-3.5 h-3.5" />
@@ -611,17 +535,16 @@ const Customers: React.FC = () => {
            </Card>
            );
               })}
-            </SectorCustomerGroup>
-          ));
-        })()}
+          </SectorCustomerGroup>
+        ));
+      })()}
 
-        {filteredCustomers.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-            <User className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>{searchQuery ? t('customers.no_results') : t('customers.no_customers')}</p>
-          </div>
-        )}
-      </div>
+      {filteredCustomers.length === 0 && (
+        <div className="text-center py-12 text-muted-foreground">
+          <User className="w-12 h-12 mx-auto mb-3 opacity-50" />
+          <p>{searchQuery ? t('customers.no_results') : t('customers.no_customers')}</p>
+        </div>
+      )}
     </div>
   );
 
@@ -634,61 +557,126 @@ const Customers: React.FC = () => {
   }
 
   return (
-    <div className="p-4 space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-xl font-bold">{t('customers.title')}</h2>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => setShowSectorsDialog(true)}>
-            <MapPin className="w-4 h-4 ml-1" />
-            {t('customers.sectors')}
+    <div className="p-3 space-y-3">
+      {/* Compact Header: Title + Stats + Actions merged */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shrink-0">
+            <User className="w-5 h-5 text-primary-foreground" />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-lg font-bold leading-tight">{t('customers.title')}</h2>
+            <p className="text-xs text-muted-foreground">{filteredByBranch.length} {t('customers.total')}</p>
+          </div>
+        </div>
+        <div className="flex gap-1.5 shrink-0">
+          <Button size="icon" variant="outline" className="h-9 w-9" onClick={() => setShowSectorsDialog(true)} title={t('customers.sectors')}>
+            <MapPin className="w-4 h-4" />
           </Button>
-          <Button size="sm" onClick={() => setShowAddDialog(true)}>
-            <Plus className="w-4 h-4 ml-2" />
+          <Button size="sm" className="h-9 gap-1" onClick={() => setShowAddDialog(true)}>
+            <Plus className="w-4 h-4" />
             {t('customers.add')}
           </Button>
         </div>
       </div>
 
-      {/* Stats */}
-      <Card className="bg-secondary text-secondary-foreground">
-        <CardContent className="p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-            <User className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">{t('customers.total')}</p>
-            <p className="text-xl font-bold">{filteredByBranch.length}</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Customers Map - Collapsible */}
-      <Collapsible>
-        <CollapsibleTrigger asChild>
-          <Button variant="outline" className="w-full justify-between">
-            <span className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-primary" />
-              {t('customers.locations_map')}
-            </span>
-            <ChevronDown className="w-4 h-4" />
-          </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="pt-2">
-          <LazyCustomersMapView
-            customers={filteredCustomers}
-            onCustomerClick={(customer) => { setProfileCustomer(customer); setIsProfileOpen(true); }}
-            branchWilaya={activeBranch?.wilaya}
+      {/* Integrated Search + Map toggle row */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t('customers.search')}
+            className="pr-10 text-right h-9"
           />
-        </CollapsibleContent>
-      </Collapsible>
+        </div>
+        <Collapsible>
+          <CollapsibleTrigger asChild>
+            <Button variant="outline" size="icon" className="h-9 w-9 shrink-0" title={t('customers.locations_map')}>
+              <MapPin className="w-4 h-4 text-primary" />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="absolute left-3 right-3 z-20 mt-1">
+            <Card className="shadow-xl border-primary/20">
+              <CardContent className="p-2">
+                <LazyCustomersMapView
+                  customers={filteredCustomers}
+                  onCustomerClick={(customer) => { setProfileCustomer(customer); setIsProfileOpen(true); }}
+                  branchWilaya={activeBranch?.wilaya}
+                />
+              </CardContent>
+            </Card>
+          </CollapsibleContent>
+        </Collapsible>
+      </div>
+
+      {/* Compact Filters: Sector + Type + Expand in one strip */}
+      <div className="flex flex-col gap-2">
+        <div className="flex gap-2">
+          {sectors.length > 0 && (
+            <Select value={sectorFilter} onValueChange={setSectorFilter}>
+              <SelectTrigger className="flex-1 h-8 text-xs">
+                <SelectValue placeholder={t('customers.filter_by_sector')} />
+              </SelectTrigger>
+              <SelectContent className="bg-popover z-[100]">
+                <SelectItem value="all">{t('customers.all_sectors')}</SelectItem>
+                <SelectItem value="none">{t('customers.no_sector')}</SelectItem>
+                {sectors.map(s => (
+                  <SelectItem key={s.id} value={s.id}>{getLocalizedName(s, language)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Switch id="expand-all-sectors" checked={expandAllSectors} onCheckedChange={setExpandAllSectors} className="scale-75" />
+            <label htmlFor="expand-all-sectors" className="text-[10px] text-muted-foreground whitespace-nowrap">{t('customers.expand_all')}</label>
+          </div>
+        </div>
+        {customerTypes.length > 0 && (
+          <div className="flex gap-1 flex-wrap">
+            <Button
+              type="button"
+              variant={typeFilter === 'all' ? 'default' : 'outline'}
+              size="sm"
+              className="text-[10px] h-6 px-2 rounded-full"
+              onClick={() => setTypeFilter('all')}
+            >
+              {t('customers.all')}
+            </Button>
+            <Button
+              type="button"
+              variant={typeFilter === 'none' ? 'default' : 'outline'}
+              size="sm"
+              className="text-[10px] h-6 px-2 rounded-full"
+              onClick={() => setTypeFilter('none')}
+            >
+              {t('customers.none')}
+            </Button>
+            {customerTypes.map((ct, idx) => {
+              const colors = getCustomerTypeColor(ct.short, idx, ct);
+              const isActive = typeFilter === ct.ar;
+              return (
+                <button
+                  key={idx}
+                  className={`text-[10px] h-6 px-2.5 rounded-full font-mono uppercase font-semibold transition-shadow ${isActive ? 'ring-2 ring-offset-1 ring-foreground/40' : ''}`}
+                  style={{ backgroundColor: colors.bg, color: colors.text }}
+                  onClick={() => setTypeFilter(ct.ar)}
+                >
+                  {ct.short || ct.ar}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Tab Interface */}
       {isManager ? (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="list">{t('customers.title')}</TabsTrigger>
-            <TabsTrigger value="requests" className="relative">
+          <TabsList className="grid w-full grid-cols-2 h-8">
+            <TabsTrigger value="list" className="text-xs">{t('customers.title')}</TabsTrigger>
+            <TabsTrigger value="requests" className="relative text-xs">
               {t('customers.review_requests')}
               {requestsCount > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] text-destructive-foreground">
@@ -698,7 +686,7 @@ const Customers: React.FC = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="list" className="space-y-4">
+          <TabsContent value="list" className="space-y-2 mt-2">
             {renderCustomersList()}
           </TabsContent>
 
