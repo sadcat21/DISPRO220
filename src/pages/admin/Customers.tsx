@@ -394,21 +394,21 @@ const Customers: React.FC = () => {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="font-bold text-sm leading-tight">
-                    {customer.store_name
-                      ? (language === 'fr' && (customer as any).store_name_fr ? (customer as any).store_name_fr : customer.store_name)
-                      : (language === 'fr' && customer.name_fr ? customer.name_fr : customer.name)}
+                    {(() => {
+                      const storeName = customer.store_name
+                        ? (language === 'fr' && customer.store_name_fr ? customer.store_name_fr : customer.store_name)
+                        : (language === 'fr' && customer.name_fr ? customer.name_fr : customer.name);
+                      const typeLabel = customer.customer_type
+                        ? getCustomerTypeLabel(customerTypes, customer.customer_type, language)
+                        : '';
+                      return typeLabel ? `${typeLabel} ${storeName}` : storeName;
+                    })()}
                   </p>
                   <div className="flex items-center gap-1 flex-wrap mt-0.5">
                     {getSectorName(customer.sector_id) && (
                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-semibold">
                         <MapPin className="w-2.5 h-2.5 ml-0.5" />
                         {getSectorName(customer.sector_id)}
-                      </Badge>
-                    )}
-                    {customer.customer_type && (
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-accent-foreground/20">
-                        <Building2 className="w-2.5 h-2.5 ml-0.5" />
-                        {getCustomerTypeLabel(customerTypes, customer.customer_type, language)}
                       </Badge>
                     )}
                   </div>
