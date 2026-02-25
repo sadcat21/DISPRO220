@@ -382,20 +382,12 @@ const Customers: React.FC = () => {
                 <Button
                   key={idx}
                   type="button"
-                  variant={isActive ? 'default' : 'outline'}
+                  variant="default"
                   size="sm"
-                  className="text-xs h-7 px-2.5 font-mono uppercase"
-                  style={{
-                    ...(isActive
-                      ? { backgroundColor: color, borderColor: color, color: '#fff' }
-                      : { borderColor: color, color: color }),
-                  }}
+                  className={`text-xs h-7 px-2.5 font-mono uppercase text-white ${isActive ? 'ring-2 ring-offset-1 ring-foreground/40' : 'opacity-80 hover:opacity-100'}`}
+                  style={{ backgroundColor: color, borderColor: color }}
                   onClick={() => setTypeFilter(ct.ar)}
                 >
-                  <span
-                    className="w-2 h-2 rounded-full inline-block shrink-0"
-                    style={{ backgroundColor: color, marginInlineEnd: '4px' }}
-                  />
                   {ct.short || ct.ar}
                 </Button>
               );
