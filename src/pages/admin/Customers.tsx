@@ -437,7 +437,7 @@ const Customers: React.FC = () => {
               label={group.label}
               count={group.customers.length}
               defaultOpen={!!searchQuery.trim()}
-              forceOpen={expandAllSectors || undefined}
+              forceOpen={expandAllSectors}
             >
               {group.customers.map((customer) => {
                 const { percent, missing } = getCustomerCompletion(customer);
