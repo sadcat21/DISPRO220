@@ -32,7 +32,7 @@ const ManagerTreasury = () => {
 
   const [addOpen, setAddOpen] = useState(false);
   const [handoverOpen, setHandoverOpen] = useState(false);
-  const [addForm, setAddForm] = useState({ payment_method: 'cash', amount: '', check_number: '', check_bank: '', receipt_number: '', transfer_reference: '', notes: '' });
+  const [addForm, setAddForm] = useState({ payment_method: 'cash', amount: '', invoice_number: '', check_number: '', check_bank: '', receipt_number: '', transfer_reference: '', notes: '' });
   const [handoverForm, setHandoverForm] = useState({ cash_invoice1: '', cash_invoice2: '', checks_amount: '', check_count: '', receipts_amount: '', receipt_count: '', transfers_amount: '', transfer_count: '', notes: '' });
 
   const handleAddEntry = async () => {
@@ -44,6 +44,7 @@ const ManagerTreasury = () => {
       await addEntry.mutateAsync({
         payment_method: addForm.payment_method,
         amount: Number(addForm.amount),
+        invoice_number: addForm.invoice_number || undefined,
         check_number: addForm.check_number || undefined,
         check_bank: addForm.check_bank || undefined,
         receipt_number: addForm.receipt_number || undefined,
@@ -52,7 +53,7 @@ const ManagerTreasury = () => {
       });
       toast.success('تم إضافة المبلغ بنجاح');
       setAddOpen(false);
-      setAddForm({ payment_method: 'cash', amount: '', check_number: '', check_bank: '', receipt_number: '', transfer_reference: '', notes: '' });
+      setAddForm({ payment_method: 'cash', amount: '', invoice_number: '', check_number: '', check_bank: '', receipt_number: '', transfer_reference: '', notes: '' });
     } catch {
       toast.error('حدث خطأ');
     }
@@ -113,6 +114,11 @@ const ManagerTreasury = () => {
                   <Label>المبلغ</Label>
                   <Input type="number" value={addForm.amount} onChange={e => setAddForm(f => ({ ...f, amount: e.target.value }))} />
                 </div>
+                {/* رقم الفاتورة */}
+                <div>
+                  <Label>{addForm.payment_method === 'cash' ? 'رقم فاتورة 2' : 'رقم فاتورة 1'}</Label>
+                  <Input placeholder={addForm.payment_method === 'cash' ? 'رقم فاتورة 2' : 'رقم فاتورة 1'} value={addForm.invoice_number} onChange={e => setAddForm(f => ({ ...f, invoice_number: e.target.value }))} />
+                </div>
                 {addForm.payment_method === 'check' && (
                   <>
                     <div><Label>رقم الشيك</Label><Input value={addForm.check_number} onChange={e => setAddForm(f => ({ ...f, check_number: e.target.value }))} /></div>
@@ -120,10 +126,10 @@ const ManagerTreasury = () => {
                   </>
                 )}
                 {addForm.payment_method === 'bank_receipt' && (
-                  <div><Label>رقم الوصل</Label><Input value={addForm.receipt_number} onChange={e => setAddForm(f => ({ ...f, receipt_number: e.target.value }))} /></div>
+                  <div><Label>رقم وصل الفيرسمو</Label><Input value={addForm.receipt_number} onChange={e => setAddForm(f => ({ ...f, receipt_number: e.target.value }))} /></div>
                 )}
                 {addForm.payment_method === 'bank_transfer' && (
-                  <div><Label>مرجع التحويل</Label><Input value={addForm.transfer_reference} onChange={e => setAddForm(f => ({ ...f, transfer_reference: e.target.value }))} /></div>
+                  <div><Label>مرجع الفيرمو</Label><Input value={addForm.transfer_reference} onChange={e => setAddForm(f => ({ ...f, transfer_reference: e.target.value }))} /></div>
                 )}
                 <div><Label>ملاحظات</Label><Textarea value={addForm.notes} onChange={e => setAddForm(f => ({ ...f, notes: e.target.value }))} /></div>
                 <Button onClick={handleAddEntry} disabled={addEntry.isPending} className="w-full">إضافة</Button>
@@ -259,6 +265,7 @@ const ManagerTreasury = () => {
                       <p className="font-medium">{Number(entry.amount).toLocaleString()} د.ج</p>
                       <p className="text-xs text-muted-foreground">
                         {method?.ar || entry.payment_method}
+                        {(entry as any).invoice_number && ` - فاتورة #${(entry as any).invoice_number}`}
                         {entry.check_number && ` - شيك #${entry.check_number}`}
                         {entry.receipt_number && ` - وصل #${entry.receipt_number}`}
                       </p>

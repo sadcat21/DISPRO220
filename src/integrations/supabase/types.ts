@@ -1160,6 +1160,7 @@ export type Database = {
           check_number: string | null
           created_at: string
           id: string
+          invoice_number: string | null
           manager_id: string
           notes: string | null
           payment_method: string
@@ -1175,6 +1176,7 @@ export type Database = {
           check_number?: string | null
           created_at?: string
           id?: string
+          invoice_number?: string | null
           manager_id: string
           notes?: string | null
           payment_method: string
@@ -1190,6 +1192,7 @@ export type Database = {
           check_number?: string | null
           created_at?: string
           id?: string
+          invoice_number?: string | null
           manager_id?: string
           notes?: string | null
           payment_method?: string
