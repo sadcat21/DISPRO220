@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Search, UserPlus, User, ChevronLeft, ChevronDown, ChevronUp, Loader2, X, Banknote } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { Customer, Sector } from '@/types/database';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
@@ -42,6 +43,7 @@ const CustomerPickerDialog: React.FC<CustomerPickerDialogProps> = ({
   const { t, dir } = useLanguage();
   const [search, setSearch] = useState('');
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+  const [autoExpand, setAutoExpand] = useState(false);
 
   // Fetch active debts for all customers
   const { data: customerDebtsMap } = useQuery({
@@ -73,12 +75,15 @@ const CustomerPickerDialog: React.FC<CustomerPickerDialogProps> = ({
     });
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       setSearch('');
+      setAutoExpand(false);
       setOpenGroups(new Set());
     }
   }, [open]);
+
+  
 
   const filteredCustomers = useMemo(() => {
     if (!search.trim()) return customers;
@@ -142,6 +147,16 @@ const CustomerPickerDialog: React.FC<CustomerPickerDialogProps> = ({
     return result;
   }, [filteredCustomers, sectorMap]);
 
+  // When autoExpand changes, sync openGroups
+  useEffect(() => {
+    if (autoExpand) {
+      const allKeys = groupedCustomers.map(g => g.sectorId || 'no-sector');
+      setOpenGroups(new Set(allKeys));
+    } else {
+      setOpenGroups(new Set());
+    }
+  }, [autoExpand, groupedCustomers]);
+
   const getSectorName = (sectorId: string | null | undefined) => {
     if (!sectorId) return '';
     return sectorMap.get(sectorId) || '';
@@ -164,7 +179,7 @@ const CustomerPickerDialog: React.FC<CustomerPickerDialogProps> = ({
         </DialogHeader>
 
         {/* Search */}
-        <div className="px-4 pt-3 pb-2">
+        <div className="px-4 pt-3 pb-2 space-y-2">
           <div className="relative">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -174,6 +189,10 @@ const CustomerPickerDialog: React.FC<CustomerPickerDialogProps> = ({
               className="pr-10 h-11 rounded-full border-2 border-primary/30 focus:border-primary text-sm"
               autoFocus
             />
+          </div>
+          <div className="flex items-center justify-between">
+            <label htmlFor="auto-expand" className="text-xs text-muted-foreground">فتح الأقسام تلقائياً</label>
+            <Switch id="auto-expand" checked={autoExpand} onCheckedChange={setAutoExpand} />
           </div>
         </div>
 
