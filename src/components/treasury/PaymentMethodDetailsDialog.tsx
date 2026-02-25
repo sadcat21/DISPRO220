@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { Banknote, CreditCard, Receipt, ArrowUpRight } from 'lucide-react';
+import { Banknote, CreditCard, Receipt, ArrowUpRight, Coins } from 'lucide-react';
 
 type PaymentCategory = 'cash_invoice1' | 'cash_invoice2' | 'check' | 'bank_receipt' | 'bank_transfer';
 
@@ -25,21 +24,11 @@ interface Props {
   category: PaymentCategory;
 }
 
-interface OrderDetail {
-  id: string;
-  total_amount: number;
-  payment_type: string;
-  invoice_payment_method: string | null;
-  created_at: string;
-  customer: { name: string; store_name: string | null } | null;
-  check_number?: string;
-  check_due_date?: string;
-}
-
 const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => {
   const { activeBranch } = useAuth();
   const config = categoryConfig[category];
   const Icon = config.icon;
+  const isCashInvoice1 = category === 'cash_invoice1';
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ['treasury-details', category, activeBranch?.id],
@@ -47,13 +36,12 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
     queryFn: async () => {
       let query = supabase
         .from('orders')
-        .select('id, total_amount, payment_type, invoice_payment_method, created_at, customer:customers(name, store_name)')
+        .select('id, total_amount, payment_type, invoice_payment_method, created_at, customer:customers(name, store_name), order_items(total_price)')
         .eq('status', 'delivered')
         .order('created_at', { ascending: false });
 
       if (activeBranch?.id) query = query.eq('branch_id', activeBranch.id);
 
-      // Filter by category
       switch (category) {
         case 'cash_invoice1':
           query = query.eq('payment_type', 'with_invoice').eq('invoice_payment_method', 'cash');
@@ -74,11 +62,26 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data || []) as OrderDetail[];
+      return (data || []).map((o: any) => {
+        const itemsSubtotal = (o.order_items || []).reduce((s: number, i: any) => s + Number(i.total_price || 0), 0);
+        const totalAmount = Number(o.total_amount || 0);
+        const stampAmount = Math.max(0, totalAmount - itemsSubtotal);
+        const stampPercentage = itemsSubtotal > 0 && stampAmount > 0 ? Math.round((stampAmount / itemsSubtotal) * 100 * 10) / 10 : 0;
+        return {
+          id: o.id,
+          total_amount: totalAmount,
+          items_subtotal: itemsSubtotal,
+          stamp_amount: stampAmount,
+          stamp_percentage: stampPercentage,
+          created_at: o.created_at,
+          customer: o.customer,
+        };
+      });
     },
   });
 
-  const total = (orders || []).reduce((s, o) => s + Number(o.total_amount || 0), 0);
+  const total = (orders || []).reduce((s, o) => s + o.total_amount, 0);
+  const totalStamp = isCashInvoice1 ? (orders || []).reduce((s, o) => s + o.stamp_amount, 0) : 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -95,6 +98,16 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
           <p className="text-xs text-muted-foreground">الإجمالي</p>
           <p className={`text-xl font-bold ${config.colorClass}`}>{total.toLocaleString()} د.ج</p>
         </div>
+
+        {isCashInvoice1 && totalStamp > 0 && (
+          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center mb-2">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <Coins className="w-4 h-4 text-amber-600" />
+              <p className="text-xs font-medium text-amber-700">إجمالي الطوابع (العملات المعدنية)</p>
+            </div>
+            <p className="text-lg font-bold text-amber-600">{totalStamp.toLocaleString()} د.ج</p>
+          </div>
+        )}
 
         {isLoading ? (
           <p className="text-center text-muted-foreground py-8">جاري التحميل...</p>
@@ -116,8 +129,14 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
                       </div>
                       <div className="text-left">
                         <p className={`font-bold ${config.colorClass}`}>
-                          {Number(order.total_amount).toLocaleString()} د.ج
+                          {order.total_amount.toLocaleString()} د.ج
                         </p>
+                        {isCashInvoice1 && order.stamp_amount > 0 && (
+                          <p className="text-[10px] text-amber-600 flex items-center gap-1 justify-end">
+                            <Coins className="w-3 h-3" />
+                            طابع ({order.stamp_percentage}%): {order.stamp_amount.toLocaleString()} د.ج
+                          </p>
+                        )}
                         <p className="text-[10px] text-muted-foreground">
                           {format(new Date(order.created_at), 'dd/MM/yyyy HH:mm', { locale: ar })}
                         </p>
