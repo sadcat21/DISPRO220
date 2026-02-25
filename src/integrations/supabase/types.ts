@@ -1073,6 +1073,7 @@ export type Database = {
           receipt_count: number | null
           receipts_amount: number
           received_by: string | null
+          transfer_count: number | null
           transfers_amount: number
         }
         Insert: {
@@ -1091,6 +1092,7 @@ export type Database = {
           receipt_count?: number | null
           receipts_amount?: number
           received_by?: string | null
+          transfer_count?: number | null
           transfers_amount?: number
         }
         Update: {
@@ -1109,6 +1111,7 @@ export type Database = {
           receipt_count?: number | null
           receipts_amount?: number
           received_by?: string | null
+          transfer_count?: number | null
           transfers_amount?: number
         }
         Relationships: [

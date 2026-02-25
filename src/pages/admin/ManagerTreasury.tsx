@@ -33,7 +33,7 @@ const ManagerTreasury = () => {
   const [addOpen, setAddOpen] = useState(false);
   const [handoverOpen, setHandoverOpen] = useState(false);
   const [addForm, setAddForm] = useState({ payment_method: 'cash', amount: '', check_number: '', check_bank: '', receipt_number: '', transfer_reference: '', notes: '' });
-  const [handoverForm, setHandoverForm] = useState({ cash_invoice1: '', cash_invoice2: '', checks_amount: '', check_count: '', receipts_amount: '', receipt_count: '', transfers_amount: '', notes: '' });
+  const [handoverForm, setHandoverForm] = useState({ cash_invoice1: '', cash_invoice2: '', checks_amount: '', check_count: '', receipts_amount: '', receipt_count: '', transfers_amount: '', transfer_count: '', notes: '' });
 
   const handleAddEntry = async () => {
     if (!addForm.amount || Number(addForm.amount) <= 0) {
@@ -75,11 +75,12 @@ const ManagerTreasury = () => {
         receipts_amount: Number(handoverForm.receipts_amount) || 0,
         receipt_count: Number(handoverForm.receipt_count) || 0,
         transfers_amount: Number(handoverForm.transfers_amount) || 0,
+        transfer_count: Number(handoverForm.transfer_count) || 0,
         notes: handoverForm.notes || undefined,
       });
       toast.success('تم تسجيل التسليم بنجاح');
       setHandoverOpen(false);
-      setHandoverForm({ cash_invoice1: '', cash_invoice2: '', checks_amount: '', check_count: '', receipts_amount: '', receipt_count: '', transfers_amount: '', notes: '' });
+      setHandoverForm({ cash_invoice1: '', cash_invoice2: '', checks_amount: '', check_count: '', receipts_amount: '', receipt_count: '', transfers_amount: '', transfer_count: '', notes: '' });
     } catch {
       toast.error('حدث خطأ');
     }
@@ -158,10 +159,13 @@ const ManagerTreasury = () => {
                     <div><Label className="text-xs">عدد الوصولات</Label><Input type="number" placeholder="0" value={handoverForm.receipt_count} onChange={e => setHandoverForm(f => ({ ...f, receipt_count: e.target.value }))} /></div>
                   </div>
                 </div>
-                <div className="p-3 rounded-lg bg-muted/50 space-y-2">
+                <div className="p-3 rounded-lg bg-muted/50 space-y-3">
                   <p className="font-medium text-sm">🏦 فيرمو (تحويل بنكي)</p>
                   <p className="text-[10px] text-muted-foreground">العميل يحوّل من حسابه البنكي إلى حساب الشركة</p>
-                  <div><Label className="text-xs">قيمة الفيرمو</Label><Input type="number" placeholder="0" value={handoverForm.transfers_amount} onChange={e => setHandoverForm(f => ({ ...f, transfers_amount: e.target.value }))} /></div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div><Label className="text-xs">قيمة الفيرمو</Label><Input type="number" placeholder="0" value={handoverForm.transfers_amount} onChange={e => setHandoverForm(f => ({ ...f, transfers_amount: e.target.value }))} /></div>
+                    <div><Label className="text-xs">عدد الوصولات</Label><Input type="number" placeholder="0" value={handoverForm.transfer_count} onChange={e => setHandoverForm(f => ({ ...f, transfer_count: e.target.value }))} /></div>
+                  </div>
                 </div>
                 <div><Label>ملاحظات</Label><Textarea value={handoverForm.notes} onChange={e => setHandoverForm(f => ({ ...f, notes: e.target.value }))} /></div>
                 <Button onClick={handleHandover} disabled={createHandover.isPending} className="w-full">تسجيل التسليم</Button>
@@ -288,7 +292,7 @@ const ManagerTreasury = () => {
                     {Number(h.cash_invoice2 ?? 0) > 0 && <p>كاش ف2: {Number(h.cash_invoice2).toLocaleString()} د.ج</p>}
                     {Number(h.checks_amount ?? 0) > 0 && <p>شيكات: {Number(h.checks_amount).toLocaleString()} د.ج ({h.check_count ?? 0})</p>}
                     {Number(h.receipts_amount ?? 0) > 0 && <p>فيرسمو: {Number(h.receipts_amount).toLocaleString()} د.ج ({h.receipt_count ?? 0})</p>}
-                    {Number(h.transfers_amount ?? 0) > 0 && <p>فيرمو: {Number(h.transfers_amount).toLocaleString()} د.ج</p>}
+                    {Number(h.transfers_amount ?? 0) > 0 && <p>فيرمو: {Number(h.transfers_amount).toLocaleString()} د.ج ({(h as any).transfer_count ?? 0})</p>}
                   </div>
                   {h.notes && <p className="text-xs text-muted-foreground">{h.notes}</p>}
                 </CardContent>

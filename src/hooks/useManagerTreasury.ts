@@ -147,6 +147,7 @@ export const useCreateHandover = () => {
       receipts_amount?: number;
       receipt_count?: number;
       transfers_amount?: number;
+      transfer_count?: number;
       received_by?: string;
       notes?: string;
     }) => {
@@ -165,6 +166,7 @@ export const useCreateHandover = () => {
         receipts_amount: params.receipts_amount || 0,
         receipt_count: params.receipt_count || 0,
         transfers_amount: params.transfers_amount || 0,
+        transfer_count: params.transfer_count || 0,
         received_by: params.received_by || null,
         notes: params.notes || null,
       });
