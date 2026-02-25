@@ -5,12 +5,12 @@ const CUSTOMER_TYPES_KEY = 'customer_types';
 
 // Distinct colors for customer types (by shortcode)
 export const CUSTOMER_TYPE_COLORS: Record<string, string> = {
-  sup: '#1d4ed8',   // أزرق داكن
-  épi: '#15803d',   // أخضر داكن
-  alim: '#b45309',  // ذهبي داكن
-  spm: '#6d28d9',   // بنفسجي داكن
-  gros: '#be123c',  // أحمر قرمزي
-  mall: '#a21caf',  // فوشيا داكن
+  sup: '#1d4ed8',   // أزرق
+  épi: '#15803d',   // أخضر
+  alim: '#b45309',  // برتقالي
+  spm: '#0e7490',   // سماوي
+  gros: '#be123c',  // أحمر
+  mall: '#6d28d9',  // بنفسجي
 };
 
 const CUSTOMER_TYPE_COLOR_FALLBACKS = ['#0e7490', '#0f766e', '#c2410c', '#4338ca', '#4d7c0f', '#9f1239'];
