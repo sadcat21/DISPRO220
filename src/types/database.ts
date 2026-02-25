@@ -48,6 +48,7 @@ export interface Customer {
   default_price_subtype?: string | null;
   sales_rep_name?: string | null;
   sales_rep_phone?: string | null;
+  customer_type?: string | null;
   created_at: string;
   created_by: string | null;
 }

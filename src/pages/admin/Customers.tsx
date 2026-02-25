@@ -400,10 +400,10 @@ const Customers: React.FC = () => {
                         {getSectorName(customer.sector_id)}
                       </Badge>
                     )}
-                    {(customer as any).customer_type && (
+                    {customer.customer_type && (
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-accent-foreground/20">
                         <Building2 className="w-2.5 h-2.5 ml-0.5" />
-                        {getCustomerTypeLabel(customerTypes, (customer as any).customer_type, language)}
+                        {getCustomerTypeLabel(customerTypes, customer.customer_type, language)}
                       </Badge>
                     )}
                   </div>

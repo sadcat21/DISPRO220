@@ -163,7 +163,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
       setTrustNotes(customer.trust_notes || '');
       setDefaultPaymentType(customer.default_payment_type || 'without_invoice');
       setDefaultPriceSubtype(customer.default_price_subtype || 'gros');
-      setCustomerType((customer as any).customer_type || '');
+      setCustomerType(customer.customer_type || '');
       setShowMap(!!(customer.latitude && customer.longitude));
 
       if (customer.latitude && customer.longitude && !customer.address) {
