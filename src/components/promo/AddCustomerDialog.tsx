@@ -281,6 +281,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
     if (!storeName.trim()) { toast.error('الرجاء إدخال اسم المحل'); return; }
     if (!sectorId || sectorId === 'none') { toast.error('الرجاء اختيار السكتور'); return; }
     if (!latitude || !longitude) { toast.error('يرجى تحديد الموقع الجغرافي على الخريطة'); return; }
+    if (customerTypes.length > 0 && !customerType) { toast.error('يجب تحديد نوع العميل'); return; }
 
     setIsLoading(true);
     try {
@@ -517,6 +518,30 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
               <Input id="store-name-fr" value={storeNameFr} onChange={(e) => setStoreNameFr(e.target.value)} placeholder="Nom du magasin (Français)" className="text-left" dir="ltr" />
             </div>
 
+            {/* Customer Type - integrated after store name */}
+            {customerTypes.length > 0 && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Store className="w-4 h-4" />
+                  نوع العميل *
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  {customerTypes.map((entry) => (
+                    <Button
+                      key={entry.ar}
+                      type="button"
+                      variant={customerType === entry.ar ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setCustomerType(customerType === entry.ar ? '' : entry.ar)}
+                    >
+                      {entry[language] || entry.ar}
+                    </Button>
+                  ))}
+                </div>
+                {!customerType && <p className="text-xs text-destructive">يجب تحديد نوع العميل</p>}
+              </div>
+            )}
+
 
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
@@ -680,25 +705,8 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
               </div>
             </div>
 
-            {/* Customer Type */}
-            {customerTypes.length > 0 && (
-              <div className="space-y-2">
-                <Label>نوع العميل</Label>
-                <div className="flex flex-wrap gap-2">
-                  {customerTypes.map((entry) => (
-                    <Button
-                      key={entry.ar}
-                      type="button"
-                      variant={customerType === entry.ar ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setCustomerType(customerType === entry.ar ? '' : entry.ar)}
-                    >
-                      {entry[language] || entry.ar}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
+
+
 
             <div className="space-y-2">
               <Label htmlFor="customer-address" className="flex items-center gap-1">
