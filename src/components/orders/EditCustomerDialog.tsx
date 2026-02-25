@@ -17,6 +17,7 @@ import { useSectors } from '@/hooks/useSectors';
 import { useCustomerDebtSummary, useCreateDebt, useUpdateDebtPayment } from '@/hooks/useCustomerDebts';
 import { useAuth } from '@/contexts/AuthContext';
 import { reverseGeocode } from '@/utils/geoUtils';
+import { useCustomerTypes } from '@/hooks/useCustomerTypes';
 
 interface EditCustomerDialogProps {
   open: boolean;
@@ -49,6 +50,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
   const createDebt = useCreateDebt();
   const updateDebtPayment = useUpdateDebtPayment();
   const { workerId, role } = useAuth();
+  const { customerTypes } = useCustomerTypes();
   const [name, setName] = useState('');
   const [nameFr, setNameFr] = useState('');
   const [translatingName, setTranslatingName] = useState(false);
@@ -75,6 +77,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
   const [trustNotes, setTrustNotes] = useState('');
   const [defaultPaymentType, setDefaultPaymentType] = useState<string>('without_invoice');
   const [defaultPriceSubtype, setDefaultPriceSubtype] = useState<string>('gros');
+  const [customerType, setCustomerType] = useState<string>('');
 
   // Fetch zones when sector changes
   const pendingZoneId = React.useRef<string>('');
@@ -158,6 +161,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
       setTrustNotes(customer.trust_notes || '');
       setDefaultPaymentType(customer.default_payment_type || 'without_invoice');
       setDefaultPriceSubtype(customer.default_price_subtype || 'gros');
+      setCustomerType((customer as any).customer_type || '');
       setShowMap(!!(customer.latitude && customer.longitude));
 
       if (customer.latitude && customer.longitude && !customer.address) {
@@ -280,6 +284,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
         trust_notes: trustNotes.trim() || null,
         default_payment_type: defaultPaymentType,
         default_price_subtype: defaultPriceSubtype,
+        customer_type: customerType || null,
       };
       // Workers must go through approval for updates, admins can update directly
       const isManager = role === 'admin' || role === 'branch_admin';
@@ -490,6 +495,29 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
               </Button>
             </div>
           </div>
+
+          {/* --- Customer Type --- */}
+          {customerTypes.length > 0 && (
+            <div className="space-y-2 rounded-xl border-2 border-blue-500/20 bg-blue-500/5 p-4">
+              <Label className="font-bold flex items-center gap-2 text-sm text-blue-700 dark:text-blue-400">
+                <Store className="w-4 h-4" />
+                نوع العميل
+              </Label>
+              <div className="flex flex-wrap gap-2">
+                {customerTypes.map((type) => (
+                  <Button
+                    key={type}
+                    type="button"
+                    variant={customerType === type ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setCustomerType(customerType === type ? '' : type)}
+                  >
+                    {type}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* --- Section 2: Finance & Preferences --- */}
           <div className="space-y-4 rounded-xl border-2 border-amber-500/20 bg-amber-500/5 p-4">
