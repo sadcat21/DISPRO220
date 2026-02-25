@@ -201,7 +201,7 @@ const CustomerApprovalTab: React.FC = () => {
                 toast.success(applyEdits ? 'تمت الموافقة مع حفظ التعديلات' : 'تمت الموافقة وإضافة العميل بنجاح');
             }
             else if (reviewRequest.operation_type === 'update' && reviewRequest.customer_id) {
-                const { debtAmount, initial_debt: _id, ...updateData } = payload;
+                const { debtAmount, initial_debt: _id, new_debt_amount, ...updateData } = payload;
                 const { error: updateError } = await supabase
                     .from('customers').update(updateData).eq('id', reviewRequest.customer_id);
                 if (updateError) throw updateError;
