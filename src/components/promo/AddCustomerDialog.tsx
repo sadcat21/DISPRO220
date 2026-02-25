@@ -552,12 +552,19 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
                       type="button"
                       variant={customerType === entry.ar ? 'default' : 'outline'}
                       size="sm"
+                      className="font-mono uppercase text-xs"
                       onClick={() => setCustomerType(customerType === entry.ar ? '' : entry.ar)}
                     >
-                      {entry[language] || entry.ar}
+                      {entry.short || entry[language] || entry.ar}
                     </Button>
                   ))}
                 </div>
+                {customerType && (() => {
+                  const selected = customerTypes.find(t => t.ar === customerType);
+                  return selected ? (
+                    <p className="text-xs text-muted-foreground">{selected.fr} — {selected[language] || selected.ar}</p>
+                  ) : null;
+                })()}
                 {!customerType && <p className="text-xs text-destructive">يجب تحديد نوع العميل</p>}
               </div>
             )}
