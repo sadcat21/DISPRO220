@@ -2,11 +2,20 @@ import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, Store, Loader2, GripVertical, Pencil, Check, X } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Plus, Trash2, Store, Loader2, GripVertical, Pencil, Check, X, Info } from 'lucide-react';
 import { useCustomerTypes, CustomerTypeEntry } from '@/hooks/useCustomerTypes';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+interface EditFormState {
+  ar: string;
+  fr: string;
+  en: string;
+  short: string;
+  description: string;
+}
 
 const CustomerTypesCard: React.FC = () => {
   const { customerTypes, isLoading, updateTypes } = useCustomerTypes();
@@ -15,7 +24,8 @@ const CustomerTypesCard: React.FC = () => {
   const [newShort, setNewShort] = useState('');
   const [isTranslating, setIsTranslating] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState<{ ar: string; fr: string; en: string; short: string }>({ ar: '', fr: '', en: '', short: '' });
+  const [editForm, setEditForm] = useState<EditFormState>({ ar: '', fr: '', en: '', short: '', description: '' });
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
 
@@ -38,13 +48,14 @@ const CustomerTypesCard: React.FC = () => {
 
       let entry: CustomerTypeEntry;
       if (translateError || !translateData?.translations) {
-        entry = { ar: trimmed, fr: trimmed, en: trimmed, short: newShort.trim() || '' };
+        entry = { ar: trimmed, fr: trimmed, en: trimmed, short: newShort.trim() || '', description: '' };
       } else {
         entry = {
           ar: sourceLang === 'ar' ? trimmed : (translateData.translations.ar || trimmed),
           fr: sourceLang === 'fr' ? trimmed : (translateData.translations.fr || trimmed),
           en: sourceLang === 'en' ? trimmed : (translateData.translations.en || trimmed),
           short: newShort.trim() || '',
+          description: '',
         };
       }
 
@@ -69,13 +80,14 @@ const CustomerTypesCard: React.FC = () => {
   };
 
   const handleEditStart = (index: number) => {
+    const t = customerTypes[index];
     setEditingIndex(index);
-    setEditForm({ ar: customerTypes[index].ar, fr: customerTypes[index].fr, en: customerTypes[index].en, short: customerTypes[index].short || '' });
+    setEditForm({ ar: t.ar, fr: t.fr, en: t.en, short: t.short || '', description: t.description || '' });
   };
 
   const handleEditCancel = () => {
     setEditingIndex(null);
-    setEditForm({ ar: '', fr: '', en: '', short: '' });
+    setEditForm({ ar: '', fr: '', en: '', short: '', description: '' });
   };
 
   const handleEditSave = async () => {
@@ -90,7 +102,8 @@ const CustomerTypesCard: React.FC = () => {
         ar: editForm.ar.trim(),
         fr: editForm.fr.trim(),
         en: editForm.en.trim(),
-        short: editForm.short?.trim() || '',
+        short: editForm.short.trim(),
+        description: editForm.description.trim(),
       };
       await updateTypes.mutateAsync(updated);
       setEditingIndex(null);
@@ -121,7 +134,6 @@ const CustomerTypesCard: React.FC = () => {
     }
   };
 
-  // Touch drag support
   const touchStartY = useRef<number>(0);
   const touchItemIndex = useRef<number | null>(null);
 
@@ -215,7 +227,7 @@ const CustomerTypesCard: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground w-6 shrink-0 font-bold">🔤</span>
                       <Input
-                        value={editForm.short || ''}
+                        value={editForm.short}
                         onChange={(e) => setEditForm({ ...editForm, short: e.target.value })}
                         placeholder="الاختصار (مثال: sup)"
                         dir="ltr"
@@ -223,22 +235,24 @@ const CustomerTypesCard: React.FC = () => {
                         maxLength={10}
                       />
                     </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-xs text-muted-foreground w-6 shrink-0 mt-2">📝</span>
+                      <Textarea
+                        value={editForm.description}
+                        onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                        placeholder="وصف النوع (مثال: محل متوسط في الحي يبيع تشكيلة متنوعة...)"
+                        dir="rtl"
+                        className="flex-1 text-sm min-h-[60px]"
+                        rows={2}
+                      />
+                    </div>
                   </div>
                   <div className="flex gap-2 justify-end">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleEditCancel}
-                      disabled={isPending}
-                    >
+                    <Button variant="ghost" size="sm" onClick={handleEditCancel} disabled={isPending}>
                       <X className="w-3.5 h-3.5 me-1" />
                       إلغاء
                     </Button>
-                    <Button
-                      size="sm"
-                      onClick={handleEditSave}
-                      disabled={isPending}
-                    >
+                    <Button size="sm" onClick={handleEditSave} disabled={isPending}>
                       {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin me-1" /> : <Check className="w-3.5 h-3.5 me-1" />}
                       حفظ
                     </Button>
@@ -246,43 +260,54 @@ const CustomerTypesCard: React.FC = () => {
                 </div>
               ) : (
                 /* View mode */
-                <div className="flex items-center gap-2 p-2.5 hover:bg-accent/50 cursor-grab active:cursor-grabbing group">
-                  <GripVertical className="w-4 h-4 text-muted-foreground shrink-0" />
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm">{entry[language] || entry.ar}</span>
-                      {entry.short && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono uppercase">
-                          {entry.short}
-                        </span>
-                      )}
+                <div>
+                  <div className="flex items-center gap-2 p-2.5 hover:bg-accent/50 cursor-grab active:cursor-grabbing group">
+                    <GripVertical className="w-4 h-4 text-muted-foreground shrink-0" />
+                    
+                    <div className="flex-1 min-w-0" onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">{(entry as any)[language] || entry.ar}</span>
+                        {entry.short && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono uppercase">
+                            {entry.short}
+                          </span>
+                        )}
+                        {entry.description && (
+                          <Info className="w-3 h-3 text-muted-foreground/50" />
+                        )}
+                      </div>
+                      <div className="flex gap-3 text-[11px] text-muted-foreground mt-0.5">
+                        <span>🇩🇿 {entry.ar}</span>
+                        <span>🇫🇷 {entry.fr}</span>
+                        <span>🇺🇸 {entry.en}</span>
+                      </div>
                     </div>
-                    <div className="flex gap-3 text-[11px] text-muted-foreground mt-0.5">
-                      <span>🇩🇿 {entry.ar}</span>
-                      <span>🇫🇷 {entry.fr}</span>
-                      <span>🇺🇸 {entry.en}</span>
-                    </div>
-                  </div>
 
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 shrink-0 opacity-60 hover:opacity-100"
-                    onClick={() => handleEditStart(index)}
-                    disabled={isPending}
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 shrink-0 opacity-60 hover:opacity-100 hover:text-destructive"
-                    onClick={() => handleRemove(entry)}
-                    disabled={isPending}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0 opacity-60 hover:opacity-100"
+                      onClick={() => handleEditStart(index)}
+                      disabled={isPending}
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0 opacity-60 hover:opacity-100 hover:text-destructive"
+                      onClick={() => handleRemove(entry)}
+                      disabled={isPending}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                  {/* Description expanded */}
+                  {expandedIndex === index && entry.description && (
+                    <div className="px-10 pb-2.5 text-xs text-muted-foreground border-t border-dashed mx-2.5 pt-2">
+                      📝 {entry.description}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -319,7 +344,7 @@ const CustomerTypesCard: React.FC = () => {
           </div>
         </div>
         <p className="text-xs text-muted-foreground">
-          اضغط على أيقونة القلم لتعديل الاسم بالثلاث لغات والاختصار — يتم ترجمة الأنواع الجديدة تلقائياً — اسحب للترتيب
+          اضغط على النوع لعرض الوصف — اضغط القلم للتعديل — اسحب للترتيب — يتم ترجمة الأنواع الجديدة تلقائياً
         </p>
       </CardContent>
     </Card>

@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-
 const CUSTOMER_TYPES_KEY = 'customer_types';
 
 export interface CustomerTypeEntry {
@@ -9,13 +8,16 @@ export interface CustomerTypeEntry {
   fr: string;
   en: string;
   short?: string;
+  description?: string;
 }
 
 const DEFAULT_TYPES: CustomerTypeEntry[] = [
-  { ar: 'محل', fr: 'Magasin', en: 'Store', short: 'mag' },
-  { ar: 'سوبر ماركت', fr: 'Supermarché', en: 'Supermarket', short: 'sup' },
-  { ar: 'مول', fr: 'Mall', en: 'Mall', short: 'mall' },
-  { ar: 'كروسيست', fr: 'Grossiste', en: 'Wholesaler', short: 'gros' },
+  { ar: 'سوبيرات', fr: 'Supérette', en: 'Mini-market', short: 'sup', description: 'محل متوسط في الحي يبيع تشكيلة متنوعة من المواد الغذائية والمنظفات والأواني' },
+  { ar: 'بقالة', fr: 'Épicerie', en: 'Grocery', short: 'épi', description: 'محل صغير في الحي يبيع المواد الغذائية الأساسية فقط' },
+  { ar: 'تغذية عامة', fr: 'Alimentation Générale', en: 'General Food Store', short: 'alim', description: 'محل متخصص في المواد الغذائية بشكل شامل: لحوم، خبز، مواد غذائية متنوعة' },
+  { ar: 'سوبر ماركت', fr: 'Supermarché', en: 'Supermarket', short: 'spm', description: 'مساحة تجارية كبيرة منظمة بأقسام ورفوف متعددة' },
+  { ar: 'كروسيست', fr: 'Grossiste', en: 'Wholesaler', short: 'gros', description: 'تاجر جملة يبيع بكميات كبيرة للمحلات والتجار' },
+  { ar: 'مول', fr: 'Mall / Grande Surface', en: 'Mall', short: 'mall', description: 'مركز تجاري كبير يضم عدة محلات وأقسام متنوعة' },
 ];
 
 export const useCustomerTypes = () => {
@@ -35,7 +37,7 @@ export const useCustomerTypes = () => {
         const parsed = JSON.parse(data.value);
         // Handle legacy format (simple string array)
         if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'string') {
-          return (parsed as string[]).map(name => ({ ar: name, fr: name, en: name, short: '' }));
+          return (parsed as string[]).map(name => ({ ar: name, fr: name, en: name, short: '', description: '' }));
         }
         return parsed as CustomerTypeEntry[];
       } catch {
