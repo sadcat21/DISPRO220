@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Banknote, CreditCard, Receipt, ArrowUpRight, Plus, Send, Coins } from 'lucide-react';
 import { toast } from 'sonner';
+import InvoiceOCRScanner from '@/components/treasury/InvoiceOCRScanner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -101,6 +102,21 @@ const ManagerTreasury = () => {
             <DialogContent dir="rtl">
               <DialogHeader><DialogTitle>إضافة مبلغ يدوي</DialogTitle></DialogHeader>
               <div className="space-y-3">
+                <InvoiceOCRScanner
+                  paymentMethod={addForm.payment_method}
+                  onDataExtracted={(data) => {
+                    setAddForm(f => ({
+                      ...f,
+                      amount: data.amount || f.amount,
+                      invoice_number: data.invoice_number || f.invoice_number,
+                      check_number: data.check_number || f.check_number,
+                      check_bank: data.check_bank || f.check_bank,
+                      receipt_number: data.receipt_number || f.receipt_number,
+                      transfer_reference: data.transfer_reference || f.transfer_reference,
+                      notes: data.raw_text ? (f.notes ? f.notes + '\n---\n' + data.raw_text : data.raw_text) : f.notes,
+                    }));
+                  }}
+                />
                 <div>
                   <Label>طريقة الدفع</Label>
                   <Select value={addForm.payment_method} onValueChange={v => setAddForm(f => ({ ...f, payment_method: v }))}>
