@@ -23,6 +23,7 @@ import LazyCustomersMapView from '@/components/map/LazyCustomersMapView';
 import CustomerSpecialPricesDialog from '@/components/customers/CustomerSpecialPricesDialog';
 import ManageSectorsDialog from '@/components/customers/ManageSectorsDialog';
 import { useSectors } from '@/hooks/useSectors';
+import { useCustomerTypes, getCustomerTypeLabel } from '@/hooks/useCustomerTypes';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
 import CustomerProfileDialog from '@/components/customers/CustomerProfileDialog';
 import CustomerApprovalTab from '@/components/customers/CustomerApprovalTab';
@@ -56,6 +57,7 @@ const Customers: React.FC = () => {
   const { workerId, activeBranch, role } = useAuth();
   const { t, language } = useLanguage();
   const { sectors } = useSectors();
+  const { customerTypes } = useCustomerTypes();
   const { trackVisit } = useTrackVisit();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -396,6 +398,12 @@ const Customers: React.FC = () => {
                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-semibold">
                         <MapPin className="w-2.5 h-2.5 ml-0.5" />
                         {getSectorName(customer.sector_id)}
+                      </Badge>
+                    )}
+                    {(customer as any).customer_type && (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-accent-foreground/20">
+                        <Building2 className="w-2.5 h-2.5 ml-0.5" />
+                        {getCustomerTypeLabel(customerTypes, (customer as any).customer_type, language)}
                       </Badge>
                     )}
                   </div>
