@@ -2100,18 +2100,21 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          name_fr: string | null
           sector_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
+          name_fr?: string | null
           sector_id: string
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
+          name_fr?: string | null
           sector_id?: string
         }
         Relationships: [
@@ -2132,6 +2135,7 @@ export type Database = {
           delivery_worker_id: string | null
           id: string
           name: string
+          name_fr: string | null
           sales_worker_id: string | null
           updated_at: string
           visit_day_delivery: string | null
@@ -2144,6 +2148,7 @@ export type Database = {
           delivery_worker_id?: string | null
           id?: string
           name: string
+          name_fr?: string | null
           sales_worker_id?: string | null
           updated_at?: string
           visit_day_delivery?: string | null
@@ -2156,6 +2161,7 @@ export type Database = {
           delivery_worker_id?: string | null
           id?: string
           name?: string
+          name_fr?: string | null
           sales_worker_id?: string | null
           updated_at?: string
           visit_day_delivery?: string | null

@@ -56,6 +56,7 @@ export interface Customer {
 export interface Sector {
   id: string;
   name: string;
+  name_fr?: string | null;
   branch_id: string | null;
   visit_day_sales: string | null;
   visit_day_delivery: string | null;

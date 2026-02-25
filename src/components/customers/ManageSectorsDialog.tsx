@@ -7,13 +7,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { MapPin, Plus, Pencil, Trash2, Loader2, Save, X, UserCheck, Truck, Calendar, Layers } from 'lucide-react';
+import { MapPin, Plus, Pencil, Trash2, Loader2, Save, X, UserCheck, Truck, Calendar, Layers, Languages } from 'lucide-react';
 import { useSectors } from '@/hooks/useSectors';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Sector } from '@/types/database';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { autoTranslateBeforeSave } from '@/components/translation/TranslatableInput';
 
 interface ManageSectorsDialogProps {
   open: boolean;
@@ -23,6 +24,7 @@ interface ManageSectorsDialogProps {
 interface SectorZone {
   id: string;
   name: string;
+  name_fr?: string | null;
   sector_id: string;
 }
 
@@ -46,6 +48,7 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
 
   // Form state
   const [name, setName] = useState('');
+  const [nameFr, setNameFr] = useState('');
   const [visitDaySales, setVisitDaySales] = useState('');
   const [visitDayDelivery, setVisitDayDelivery] = useState('');
   const [salesWorkerId, setSalesWorkerId] = useState('');
@@ -55,10 +58,14 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
   const [zonesMap, setZonesMap] = useState<Record<string, SectorZone[]>>({});
   const [expandedZonesSector, setExpandedZonesSector] = useState<string | null>(null);
   const [newZoneName, setNewZoneName] = useState('');
+  const [newZoneNameFr, setNewZoneNameFr] = useState('');
   const [addingZone, setAddingZone] = useState(false);
   // Zones for the form (when creating/editing a sector)
-  const [formZones, setFormZones] = useState<string[]>([]);
+  const [formZones, setFormZones] = useState<{ name: string; name_fr: string }[]>([]);
   const [newFormZone, setNewFormZone] = useState('');
+  const [newFormZoneFr, setNewFormZoneFr] = useState('');
+  const [translatingName, setTranslatingName] = useState(false);
+  const [translatingZone, setTranslatingZone] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -75,7 +82,7 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
   };
 
   const fetchAllZones = async () => {
-    const { data } = await supabase.from('sector_zones').select('id, name, sector_id').order('name');
+    const { data } = await supabase.from('sector_zones').select('id, name, name_fr, sector_id').order('name');
     if (data) {
       const map: Record<string, SectorZone[]> = {};
       data.forEach(z => {
@@ -88,6 +95,7 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
 
   const resetForm = () => {
     setName('');
+    setNameFr('');
     setVisitDaySales('');
     setVisitDayDelivery('');
     setSalesWorkerId('');
@@ -96,33 +104,57 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
     setShowForm(false);
     setFormZones([]);
     setNewFormZone('');
+    setNewFormZoneFr('');
   };
 
   const openEditForm = (sector: Sector) => {
     setEditingSector(sector);
     setName(sector.name);
+    setNameFr((sector as any).name_fr || '');
     setVisitDaySales(sector.visit_day_sales || '');
     setVisitDayDelivery(sector.visit_day_delivery || '');
     setSalesWorkerId(sector.sales_worker_id || '');
     setDeliveryWorkerId(sector.delivery_worker_id || '');
-    // Load existing zones for editing
-    setFormZones((zonesMap[sector.id] || []).map(z => z.name));
+    setFormZones((zonesMap[sector.id] || []).map(z => ({ name: z.name, name_fr: z.name_fr || '' })));
     setShowForm(true);
   };
 
+  const handleTranslateSectorName = async () => {
+    if (!name.trim() && !nameFr.trim()) return;
+    setTranslatingName(true);
+    try {
+      const result = await autoTranslateBeforeSave(name, nameFr, '', 'transliterate');
+      if (result.fr && !nameFr.trim()) setNameFr(result.fr);
+      if (result.ar && !name.trim()) setName(result.ar);
+    } catch { /* silent */ }
+    setTranslatingName(false);
+  };
+
+  const handleTranslateZoneName = async () => {
+    if (!newFormZone.trim() && !newFormZoneFr.trim()) return;
+    setTranslatingZone(true);
+    try {
+      const result = await autoTranslateBeforeSave(newFormZone, newFormZoneFr, '', 'transliterate');
+      if (result.fr && !newFormZoneFr.trim()) setNewFormZoneFr(result.fr);
+      if (result.ar && !newFormZone.trim()) setNewFormZone(result.ar);
+    } catch { /* silent */ }
+    setTranslatingZone(false);
+  };
+
   const handleAddFormZone = () => {
-    const trimmed = newFormZone.trim();
-    if (!trimmed) return;
-    if (formZones.includes(trimmed)) {
+    const trimmedAr = newFormZone.trim();
+    if (!trimmedAr) return;
+    if (formZones.some(z => z.name === trimmedAr)) {
       toast.error('هذه المنطقة موجودة بالفعل');
       return;
     }
-    setFormZones(prev => [...prev, trimmed]);
+    setFormZones(prev => [...prev, { name: trimmedAr, name_fr: newFormZoneFr.trim() }]);
     setNewFormZone('');
+    setNewFormZoneFr('');
   };
 
   const handleRemoveFormZone = (zoneName: string) => {
-    setFormZones(prev => prev.filter(z => z !== zoneName));
+    setFormZones(prev => prev.filter(z => z.name !== zoneName));
   };
 
   const handleSave = async () => {
@@ -132,8 +164,16 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
     }
     setIsSaving(true);
     try {
+      // Auto-translate sector name if French is empty
+      let finalNameFr = nameFr.trim();
+      if (!finalNameFr && name.trim()) {
+        const r = await autoTranslateBeforeSave(name, '', '', 'transliterate');
+        finalNameFr = r.fr || '';
+      }
+
       const sectorData = {
         name: name.trim(),
+        name_fr: finalNameFr || null,
         branch_id: activeBranch?.id || null,
         visit_day_sales: visitDaySales || null,
         visit_day_delivery: visitDayDelivery || null,
@@ -148,20 +188,27 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
         await updateSector(editingSector.id, sectorData);
         savedSectorId = editingSector.id;
 
-        // Sync zones: delete old ones and insert new ones
         const existingZones = zonesMap[editingSector.id] || [];
         const existingNames = existingZones.map(z => z.name);
 
         // Delete zones that were removed
-        const toDelete = existingZones.filter(z => !formZones.includes(z.name));
+        const toDelete = existingZones.filter(z => !formZones.some(fz => fz.name === z.name));
         for (const z of toDelete) {
           await supabase.from('sector_zones').delete().eq('id', z.id);
         }
 
+        // Update existing zones (name_fr)
+        for (const fz of formZones) {
+          const existing = existingZones.find(ez => ez.name === fz.name);
+          if (existing && existing.name_fr !== fz.name_fr) {
+            await supabase.from('sector_zones').update({ name_fr: fz.name_fr || null }).eq('id', existing.id);
+          }
+        }
+
         // Add new zones
-        const toAdd = formZones.filter(n => !existingNames.includes(n));
+        const toAdd = formZones.filter(fz => !existingNames.includes(fz.name));
         if (toAdd.length > 0) {
-          await supabase.from('sector_zones').insert(toAdd.map(n => ({ sector_id: savedSectorId, name: n })));
+          await supabase.from('sector_zones').insert(toAdd.map(fz => ({ sector_id: savedSectorId, name: fz.name, name_fr: fz.name_fr || null })));
         }
 
         toast.success('تم تحديث السكتور بنجاح');
@@ -169,9 +216,8 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
         const newSector = await createSector(sectorData);
         savedSectorId = newSector.id;
 
-        // Insert zones for the new sector
         if (formZones.length > 0) {
-          await supabase.from('sector_zones').insert(formZones.map(n => ({ sector_id: savedSectorId, name: n })));
+          await supabase.from('sector_zones').insert(formZones.map(fz => ({ sector_id: savedSectorId, name: fz.name, name_fr: fz.name_fr || null })));
         }
 
         toast.success('تم إنشاء السكتور بنجاح');
@@ -191,10 +237,17 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
     if (!trimmed) return;
     setAddingZone(true);
     try {
-      const { error } = await supabase.from('sector_zones').insert({ sector_id: sectorId, name: trimmed });
+      // Auto-translate zone name
+      let frName = newZoneNameFr.trim();
+      if (!frName) {
+        const r = await autoTranslateBeforeSave(trimmed, '', '', 'transliterate');
+        frName = r.fr || '';
+      }
+      const { error } = await supabase.from('sector_zones').insert({ sector_id: sectorId, name: trimmed, name_fr: frName || null });
       if (error) throw error;
       toast.success('تمت إضافة المنطقة');
       setNewZoneName('');
+      setNewZoneNameFr('');
       await fetchAllZones();
     } catch (error: any) {
       toast.error(error.message || 'فشل الإضافة');
@@ -258,7 +311,13 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
 
               <div className="space-y-2">
                 <Label className="text-sm">اسم السكتور *</Label>
-                <Input value={name} onChange={e => setName(e.target.value)} placeholder="مثال: سكتور الشرق" className="text-right" autoFocus />
+                <div className="flex gap-2">
+                  <Input value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالعربية" className="text-right flex-1" autoFocus />
+                  <Input value={nameFr} onChange={e => setNameFr(e.target.value)} placeholder="Nom en français" dir="ltr" className="flex-1" />
+                  <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={handleTranslateSectorName} disabled={translatingName}>
+                    {translatingName ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Languages className="w-3.5 h-3.5" />}
+                  </Button>
+                </div>
               </div>
 
               {/* Zones inside the form */}
@@ -269,10 +328,10 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
                 </Label>
                 {formZones.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
-                    {formZones.map((zoneName) => (
-                      <Badge key={zoneName} variant="secondary" className="text-xs flex items-center gap-1 pr-1">
-                        {zoneName}
-                        <button type="button" onClick={() => handleRemoveFormZone(zoneName)} className="hover:text-destructive">
+                    {formZones.map((zone) => (
+                      <Badge key={zone.name} variant="secondary" className="text-xs flex items-center gap-1 pr-1">
+                        {zone.name}{zone.name_fr ? ` (${zone.name_fr})` : ''}
+                        <button type="button" onClick={() => handleRemoveFormZone(zone.name)} className="hover:text-destructive">
                           <X className="w-3 h-3" />
                         </button>
                       </Badge>
@@ -287,6 +346,17 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
                     className="text-right text-sm flex-1"
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddFormZone(); } }}
                   />
+                  <Input
+                    value={newFormZoneFr}
+                    onChange={e => setNewFormZoneFr(e.target.value)}
+                    placeholder="Nom..."
+                    dir="ltr"
+                    className="text-sm flex-1"
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddFormZone(); } }}
+                  />
+                  <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={handleTranslateZoneName} disabled={translatingZone}>
+                    {translatingZone ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Languages className="w-3.5 h-3.5" />}
+                  </Button>
                   <Button type="button" variant="outline" size="sm" onClick={handleAddFormZone} disabled={!newFormZone.trim()}>
                     <Plus className="w-3.5 h-3.5" />
                   </Button>
@@ -371,6 +441,9 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
                       <div className="flex items-start justify-between">
                         <div className="space-y-1.5 flex-1">
                           <p className="font-bold text-sm">{sector.name}</p>
+                          {(sector as any).name_fr && (
+                            <p className="text-xs text-muted-foreground" dir="ltr">{(sector as any).name_fr}</p>
+                          )}
                           <div className="flex flex-wrap gap-1.5">
                             {getDayLabel(sector.visit_day_sales) && (
                               <Badge variant="outline" className="text-[10px] px-1.5">
@@ -430,7 +503,7 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
                             <div className="flex flex-wrap gap-1.5">
                               {sectorZones.map(zone => (
                                 <Badge key={zone.id} variant="outline" className="text-xs flex items-center gap-1 pr-1">
-                                  {zone.name}
+                                  {zone.name}{zone.name_fr ? ` (${zone.name_fr})` : ''}
                                   <button onClick={() => handleDeleteZone(zone.id)} className="hover:text-destructive">
                                     <X className="w-3 h-3" />
                                   </button>
@@ -444,8 +517,16 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
                             <Input
                               value={newZoneName}
                               onChange={e => setNewZoneName(e.target.value)}
-                              placeholder="اسم المنطقة الجديدة..."
+                              placeholder="اسم المنطقة..."
                               className="text-right text-sm flex-1"
+                              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddZoneToExisting(sector.id); } }}
+                            />
+                            <Input
+                              value={newZoneNameFr}
+                              onChange={e => setNewZoneNameFr(e.target.value)}
+                              placeholder="Nom..."
+                              dir="ltr"
+                              className="text-sm flex-1"
                               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddZoneToExisting(sector.id); } }}
                             />
                             <Button variant="outline" size="sm" onClick={() => handleAddZoneToExisting(sector.id)} disabled={!newZoneName.trim() || addingZone}>
