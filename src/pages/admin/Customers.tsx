@@ -383,7 +383,7 @@ const Customers: React.FC = () => {
               {t('customers.none')}
             </Button>
             {customerTypes.map((ct, idx) => {
-              const color = getCustomerTypeColor(ct.short, idx);
+              const colors = getCustomerTypeColor(ct.short, idx, ct);
               const isActive = typeFilter === ct.ar;
               return (
                 <Button
@@ -391,8 +391,8 @@ const Customers: React.FC = () => {
                   type="button"
                   variant="default"
                   size="sm"
-                  className={`text-xs h-7 px-2.5 font-mono uppercase text-white ${isActive ? 'ring-2 ring-offset-1 ring-foreground/40' : 'opacity-80 hover:opacity-100'}`}
-                  style={{ backgroundColor: color, borderColor: color }}
+                  className={`text-xs h-7 px-2.5 font-mono uppercase ${isActive ? 'ring-2 ring-offset-1 ring-foreground/40' : 'opacity-80 hover:opacity-100'}`}
+                  style={{ backgroundColor: colors.bg, borderColor: colors.bg, color: colors.text }}
                   onClick={() => setTypeFilter(ct.ar)}
                 >
                   {ct.short || ct.ar}

@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, Store, Loader2, GripVertical, Pencil, Check, X, Info } from 'lucide-react';
-import { useCustomerTypes, CustomerTypeEntry } from '@/hooks/useCustomerTypes';
+import { Plus, Trash2, Store, Loader2, GripVertical, Pencil, Check, X, Info, Palette } from 'lucide-react';
+import { useCustomerTypes, CustomerTypeEntry, getCustomerTypeColor } from '@/hooks/useCustomerTypes';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -15,6 +15,8 @@ interface EditFormState {
   en: string;
   short: string;
   description: string;
+  bg_color: string;
+  text_color: string;
 }
 
 const CustomerTypesCard: React.FC = () => {
@@ -22,9 +24,11 @@ const CustomerTypesCard: React.FC = () => {
   const { language } = useLanguage();
   const [newType, setNewType] = useState('');
   const [newShort, setNewShort] = useState('');
+  const [newBgColor, setNewBgColor] = useState('#1d4ed8');
+  const [newTextColor, setNewTextColor] = useState('#ffffff');
   const [isTranslating, setIsTranslating] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState<EditFormState>({ ar: '', fr: '', en: '', short: '', description: '' });
+  const [editForm, setEditForm] = useState<EditFormState>({ ar: '', fr: '', en: '', short: '', description: '', bg_color: '#1d4ed8', text_color: '#ffffff' });
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
@@ -48,7 +52,7 @@ const CustomerTypesCard: React.FC = () => {
 
       let entry: CustomerTypeEntry;
       if (translateError || !translateData?.translations) {
-        entry = { ar: trimmed, fr: trimmed, en: trimmed, short: newShort.trim() || '', description: '' };
+        entry = { ar: trimmed, fr: trimmed, en: trimmed, short: newShort.trim() || '', description: '', bg_color: newBgColor, text_color: newTextColor };
       } else {
         entry = {
           ar: sourceLang === 'ar' ? trimmed : (translateData.translations.ar || trimmed),
@@ -56,6 +60,8 @@ const CustomerTypesCard: React.FC = () => {
           en: sourceLang === 'en' ? trimmed : (translateData.translations.en || trimmed),
           short: newShort.trim() || '',
           description: '',
+          bg_color: newBgColor,
+          text_color: newTextColor,
         };
       }
 
@@ -82,12 +88,12 @@ const CustomerTypesCard: React.FC = () => {
   const handleEditStart = (index: number) => {
     const t = customerTypes[index];
     setEditingIndex(index);
-    setEditForm({ ar: t.ar, fr: t.fr, en: t.en, short: t.short || '', description: t.description || '' });
+    setEditForm({ ar: t.ar, fr: t.fr, en: t.en, short: t.short || '', description: t.description || '', bg_color: t.bg_color || '#1d4ed8', text_color: t.text_color || '#ffffff' });
   };
 
   const handleEditCancel = () => {
     setEditingIndex(null);
-    setEditForm({ ar: '', fr: '', en: '', short: '', description: '' });
+    setEditForm({ ar: '', fr: '', en: '', short: '', description: '', bg_color: '#1d4ed8', text_color: '#ffffff' });
   };
 
   const handleEditSave = async () => {
@@ -104,6 +110,8 @@ const CustomerTypesCard: React.FC = () => {
         en: editForm.en.trim(),
         short: editForm.short.trim(),
         description: editForm.description.trim(),
+        bg_color: editForm.bg_color,
+        text_color: editForm.text_color,
       };
       await updateTypes.mutateAsync(updated);
       setEditingIndex(null);
@@ -246,6 +254,33 @@ const CustomerTypesCard: React.FC = () => {
                         rows={2}
                       />
                     </div>
+                    <div className="flex items-center gap-3">
+                      <Palette className="w-4 h-4 text-muted-foreground shrink-0" />
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs text-muted-foreground">لون الزر</label>
+                        <input
+                          type="color"
+                          value={editForm.bg_color}
+                          onChange={(e) => setEditForm({ ...editForm, bg_color: e.target.value })}
+                          className="w-8 h-8 rounded cursor-pointer border-0 p-0"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs text-muted-foreground">لون الكتابة</label>
+                        <input
+                          type="color"
+                          value={editForm.text_color}
+                          onChange={(e) => setEditForm({ ...editForm, text_color: e.target.value })}
+                          className="w-8 h-8 rounded cursor-pointer border-0 p-0"
+                        />
+                      </div>
+                      <div
+                        className="px-3 py-1 rounded text-xs font-mono uppercase"
+                        style={{ backgroundColor: editForm.bg_color, color: editForm.text_color }}
+                      >
+                        {editForm.short || 'معاينة'}
+                      </div>
+                    </div>
                   </div>
                   <div className="flex gap-2 justify-end">
                     <Button variant="ghost" size="sm" onClick={handleEditCancel} disabled={isPending}>
@@ -267,11 +302,17 @@ const CustomerTypesCard: React.FC = () => {
                     <div className="flex-1 min-w-0" onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}>
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-sm">{(entry as any)[language] || entry.ar}</span>
-                        {entry.short && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono uppercase">
-                            {entry.short}
-                          </span>
-                        )}
+                        {entry.short && (() => {
+                          const colors = getCustomerTypeColor(entry.short, index, entry);
+                          return (
+                            <span
+                              className="text-[10px] px-1.5 py-0.5 rounded font-mono uppercase"
+                              style={{ backgroundColor: colors.bg, color: colors.text }}
+                            >
+                              {entry.short}
+                            </span>
+                          );
+                        })()}
                         {entry.description && (
                           <Info className="w-3 h-3 text-muted-foreground/50" />
                         )}
@@ -341,6 +382,33 @@ const CustomerTypesCard: React.FC = () => {
             >
               {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
             </Button>
+          </div>
+          <div className="flex items-center gap-3">
+            <Palette className="w-4 h-4 text-muted-foreground shrink-0" />
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-muted-foreground">لون الزر</label>
+              <input
+                type="color"
+                value={newBgColor}
+                onChange={(e) => setNewBgColor(e.target.value)}
+                className="w-8 h-8 rounded cursor-pointer border-0 p-0"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-muted-foreground">لون الكتابة</label>
+              <input
+                type="color"
+                value={newTextColor}
+                onChange={(e) => setNewTextColor(e.target.value)}
+                className="w-8 h-8 rounded cursor-pointer border-0 p-0"
+              />
+            </div>
+            <div
+              className="px-3 py-1 rounded text-xs font-mono uppercase"
+              style={{ backgroundColor: newBgColor, color: newTextColor }}
+            >
+              {newShort || 'معاينة'}
+            </div>
           </div>
         </div>
         <p className="text-xs text-muted-foreground">

@@ -82,7 +82,7 @@ const CustomersMapView: React.FC<CustomersMapViewProps> = ({
   const typeColorMap = React.useMemo(() => {
     const map: Record<string, string> = {};
     customerTypes.forEach((ct, idx) => {
-      map[ct.ar] = getCustomerTypeColor(ct.short, idx);
+      map[ct.ar] = getCustomerTypeColor(ct.short, idx, ct).bg;
     });
     return map;
   }, [customerTypes]);
@@ -285,7 +285,7 @@ const CustomersMapView: React.FC<CustomersMapViewProps> = ({
       <div className="flex items-center gap-3 flex-wrap text-xs text-muted-foreground">
         {customerTypes.map((ct, idx) => (
           <div key={idx} className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getCustomerTypeColor(ct.short, idx) }} />
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getCustomerTypeColor(ct.short, idx, ct).bg }} />
             <span>{ct.short || ct.ar}</span>
           </div>
         ))}

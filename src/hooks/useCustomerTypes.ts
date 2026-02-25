@@ -15,9 +15,14 @@ export const CUSTOMER_TYPE_COLORS: Record<string, string> = {
 
 const CUSTOMER_TYPE_COLOR_FALLBACKS = ['#0e7490', '#0f766e', '#c2410c', '#4338ca', '#4d7c0f', '#9f1239'];
 
-export const getCustomerTypeColor = (shortCode?: string | null, index = 0): string => {
-  if (shortCode && CUSTOMER_TYPE_COLORS[shortCode]) return CUSTOMER_TYPE_COLORS[shortCode];
-  return CUSTOMER_TYPE_COLOR_FALLBACKS[index % CUSTOMER_TYPE_COLOR_FALLBACKS.length];
+export const getCustomerTypeColor = (shortCode?: string | null, index = 0, entry?: CustomerTypeEntry): { bg: string; text: string } => {
+  if (entry?.bg_color) {
+    return { bg: entry.bg_color, text: entry.text_color || '#ffffff' };
+  }
+  const bg = (shortCode && CUSTOMER_TYPE_COLORS[shortCode]) 
+    ? CUSTOMER_TYPE_COLORS[shortCode] 
+    : CUSTOMER_TYPE_COLOR_FALLBACKS[index % CUSTOMER_TYPE_COLOR_FALLBACKS.length];
+  return { bg, text: '#ffffff' };
 };
 
 export interface CustomerTypeEntry {
@@ -26,6 +31,8 @@ export interface CustomerTypeEntry {
   en: string;
   short?: string;
   description?: string;
+  bg_color?: string;
+  text_color?: string;
 }
 
 const DEFAULT_TYPES: CustomerTypeEntry[] = [
@@ -54,7 +61,7 @@ export const useCustomerTypes = () => {
         const parsed = JSON.parse(data.value);
         // Handle legacy format (simple string array)
         if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'string') {
-          return (parsed as string[]).map(name => ({ ar: name, fr: name, en: name, short: '', description: '' }));
+          return (parsed as string[]).map(name => ({ ar: name, fr: name, en: name, short: '', description: '' } as CustomerTypeEntry));
         }
         return parsed as CustomerTypeEntry[];
       } catch {

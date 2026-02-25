@@ -547,7 +547,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
                 </Label>
                 <div className="flex flex-wrap gap-2">
                   {customerTypes.map((entry, idx) => {
-                    const color = getCustomerTypeColor(entry.short, idx);
+                    const colors = getCustomerTypeColor(entry.short, idx, entry);
                     const isActive = customerType === entry.ar;
                     return (
                       <Button
@@ -555,8 +555,8 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
                         type="button"
                         variant="default"
                         size="sm"
-                        className={`font-mono uppercase text-xs text-white ${isActive ? 'ring-2 ring-offset-1 ring-foreground/40' : 'opacity-60 hover:opacity-100'}`}
-                        style={{ backgroundColor: color, borderColor: color }}
+                        className={`font-mono uppercase text-xs ${isActive ? 'ring-2 ring-offset-1 ring-foreground/40' : 'opacity-60 hover:opacity-100'}`}
+                        style={{ backgroundColor: colors.bg, borderColor: colors.bg, color: colors.text }}
                         onClick={() => setCustomerType(isActive ? '' : entry.ar)}
                       >
                         {entry.short || entry[language] || entry.ar}
