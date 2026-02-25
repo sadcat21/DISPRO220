@@ -566,14 +566,14 @@ const Customers: React.FC = () => {
           </div>
           <div className="min-w-0">
             <h2 className="text-lg font-bold leading-tight">{t('customers.title')}</h2>
-            <p className="text-sm font-bold">
+            <p className="text-sm font-bold flex items-center gap-1">
               <span className="text-red-600">{filteredByBranch.length}</span>
               <span className="text-muted-foreground">/</span>
               <span className="text-blue-600">{filteredCustomers.length}</span>
               {(() => {
                 const today = new Date().toISOString().split('T')[0];
                 const todayCount = filteredByBranch.filter(c => c.created_at?.startsWith(today)).length;
-                return todayCount > 0 ? <span className="text-emerald-700"> ({todayCount}+)</span> : null;
+                return todayCount > 0 ? <span className="text-emerald-700 mr-1"> ({todayCount}+)</span> : null;
               })()}
             </p>
           </div>
