@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTreasurySummary, useManagerTreasury, useManagerHandovers, useCreateHandover, useAddTreasuryEntry } from '@/hooks/useManagerTreasury';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import PaymentMethodDetailsDialog from '@/components/treasury/PaymentMethodDetailsDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,6 +33,7 @@ const ManagerTreasury = () => {
 
   const [addOpen, setAddOpen] = useState(false);
   const [handoverOpen, setHandoverOpen] = useState(false);
+  const [detailsCategory, setDetailsCategory] = useState<'cash_invoice1' | 'cash_invoice2' | 'check' | 'bank_receipt' | 'bank_transfer' | null>(null);
   const [addForm, setAddForm] = useState({ payment_method: 'cash', amount: '', invoice_number: '', check_number: '', check_bank: '', receipt_number: '', transfer_reference: '', notes: '' });
   const [handoverForm, setHandoverForm] = useState({ cash_invoice1: '', cash_invoice2: '', checks_amount: '', check_count: '', receipts_amount: '', receipt_count: '', transfers_amount: '', transfer_count: '', notes: '' });
 
@@ -183,35 +185,35 @@ const ManagerTreasury = () => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-3">
-        <Card className="border-green-500/30 bg-green-500/5">
+        <Card className="border-green-500/30 bg-green-500/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDetailsCategory('cash_invoice1')}>
           <CardContent className="p-3 text-center">
             <Banknote className="w-5 h-5 mx-auto mb-1 text-green-500" />
             <p className="text-xs text-muted-foreground">كاش فاتورة 1</p>
             <p className="text-lg font-bold text-green-500">{summary?.cash_invoice1?.toLocaleString() || 0} د.ج</p>
           </CardContent>
         </Card>
-        <Card className="border-emerald-500/30 bg-emerald-500/5">
+        <Card className="border-emerald-500/30 bg-emerald-500/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDetailsCategory('cash_invoice2')}>
           <CardContent className="p-3 text-center">
             <Banknote className="w-5 h-5 mx-auto mb-1 text-emerald-500" />
             <p className="text-xs text-muted-foreground">كاش فاتورة 2</p>
             <p className="text-lg font-bold text-emerald-500">{summary?.cash_invoice2?.toLocaleString() || 0} د.ج</p>
           </CardContent>
         </Card>
-        <Card className="border-blue-500/30 bg-blue-500/5">
+        <Card className="border-blue-500/30 bg-blue-500/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDetailsCategory('check')}>
           <CardContent className="p-3 text-center">
             <CreditCard className="w-5 h-5 mx-auto mb-1 text-blue-500" />
             <p className="text-xs text-muted-foreground">شيكات ({summary?.checkCount || 0})</p>
             <p className="text-lg font-bold text-blue-500">{summary?.check?.toLocaleString() || 0} د.ج</p>
           </CardContent>
         </Card>
-        <Card className="border-purple-500/30 bg-purple-500/5">
+        <Card className="border-purple-500/30 bg-purple-500/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDetailsCategory('bank_receipt')}>
           <CardContent className="p-3 text-center">
             <Receipt className="w-5 h-5 mx-auto mb-1 text-purple-500" />
             <p className="text-xs text-muted-foreground">فيرسمو ({summary?.receiptCount || 0})</p>
             <p className="text-lg font-bold text-purple-500">{summary?.bank_receipt?.toLocaleString() || 0} د.ج</p>
           </CardContent>
         </Card>
-        <Card className="col-span-2 border-orange-500/30 bg-orange-500/5">
+        <Card className="col-span-2 border-orange-500/30 bg-orange-500/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDetailsCategory('bank_transfer')}>
           <CardContent className="p-3 text-center">
             <ArrowUpRight className="w-5 h-5 mx-auto mb-1 text-orange-500" />
             <p className="text-xs text-muted-foreground">فيرمو ({summary?.transferCount || 0})</p>
@@ -219,6 +221,14 @@ const ManagerTreasury = () => {
           </CardContent>
         </Card>
       </div>
+
+      {detailsCategory && (
+        <PaymentMethodDetailsDialog
+          open={!!detailsCategory}
+          onOpenChange={(open) => !open && setDetailsCategory(null)}
+          category={detailsCategory}
+        />
+      )}
 
       {/* Total & Remaining */}
       <div className="grid grid-cols-3 gap-3">
