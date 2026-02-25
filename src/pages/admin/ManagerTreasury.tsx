@@ -18,8 +18,8 @@ import { ar } from 'date-fns/locale';
 const paymentMethodLabels: Record<string, { ar: string; icon: any }> = {
   cash: { ar: 'نقدي', icon: Banknote },
   check: { ar: 'شيك', icon: CreditCard },
-  bank_receipt: { ar: 'وصل تحويل بنكي', icon: Receipt },
-  bank_transfer: { ar: 'تحويل بنكي مباشر', icon: ArrowUpRight },
+  bank_receipt: { ar: 'فيرسمو (إيداع نقدي بالبنك)', icon: Receipt },
+  bank_transfer: { ar: 'فيرمو (تحويل بنكي)', icon: ArrowUpRight },
 };
 
 const ManagerTreasury = () => {
@@ -151,15 +151,17 @@ const ManagerTreasury = () => {
                   </div>
                 </div>
                 <div className="p-3 rounded-lg bg-muted/50 space-y-3">
-                  <p className="font-medium text-sm">🧾 وصولات تحويل بنكي</p>
+                  <p className="font-medium text-sm">🧾 فيرسمو (إيداع نقدي بالبنك)</p>
+                  <p className="text-[10px] text-muted-foreground">العميل يأخذ الكاش ويودعه في حساب الشركة بالبنك</p>
                   <div className="grid grid-cols-2 gap-2">
-                    <div><Label className="text-xs">قيمة الوصولات</Label><Input type="number" placeholder="0" value={handoverForm.receipts_amount} onChange={e => setHandoverForm(f => ({ ...f, receipts_amount: e.target.value }))} /></div>
+                    <div><Label className="text-xs">قيمة الفيرسمو</Label><Input type="number" placeholder="0" value={handoverForm.receipts_amount} onChange={e => setHandoverForm(f => ({ ...f, receipts_amount: e.target.value }))} /></div>
                     <div><Label className="text-xs">عدد الوصولات</Label><Input type="number" placeholder="0" value={handoverForm.receipt_count} onChange={e => setHandoverForm(f => ({ ...f, receipt_count: e.target.value }))} /></div>
                   </div>
                 </div>
                 <div className="p-3 rounded-lg bg-muted/50 space-y-2">
-                  <p className="font-medium text-sm">🏦 تحويل بنكي مباشر</p>
-                  <div><Label className="text-xs">قيمة التحويلات</Label><Input type="number" placeholder="0" value={handoverForm.transfers_amount} onChange={e => setHandoverForm(f => ({ ...f, transfers_amount: e.target.value }))} /></div>
+                  <p className="font-medium text-sm">🏦 فيرمو (تحويل بنكي)</p>
+                  <p className="text-[10px] text-muted-foreground">العميل يحوّل من حسابه البنكي إلى حساب الشركة</p>
+                  <div><Label className="text-xs">قيمة الفيرمو</Label><Input type="number" placeholder="0" value={handoverForm.transfers_amount} onChange={e => setHandoverForm(f => ({ ...f, transfers_amount: e.target.value }))} /></div>
                 </div>
                 <div><Label>ملاحظات</Label><Textarea value={handoverForm.notes} onChange={e => setHandoverForm(f => ({ ...f, notes: e.target.value }))} /></div>
                 <Button onClick={handleHandover} disabled={createHandover.isPending} className="w-full">تسجيل التسليم</Button>
@@ -188,14 +190,14 @@ const ManagerTreasury = () => {
         <Card className="border-purple-500/30 bg-purple-500/5">
           <CardContent className="p-3 text-center">
             <Receipt className="w-5 h-5 mx-auto mb-1 text-purple-500" />
-            <p className="text-xs text-muted-foreground">وصولات ({summary?.receiptCount || 0})</p>
+            <p className="text-xs text-muted-foreground">فيرسمو ({summary?.receiptCount || 0})</p>
             <p className="text-lg font-bold text-purple-500">{summary?.bank_receipt?.toLocaleString() || 0} د.ج</p>
           </CardContent>
         </Card>
         <Card className="border-orange-500/30 bg-orange-500/5">
           <CardContent className="p-3 text-center">
             <ArrowUpRight className="w-5 h-5 mx-auto mb-1 text-orange-500" />
-            <p className="text-xs text-muted-foreground">تحويلات بنكية</p>
+            <p className="text-xs text-muted-foreground">فيرمو</p>
             <p className="text-lg font-bold text-orange-500">{summary?.bank_transfer?.toLocaleString() || 0} د.ج</p>
           </CardContent>
         </Card>
@@ -285,8 +287,8 @@ const ManagerTreasury = () => {
                     {Number(h.cash_invoice1 ?? 0) > 0 && <p>كاش ف1: {Number(h.cash_invoice1).toLocaleString()} د.ج</p>}
                     {Number(h.cash_invoice2 ?? 0) > 0 && <p>كاش ف2: {Number(h.cash_invoice2).toLocaleString()} د.ج</p>}
                     {Number(h.checks_amount ?? 0) > 0 && <p>شيكات: {Number(h.checks_amount).toLocaleString()} د.ج ({h.check_count ?? 0})</p>}
-                    {Number(h.receipts_amount ?? 0) > 0 && <p>وصولات: {Number(h.receipts_amount).toLocaleString()} د.ج ({h.receipt_count ?? 0})</p>}
-                    {Number(h.transfers_amount ?? 0) > 0 && <p>تحويلات: {Number(h.transfers_amount).toLocaleString()} د.ج</p>}
+                    {Number(h.receipts_amount ?? 0) > 0 && <p>فيرسمو: {Number(h.receipts_amount).toLocaleString()} د.ج ({h.receipt_count ?? 0})</p>}
+                    {Number(h.transfers_amount ?? 0) > 0 && <p>فيرمو: {Number(h.transfers_amount).toLocaleString()} د.ج</p>}
                   </div>
                   {h.notes && <p className="text-xs text-muted-foreground">{h.notes}</p>}
                 </CardContent>
