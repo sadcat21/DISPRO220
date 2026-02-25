@@ -555,7 +555,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
                         type="button"
                         variant="default"
                         size="sm"
-                        className={`font-mono uppercase text-xs ${isActive ? 'ring-2 ring-offset-1 ring-foreground/40' : 'opacity-60 hover:opacity-100'}`}
+                        className={`font-mono uppercase text-xs hover:opacity-100 ${isActive ? 'ring-2 ring-offset-1 ring-foreground/40' : ''}`}
                         style={{ backgroundColor: colors.bg, borderColor: colors.bg, color: colors.text }}
                         onClick={() => setCustomerType(isActive ? '' : entry.ar)}
                       >
