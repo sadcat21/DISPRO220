@@ -391,7 +391,7 @@ const Customers: React.FC = () => {
                   type="button"
                   variant="default"
                   size="sm"
-                  className={`text-xs h-7 px-2.5 font-mono uppercase ${isActive ? 'ring-2 ring-offset-1 ring-foreground/40' : 'opacity-80 hover:opacity-100'}`}
+                  className={`text-xs h-7 px-2.5 font-mono uppercase hover:opacity-100 ${isActive ? 'ring-2 ring-offset-1 ring-foreground/40' : ''}`}
                   style={{ backgroundColor: colors.bg, borderColor: colors.bg, color: colors.text }}
                   onClick={() => setTypeFilter(ct.ar)}
                 >
