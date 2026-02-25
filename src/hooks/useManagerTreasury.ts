@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { StampPriceTier } from '@/types/stamp';
+import { calculateStampAmount } from '@/hooks/useStampTiers';
 
 export interface TreasuryEntry {
   id: string;
@@ -82,7 +84,14 @@ export const useTreasurySummary = () => {
   return useQuery({
     queryKey: ['treasury-summary', activeBranch?.id],
     queryFn: async () => {
-      // Get delivered orders to calculate payment method totals
+      // Get stamp tiers
+      const { data: stampTiers } = await supabase
+        .from('stamp_price_tiers')
+        .select('*')
+        .eq('is_active', true)
+        .order('min_amount', { ascending: true });
+
+      // Get delivered orders
       let oQuery = supabase
         .from('orders')
         .select('id, payment_type, invoice_payment_method, payment_status, total_amount, partial_amount, order_items(total_price)')
@@ -109,15 +118,19 @@ export const useTreasurySummary = () => {
       (orders || []).forEach((o: any) => {
         const amount = Number(o.total_amount || 0);
         const itemsSubtotal = (o.order_items || []).reduce((s: number, i: any) => s + Number(i.total_price || 0), 0);
-        const stampAmount = Math.max(0, amount - itemsSubtotal);
         
         if (o.payment_type === 'with_invoice') {
           switch (o.invoice_payment_method) {
-            case 'cash':
+            case 'cash': {
               summary.cash_invoice1 += amount;
               summary.cash_invoice1_count++;
-              summary.cash_invoice1_stamp += stampAmount;
+              // Calculate stamp using tiers
+              if (stampTiers?.length) {
+                const baseAmount = itemsSubtotal > 0 ? itemsSubtotal : amount;
+                summary.cash_invoice1_stamp += calculateStampAmount(baseAmount, stampTiers as StampPriceTier[]);
+              }
               break;
+            }
             case 'check':
               summary.check += amount;
               summary.checkCount++;
@@ -133,7 +146,10 @@ export const useTreasurySummary = () => {
             default:
               summary.cash_invoice1 += amount;
               summary.cash_invoice1_count++;
-              summary.cash_invoice1_stamp += stampAmount;
+              if (stampTiers?.length) {
+                const baseAmount = itemsSubtotal > 0 ? itemsSubtotal : amount;
+                summary.cash_invoice1_stamp += calculateStampAmount(baseAmount, stampTiers as StampPriceTier[]);
+              }
               break;
           }
         } else {
