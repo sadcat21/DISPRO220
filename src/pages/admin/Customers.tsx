@@ -33,6 +33,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { fr } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 // Normalize Arabic text: treat all alef variants and hamza as the same
@@ -276,7 +278,7 @@ const Customers: React.FC = () => {
           } as any);
         if (error) throw error;
         trackVisit({ customerId: customerToDelete.id, operationType: 'delete_customer', notes: `طلب حذف زبون: ${customerToDelete.name}` });
-        toast.info('تم إرسال طلب حذف العميل للمراجعة.');
+        toast.info(t('customers.delete_request_sent'));
         setCustomerToDelete(null);
       } catch (error: any) {
         console.error('Error creating delete request:', error);
@@ -291,7 +293,7 @@ const Customers: React.FC = () => {
   const openLastOrderDetails = async (customer: Customer) => {
     const lastOrder = lastOrders[customer.id];
     if (!lastOrder) {
-      toast.info('لا توجد طلبيات سابقة لهذا العميل');
+      toast.info(t('customers.no_previous_orders'));
       return;
     }
     setLastOrderDialogCustomer(customer);
@@ -312,11 +314,11 @@ const Customers: React.FC = () => {
 
   const getCustomerCompletion = (customer: Customer) => {
     const required = [
-      { key: 'name', label: 'الاسم', icon: User, filled: !!customer.name?.trim() },
-      { key: 'phone', label: 'الهاتف', icon: Phone, filled: !!customer.phone?.trim() },
-      { key: 'store_name', label: 'المحل', icon: Store, filled: !!customer.store_name?.trim() },
-      { key: 'sector_id', label: 'السكتور', icon: MapPin, filled: !!customer.sector_id },
-      { key: 'location', label: 'الموقع GPS', icon: Navigation, filled: !!(customer.latitude && customer.longitude) },
+      { key: 'name', label: t('customers.field_name'), icon: User, filled: !!customer.name?.trim() },
+      { key: 'phone', label: t('customers.field_phone'), icon: Phone, filled: !!customer.phone?.trim() },
+      { key: 'store_name', label: t('customers.field_store'), icon: Store, filled: !!customer.store_name?.trim() },
+      { key: 'sector_id', label: t('customers.field_sector'), icon: MapPin, filled: !!customer.sector_id },
+      { key: 'location', label: t('customers.field_gps'), icon: Navigation, filled: !!(customer.latitude && customer.longitude) },
     ];
     const optional = [
       { key: 'address', filled: !!customer.address?.trim() },
@@ -349,11 +351,11 @@ const Customers: React.FC = () => {
         {sectors.length > 0 && (
           <Select value={sectorFilter} onValueChange={setSectorFilter}>
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="فلترة حسب السكتور" />
+              <SelectValue placeholder={t('customers.filter_by_sector')} />
             </SelectTrigger>
             <SelectContent className="bg-popover z-[100]">
-              <SelectItem value="all">كل السكتورات</SelectItem>
-              <SelectItem value="none">بدون سكتور</SelectItem>
+              <SelectItem value="all">{t('customers.all_sectors')}</SelectItem>
+              <SelectItem value="none">{t('customers.no_sector')}</SelectItem>
               {sectors.map(s => (
                 <SelectItem key={s.id} value={s.id}>{getLocalizedName(s, language)}</SelectItem>
               ))}
@@ -369,7 +371,7 @@ const Customers: React.FC = () => {
               className="text-xs h-7 px-2.5"
               onClick={() => setTypeFilter('all')}
             >
-              الكل
+              {t('customers.all')}
             </Button>
             <Button
               type="button"
@@ -378,7 +380,7 @@ const Customers: React.FC = () => {
               className="text-xs h-7 px-2.5"
               onClick={() => setTypeFilter('none')}
             >
-              بدون
+              {t('customers.none')}
             </Button>
             {customerTypes.map((ct, idx) => {
               const color = getCustomerTypeColor(ct.short, idx);
@@ -400,7 +402,7 @@ const Customers: React.FC = () => {
           </div>
         )}
         <div className="flex items-center justify-between">
-          <label htmlFor="expand-all-sectors" className="text-xs text-muted-foreground">فتح كل الأقسام</label>
+          <label htmlFor="expand-all-sectors" className="text-xs text-muted-foreground">{t('customers.expand_all')}</label>
           <Switch id="expand-all-sectors" checked={expandAllSectors} onCheckedChange={setExpandAllSectors} />
         </div>
       </div>
@@ -425,10 +427,10 @@ const Customers: React.FC = () => {
 
           const groups: { key: string; label: string; customers: Customer[] }[] = [];
           sectorIds.forEach(sid => {
-            groups.push({ key: sid, label: getSectorName(sid) || 'غير معروف', customers: sectorGroups.get(sid)! });
+            groups.push({ key: sid, label: getSectorName(sid) || t('customers.unknown'), customers: sectorGroups.get(sid)! });
           });
           if (sectorGroups.has(null) && sectorGroups.get(null)!.length > 0) {
-            groups.push({ key: 'no-sector', label: 'بدون سكتور', customers: sectorGroups.get(null)! });
+            groups.push({ key: 'no-sector', label: t('customers.no_sector'), customers: sectorGroups.get(null)! });
           }
 
           return groups.map(group => (
@@ -489,9 +491,9 @@ const Customers: React.FC = () => {
                       </Badge>
                     )}
                     <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                      {customer.default_payment_type === 'with_invoice' ? 'فاتورة 1' :
-                        customer.default_price_subtype === 'super_gros' ? 'سوبر غرو' :
-                          customer.default_price_subtype === 'retail' ? 'تجزئة' : 'غرو'
+                      {customer.default_payment_type === 'with_invoice' ? t('customers.invoice_1') :
+                        customer.default_price_subtype === 'super_gros' ? t('customers.super_gros') :
+                          customer.default_price_subtype === 'retail' ? t('customers.retail') : t('customers.wholesale')
                       }
                     </Badge>
                   </div>
@@ -523,11 +525,11 @@ const Customers: React.FC = () => {
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-0.5 border-primary/20">
                         <Calendar className="w-2.5 h-2.5" />
-                        آخر طلبية: {format(new Date(lastOrder.created_at), 'dd MMM yyyy', { locale: ar })}
-                        {' '}({differenceInDays(new Date(), new Date(lastOrder.created_at))} يوم)
+                        {t('customers.last_order_label')} {format(new Date(lastOrder.created_at), 'dd MMM yyyy', { locale: language === 'ar' ? ar : language === 'fr' ? fr : enUS })}
+                        {' '}({differenceInDays(new Date(), new Date(lastOrder.created_at))} {t('customers.days')})
                       </Badge>
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-0.5">
-                        {Number(lastOrder.total_amount || 0).toLocaleString()} دج ({lastOrder.itemCount || 0} منتج)
+                        {Number(lastOrder.total_amount || 0).toLocaleString()} {t('customers.currency')} ({lastOrder.itemCount || 0} {t('customers.product_count')})
                       </Badge>
                     </div>
                   )}
@@ -583,7 +585,7 @@ const Customers: React.FC = () => {
                 </Button>
                 {/* Last Order Details button */}
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
-                  onClick={() => openLastOrderDetails(customer)} title="آخر طلبية">
+                  onClick={() => openLastOrderDetails(customer)} title={t('customers.last_order')}>
                   <ShoppingBag className="w-3.5 h-3.5" />
                 </Button>
                 {customer.latitude && customer.longitude && (
@@ -639,7 +641,7 @@ const Customers: React.FC = () => {
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={() => setShowSectorsDialog(true)}>
             <MapPin className="w-4 h-4 ml-1" />
-            السكتورات
+            {t('customers.sectors')}
           </Button>
           <Button size="sm" onClick={() => setShowAddDialog(true)}>
             <Plus className="w-4 h-4 ml-2" />
@@ -667,7 +669,7 @@ const Customers: React.FC = () => {
           <Button variant="outline" className="w-full justify-between">
             <span className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-primary" />
-              خريطة المواقع
+              {t('customers.locations_map')}
             </span>
             <ChevronDown className="w-4 h-4" />
           </Button>
@@ -687,7 +689,7 @@ const Customers: React.FC = () => {
           <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="list">{t('customers.title')}</TabsTrigger>
             <TabsTrigger value="requests" className="relative">
-              طلبات المراجعة
+              {t('customers.review_requests')}
               {requestsCount > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] text-destructive-foreground">
                   {requestsCount}
@@ -767,7 +769,7 @@ const Customers: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-sm">
               <ShoppingBag className="w-4 h-4 text-primary" />
-              آخر طلبية - {lastOrderDialogCustomer?.name}
+              {t('customers.last_order')} - {lastOrderDialogCustomer?.name}
             </DialogTitle>
           </DialogHeader>
           {loadingLastOrder ? (
@@ -778,30 +780,30 @@ const Customers: React.FC = () => {
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div className="bg-muted/50 rounded-lg p-2">
-                  <p className="text-[10px] text-muted-foreground">التاريخ</p>
+                  <p className="text-[10px] text-muted-foreground">{t('customers.date_label')}</p>
                   <p className="font-semibold text-xs">
-                    {format(new Date(lastOrderDetails.created_at), 'dd MMM yyyy', { locale: ar })}
-                    {' '}({differenceInDays(new Date(), new Date(lastOrderDetails.created_at))} يوم)
+                    {format(new Date(lastOrderDetails.created_at), 'dd MMM yyyy', { locale: language === 'ar' ? ar : language === 'fr' ? fr : enUS })}
+                    {' '}({differenceInDays(new Date(), new Date(lastOrderDetails.created_at))} {t('customers.days')})
                   </p>
                 </div>
                 <div className="bg-muted/50 rounded-lg p-2">
-                  <p className="text-[10px] text-muted-foreground">المبلغ الإجمالي</p>
+                  <p className="text-[10px] text-muted-foreground">{t('customers.total_amount')}</p>
                   <p className="font-semibold text-xs">
-                    {Number(lastOrderDetails.total_amount || 0).toLocaleString()} دج
-                    {' '}({lastOrderDetails.items?.length || 0} منتج)
+                    {Number(lastOrderDetails.total_amount || 0).toLocaleString()} {t('customers.currency')}
+                    {' '}({lastOrderDetails.items?.length || 0} {t('customers.product_count')})
                   </p>
                 </div>
                 <div className="bg-muted/50 rounded-lg p-2">
-                  <p className="text-[10px] text-muted-foreground">حالة الدفع</p>
+                  <p className="text-[10px] text-muted-foreground">{t('customers.payment_status')}</p>
                   <p className="font-semibold text-xs">
-                    {lastOrderDetails.payment_status === 'cash' ? '💰 نقدي' :
-                      lastOrderDetails.payment_status === 'credit' ? '📋 دين' :
-                        lastOrderDetails.payment_status === 'check' ? '🏦 شيك' :
-                          lastOrderDetails.payment_status === 'partial' ? '⚖️ جزئي' : '⏳ معلق'}
+                    {lastOrderDetails.payment_status === 'cash' ? t('customers.payment_cash') :
+                      lastOrderDetails.payment_status === 'credit' ? t('customers.payment_credit') :
+                        lastOrderDetails.payment_status === 'check' ? t('customers.payment_check') :
+                          lastOrderDetails.payment_status === 'partial' ? t('customers.payment_partial') : t('customers.payment_pending')}
                   </p>
                 </div>
                 <div className="bg-muted/50 rounded-lg p-2">
-                  <p className="text-[10px] text-muted-foreground">عدد المنتجات</p>
+                  <p className="text-[10px] text-muted-foreground">{t('customers.product_count_label')}</p>
                   <p className="font-semibold text-xs">{lastOrderDetails.items?.length || 0}</p>
                 </div>
               </div>
@@ -810,14 +812,14 @@ const Customers: React.FC = () => {
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold flex items-center gap-1">
                     <Package className="w-3.5 h-3.5" />
-                    المنتجات
+                    {t('customers.products')}
                   </Label>
                   {lastOrderDetails.items.map((item: any, idx: number) => (
                     <div key={idx} className="flex items-center justify-between bg-muted/30 rounded-lg px-2 py-1.5 text-xs">
-                      <span className="font-medium">{item.product?.name || 'منتج'}</span>
+                      <span className="font-medium">{item.product?.name || t('customers.product')}</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">{item.quantity} وحدة</span>
-                        <span className="font-semibold">{Number(item.total_price || 0).toLocaleString()} دج</span>
+                        <span className="text-muted-foreground">{item.quantity} {t('customers.unit')}</span>
+                        <span className="font-semibold">{Number(item.total_price || 0).toLocaleString()} {t('customers.currency')}</span>
                       </div>
                     </div>
                   ))}
@@ -825,7 +827,7 @@ const Customers: React.FC = () => {
               )}
             </div>
           ) : (
-            <p className="text-center text-muted-foreground py-4 text-sm">لا توجد طلبيات سابقة</p>
+            <p className="text-center text-muted-foreground py-4 text-sm">{t('customers.no_previous_orders_short')}</p>
           )}
         </DialogContent>
       </Dialog>
