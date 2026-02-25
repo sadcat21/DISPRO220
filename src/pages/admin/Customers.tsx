@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Customer, Branch } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getLocalizedName } from '@/utils/sectorName';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -350,7 +351,7 @@ const Customers: React.FC = () => {
               <SelectItem value="all">كل السكتورات</SelectItem>
               <SelectItem value="none">بدون سكتور</SelectItem>
               {sectors.map(s => (
-                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                <SelectItem key={s.id} value={s.id}>{getLocalizedName(s, language)}</SelectItem>
               ))}
             </SelectContent>
           </Select>

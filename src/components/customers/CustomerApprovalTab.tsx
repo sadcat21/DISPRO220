@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getLocalizedName } from '@/utils/sectorName';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -42,7 +43,7 @@ interface SectorZone {
 
 const CustomerApprovalTab: React.FC = () => {
     const { workerId, role, activeBranch } = useAuth();
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const queryClient = useQueryClient();
     const createDebt = useCreateDebt();
     const updateDebtPayment = useUpdateDebtPayment();
@@ -478,7 +479,7 @@ const CustomerApprovalTab: React.FC = () => {
                                                 <SelectContent className="bg-popover z-[10050]">
                                                     <SelectItem value="none">بدون سكتور</SelectItem>
                                                     {sectors.map(s => (
-                                                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                                        <SelectItem key={s.id} value={s.id}>{getLocalizedName(s, language)}</SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
@@ -506,7 +507,7 @@ const CustomerApprovalTab: React.FC = () => {
                                                     <SelectContent className="bg-popover z-[10050]">
                                                         <SelectItem value="none">بدون تحديد</SelectItem>
                                                         {zones.map(z => (
-                                                            <SelectItem key={z.id} value={z.id}>{z.name}</SelectItem>
+                                                            <SelectItem key={z.id} value={z.id}>{getLocalizedName(z, language)}</SelectItem>
                                                         ))}
                                                         <SelectItem value="__add_new" className="text-primary font-semibold">
                                                             إضافة منطقة لـ <span className="text-foreground">{sectors.find(s => s.id === editPayload.sector_id)?.name || 'السكتور'}</span>

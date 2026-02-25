@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getLocalizedName } from '@/utils/sectorName';
 import { useMyOrders, useOrders as useAllOrders, useOrderItems, useAssignOrder, useDeleteOrder, useCancelOrder } from '@/hooks/useOrders';
 import { format } from 'date-fns';
 import { ar, fr, enUS } from 'date-fns/locale';
@@ -105,9 +106,9 @@ const OrdersContent: React.FC = () => {
   const { sectors } = useSectors();
   const sectorMap = useMemo(() => {
     const map = new Map<string, string>();
-    sectors.forEach(s => map.set(s.id, s.name));
+    sectors.forEach(s => map.set(s.id, getLocalizedName(s, language)));
     return map;
-  }, [sectors]);
+  }, [sectors, language]);
 
   // UI override checks for actions
   const isCreateOrderHidden = useIsElementHidden('button', 'create_order');

@@ -9,6 +9,7 @@ import { Search, UserPlus, User, ChevronLeft, ChevronDown, ChevronUp, Loader2, X
 import { Switch } from '@/components/ui/switch';
 import { Customer, Sector } from '@/types/database';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getLocalizedName } from '@/utils/sectorName';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -40,7 +41,7 @@ const CustomerPickerDialog: React.FC<CustomerPickerDialogProps> = ({
   onSelect,
   onAddNew,
 }) => {
-  const { t, dir } = useLanguage();
+  const { t, dir, language } = useLanguage();
   const [search, setSearch] = useState('');
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
   const [autoExpand, setAutoExpand] = useState(false);
@@ -103,9 +104,9 @@ const CustomerPickerDialog: React.FC<CustomerPickerDialogProps> = ({
   // Build sector map for quick lookup
   const sectorMap = useMemo(() => {
     const map = new Map<string, string>();
-    sectors.forEach(s => map.set(s.id, s.name));
+    sectors.forEach(s => map.set(s.id, getLocalizedName(s, language)));
     return map;
-  }, [sectors]);
+  }, [sectors, language]);
 
   // Group customers by sector
   const groupedCustomers = useMemo((): SectorGroup[] => {
