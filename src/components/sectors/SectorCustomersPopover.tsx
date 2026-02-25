@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { MapPin, User, Truck, ShoppingCart, MapPinOff, Navigation, Loader2, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { MapPin, User, Truck, ShoppingCart, MapPinOff, Navigation, Loader2, Eye, EyeOff, CheckCircle, PackageX, PackageCheck } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -93,7 +93,9 @@ const SectorCustomersPopover: React.FC = () => {
     refetchInterval: 10000,
   });
 
-  // Fetch today's orders by this worker
+  const isAdmin = role === 'admin' || role === 'branch_admin';
+
+  // Fetch today's orders by this worker (for sales categorization)
   const { data: todayOrders = [] } = useQuery({
     queryKey: ['today-orders-customers', workerId, todayStart],
     queryFn: async () => {
@@ -110,10 +112,28 @@ const SectorCustomersPopover: React.FC = () => {
     refetchInterval: 10000,
   });
 
-  const isAdmin = role === 'admin' || role === 'branch_admin';
+  // Fetch today's delivered orders (for delivery categorization)
+  const { data: todayDeliveredOrders = [] } = useQuery({
+    queryKey: ['today-delivered-orders', workerId, todayStart, isAdmin],
+    queryFn: async () => {
+      let query = supabase
+        .from('orders')
+        .select('customer_id, status, assigned_worker_id')
+        .gte('updated_at', todayStart)
+        .eq('status', 'delivered');
+      if (!isAdmin) {
+        query = query.eq('assigned_worker_id', workerId!);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!workerId && isOpen,
+    refetchInterval: 10000,
+  });
 
   const mySectors = useMemo(() => {
-    if (isAdmin) return sectors; // Admins see all sectors
+    if (isAdmin) return sectors;
     return sectors.filter(s => 
       s.delivery_worker_id === workerId || s.sales_worker_id === workerId
     );
@@ -160,6 +180,27 @@ const SectorCustomersPopover: React.FC = () => {
     return salesCustomers.filter(c => orderedCustomerIds.has(c.id));
   }, [salesCustomers, orderedCustomerIds]);
 
+  // Categorize delivery customers into sub-tabs
+  const deliveredCustomerIds = useMemo(() => {
+    return new Set(todayDeliveredOrders.map(o => o.customer_id).filter(Boolean));
+  }, [todayDeliveredOrders]);
+
+  const deliveryVisitedCustomerIds = useMemo(() => {
+    return new Set(todayVisits.filter(v => v.operation_type === 'delivery_visit').map(v => v.customer_id).filter(Boolean));
+  }, [todayVisits]);
+
+  const deliveryNotDone = useMemo(() => {
+    return deliveryCustomers.filter(c => !deliveredCustomerIds.has(c.id) && !deliveryVisitedCustomerIds.has(c.id));
+  }, [deliveryCustomers, deliveredCustomerIds, deliveryVisitedCustomerIds]);
+
+  const deliveryNotReceived = useMemo(() => {
+    return deliveryCustomers.filter(c => deliveryVisitedCustomerIds.has(c.id) && !deliveredCustomerIds.has(c.id));
+  }, [deliveryCustomers, deliveryVisitedCustomerIds, deliveredCustomerIds]);
+
+  const deliveryReceived = useMemo(() => {
+    return deliveryCustomers.filter(c => deliveredCustomerIds.has(c.id));
+  }, [deliveryCustomers, deliveredCustomerIds]);
+
   const totalCount = deliveryCustomers.length + salesCustomers.length;
 
   if (mySectors.length === 0) return null;
@@ -168,6 +209,23 @@ const SectorCustomersPopover: React.FC = () => {
     setIsOpen(false);
     if (tab === 'sales') {
       navigate('/orders', { state: { customerId: customer.id } });
+    } else {
+      navigate('/my-deliveries', { state: { customerId: customer.id, action: 'delivery' } });
+    }
+  };
+
+  const handleDeliveryVisitWithoutDelivery = async (customer: any) => {
+    const allowed = await checkLocationBeforeAction(customer);
+    if (!allowed) return;
+    try {
+      await trackVisit({
+        customerId: customer.id,
+        operationType: 'delivery_visit',
+        notes: `زيارة توصيل بدون تسليم - ${customer.store_name || customer.name}`,
+      });
+      toast.success(`تم تسجيل زيارة بدون تسليم لـ ${customer.store_name || customer.name}`);
+    } catch {
+      toast.error('فشل في تسجيل الزيارة');
     }
   };
 
@@ -254,15 +312,58 @@ const SectorCustomersPopover: React.FC = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="delivery" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-              <CustomerList
-                customers={deliveryCustomers}
-                emptyMessage="لا توجد عمليات توصيل اليوم"
-                onCustomerClick={(c) => handleCustomerClick(c, 'delivery')}
-                onVisitWithoutOrder={handleVisitWithoutOrder}
-                showVisitButton={false}
-                checkingLocationFor={checkingLocationFor}
-              />
+          <TabsContent value="delivery" className="m-0 flex-1 min-h-0">
+            <Tabs defaultValue="not-delivered" className="flex flex-col h-full min-h-0">
+              <TabsList className="w-full rounded-none border-b shrink-0 h-auto p-0.5 gap-0.5">
+                <TabsTrigger value="not-delivered" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-orange-100 data-[state=active]:text-orange-700">
+                  <Truck className="w-3 h-3" />
+                  بدون توصيل
+                  {deliveryNotDone.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-orange-500">{deliveryNotDone.length}</Badge>}
+                </TabsTrigger>
+                <TabsTrigger value="not-received" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-amber-100 data-[state=active]:text-amber-700">
+                  <PackageX className="w-3 h-3" />
+                  لم يتم الاستلام
+                  {deliveryNotReceived.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-amber-500">{deliveryNotReceived.length}</Badge>}
+                </TabsTrigger>
+                <TabsTrigger value="received" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-green-100 data-[state=active]:text-green-700">
+                  <PackageCheck className="w-3 h-3" />
+                  تم الاستلام
+                  {deliveryReceived.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-green-500">{deliveryReceived.length}</Badge>}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="not-delivered" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
+                <CustomerList
+                  customers={deliveryNotDone}
+                  emptyMessage="تم توصيل جميع العملاء ✓"
+                  onCustomerClick={(c) => handleCustomerClick(c, 'delivery')}
+                  onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery}
+                  showVisitButton={true}
+                  visitButtonLabel="بدون تسليم"
+                  checkingLocationFor={checkingLocationFor}
+                />
+              </TabsContent>
+              <TabsContent value="not-received" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
+                <CustomerList
+                  customers={deliveryNotReceived}
+                  emptyMessage="لا توجد زيارات بدون تسليم"
+                  onCustomerClick={(c) => handleCustomerClick(c, 'delivery')}
+                  onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery}
+                  showVisitButton={false}
+                  checkingLocationFor={checkingLocationFor}
+                />
+              </TabsContent>
+              <TabsContent value="received" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
+                <CustomerList
+                  customers={deliveryReceived}
+                  emptyMessage="لا توجد توصيلات بعد"
+                  onCustomerClick={(c) => handleCustomerClick(c, 'delivery')}
+                  onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery}
+                  showVisitButton={false}
+                  checkingLocationFor={checkingLocationFor}
+                />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           <TabsContent value="sales" className="m-0 flex-1 min-h-0">
@@ -329,8 +430,9 @@ const CustomerList: React.FC<{
   onCustomerClick: (c: any) => void;
   onVisitWithoutOrder: (c: any) => void;
   showVisitButton: boolean;
+  visitButtonLabel?: string;
   checkingLocationFor: string | null;
-}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, showVisitButton, checkingLocationFor }) => {
+}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, showVisitButton, visitButtonLabel, checkingLocationFor }) => {
   if (customers.length === 0) {
     return <div className="p-6 text-center text-sm text-muted-foreground">{emptyMessage}</div>;
   }
@@ -380,7 +482,7 @@ const CustomerList: React.FC<{
                 ) : (
                   <MapPinOff className="w-3 h-3" />
                 )}
-                زيارة بدون طلبية
+                {visitButtonLabel || 'زيارة بدون طلبية'}
               </Button>
             )}
           </div>
