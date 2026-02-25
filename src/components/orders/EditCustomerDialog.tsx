@@ -19,6 +19,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { reverseGeocode } from '@/utils/geoUtils';
 import { useCustomerTypes } from '@/hooks/useCustomerTypes';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getLocalizedName } from '@/utils/sectorName';
 
 interface EditCustomerDialogProps {
   open: boolean;
@@ -572,7 +573,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
                   </SelectTrigger>
                   <SelectContent position="popper" className="bg-popover z-[10050] max-h-60">
                     {sectors.map(s => (
-                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                      <SelectItem key={s.id} value={s.id}>{getLocalizedName(s, language)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -607,10 +608,10 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
                     <SelectContent position="popper" className="bg-popover z-[10050] max-h-60">
                       <SelectItem value="none">بدون تحديد</SelectItem>
                       {zones.map(z => (
-                        <SelectItem key={z.id} value={z.id}>{z.name}</SelectItem>
+                        <SelectItem key={z.id} value={z.id}>{getLocalizedName(z, language)}</SelectItem>
                       ))}
                       <SelectItem value="__add_new" className="text-primary font-semibold">
-                        إضافة منطقة لـ <span className="text-foreground">{sectors.find(s => s.id === sectorId)?.name || 'السكتور'}</span>
+                        إضافة منطقة لـ <span className="text-foreground">{(() => { const found = sectors.find(s => s.id === sectorId); return found ? getLocalizedName(found, language) : 'السكتور'; })()}</span>
                       </SelectItem>
                     </SelectContent>
                   </Select>
