@@ -1056,6 +1056,161 @@ export type Database = {
           },
         ]
       }
+      manager_handovers: {
+        Row: {
+          amount: number
+          branch_id: string | null
+          check_count: number | null
+          created_at: string
+          handover_date: string
+          id: string
+          manager_id: string
+          notes: string | null
+          payment_method: string
+          receipt_count: number | null
+          received_by: string | null
+        }
+        Insert: {
+          amount?: number
+          branch_id?: string | null
+          check_count?: number | null
+          created_at?: string
+          handover_date?: string
+          id?: string
+          manager_id: string
+          notes?: string | null
+          payment_method: string
+          receipt_count?: number | null
+          received_by?: string | null
+        }
+        Update: {
+          amount?: number
+          branch_id?: string | null
+          check_count?: number | null
+          created_at?: string
+          handover_date?: string
+          id?: string
+          manager_id?: string
+          notes?: string | null
+          payment_method?: string
+          receipt_count?: number | null
+          received_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manager_handovers_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_handovers_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_handovers_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_handovers_received_by_fkey"
+            columns: ["received_by"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_handovers_received_by_fkey"
+            columns: ["received_by"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manager_treasury: {
+        Row: {
+          amount: number
+          branch_id: string | null
+          check_bank: string | null
+          check_number: string | null
+          created_at: string
+          id: string
+          manager_id: string
+          notes: string | null
+          payment_method: string
+          receipt_number: string | null
+          session_id: string | null
+          source_type: string
+          transfer_reference: string | null
+        }
+        Insert: {
+          amount?: number
+          branch_id?: string | null
+          check_bank?: string | null
+          check_number?: string | null
+          created_at?: string
+          id?: string
+          manager_id: string
+          notes?: string | null
+          payment_method: string
+          receipt_number?: string | null
+          session_id?: string | null
+          source_type?: string
+          transfer_reference?: string | null
+        }
+        Update: {
+          amount?: number
+          branch_id?: string | null
+          check_bank?: string | null
+          check_number?: string | null
+          created_at?: string
+          id?: string
+          manager_id?: string
+          notes?: string | null
+          payment_method?: string
+          receipt_number?: string | null
+          session_id?: string | null
+          source_type?: string
+          transfer_reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manager_treasury_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_treasury_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_treasury_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_treasury_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       navbar_preferences: {
         Row: {
           created_at: string

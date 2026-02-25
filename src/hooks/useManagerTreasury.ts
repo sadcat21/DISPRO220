@@ -1,0 +1,200 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+
+export interface TreasuryEntry {
+  id: string;
+  branch_id: string | null;
+  manager_id: string;
+  session_id: string | null;
+  source_type: string;
+  payment_method: string;
+  amount: number;
+  check_number: string | null;
+  check_bank: string | null;
+  receipt_number: string | null;
+  transfer_reference: string | null;
+  notes: string | null;
+  created_at: string;
+  session?: { id: string; worker_id: string; worker?: { full_name: string } };
+}
+
+export interface HandoverEntry {
+  id: string;
+  branch_id: string | null;
+  manager_id: string;
+  received_by: string | null;
+  payment_method: string;
+  amount: number;
+  check_count: number;
+  receipt_count: number;
+  notes: string | null;
+  handover_date: string;
+  created_at: string;
+  receiver?: { id: string; full_name: string };
+}
+
+export interface TreasurySummary {
+  cash: number;
+  check: number;
+  checkCount: number;
+  bank_receipt: number;
+  receiptCount: number;
+  bank_transfer: number;
+  total: number;
+  handedOver: number;
+  remaining: number;
+}
+
+export const useManagerTreasury = () => {
+  const { activeBranch } = useAuth();
+  return useQuery({
+    queryKey: ['manager-treasury', activeBranch?.id],
+    queryFn: async () => {
+      let query = supabase
+        .from('manager_treasury')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (activeBranch?.id) {
+        query = query.eq('branch_id', activeBranch.id);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data as TreasuryEntry[];
+    },
+  });
+};
+
+export const useTreasurySummary = () => {
+  const { activeBranch } = useAuth();
+  return useQuery({
+    queryKey: ['treasury-summary', activeBranch?.id],
+    queryFn: async () => {
+      // Get treasury entries
+      let tQuery = supabase.from('manager_treasury').select('payment_method, amount');
+      if (activeBranch?.id) tQuery = tQuery.eq('branch_id', activeBranch.id);
+      const { data: treasury, error: tErr } = await tQuery;
+      if (tErr) throw tErr;
+
+      // Get handovers
+      let hQuery = supabase.from('manager_handovers').select('amount');
+      if (activeBranch?.id) hQuery = hQuery.eq('branch_id', activeBranch.id);
+      const { data: handovers, error: hErr } = await hQuery;
+      if (hErr) throw hErr;
+
+      const summary: TreasurySummary = {
+        cash: 0, check: 0, checkCount: 0,
+        bank_receipt: 0, receiptCount: 0,
+        bank_transfer: 0, total: 0, handedOver: 0, remaining: 0,
+      };
+
+      (treasury || []).forEach((t: any) => {
+        summary.total += Number(t.amount);
+        switch (t.payment_method) {
+          case 'cash': summary.cash += Number(t.amount); break;
+          case 'check': summary.check += Number(t.amount); summary.checkCount++; break;
+          case 'bank_receipt': summary.bank_receipt += Number(t.amount); summary.receiptCount++; break;
+          case 'bank_transfer': summary.bank_transfer += Number(t.amount); break;
+        }
+      });
+
+      summary.handedOver = (handovers || []).reduce((s: number, h: any) => s + Number(h.amount), 0);
+      summary.remaining = summary.total - summary.handedOver;
+
+      return summary;
+    },
+  });
+};
+
+export const useManagerHandovers = () => {
+  const { activeBranch } = useAuth();
+  return useQuery({
+    queryKey: ['manager-handovers', activeBranch?.id],
+    queryFn: async () => {
+      let query = supabase
+        .from('manager_handovers')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (activeBranch?.id) {
+        query = query.eq('branch_id', activeBranch.id);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data as HandoverEntry[];
+    },
+  });
+};
+
+export const useCreateHandover = () => {
+  const queryClient = useQueryClient();
+  const { workerId, activeBranch } = useAuth();
+
+  return useMutation({
+    mutationFn: async (params: {
+      payment_method: string;
+      amount: number;
+      check_count?: number;
+      receipt_count?: number;
+      received_by?: string;
+      notes?: string;
+    }) => {
+      const { error } = await supabase.from('manager_handovers').insert({
+        manager_id: workerId!,
+        branch_id: activeBranch?.id || null,
+        payment_method: params.payment_method,
+        amount: params.amount,
+        check_count: params.check_count || 0,
+        receipt_count: params.receipt_count || 0,
+        received_by: params.received_by || null,
+        notes: params.notes || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['manager-handovers'] });
+      queryClient.invalidateQueries({ queryKey: ['treasury-summary'] });
+    },
+  });
+};
+
+export const useAddTreasuryEntry = () => {
+  const queryClient = useQueryClient();
+  const { workerId, activeBranch } = useAuth();
+
+  return useMutation({
+    mutationFn: async (params: {
+      payment_method: string;
+      amount: number;
+      source_type?: string;
+      session_id?: string;
+      check_number?: string;
+      check_bank?: string;
+      receipt_number?: string;
+      transfer_reference?: string;
+      notes?: string;
+    }) => {
+      const { error } = await supabase.from('manager_treasury').insert({
+        manager_id: workerId!,
+        branch_id: activeBranch?.id || null,
+        source_type: params.source_type || 'manual',
+        session_id: params.session_id || null,
+        payment_method: params.payment_method,
+        amount: params.amount,
+        check_number: params.check_number || null,
+        check_bank: params.check_bank || null,
+        receipt_number: params.receipt_number || null,
+        transfer_reference: params.transfer_reference || null,
+        notes: params.notes || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['manager-treasury'] });
+      queryClient.invalidateQueries({ queryKey: ['treasury-summary'] });
+    },
+  });
+};

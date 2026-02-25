@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Home, Users, Package, BarChart3, Settings, FileSpreadsheet, UserCheck, Building2, Shield, ShoppingCart, Truck, Activity, Store, BookOpen, UserCog, Gift, Wallet, Warehouse, ClipboardList, Banknote, Calculator, MapPin, Navigation, FileText } from 'lucide-react';
+import { Home, Users, Package, BarChart3, Settings, FileSpreadsheet, UserCheck, Building2, Shield, ShoppingCart, Truck, Activity, Store, BookOpen, UserCog, Gift, Wallet, Warehouse, ClipboardList, Banknote, Calculator, MapPin, Navigation, FileText, Vault } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkerPermissions } from '@/hooks/usePermissions';
 import { useMyUIOverrides } from '@/hooks/useUIOverrides';
@@ -55,6 +55,7 @@ export const useNavigation = () => {
           { path: '/expenses-management', icon: Wallet, label: t('expenses.title') },
           { path: '/customer-debts', icon: Banknote, label: t('debts.title') },
           { path: '/accounting', icon: Calculator, label: t('accounting.title') },
+          { path: '/manager-treasury', icon: Vault, label: 'خزينة المدير' },
           { path: '/worker-debts', icon: Banknote, label: 'ديون العمال' },
           { path: '/worker-tracking', icon: MapPin, label: t('navigation.worker_tracking') },
           { path: '/geo-operations', icon: Navigation, label: 'العمليات الجغرافية' },
@@ -109,6 +110,7 @@ export const useNavigation = () => {
           { path: '/expenses-management', icon: Wallet, label: t('expenses.title') },
           { path: '/customer-debts', icon: Banknote, label: t('debts.title') },
           { path: '/accounting', icon: Calculator, label: t('accounting.title') },
+          { path: '/manager-treasury', icon: Vault, label: 'خزينة المدير' },
           { path: '/worker-debts', icon: Banknote, label: 'ديون العمال' },
           { path: '/worker-tracking', icon: MapPin, label: t('navigation.worker_tracking') },
           { path: '/geo-operations', icon: Navigation, label: 'العمليات الجغرافية' },
