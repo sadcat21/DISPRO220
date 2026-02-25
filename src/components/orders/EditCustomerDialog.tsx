@@ -260,6 +260,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
     if (!storeName.trim()) { toast.error('الرجاء إدخال اسم المحل'); return; }
     if (!sectorId || sectorId === 'none') { toast.error('الرجاء اختيار السكتور'); return; }
     if (!latitude || !longitude) { toast.error('يرجى تحديد الموقع الجغرافي على الخريطة'); return; }
+    if (customerTypes.length > 0 && !customerType) { toast.error('يجب تحديد نوع العميل'); return; }
 
     setIsLoading(true);
     try {
@@ -460,6 +461,30 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
               <Input id="edit-store-name-fr" value={storeNameFr} onChange={(e) => setStoreNameFr(e.target.value)} placeholder="Nom du magasin (Français)" className="text-left" dir="ltr" />
             </div>
 
+            {/* Customer Type - integrated after store name */}
+            {customerTypes.length > 0 && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Store className="w-4 h-4" />
+                  نوع العميل *
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  {customerTypes.map((entry) => (
+                    <Button
+                      key={entry.ar}
+                      type="button"
+                      variant={customerType === entry.ar ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setCustomerType(customerType === entry.ar ? '' : entry.ar)}
+                    >
+                      {entry[language] || entry.ar}
+                    </Button>
+                  ))}
+                </div>
+                {!customerType && <p className="text-xs text-destructive">يجب تحديد نوع العميل</p>}
+              </div>
+            )}
+
 
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
@@ -498,28 +523,8 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
             </div>
           </div>
 
-          {/* --- Customer Type --- */}
-          {customerTypes.length > 0 && (
-            <div className="space-y-2 rounded-xl border-2 border-blue-500/20 bg-blue-500/5 p-4">
-              <Label className="font-bold flex items-center gap-2 text-sm text-blue-700 dark:text-blue-400">
-                <Store className="w-4 h-4" />
-                نوع العميل
-              </Label>
-              <div className="flex flex-wrap gap-2">
-                {customerTypes.map((entry) => (
-                  <Button
-                    key={entry.ar}
-                    type="button"
-                    variant={customerType === entry.ar ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setCustomerType(customerType === entry.ar ? '' : entry.ar)}
-                  >
-                    {entry[language] || entry.ar}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
+
+
 
           {/* --- Section 2: Finance & Preferences --- */}
           <div className="space-y-4 rounded-xl border-2 border-amber-500/20 bg-amber-500/5 p-4">
