@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useIsElementHidden } from '@/hooks/useUIOverrides';
+import ReceiptViewerDialog from '@/components/expenses/ReceiptViewerDialog';
 
 const Expenses: React.FC = () => {
   const { workerId, role } = useAuth();
@@ -115,71 +116,73 @@ const ExpenseCard: React.FC<{
 }> = ({ expense, isManager, isOwner, onDelete, language, t, hideDelete }) => {
   const status = STATUS_MAP_KEYS[expense.status] || STATUS_MAP_KEYS.pending;
   const receiptUrls = expense.receipt_urls?.length ? expense.receipt_urls : (expense.receipt_url ? [expense.receipt_url] : []);
+  const [showReceipt, setShowReceipt] = useState(false);
 
   return (
-    <Card className="p-4 space-y-2">
-      <div className="flex items-start justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-lg">{formatNumber(Number(expense.amount), language as any)} {t('common.currency')}</span>
-            <Badge variant={status.variant}>{t(status.labelKey)}</Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {getCategoryName(expense.category as any, language as any) || t('expenses.uncategorized')}
-          </p>
-          {isManager && expense.worker && (
-            <p className="text-xs text-muted-foreground">
-              👤 {expense.worker.full_name}
+    <>
+      <Card className="p-4 space-y-2">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-lg">{formatNumber(Number(expense.amount), language as any)} {t('common.currency')}</span>
+              <Badge variant={status.variant}>{t(status.labelKey)}</Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {getCategoryName(expense.category as any, language as any) || t('expenses.uncategorized')}
             </p>
+            {isManager && expense.worker && (
+              <p className="text-xs text-muted-foreground">
+                👤 {expense.worker.full_name}
+              </p>
+            )}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {formatDate(expense.expense_date, 'dd MMM yyyy', language as any)}
+          </div>
+        </div>
+
+        {expense.description && (
+          <p className="text-sm text-foreground/80">{expense.description}</p>
+        )}
+
+        {receiptUrls.length > 0 && (
+          <button
+            onClick={() => setShowReceipt(true)}
+            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+          >
+            <Image className="w-3 h-3" />
+            {receiptUrls.length > 1 ? `${t('expenses.has_receipts')} (${receiptUrls.length})` : t('expenses.view_receipt')}
+          </button>
+        )}
+
+        {expense.status === 'rejected' && expense.rejection_reason && (
+          <p className="text-xs text-destructive bg-destructive/10 p-2 rounded">
+            {t('expenses.rejection_reason')}: {expense.rejection_reason}
+          </p>
+        )}
+
+        {expense.reviewer && (
+          <p className="text-xs text-muted-foreground">
+            {t('expenses.reviewed_by')}: {expense.reviewer.full_name}
+          </p>
+        )}
+
+        <div className="flex gap-2 pt-1">
+          {isOwner && expense.status === 'pending' && !hideDelete && (
+            <Button variant="destructive" size="sm" onClick={onDelete}>
+              <Trash2 className="w-3 h-3 me-1" />
+              {t('common.delete')}
+            </Button>
           )}
         </div>
-        <div className="text-xs text-muted-foreground">
-          {formatDate(expense.expense_date, 'dd MMM yyyy', language as any)}
-        </div>
-      </div>
+      </Card>
 
-      {expense.description && (
-        <p className="text-sm text-foreground/80">{expense.description}</p>
-      )}
-
-      {receiptUrls.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {receiptUrls.map((url, i) => (
-            <a
-              key={i}
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-            >
-              <Image className="w-3 h-3" />
-              {receiptUrls.length > 1 ? `${t('expenses.receipt_image')} ${i + 1}` : t('expenses.view_receipt')}
-            </a>
-          ))}
-        </div>
-      )}
-
-      {expense.status === 'rejected' && expense.rejection_reason && (
-        <p className="text-xs text-destructive bg-destructive/10 p-2 rounded">
-          {t('expenses.rejection_reason')}: {expense.rejection_reason}
-        </p>
-      )}
-
-      {expense.reviewer && (
-        <p className="text-xs text-muted-foreground">
-          {t('expenses.reviewed_by')}: {expense.reviewer.full_name}
-        </p>
-      )}
-
-      <div className="flex gap-2 pt-1">
-        {isOwner && expense.status === 'pending' && !hideDelete && (
-          <Button variant="destructive" size="sm" onClick={onDelete}>
-            <Trash2 className="w-3 h-3 me-1" />
-            {t('common.delete')}
-          </Button>
-        )}
-      </div>
-    </Card>
+      <ReceiptViewerDialog
+        open={showReceipt}
+        onOpenChange={setShowReceipt}
+        receiptUrls={receiptUrls}
+      />
+    </>
   );
 };
 

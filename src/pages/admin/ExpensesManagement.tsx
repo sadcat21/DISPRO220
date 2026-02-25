@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Receipt, Image, Filter, Tag } from 'lucide-react';
+import ReceiptViewerDialog from '@/components/expenses/ReceiptViewerDialog';
 import { getCategoryName } from '@/utils/categoryName';
 import { formatDate, formatNumber } from '@/utils/formatters';
 import {
@@ -31,6 +32,8 @@ const ExpensesManagement: React.FC = () => {
   const [selectedExpense, setSelectedExpense] = useState<ExpenseWithDetails | null>(null);
   const [showReview, setShowReview] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
+  const [receiptViewerUrls, setReceiptViewerUrls] = useState<string[]>([]);
+  const [showReceiptViewer, setShowReceiptViewer] = useState(false);
 
   const filtered = expenses?.filter(e =>
     statusFilter === 'all' ? true : e.status === statusFilter
@@ -113,10 +116,17 @@ const ExpensesManagement: React.FC = () => {
                   <p className="text-sm text-foreground/80">{expense.description}</p>
                 )}
                 {receiptUrls.length > 0 && (
-                  <span className="inline-flex items-center gap-1 text-xs text-primary">
+                  <button
+                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setReceiptViewerUrls(receiptUrls);
+                      setShowReceiptViewer(true);
+                    }}
+                  >
                     <Image className="w-3 h-3" />
                     {receiptUrls.length > 1 ? `${t('expenses.has_receipts')} (${receiptUrls.length})` : t('expenses.has_receipt')}
-                  </span>
+                  </button>
                 )}
                 {expense.status === 'rejected' && expense.rejection_reason && (
                   <p className="text-xs text-destructive bg-destructive/10 p-2 rounded">
@@ -138,6 +148,12 @@ const ExpensesManagement: React.FC = () => {
       <ManageCategoriesDialog
         open={showCategories}
         onOpenChange={setShowCategories}
+      />
+
+      <ReceiptViewerDialog
+        open={showReceiptViewer}
+        onOpenChange={setShowReceiptViewer}
+        receiptUrls={receiptViewerUrls}
       />
     </div>
   );
