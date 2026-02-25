@@ -147,6 +147,27 @@ const SectorCustomersPopover: React.FC = () => {
     refetchInterval: 10000,
   });
 
+  // Fetch orders assigned to this worker that are not yet delivered/cancelled (for delivery tab filtering)
+  const { data: assignedOrderCustomerIds = [] } = useQuery({
+    queryKey: ['assigned-order-customers', workerId, isAdmin, activeBranch?.id],
+    queryFn: async () => {
+      let query = supabase
+        .from('orders')
+        .select('customer_id')
+        .in('status', ['pending', 'assigned', 'in_progress']);
+      if (!isAdmin) {
+        query = query.eq('assigned_worker_id', workerId!);
+      } else if (activeBranch) {
+        query = query.eq('branch_id', activeBranch.id);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!workerId && isOpen,
+    refetchInterval: 10000,
+  });
+
   const mySectors = useMemo(() => {
     if (isAdmin) return sectors;
     return sectors.filter(s => 
@@ -164,10 +185,17 @@ const SectorCustomersPopover: React.FC = () => {
     return mySectors.filter(s => s.visit_day_sales === todayName && s.sales_worker_id === workerId);
   }, [mySectors, todayName, workerId, isAdmin]);
 
+  // Delivery tab: only show customers who have assigned orders OR were delivered today
+  const deliveryCustomerIdsWithOrders = useMemo(() => {
+    const ids = new Set<string>();
+    assignedOrderCustomerIds.forEach(o => { if (o.customer_id) ids.add(o.customer_id); });
+    todayDeliveredOrders.forEach(o => { if (o.customer_id) ids.add(o.customer_id); });
+    return ids;
+  }, [assignedOrderCustomerIds, todayDeliveredOrders]);
+
   const deliveryCustomers = useMemo(() => {
-    const sectorIds = new Set(todayDeliverySectors.map(s => s.id));
-    return customers.filter(c => c.sector_id && sectorIds.has(c.sector_id));
-  }, [customers, todayDeliverySectors]);
+    return customers.filter(c => deliveryCustomerIdsWithOrders.has(c.id));
+  }, [customers, deliveryCustomerIdsWithOrders]);
 
   const salesCustomers = useMemo(() => {
     const sectorIds = new Set(todaySalesSectors.map(s => s.id));
