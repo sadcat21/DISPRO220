@@ -47,6 +47,25 @@ const itemTypeLabels: Record<string, string> = {
   expenses: 'المصاريف',
 };
 
+const TreasuryCard = ({ icon, label, total, handed, colorClass, borderClass, onClick }: {
+  icon: React.ReactNode; label: string; total: number; handed: number; colorClass: string; borderClass: string; onClick: () => void;
+}) => {
+  const remaining = total - handed;
+  return (
+    <Card className={`${borderClass} cursor-pointer hover:shadow-md transition-shadow`} onClick={onClick}>
+      <CardContent className="p-3 text-center space-y-1">
+        <div className="mx-auto mb-1">{icon}</div>
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className={`text-sm font-bold text-${colorClass} truncate`}>{total.toLocaleString()} د.ج</p>
+        <div className="flex justify-between text-[10px] px-1">
+          <span className="text-green-600">مسلّم: {handed.toLocaleString()}</span>
+          <span className="text-orange-600">متبقي: {remaining.toLocaleString()}</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 const ManagerTreasury = () => {
   const { t } = useLanguage();
   const { activeBranch, workerId } = useAuth();
@@ -309,44 +328,51 @@ const ManagerTreasury = () => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-3">
-        <Card className="border-green-500/30 bg-green-500/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDetailsCategory('cash_invoice1')}>
-          <CardContent className="p-3 text-center">
-            <Banknote className="w-5 h-5 mx-auto mb-1 text-green-500" />
-            <p className="text-xs text-muted-foreground">كاش فاتورة 1 ({summary?.cash_invoice1_count || 0})</p>
-            <p className="text-sm font-bold text-green-500 truncate">{summary?.cash_invoice1?.toLocaleString() || 0} د.ج</p>
-          </CardContent>
-        </Card>
-        <Card className="border-emerald-500/30 bg-emerald-500/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDetailsCategory('cash_invoice2')}>
-          <CardContent className="p-3 text-center">
-            <Banknote className="w-5 h-5 mx-auto mb-1 text-emerald-500" />
-            <p className="text-xs text-muted-foreground">كاش فاتورة 2 ({summary?.cash_invoice2_count || 0})</p>
-            <p className="text-sm font-bold text-emerald-500 truncate">{summary?.cash_invoice2?.toLocaleString() || 0} د.ج</p>
-          </CardContent>
-        </Card>
-        <Card className="border-blue-500/30 bg-blue-500/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDetailsCategory('check')}>
-          <CardContent className="p-3 text-center">
-            <CreditCard className="w-5 h-5 mx-auto mb-1 text-blue-500" />
-            <p className="text-xs text-muted-foreground">شيكات ({summary?.checkCount || 0}) {(summary?.check_handed_count || 0) > 0 && <span className="text-green-500">✓{summary?.check_handed_count}</span>}</p>
-            <p className="text-sm font-bold text-blue-500 truncate">{summary?.check?.toLocaleString() || 0} د.ج</p>
-            {(summary?.check_handed || 0) > 0 && <p className="text-[10px] text-green-500">مسلّم: {summary?.check_handed?.toLocaleString()} د.ج</p>}
-          </CardContent>
-        </Card>
-        <Card className="border-purple-500/30 bg-purple-500/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDetailsCategory('bank_receipt')}>
-          <CardContent className="p-3 text-center">
-            <Receipt className="w-5 h-5 mx-auto mb-1 text-purple-500" />
-            <p className="text-xs text-muted-foreground">فيرسمو ({summary?.receiptCount || 0}) {(summary?.receipt_handed_count || 0) > 0 && <span className="text-green-500">✓{summary?.receipt_handed_count}</span>}</p>
-            <p className="text-sm font-bold text-purple-500 truncate">{summary?.bank_receipt?.toLocaleString() || 0} د.ج</p>
-            {(summary?.receipt_handed || 0) > 0 && <p className="text-[10px] text-green-500">مسلّم: {summary?.receipt_handed?.toLocaleString()} د.ج</p>}
-          </CardContent>
-        </Card>
-        <Card className="border-orange-500/30 bg-orange-500/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDetailsCategory('bank_transfer')}>
-          <CardContent className="p-3 text-center">
-            <ArrowUpRight className="w-5 h-5 mx-auto mb-1 text-orange-500" />
-            <p className="text-xs text-muted-foreground">فيرمو ({summary?.transferCount || 0}) {(summary?.transfer_handed_count || 0) > 0 && <span className="text-green-500">✓{summary?.transfer_handed_count}</span>}</p>
-            <p className="text-sm font-bold text-orange-500 truncate">{summary?.bank_transfer?.toLocaleString() || 0} د.ج</p>
-            {(summary?.transfer_handed || 0) > 0 && <p className="text-[10px] text-green-500">مسلّم: {summary?.transfer_handed?.toLocaleString()} د.ج</p>}
-          </CardContent>
-        </Card>
+        <TreasuryCard
+          icon={<Banknote className="w-5 h-5 text-green-500" />}
+          label={`كاش فاتورة 1 (${summary?.cash_invoice1_count || 0})`}
+          total={summary?.cash_invoice1 || 0}
+          handed={(handovers || []).reduce((s, h: any) => s + Number(h.cash_invoice1 || 0), 0)}
+          colorClass="green-500"
+          borderClass="border-green-500/30 bg-green-500/5"
+          onClick={() => setDetailsCategory('cash_invoice1')}
+        />
+        <TreasuryCard
+          icon={<Banknote className="w-5 h-5 text-emerald-500" />}
+          label={`كاش فاتورة 2 (${summary?.cash_invoice2_count || 0})`}
+          total={summary?.cash_invoice2 || 0}
+          handed={(handovers || []).reduce((s, h: any) => s + Number(h.cash_invoice2 || 0), 0)}
+          colorClass="emerald-500"
+          borderClass="border-emerald-500/30 bg-emerald-500/5"
+          onClick={() => setDetailsCategory('cash_invoice2')}
+        />
+        <TreasuryCard
+          icon={<CreditCard className="w-5 h-5 text-blue-500" />}
+          label={`شيكات (${summary?.checkCount || 0})`}
+          total={summary?.check || 0}
+          handed={summary?.check_handed || 0}
+          colorClass="blue-500"
+          borderClass="border-blue-500/30 bg-blue-500/5"
+          onClick={() => setDetailsCategory('check')}
+        />
+        <TreasuryCard
+          icon={<Receipt className="w-5 h-5 text-purple-500" />}
+          label={`فيرسمو (${summary?.receiptCount || 0})`}
+          total={summary?.bank_receipt || 0}
+          handed={summary?.receipt_handed || 0}
+          colorClass="purple-500"
+          borderClass="border-purple-500/30 bg-purple-500/5"
+          onClick={() => setDetailsCategory('bank_receipt')}
+        />
+        <TreasuryCard
+          icon={<ArrowUpRight className="w-5 h-5 text-orange-500" />}
+          label={`فيرمو (${summary?.transferCount || 0})`}
+          total={summary?.bank_transfer || 0}
+          handed={summary?.transfer_handed || 0}
+          colorClass="orange-500"
+          borderClass="border-orange-500/30 bg-orange-500/5"
+          onClick={() => setDetailsCategory('bank_transfer')}
+        />
         <Card className="border-amber-600/30 bg-amber-600/5">
           <CardContent className="p-3 text-center">
             <p className="text-xs text-muted-foreground leading-tight">إجمالي الطوابع (ضريبة على فاتورة 1)</p>
