@@ -126,10 +126,45 @@ export const useCreateSession = () => {
 
       if (itemsErr) throw itemsErr;
 
+      // Auto-insert treasury entries from session data
+      const treasuryEntries: { payment_method: string; amount: number; item_type: string }[] = [];
+      for (const item of params.items) {
+        if (item.actual_amount <= 0) continue;
+        // Map session item types to treasury payment methods
+        if (item.item_type === 'invoice1_espace_cash') {
+          treasuryEntries.push({ payment_method: 'cash', amount: item.actual_amount, item_type: item.item_type });
+        } else if (item.item_type === 'invoice2_cash') {
+          treasuryEntries.push({ payment_method: 'cash', amount: item.actual_amount, item_type: item.item_type });
+        } else if (item.item_type === 'invoice1_check' || item.item_type === 'debt_collections_check') {
+          treasuryEntries.push({ payment_method: 'check', amount: item.actual_amount, item_type: item.item_type });
+        } else if (item.item_type === 'invoice1_receipt' || item.item_type === 'debt_collections_receipt') {
+          treasuryEntries.push({ payment_method: 'bank_receipt', amount: item.actual_amount, item_type: item.item_type });
+        } else if (item.item_type === 'invoice1_transfer' || item.item_type === 'debt_collections_transfer') {
+          treasuryEntries.push({ payment_method: 'bank_transfer', amount: item.actual_amount, item_type: item.item_type });
+        } else if (item.item_type === 'debt_collections_cash') {
+          treasuryEntries.push({ payment_method: 'cash', amount: item.actual_amount, item_type: item.item_type });
+        }
+      }
+
+      if (treasuryEntries.length > 0) {
+        const treasuryRows = treasuryEntries.map(e => ({
+          manager_id: workerId!,
+          branch_id: activeBranch?.id || null,
+          session_id: session.id,
+          source_type: 'accounting_session',
+          payment_method: e.payment_method,
+          amount: e.amount,
+          notes: e.item_type,
+        }));
+        await supabase.from('manager_treasury').insert(treasuryRows);
+      }
+
       return session;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounting-sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['manager-treasury'] });
+      queryClient.invalidateQueries({ queryKey: ['treasury-summary'] });
     },
   });
 };
