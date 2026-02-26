@@ -35,7 +35,7 @@ const ManagerTreasury = () => {
   const [addOpen, setAddOpen] = useState(false);
   const [handoverOpen, setHandoverOpen] = useState(false);
   const [detailsCategory, setDetailsCategory] = useState<'cash_invoice1' | 'cash_invoice2' | 'check' | 'bank_receipt' | 'bank_transfer' | null>(null);
-  const [addForm, setAddForm] = useState({ payment_method: 'cash', amount: '', invoice_number: '', check_number: '', check_bank: '', receipt_number: '', transfer_reference: '', notes: '' });
+  const [addForm, setAddForm] = useState({ payment_method: 'cash', amount: '', invoice_number: '', check_number: '', check_bank: '', check_date: '', receipt_number: '', transfer_reference: '', notes: '' });
   const [handoverForm, setHandoverForm] = useState({ cash_invoice1: '', cash_invoice2: '', checks_amount: '', check_count: '', receipts_amount: '', receipt_count: '', transfers_amount: '', transfer_count: '', notes: '' });
 
   const handleAddEntry = async () => {
@@ -50,13 +50,14 @@ const ManagerTreasury = () => {
         invoice_number: addForm.invoice_number || undefined,
         check_number: addForm.check_number || undefined,
         check_bank: addForm.check_bank || undefined,
+        check_date: addForm.check_date || undefined,
         receipt_number: addForm.receipt_number || undefined,
         transfer_reference: addForm.transfer_reference || undefined,
         notes: addForm.notes || undefined,
       });
       toast.success('تم إضافة المبلغ بنجاح');
       setAddOpen(false);
-      setAddForm({ payment_method: 'cash', amount: '', invoice_number: '', check_number: '', check_bank: '', receipt_number: '', transfer_reference: '', notes: '' });
+      setAddForm({ payment_method: 'cash', amount: '', invoice_number: '', check_number: '', check_bank: '', check_date: '', receipt_number: '', transfer_reference: '', notes: '' });
     } catch {
       toast.error('حدث خطأ');
     }
@@ -141,6 +142,7 @@ const ManagerTreasury = () => {
                   <>
                     <div><Label>رقم الشيك</Label><Input value={addForm.check_number} onChange={e => setAddForm(f => ({ ...f, check_number: e.target.value }))} /></div>
                     <div><Label>البنك</Label><Input value={addForm.check_bank} onChange={e => setAddForm(f => ({ ...f, check_bank: e.target.value }))} /></div>
+                    <div><Label>تاريخ الشيك</Label><Input type="date" value={addForm.check_date} onChange={e => setAddForm(f => ({ ...f, check_date: e.target.value }))} /></div>
                   </>
                 )}
                 {addForm.payment_method === 'bank_receipt' && (
