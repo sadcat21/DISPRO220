@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Loader2, Trash2, Truck, AlertTriangle, Package, CheckCircle, PackageX, ArrowLeftRight, User, ChevronDown } from 'lucide-react';
+import { Plus, Loader2, Trash2, Truck, AlertTriangle, Package, CheckCircle, PackageX, ArrowLeftRight, User, ChevronDown, Gift } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import WorkerPickerDialog from '@/components/stock/WorkerPickerDialog';
 import ProductPickerDialog from '@/components/stock/ProductPickerDialog';
@@ -42,6 +42,15 @@ interface EmptyTruckItem {
   allocationMode: boolean;
 }
 
+interface GiftSuggestion {
+  product_id: string;
+  product_name: string;
+  loaded_qty: number;
+  gift_qty: number;
+  gift_unit: string;
+  accepted: boolean;
+}
+
 const KEEP_REASONS = ['cash_sale', 'offer_gifts', 'reserve', 'other'] as const;
 const newLoadItem = (product_id = '', quantity = 1): LoadItem => ({ product_id, quantity, allocationMode: false, allocations: [] });
 
@@ -60,6 +69,8 @@ const LoadStock: React.FC = () => {
   const [showEmptyDialog, setShowEmptyDialog] = useState(false);
   const [showWorkerPicker, setShowWorkerPicker] = useState(false);
   const [productPickerIndex, setProductPickerIndex] = useState<number | null>(null);
+  const [giftSuggestions, setGiftSuggestions] = useState<GiftSuggestion[]>([]);
+  const [showGiftDialog, setShowGiftDialog] = useState(false);
 
   const { data: stockAlerts = [] } = useStockAlerts();
 
@@ -104,6 +115,52 @@ const LoadStock: React.FC = () => {
     return suggestions.find(s => s.product_id === productId);
   };
 
+  // Check for active offers and suggest gifts
+  const checkGiftSuggestions = async (validItems: LoadItem[]) => {
+    const productIds = validItems.map(i => i.product_id);
+    
+    // Fetch active offers for these products
+    const { data: offers } = await supabase
+      .from('product_offers')
+      .select('id, product_id, product:products(name)')
+      .in('product_id', productIds)
+      .eq('is_active', true);
+
+    if (!offers || offers.length === 0) return [];
+
+    const offerIds = offers.map(o => o.id);
+    const { data: tiers } = await supabase
+      .from('product_offer_tiers')
+      .select('offer_id, min_quantity, gift_quantity, gift_quantity_unit, gift_type')
+      .in('offer_id', offerIds)
+      .order('tier_order', { ascending: true });
+
+    if (!tiers || tiers.length === 0) return [];
+
+    const suggestions: GiftSuggestion[] = [];
+    for (const item of validItems) {
+      const offer = offers.find(o => o.product_id === item.product_id);
+      if (!offer) continue;
+
+      const tier = tiers.find(t => t.offer_id === offer.id && item.quantity >= t.min_quantity);
+      if (!tier || tier.gift_type !== 'same_product') continue;
+
+      // Calculate gift: e.g., 1 piece per box = loaded_qty * gift_quantity
+      const giftQty = Math.floor(item.quantity / tier.min_quantity) * tier.gift_quantity;
+      if (giftQty <= 0) continue;
+
+      suggestions.push({
+        product_id: item.product_id,
+        product_name: (offer.product as any)?.name || '',
+        loaded_qty: item.quantity,
+        gift_qty: giftQty,
+        gift_unit: tier.gift_quantity_unit || 'piece',
+        accepted: true,
+      });
+    }
+    return suggestions;
+  };
+
   const handleLoad = async () => {
     if (!selectedWorker) {
       toast.error(t('stock.select_worker'));
@@ -116,6 +173,19 @@ const LoadStock: React.FC = () => {
       return;
     }
 
+    // Check for gift suggestions
+    const gifts = await checkGiftSuggestions(validItems);
+    if (gifts.length > 0) {
+      setGiftSuggestions(gifts);
+      setShowGiftDialog(true);
+      return;
+    }
+
+    // No gifts, proceed directly
+    await executeLoad(validItems, []);
+  };
+
+  const executeLoad = async (validItems: LoadItem[], gifts: GiftSuggestion[]) => {
     setIsSaving(true);
     try {
       const loadItems = validItems.map(item => {
@@ -128,6 +198,16 @@ const LoadStock: React.FC = () => {
           : 'شحن من المخزن إلى عامل التوصيل';
         return { product_id: item.product_id, quantity: item.quantity, notes };
       });
+
+      // Add accepted gift items as separate load entries (in pieces)
+      for (const gift of gifts.filter(g => g.accepted && g.gift_qty > 0)) {
+        loadItems.push({
+          product_id: gift.product_id,
+          quantity: gift.gift_qty,
+          notes: `شحن هدايا العرض - ${gift.gift_qty} ${gift.gift_unit === 'piece' ? 'قطعة' : gift.gift_unit === 'box' ? 'صندوق' : 'كغ'}`,
+        });
+      }
+
       await loadToWorker(selectedWorker, loadItems);
       toast.success(t('stock.loaded_success'));
       setSelectedWorker('');
@@ -768,6 +848,82 @@ const LoadStock: React.FC = () => {
           }
         }}
       />
+
+      {/* Gift Suggestion Dialog */}
+      <Dialog open={showGiftDialog} onOpenChange={setShowGiftDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Gift className="w-5 h-5 text-primary" />
+              شحن هدايا العروض
+            </DialogTitle>
+            <DialogDescription>
+              تم اكتشاف عروض نشطة للمنتجات المشحونة. هل تريد إضافة كمية الهدايا؟
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 max-h-[50vh] overflow-y-auto">
+            {giftSuggestions.map((gift, idx) => {
+              const unitLabel = gift.gift_unit === 'piece' ? 'قطعة' : gift.gift_unit === 'box' ? 'صندوق' : 'كغ';
+              return (
+                <Card key={gift.product_id} className={`border ${gift.accepted ? 'border-primary/30 bg-primary/5' : 'opacity-60'}`}>
+                  <CardContent className="p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-sm">{gift.product_name}</span>
+                      <Switch
+                        checked={gift.accepted}
+                        onCheckedChange={checked => {
+                          setGiftSuggestions(prev => prev.map((g, i) => i === idx ? { ...g, accepted: checked } : g));
+                        }}
+                      />
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span>شحن: <strong>{gift.loaded_qty} صندوق</strong></span>
+                      <span>←</span>
+                      <span>هدايا مقترحة: <strong>{gift.gift_qty} {unitLabel}</strong></span>
+                    </div>
+                    {gift.accepted && (
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs">الكمية:</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={gift.gift_qty}
+                          onFocus={e => e.target.select()}
+                          onChange={e => {
+                            const val = Math.max(0, parseInt(e.target.value) || 0);
+                            setGiftSuggestions(prev => prev.map((g, i) => i === idx ? { ...g, gift_qty: val } : g));
+                          }}
+                          className="w-20 text-center h-8"
+                        />
+                        <span className="text-xs text-muted-foreground">{unitLabel}</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => {
+              setShowGiftDialog(false);
+              const validItems = items.filter(i => i.product_id && i.quantity > 0);
+              executeLoad(validItems, []);
+            }}>
+              تخطي الهدايا
+            </Button>
+            <Button onClick={() => {
+              setShowGiftDialog(false);
+              const validItems = items.filter(i => i.product_id && i.quantity > 0);
+              executeLoad(validItems, giftSuggestions);
+            }}>
+              <Gift className="w-4 h-4 ml-1" />
+              تأكيد مع الهدايا
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
