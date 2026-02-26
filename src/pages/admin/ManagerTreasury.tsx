@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Banknote, CreditCard, Receipt, ArrowUpRight, Plus, Send, Coins, TrendingUp, AlertCircle, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Banknote, CreditCard, Receipt, ArrowUpRight, Plus, Send, Coins, TrendingUp, AlertCircle, CheckCircle, AlertTriangle, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import InvoiceOCRScanner from '@/components/treasury/InvoiceOCRScanner';
 import { format } from 'date-fns';
@@ -76,6 +76,7 @@ const ManagerTreasury = () => {
 
   const [addOpen, setAddOpen] = useState(false);
   const [handoverOpen, setHandoverOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
   const [detailsCategory, setDetailsCategory] = useState<'cash_invoice1' | 'cash_invoice2' | 'check' | 'bank_receipt' | 'bank_transfer' | null>(null);
   const [addForm, setAddForm] = useState({ payment_method: 'cash_invoice1', amount: '', customer_name: '', invoice_number: '', invoice_date: '', check_number: '', check_bank: '', check_date: '', receipt_number: '', transfer_reference: '', notes: '' });
   const [handoverForm, setHandoverForm] = useState({ cash_invoice1: '', cash_invoice2: '', checks_amount: '', check_count: '', receipts_amount: '', receipt_count: '', transfers_amount: '', transfer_count: '', notes: '' });
@@ -427,6 +428,63 @@ const ManagerTreasury = () => {
         );
       })()}
 
+      {/* زر معلومات + نافذة الشرح */}
+      <Dialog open={infoOpen} onOpenChange={setInfoOpen}>
+        <DialogContent dir="rtl" className="max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>📊 كيف يتم اكتشاف الفروقات؟</DialogTitle></DialogHeader>
+          <div className="space-y-4 text-sm leading-relaxed">
+            <div className="p-3 rounded-lg bg-muted/50 space-y-2">
+              <p className="font-bold text-sm">🔍 المبدأ العام</p>
+              <p className="text-xs text-muted-foreground">عند إنشاء جلسة محاسبة، يقوم النظام تلقائياً بحساب المبالغ المتوقعة من الطلبيات المُسلَّمة، ثم يقارنها بما يُدخله المحاسب فعلياً.</p>
+            </div>
+
+            <div className="p-3 rounded-lg bg-muted/50 space-y-2">
+              <p className="font-bold text-sm">📋 البنود التي تتم مقارنتها</p>
+              <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+                <li><strong>فاتورة 1 - كاش:</strong> مجموع المدفوعات النقدية للطلبيات بفاتورة</li>
+                <li><strong>فاتورة 1 - شيك/تحويل/فيرسمو:</strong> مجموع كل طريقة دفع</li>
+                <li><strong>فاتورة 2 - كاش:</strong> مجموع المدفوعات بدون فاتورة</li>
+                <li><strong>تحصيلات الديون:</strong> مجموع المبالغ المحصّلة من الديون</li>
+                <li><strong>الكاش المادي:</strong> إجمالي الكاش الذي يجب أن يكون بيد العامل</li>
+              </ul>
+            </div>
+
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-2">
+              <p className="font-bold text-sm">💡 مثال توضيحي</p>
+              <div className="text-xs text-muted-foreground space-y-2">
+                <p>لنفرض أن عاملاً سلّم 10 طلبيات خلال الفترة:</p>
+                <div className="bg-background rounded p-2 space-y-1">
+                  <p>• 5 طلبيات فاتورة 1 كاش = <strong>500,000 د.ج</strong></p>
+                  <p>• 2 طلبية فاتورة 1 شيك = <strong>200,000 د.ج</strong></p>
+                  <p>• 3 طلبيات فاتورة 2 كاش = <strong>150,000 د.ج</strong></p>
+                  <p>• تحصيل ديون نقدي = <strong>50,000 د.ج</strong></p>
+                </div>
+                <p className="font-medium">النظام يتوقع:</p>
+                <div className="bg-background rounded p-2 space-y-1">
+                  <p>• الكاش المادي = 500,000 + 150,000 + 50,000 = <strong>700,000 د.ج</strong></p>
+                </div>
+                <p className="font-medium">المحاسب يُدخل:</p>
+                <div className="bg-background rounded p-2 space-y-1">
+                  <p>• الكاش المادي الفعلي = <strong>690,000 د.ج</strong></p>
+                </div>
+                <p className="font-medium text-destructive">← فرق (عجز) = 10,000 د.ج ⚠️</p>
+                <p className="text-muted-foreground/70 mt-1">هذا يعني أن هناك نقص 10,000 د.ج في الكاش المُسلَّم مقارنة بما هو متوقع.</p>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-lg bg-muted/50 space-y-2">
+              <p className="font-bold text-sm">⚠️ بنود مستثناة</p>
+              <p className="text-xs text-muted-foreground"><strong>العملات المعدنية</strong> و<strong>المصاريف</strong> لا تظهر في الفروقات لأنها بنود تسجيلية يُدخلها المحاسب يدوياً وليس لها مبلغ متوقع نظامياً.</p>
+            </div>
+
+            <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20 space-y-1">
+              <p className="font-bold text-sm text-green-600">✅ متى تكون المحاسبة سليمة؟</p>
+              <p className="text-xs text-muted-foreground">عندما تتطابق جميع المبالغ المتوقعة مع المبالغ الفعلية المُسجَّلة (الفرق = 0 لكل بند).</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* اختلالات المحاسبة */}
       {discrepancies && discrepancies.length > 0 && (
         <Card className="border-destructive/30 bg-destructive/5">
@@ -434,6 +492,9 @@ const ManagerTreasury = () => {
             <div className="flex items-center justify-center gap-2">
               <AlertTriangle className="w-4 h-4 text-destructive" />
               <p className="text-xs font-medium text-destructive">فروقات في المحاسبة ({discrepancies.length})</p>
+              <button onClick={() => setInfoOpen(true)} className="p-0.5 rounded-full hover:bg-muted">
+                <Info className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
             </div>
             <p className="text-[10px] text-muted-foreground text-center">
               مقارنة بين ما يجب أن يكون (حسب النظام) وما تم تسجيله فعلياً في جلسة المحاسبة
@@ -473,6 +534,9 @@ const ManagerTreasury = () => {
             <div className="flex items-center justify-center gap-2">
               <CheckCircle className="w-4 h-4 text-green-500" />
               <p className="text-xs font-medium text-green-600">لا توجد فروقات في المحاسبة ✓</p>
+              <button onClick={() => setInfoOpen(true)} className="p-0.5 rounded-full hover:bg-muted">
+                <Info className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
             </div>
           </CardContent>
         </Card>
