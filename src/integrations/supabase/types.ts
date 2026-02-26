@@ -1463,6 +1463,83 @@ export type Database = {
           },
         ]
       }
+      manual_invoice_requests: {
+        Row: {
+          branch_id: string | null
+          created_at: string
+          customer_id: string
+          id: string
+          invoice_number: string | null
+          notes: string | null
+          payment_method: string | null
+          products: Json
+          received_at: string | null
+          sent_at: string
+          status: string
+          whatsapp_contact: string | null
+          worker_id: string
+        }
+        Insert: {
+          branch_id?: string | null
+          created_at?: string
+          customer_id: string
+          id?: string
+          invoice_number?: string | null
+          notes?: string | null
+          payment_method?: string | null
+          products?: Json
+          received_at?: string | null
+          sent_at?: string
+          status?: string
+          whatsapp_contact?: string | null
+          worker_id: string
+        }
+        Update: {
+          branch_id?: string | null
+          created_at?: string
+          customer_id?: string
+          id?: string
+          invoice_number?: string | null
+          notes?: string | null
+          payment_method?: string | null
+          products?: Json
+          received_at?: string | null
+          sent_at?: string
+          status?: string
+          whatsapp_contact?: string | null
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_invoice_requests_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_invoice_requests_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_invoice_requests_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_invoice_requests_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       navbar_preferences: {
         Row: {
           created_at: string

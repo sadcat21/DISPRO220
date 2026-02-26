@@ -30,7 +30,7 @@ type Step = 'customer' | 'products' | 'payment' | 'whatsapp';
 
 const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   const { language, dir } = useLanguage();
-  const { activeBranch } = useAuth();
+  const { activeBranch, workerId } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'manual' | 'worker_requests' | 'status'>('worker_requests');
   const [statusSubTab, setStatusSubTab] = useState<'sent' | 'received'>('sent');
@@ -74,12 +74,37 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
     enabled: open && (activeTab === 'worker_requests' || activeTab === 'status'),
   });
 
+  // Fetch manual invoice requests
+  const { data: manualRequests, isLoading: loadingManual } = useQuery({
+    queryKey: ['manual-invoice-requests', activeBranch?.id],
+    queryFn: async () => {
+      let q = supabase
+        .from('manual_invoice_requests')
+        .select(`
+          *,
+          customers!manual_invoice_requests_customer_id_fkey(id, name, name_fr, store_name)
+        `)
+        .order('created_at', { ascending: false });
+      if (activeBranch?.id) q = q.eq('branch_id', activeBranch.id);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: open && activeTab === 'status',
+  });
+
   const pendingInvoiceOrders = useMemo(() =>
     (invoiceOrders || []).filter((o: any) => !o.invoice_sent_at), [invoiceOrders]);
   const completedInvoiceOrders = useMemo(() =>
     (invoiceOrders || []).filter((o: any) => !!o.invoice_sent_at && !o.invoice_received_at), [invoiceOrders]);
   const receivedInvoiceOrders = useMemo(() =>
     (invoiceOrders || []).filter((o: any) => !!o.invoice_received_at), [invoiceOrders]);
+
+  // Manual requests split by status
+  const manualSentRequests = useMemo(() =>
+    (manualRequests || []).filter((r: any) => r.status === 'sent'), [manualRequests]);
+  const manualReceivedRequests = useMemo(() =>
+    (manualRequests || []).filter((r: any) => r.status === 'received'), [manualRequests]);
 
   // Fetch registered customers with sector info
   const { data: customers } = useQuery({
@@ -204,6 +229,40 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
     }
   };
 
+  const saveManualRequest = async (whatsappContact: string) => {
+    if (!selectedCustomer || !workerId) return;
+    const { error } = await supabase.from('manual_invoice_requests').insert({
+      customer_id: selectedCustomer.id,
+      worker_id: workerId,
+      branch_id: activeBranch?.id || null,
+      products: cart.map(i => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })),
+      payment_method: selectedPayment || null,
+      whatsapp_contact: whatsappContact,
+      status: 'sent',
+    } as any);
+    if (error) console.error('Failed to save manual request:', error);
+    else queryClient.invalidateQueries({ queryKey: ['manual-invoice-requests'] });
+  };
+
+  const markManualAsReceived = async (requestId: string, invoiceNumber: string) => {
+    if (!invoiceNumber.trim()) {
+      toast.error('الرجاء إدخال رقم الفاتورة');
+      return;
+    }
+    const { error } = await supabase
+      .from('manual_invoice_requests')
+      .update({ status: 'received', received_at: new Date().toISOString(), invoice_number: invoiceNumber.trim() } as any)
+      .eq('id', requestId);
+    if (error) {
+      toast.error('فشل تسجيل الاستلام');
+    } else {
+      queryClient.invalidateQueries({ queryKey: ['manual-invoice-requests'] });
+      toast.success('تم تسجيل استلام الفاتورة ✅');
+      setReceivingOrderId(null);
+      setInvoiceNumberInput('');
+    }
+  };
+
   const sendWhatsApp = async (phone: string, message?: string, orderId?: string) => {
     const msg = message || buildWhatsAppMessage();
     const cleanPhone = phone.replace(/[^0-9+]/g, '');
@@ -216,7 +275,9 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
       toast.success('تم فتح واتساب وتعليم الطلب كمنجز ✅');
       setSelectedWorkerOrder(null);
     } else {
-      toast.success('تم فتح واتساب');
+      // Manual request - save to DB
+      await saveManualRequest(phone);
+      toast.success('تم فتح واتساب وحفظ الطلب ✅');
       onOpenChange(false);
       resetState();
     }
@@ -479,7 +540,7 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                   className="flex-1 h-8 text-[10px] gap-1"
                   onClick={() => setStatusSubTab('sent')}
                 >
-                  تم الإرسال ({completedInvoiceOrders.length})
+                  تم الإرسال ({completedInvoiceOrders.length + manualSentRequests.length})
                 </Button>
                 <Button
                   size="sm"
@@ -488,24 +549,126 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                   onClick={() => setStatusSubTab('received')}
                 >
                   <PackageCheck className="w-3 h-3" />
-                  تم الاستلام ({receivedInvoiceOrders.length})
+                  تم الاستلام ({receivedInvoiceOrders.length + manualReceivedRequests.length})
                 </Button>
               </div>
 
               <ScrollArea className="h-[50vh]">
-                {loadingOrders ? (
+                {(loadingOrders || loadingManual) ? (
                   <p className="text-center text-muted-foreground text-sm py-8">جاري التحميل...</p>
                 ) : statusSubTab === 'sent' ? (
-                  completedInvoiceOrders.length > 0 ? (
+                  (completedInvoiceOrders.length + manualSentRequests.length) > 0 ? (
                     <div className="space-y-2">
+                      {/* Manual sent requests */}
+                      {manualSentRequests.map((req: any) => (
+                        <div key={req.id} className="border rounded-lg p-3 space-y-2">
+                          <div className="flex items-start justify-between">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold truncate">
+                                👤 {req.customers?.name || 'عميل'}
+                                {req.customers?.name_fr && <span className="text-muted-foreground text-xs mr-1" dir="ltr">({req.customers.name_fr})</span>}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {format(new Date(req.sent_at), 'dd/MM HH:mm')}
+                              </p>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              <Badge variant="outline" className="text-[10px]">{req.payment_method || 'فاتورة'}</Badge>
+                              <Badge variant="secondary" className="text-[10px] gap-0.5">
+                                <Send className="w-3 h-3" /> يدوي
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="text-xs bg-muted/30 rounded p-2 space-y-0.5">
+                            {(req.products || []).map((item: any, idx: number) => (
+                              <div key={idx} className="flex justify-between">
+                                <span className="truncate flex-1">{item.productName || '—'}</span>
+                                <Badge variant="secondary" className="text-[10px] mr-1">{item.quantity}</Badge>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="default"
+                              className="flex-1 gap-1 h-8 text-xs"
+                              onClick={() => { setReceivingOrderId(req.id); setInvoiceNumberInput(''); }}
+                            >
+                              <PackageCheck className="w-3 h-3" />
+                              تأكيد الاستلام
+                            </Button>
+                          </div>
+                          {receivingOrderId === req.id && (
+                            <div className="p-2 border rounded-lg bg-muted/30 space-y-2">
+                              <p className="text-xs font-medium">أدخل رقم الفاتورة:</p>
+                              <div className="flex gap-1.5 items-center" dir="ltr">
+                                <Input value={invoicePrefix} onChange={(e) => setInvoicePrefix(e.target.value.toUpperCase())} className="h-8 text-sm w-14 text-center font-mono" dir="ltr" />
+                                <Input value={invoiceNumberInput} onChange={(e) => setInvoiceNumberInput(e.target.value.replace(/\D/g, ''))} placeholder="294" className="h-8 text-sm flex-1 font-mono" dir="ltr" type="text" inputMode="numeric" />
+                                <span className="text-muted-foreground text-sm">/</span>
+                                <Input value={invoiceYear} onChange={(e) => setInvoiceYear(e.target.value.replace(/\D/g, '').slice(0, 4))} className="h-8 text-sm w-16 text-center font-mono" dir="ltr" />
+                              </div>
+                              {invoiceNumberInput && (
+                                <p className="text-[11px] text-muted-foreground text-center font-mono" dir="ltr">
+                                  المعاينة: <span className="font-semibold text-foreground">{buildInvoiceNumber(invoiceNumberInput)}</span>
+                                </p>
+                              )}
+                              <div className="flex gap-2">
+                                <Button size="sm" variant="ghost" className="flex-1 h-7 text-xs" onClick={() => setReceivingOrderId(null)}>إلغاء</Button>
+                                <Button size="sm" className="flex-1 h-7 text-xs" disabled={!invoiceNumberInput} onClick={() => markManualAsReceived(req.id, buildInvoiceNumber(invoiceNumberInput))}>
+                                  <CheckCircle className="w-3 h-3 ml-1" /> تأكيد
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {/* Worker sent orders */}
                       {completedInvoiceOrders.map((order: any) => renderOrderCard(order, 'sent'))}
                     </div>
                   ) : (
                     <p className="text-center text-muted-foreground text-sm py-8">لا توجد طلبات منجزة</p>
                   )
                 ) : (
-                  receivedInvoiceOrders.length > 0 ? (
+                  (receivedInvoiceOrders.length + manualReceivedRequests.length) > 0 ? (
                     <div className="space-y-2">
+                      {/* Manual received requests */}
+                      {manualReceivedRequests.map((req: any) => (
+                        <div key={req.id} className="border rounded-lg p-3 space-y-2">
+                          <div className="flex items-start justify-between">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold truncate">
+                                👤 {req.customers?.name || 'عميل'}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {format(new Date(req.sent_at), 'dd/MM HH:mm')}
+                              </p>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              <Badge variant="default" className="text-[10px] gap-0.5">
+                                <PackageCheck className="w-3 h-3" /> {req.invoice_number}
+                              </Badge>
+                              <Badge variant="secondary" className="text-[10px] gap-0.5">
+                                <Send className="w-3 h-3" /> يدوي
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="text-xs bg-muted/30 rounded p-2 space-y-0.5">
+                            {(req.products || []).map((item: any, idx: number) => (
+                              <div key={idx} className="flex justify-between">
+                                <span className="truncate flex-1">{item.productName || '—'}</span>
+                                <Badge variant="secondary" className="text-[10px] mr-1">{item.quantity}</Badge>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground text-center">
+                            📄 رقم الفاتورة: <span className="font-semibold text-foreground">{req.invoice_number}</span>
+                            {req.received_at && <p>تم الاستلام في {format(new Date(req.received_at), 'dd/MM HH:mm')}</p>}
+                          </div>
+                        </div>
+                      ))}
+                      {/* Worker received orders */}
                       {receivedInvoiceOrders.map((order: any) => renderOrderCard(order, 'received'))}
                     </div>
                   ) : (
