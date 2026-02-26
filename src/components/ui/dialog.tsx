@@ -4,7 +4,25 @@ import { X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-const Dialog = DialogPrimitive.Root;
+const Dialog: React.FC<DialogPrimitive.DialogProps> = ({ open, onOpenChange, ...props }) => {
+  React.useEffect(() => {
+    if (!open) return;
+
+    window.history.pushState({ dialogOpen: true }, '');
+
+    const handlePopState = () => {
+      onOpenChange?.(false);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [open, onOpenChange]);
+
+  return <DialogPrimitive.Root open={open} onOpenChange={onOpenChange} {...props} />;
+};
 
 const DialogTrigger = DialogPrimitive.Trigger;
 
