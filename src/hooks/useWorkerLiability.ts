@@ -18,13 +18,27 @@ async function calcWorkerLiability(workerId: string, branchId?: string | null): 
   const { data: worker } = await supabase.from('workers').select('id, full_name').eq('id', workerId).single();
   if (!worker) return null;
 
-  // 2. Delivered orders: ALL money collected by the worker
+  // 2. Find the last completed accounting session to know what's already settled
+  let sessQuery = supabase
+    .from('accounting_sessions')
+    .select('id, period_end')
+    .eq('worker_id', workerId)
+    .eq('status', 'completed')
+    .order('period_end', { ascending: false })
+    .limit(1);
+  if (branchId) sessQuery = sessQuery.eq('branch_id', branchId);
+  const { data: lastSession } = await sessQuery;
+  
+  const lastSettledDate = lastSession && lastSession.length > 0 ? lastSession[0].period_end : null;
+
+  // 3. Delivered orders: only those AFTER the last settled session
   let ordersQuery = supabase
     .from('orders')
     .select('total_amount, partial_amount, payment_status, payment_type')
     .eq('assigned_worker_id', workerId)
     .eq('status', 'delivered');
   if (branchId) ordersQuery = ordersQuery.eq('branch_id', branchId);
+  if (lastSettledDate) ordersQuery = ordersQuery.gt('created_at', lastSettledDate);
   const { data: orders = [] } = await ordersQuery;
 
   let deliveredCash = 0;
@@ -34,38 +48,29 @@ async function calcWorkerLiability(workerId: string, branchId?: string | null): 
     } else if (o.payment_status === 'partial') {
       deliveredCash += Number(o.partial_amount || 0);
     }
-    // 'credit'/'pending' = worker didn't collect money
   }
 
-  // 3. Approved debt collections (all payment methods - worker holds the money/checks)
-  const { data: collections = [] } = await supabase
+  // 4. Approved debt collections AFTER last session
+  let collQuery = supabase
     .from('debt_collections')
     .select('amount_collected')
     .eq('worker_id', workerId)
     .eq('status', 'approved');
+  if (lastSettledDate) collQuery = collQuery.gt('created_at', lastSettledDate);
+  const { data: collections = [] } = await collQuery;
   const debtCollectionsCash = collections.reduce((s, c) => s + Number(c.amount_collected || 0), 0);
 
-  // 4. Approved expenses (cash only - worker spent from collected money)
+  // 5. Approved expenses AFTER last session
   let expQuery = supabase.from('expenses').select('amount').eq('worker_id', workerId).eq('status', 'approved').eq('payment_method', 'cash');
   if (branchId) expQuery = expQuery.eq('branch_id', branchId);
+  if (lastSettledDate) expQuery = expQuery.gt('created_at', lastSettledDate);
   const { data: expenses = [] } = await expQuery;
   const approvedExpenses = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
 
-  // 5. Accounted amounts from completed sessions (actual_amount = what worker handed over)
-  let sessQuery = supabase.from('accounting_sessions').select('id').eq('worker_id', workerId).eq('status', 'completed');
-  if (branchId) sessQuery = sessQuery.eq('branch_id', branchId);
-  const { data: sessions = [] } = await sessQuery;
+  // 6. accountedAmount = 0 (we already exclude settled data by date filter)
+  const accountedAmount = 0;
 
-  let accountedAmount = 0;
-  if (sessions.length > 0) {
-    const { data: items = [] } = await supabase
-      .from('accounting_session_items')
-      .select('actual_amount')
-      .in('session_id', sessions.map(s => s.id));
-    accountedAmount = items.reduce((s, i) => s + Number(i.actual_amount || 0), 0);
-  }
-
-  // 6. Manual adjustments
+  // 7. Manual adjustments (these are always counted as they represent explicit overrides)
   let adjQuery = supabase.from('worker_liability_adjustments').select('amount, adjustment_type').eq('worker_id', workerId);
   if (branchId) adjQuery = adjQuery.eq('branch_id', branchId);
   const { data: adjustments = [] } = await adjQuery;
