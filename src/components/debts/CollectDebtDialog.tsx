@@ -167,7 +167,7 @@ const CollectDebtDialog: React.FC<CollectDebtDialogProps> = ({
           {/* Remaining amount */}
           <div className="bg-muted/50 rounded-md p-2 text-center">
             <p className="text-xs text-muted-foreground">{t('debts.remaining')}</p>
-            <p className="text-xl font-bold text-destructive">{remainingAmount.toLocaleString()} DA</p>
+            <p className="text-xl font-bold text-destructive">{Math.round(remainingAmount).toLocaleString()} DA</p>
           </div>
 
           {/* Amount + Full payment button */}
@@ -200,7 +200,7 @@ const CollectDebtDialog: React.FC<CollectDebtDialogProps> = ({
               {isFullPayment ? (
                 <span>✓ تسديد كامل</span>
               ) : (
-                <span>المتبقي بعد التحصيل: {liveRemaining.toLocaleString()} DA</span>
+                <span>المتبقي بعد التحصيل: {Math.round(liveRemaining).toLocaleString()} DA</span>
               )}
             </div>
           )}

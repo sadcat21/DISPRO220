@@ -64,7 +64,7 @@ export interface SessionCalculations {
 export const useSessionCalculations = (params: SessionCalcParams | null) => {
   return useQuery({
     queryKey: ['session-calculations', params],
-    refetchInterval: 30000,
+    refetchInterval: 600000, // 10 minutes
     queryFn: async (): Promise<SessionCalculations> => {
       if (!params) return getEmptyCalculations();
 

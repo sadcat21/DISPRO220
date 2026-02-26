@@ -31,6 +31,7 @@ const DailyReceipts: React.FC = () => {
   const [dateTo, setDateTo] = useState(today);
   const [filterWorkerId, setFilterWorkerId] = useState('all');
   const [filterType, setFilterType] = useState('all');
+  // Note: If no receipts show, the date filter may need timezone offset
   const [searchQuery, setSearchQuery] = useState('');
   const [previewReceipt, setPreviewReceipt] = useState<ReceiptWithDetails | null>(null);
 

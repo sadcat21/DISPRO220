@@ -432,6 +432,7 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
     paymentMethod: string;
     notes?: string;
     isFullPayment: boolean;
+    isNoPayment?: boolean;
     confirmedPaymentType?: string;
     confirmedInvoiceMethod?: string | null;
   }) => {
@@ -445,7 +446,9 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
 
       // Determine payment status based on invoice payment method
       let paymentStatus: string;
-      if (!paymentData.isFullPayment) {
+      if (paymentData.isNoPayment) {
+        paymentStatus = 'pending';
+      } else if (!paymentData.isFullPayment) {
         paymentStatus = 'partial';
       } else if (finalPaymentType === 'with_invoice' && finalInvoiceMethod === 'check') {
         paymentStatus = 'check';
