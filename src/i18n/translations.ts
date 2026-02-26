@@ -124,6 +124,8 @@ export const translations: Translations = {
   'common.no_events': { ar: 'لا توجد أحداث مسجلة', fr: 'Aucun événement enregistré', en: 'No events recorded' },
   'common.save_changes': { ar: 'حفظ التعديلات', fr: 'Enregistrer les modifications', en: 'Save Changes' },
   'common.confirm_delete': { ar: 'هل أنت متأكد من الحذف؟', fr: 'Êtes-vous sûr de vouloir supprimer?', en: 'Are you sure you want to delete?' },
+  'common.saved': { ar: 'تم الحفظ بنجاح', fr: 'Enregistré avec succès', en: 'Saved successfully' },
+  'common.deleted': { ar: 'تم الحذف بنجاح', fr: 'Supprimé avec succès', en: 'Deleted successfully' },
   'common.no_results': { ar: 'لا توجد نتائج للبحث', fr: 'Aucun résultat trouvé', en: 'No search results' },
   'common.sales': { ar: 'مبيعات', fr: 'Ventes', en: 'Sales' },
   'common.free': { ar: 'مجاني', fr: 'Gratuit', en: 'Free' },
