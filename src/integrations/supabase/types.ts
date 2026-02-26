@@ -1157,6 +1157,7 @@ export type Database = {
           amount: number
           branch_id: string | null
           check_bank: string | null
+          check_date: string | null
           check_number: string | null
           created_at: string
           id: string
@@ -1173,6 +1174,7 @@ export type Database = {
           amount?: number
           branch_id?: string | null
           check_bank?: string | null
+          check_date?: string | null
           check_number?: string | null
           created_at?: string
           id?: string
@@ -1189,6 +1191,7 @@ export type Database = {
           amount?: number
           branch_id?: string | null
           check_bank?: string | null
+          check_date?: string | null
           check_number?: string | null
           created_at?: string
           id?: string

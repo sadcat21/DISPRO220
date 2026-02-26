@@ -246,6 +246,7 @@ export const useAddTreasuryEntry = () => {
       invoice_number?: string;
       check_number?: string;
       check_bank?: string;
+      check_date?: string;
       receipt_number?: string;
       transfer_reference?: string;
       notes?: string;
@@ -260,10 +261,11 @@ export const useAddTreasuryEntry = () => {
         invoice_number: params.invoice_number || null,
         check_number: params.check_number || null,
         check_bank: params.check_bank || null,
+        check_date: params.check_date || null,
         receipt_number: params.receipt_number || null,
         transfer_reference: params.transfer_reference || null,
         notes: params.notes || null,
-      });
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
