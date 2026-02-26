@@ -61,7 +61,8 @@ const ManagerTreasury = () => {
       let query = supabase
         .from('accounting_session_items')
         .select('item_type, expected_amount, actual_amount, difference, accounting_sessions!inner(branch_id, status)')
-        .neq('difference', 0);
+        .neq('difference', 0)
+        .not('item_type', 'in', '(coin_amount,expenses)');
       if (activeBranch?.id) query = query.eq('accounting_sessions.branch_id', activeBranch.id);
       const { data } = await query;
       return (data || []).map((d: any) => ({
