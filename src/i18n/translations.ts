@@ -78,6 +78,7 @@ export const translations: Translations = {
   'common.save': { ar: 'حفظ', fr: 'Enregistrer', en: 'Save' },
   'common.cancel': { ar: 'إلغاء', fr: 'Annuler', en: 'Cancel' },
   'common.search': { ar: 'بحث', fr: 'Rechercher', en: 'Search' },
+  'common.filter_by': { ar: 'تصفية حسب', fr: 'Filtrer par', en: 'Filter by' },
   'common.loading': { ar: 'جاري التحميل...', fr: 'Chargement...', en: 'Loading...' },
   'common.yes': { ar: 'نعم', fr: 'Oui', en: 'Yes' },
   'common.no': { ar: 'لا', fr: 'Non', en: 'No' },
