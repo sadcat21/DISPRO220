@@ -101,14 +101,14 @@ const HandoverPrintView: React.FC<Props> = ({
   const dateStr = format(new Date(handoverDate), 'dd/MM/yyyy');
 
   return (
-    <div className="print-handover bg-white text-black p-8 font-sans" style={{ direction: 'ltr', fontSize: '12px' }}>
+    <div className="print-handover bg-white text-black p-8 font-sans" style={{ direction: 'ltr', fontSize: '12px', textAlign: 'left', unicodeBidi: 'plaintext' }}>
       {/* Header */}
       <div className="text-center mb-6">
-        <h1 className="text-lg font-bold">{branchName || 'BORDEREAU D\'ENVOI'}</h1>
-        <h2 className="text-base font-bold mt-1">BORDEREAU D'ENVOI</h2>
+        <h1 className="text-lg font-bold" style={{ textAlign: 'center' }}>{branchName || 'BORDEREAU D\'ENVOI'}</h1>
+        <h2 className="text-base font-bold mt-1" style={{ textAlign: 'center' }}>BORDEREAU D'ENVOI</h2>
       </div>
 
-      <p className="mb-4"><strong>Date d'envoi:</strong> {dateStr}</p>
+      <p className="mb-4" style={{ textAlign: 'left' }}><strong>Date d'envoi:</strong> {dateStr}</p>
 
       {/* Checks Table */}
       {checks.length > 0 && (
@@ -215,19 +215,19 @@ const HandoverPrintView: React.FC<Props> = ({
       )}
 
       {/* Summary Footer - Separated sections */}
-      <div className="mt-6 text-sm">
+      <div className="mt-6 text-sm" style={{ direction: 'ltr', textAlign: 'left' }}>
         {/* Section 1: Argent Physique (Cash) */}
         <div className="border-2 border-black p-3 mb-4">
-          <h3 className="font-bold text-center mb-2 text-base underline">ARGENT PHYSIQUE (ESPÈCES)</h3>
-          <div className="flex justify-between mb-1">
+          <h3 className="font-bold text-center mb-2 text-base underline" style={{ textAlign: 'center' }}>ARGENT PHYSIQUE (ESPÈCES)</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }}>
             <span>Argent Factures (F1):</span>
             <span className="font-bold">{cashInvoice1.toLocaleString()} DA</span>
           </div>
-          <div className="flex justify-between mb-1">
+          <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }}>
             <span>Argent Sans Facture (F2):</span>
             <span className="font-bold">{cashInvoice2.toLocaleString()} DA</span>
           </div>
-          <div className="flex justify-between mt-2 pt-2 border-t border-black font-bold">
+          <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid black' }} className="font-bold">
             <span>Total Espèces:</span>
             <span>{(cashInvoice1 + cashInvoice2).toLocaleString()} DA</span>
           </div>
@@ -236,26 +236,26 @@ const HandoverPrintView: React.FC<Props> = ({
         {/* Section 2: Valeurs (Non-cash) */}
         {(checksAmount > 0 || receiptsAmount > 0 || transfersAmount > 0) && (
           <div className="border-2 border-black p-3 mb-4">
-            <h3 className="font-bold text-center mb-2 text-base underline">VALEURS (EFFETS)</h3>
+            <h3 className="font-bold text-center mb-2 text-base underline" style={{ textAlign: 'center' }}>VALEURS (EFFETS)</h3>
             {checksAmount > 0 && (
-              <div className="flex justify-between mb-1">
+              <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }}>
                 <span>Chèques:</span>
                 <span className="font-bold">{checksAmount.toLocaleString()} DA</span>
               </div>
             )}
             {receiptsAmount > 0 && (
-              <div className="flex justify-between mb-1">
+              <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }}>
                 <span>Versements:</span>
                 <span className="font-bold">{receiptsAmount.toLocaleString()} DA</span>
               </div>
             )}
             {transfersAmount > 0 && (
-              <div className="flex justify-between mb-1">
+              <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }}>
                 <span>Virements:</span>
                 <span className="font-bold">{transfersAmount.toLocaleString()} DA</span>
               </div>
             )}
-            <div className="flex justify-between mt-2 pt-2 border-t border-black font-bold">
+            <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid black' }} className="font-bold">
               <span>Total Valeurs:</span>
               <span>{(checksAmount + receiptsAmount + transfersAmount).toLocaleString()} DA</span>
             </div>
@@ -263,8 +263,8 @@ const HandoverPrintView: React.FC<Props> = ({
         )}
 
         {/* Grand Total */}
-        <div className="border-2 border-black p-3 bg-gray-100">
-          <div className="flex justify-between text-base font-bold">
+        <div className="border-2 border-black p-3" style={{ backgroundColor: '#f3f4f6' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr' }} className="text-base font-bold">
             <span>TOTAL GÉNÉRAL:</span>
             <span>{totalAmount.toLocaleString()} DA</span>
           </div>
@@ -272,7 +272,7 @@ const HandoverPrintView: React.FC<Props> = ({
       </div>
 
       {/* Signature */}
-      <div className="mt-10">
+      <div className="mt-10" style={{ textAlign: 'left' }}>
         <p className="font-bold underline">Signature:</p>
       </div>
     </div>
