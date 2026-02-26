@@ -42,6 +42,25 @@ const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   const [defaultQty, setDefaultQty] = useState('10');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Fetch registered customer counts per sector to filter empty sectors
+  const { data: sectorCustomerCounts } = useQuery({
+    queryKey: ['sector-registered-counts', activeBranch?.id],
+    queryFn: async () => {
+      let q = supabase.from('customers')
+        .select('sector_id')
+        .eq('is_registered', true)
+        .eq('status', 'active')
+        .not('sector_id', 'is', null);
+      if (activeBranch?.id) q = q.eq('branch_id', activeBranch.id);
+      const { data, error } = await q;
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      (data || []).forEach(c => { counts[c.sector_id!] = (counts[c.sector_id!] || 0) + 1; });
+      return counts;
+    },
+    enabled: open,
+  });
+
   // Fetch customers for selected sector
   const { data: sectorCustomers, isLoading: loadingCustomers } = useQuery({
     queryKey: ['sector-customers', selectedSector?.id, activeBranch?.id],
@@ -87,12 +106,18 @@ const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange }) => {
     }
   }, [step, products]);
 
+  // Only show sectors that have registered customers
+  const sectorsWithCustomers = useMemo(() => {
+    if (!sectorCustomerCounts) return [];
+    return sectors.filter(s => sectorCustomerCounts[s.id] > 0);
+  }, [sectors, sectorCustomerCounts]);
+
   const filteredSectors = useMemo(() => {
-    if (!sectorSearch) return sectors;
-    return sectors.filter(s =>
+    if (!sectorSearch) return sectorsWithCustomers;
+    return sectorsWithCustomers.filter(s =>
       s.name?.includes(sectorSearch) || s.name_fr?.toLowerCase().includes(sectorSearch.toLowerCase())
     );
-  }, [sectors, sectorSearch]);
+  }, [sectorsWithCustomers, sectorSearch]);
 
   const filteredCustomers = useMemo(() => {
     if (!sectorCustomers) return [];
@@ -144,6 +169,7 @@ const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange }) => {
         branch_id: activeBranch?.id || null,
         status: 'pending',
         payment_type: 'with_invoice',
+        invoice_payment_method: 'trigg',
         total_amount: 0,
       }).select('id').single();
 
