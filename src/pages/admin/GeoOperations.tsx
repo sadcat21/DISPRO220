@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MapPin, Loader2, Navigation, Clock, User, ShoppingCart, Truck, UserPlus, CreditCard, Filter, ExternalLink, Pencil, Trash2 } from 'lucide-react';
+import { MapPin, Loader2, Navigation, Clock, User, ShoppingCart, Truck, UserPlus, CreditCard, Filter, ExternalLink, Pencil, Trash2, Warehouse } from 'lucide-react';
 import { useVisitTrackingList, getOperationLabel, OperationType } from '@/hooks/useVisitTracking';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -35,6 +35,8 @@ const OPERATION_COLORS: Record<string, string> = {
   delete_customer: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
   debt_collection: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 };
+// Warehouse location: 35°54'27.9"N 0°06'09.1"E
+const WAREHOUSE_LOCATION = { lat: 35.90775, lng: 0.10253 };
 
 const GeoOperations: React.FC = () => {
   const { activeBranch } = useAuth();
@@ -279,6 +281,10 @@ const GeoOperations: React.FC = () => {
               ? calculateDistance(userLocation.lat, userLocation.lng, visit.latitude, visit.longitude)
               : null;
 
+            const warehouseDistance = (visit.latitude && visit.longitude)
+              ? calculateDistance(WAREHOUSE_LOCATION.lat, WAREHOUSE_LOCATION.lng, visit.latitude, visit.longitude)
+              : null;
+
             const nearbyCustomers = nearbyCustomersMap[visit.id] || [];
 
             return (
@@ -311,6 +317,12 @@ const GeoOperations: React.FC = () => {
                             <div className="flex items-center gap-1 text-xs font-bold text-teal-600 border-r pr-2">
                               <Navigation className="w-3 h-3" />
                               <span>بعدك: {formatDistance(userDistance)}</span>
+                            </div>
+                          )}
+                          {warehouseDistance !== null && (
+                            <div className="flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400 border-r pr-2">
+                              <Warehouse className="w-3 h-3" />
+                              <span>المخزن: {formatDistance(warehouseDistance)}</span>
                             </div>
                           )}
                         </div>
