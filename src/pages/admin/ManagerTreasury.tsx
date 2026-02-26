@@ -262,17 +262,13 @@ const ManagerTreasury = () => {
             <p className="text-lg font-bold text-orange-500">{summary?.bank_transfer?.toLocaleString() || 0} د.ج</p>
           </CardContent>
         </Card>
-      </div>
-
-      {/* Stamp info */}
-      {(summary?.cash_invoice1_stamp || 0) > 0 && (
         <Card className="border-amber-600/30 bg-amber-600/5">
           <CardContent className="p-3 text-center">
             <p className="text-xs text-muted-foreground">إجمالي الطوابع (ضريبة على فاتورة 1)</p>
-            <p className="text-lg font-bold text-amber-600">{summary.cash_invoice1_stamp.toLocaleString()} د.ج</p>
+            <p className="text-lg font-bold text-amber-600">{(summary?.cash_invoice1_stamp || 0).toLocaleString()} د.ج</p>
           </CardContent>
         </Card>
-      )}
+      </div>
 
       {detailsCategory && (
         <PaymentMethodDetailsDialog
