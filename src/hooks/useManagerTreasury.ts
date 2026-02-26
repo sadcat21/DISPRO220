@@ -64,6 +64,7 @@ export interface TreasurySummary {
   debtCashCollected: number;
   totalExpenses: number;
   totalGiftsValue: number;
+  workerHeldAmount: number;
 }
 
 export const useManagerTreasury = () => {
@@ -102,7 +103,7 @@ export const useTreasurySummary = () => {
       // Get delivered orders with gift data
       let oQuery = supabase
         .from('orders')
-        .select('id, payment_type, invoice_payment_method, payment_status, total_amount, partial_amount, order_items(total_price, gift_quantity, unit_price)')
+        .select('id, payment_type, invoice_payment_method, payment_status, total_amount, partial_amount, assigned_worker_id, delivery_date, created_at, order_items(total_price, gift_quantity, unit_price)')
         .eq('status', 'delivered');
       if (activeBranch?.id) oQuery = oQuery.eq('branch_id', activeBranch.id);
       const { data: orders, error: oErr } = await oQuery;
@@ -146,6 +147,31 @@ export const useTreasurySummary = () => {
       const { data: expensesData } = await expQuery;
       const totalExpenses = (expensesData || []).reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
 
+      // Get completed accounting sessions to determine covered orders
+      let sessQuery = supabase
+        .from('accounting_sessions')
+        .select('worker_id, period_start, period_end')
+        .eq('status', 'completed');
+      if (activeBranch?.id) sessQuery = sessQuery.eq('branch_id', activeBranch.id);
+      const { data: sessions } = await sessQuery;
+
+      // Calculate worker-held amounts: delivered paid orders NOT covered by any completed session
+      let workerHeldAmount = 0;
+      (orders || []).forEach((o: any) => {
+        let paidAmount = Number(o.total_amount || 0);
+        if (o.payment_status === 'partial') paidAmount = Number(o.partial_amount || 0);
+        else if (o.payment_status === 'debt') paidAmount = 0;
+        if (paidAmount <= 0 || !o.assigned_worker_id) return;
+
+        const orderDate = o.delivery_date || o.created_at;
+        const isCovered = (sessions || []).some((s: any) =>
+          s.worker_id === o.assigned_worker_id &&
+          orderDate >= s.period_start &&
+          orderDate <= s.period_end
+        );
+        if (!isCovered) workerHeldAmount += paidAmount;
+      });
+
       // Calculate total sales from all delivered orders
       const totalSales = (orders || []).reduce((s: number, o: any) => s + Number(o.total_amount || 0), 0);
 
@@ -167,6 +193,7 @@ export const useTreasurySummary = () => {
         coins: totalCoins,
         total: 0, handedOver: 0, remaining: 0,
         totalSales, totalDebts, collectedDebts, uncollectedDebts, debtCashCollected, totalExpenses, totalGiftsValue,
+        workerHeldAmount,
       };
 
       (orders || []).forEach((o: any) => {
