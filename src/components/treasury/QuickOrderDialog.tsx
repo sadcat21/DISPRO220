@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, ArrowRight, User, Shuffle, Trash2, Check, MapPin, Send } from 'lucide-react';
+import { Search, ArrowRight, User, Shuffle, Trash2, Check, MapPin, Send, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { getLocalizedName } from '@/utils/sectorName';
 import { useSectors } from '@/hooks/useSectors';
@@ -26,7 +26,7 @@ interface ProductItem {
   selected: boolean;
 }
 
-type Step = 'sectors' | 'customers' | 'products';
+type Step = 'sectors' | 'customers' | 'products' | 'whatsapp';
 
 const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange, onOrderCreated }) => {
   const { language, dir } = useLanguage();
@@ -42,6 +42,7 @@ const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange, onOrderCreated 
   const [productItems, setProductItems] = useState<ProductItem[]>([]);
   const [defaultQty, setDefaultQty] = useState('10');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
 
   // Fetch registered customer counts per sector to filter empty sectors
   const { data: sectorCustomerCounts } = useQuery({
@@ -92,6 +93,19 @@ const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange, onOrderCreated 
       return data || [];
     },
     enabled: open && step === 'products',
+  });
+
+  // Fetch WhatsApp contacts
+  const { data: whatsappContacts } = useQuery({
+    queryKey: ['treasury-whatsapp-contacts', activeBranch?.id],
+    queryFn: async () => {
+      let q = supabase.from('treasury_contacts').select('*').eq('contact_type', 'whatsapp').eq('is_active', true).order('name');
+      if (activeBranch?.id) q = q.eq('branch_id', activeBranch.id);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: open && step === 'whatsapp',
   });
 
   // Initialize products when entering products step
@@ -163,7 +177,6 @@ const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange, onOrderCreated 
     setIsSubmitting(true);
 
     try {
-      // Create order
       const { data: order, error: orderErr } = await supabase.from('orders').insert({
         customer_id: selectedCustomer.id,
         created_by: workerId,
@@ -176,7 +189,6 @@ const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange, onOrderCreated 
 
       if (orderErr) throw orderErr;
 
-      // Insert order items
       const items = selectedProducts.map(p => ({
         order_id: order.id,
         product_id: p.id,
@@ -188,14 +200,39 @@ const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange, onOrderCreated 
 
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['invoice-orders'] });
-      toast.success('تم إرسال الطلب بنجاح ✅');
-      handleClose();
-      onOrderCreated?.();
+      setCreatedOrderId(order.id);
+      setStep('whatsapp');
     } catch (error: any) {
       toast.error(error.message || 'فشل إنشاء الطلب');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const buildQuickOrderWhatsAppMessage = () => {
+    const customerName = selectedCustomer?.name_fr || selectedCustomer?.name || '';
+    const lines = [customerName, '', 'trigg', ''];
+    for (const p of selectedProducts) {
+      lines.push(`${p.quantity} ${p.name}`);
+    }
+    return lines.join('\n');
+  };
+
+  const sendViaWhatsApp = async (phone: string) => {
+    const msg = buildQuickOrderWhatsAppMessage();
+    const cleanPhone = phone.replace(/[^0-9+]/g, '');
+    const formattedPhone = cleanPhone.startsWith('+') ? cleanPhone.slice(1) : cleanPhone.startsWith('0') ? '213' + cleanPhone.slice(1) : cleanPhone;
+    const url = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
+
+    if (createdOrderId) {
+      await supabase.from('orders').update({ invoice_sent_at: new Date().toISOString() } as any).eq('id', createdOrderId);
+      queryClient.invalidateQueries({ queryKey: ['invoice-orders'] });
+    }
+
+    toast.success('تم فتح واتساب وتعليم الطلب كمرسل ✅');
+    handleClose();
+    onOrderCreated?.();
   };
 
   const resetState = () => {
@@ -206,6 +243,7 @@ const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange, onOrderCreated 
     setCustomerSearch('');
     setProductItems([]);
     setDefaultQty('10');
+    setCreatedOrderId(null);
   };
 
   const handleClose = () => {
@@ -380,6 +418,46 @@ const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange, onOrderCreated 
                 <Send className="w-4 h-4" />
                 {isSubmitting ? 'جاري الإرسال...' : `إرسال الطلب (${selectedProducts.length} منتج)`}
               </Button>
+            </>
+          )}
+
+          {/* Step 4: WhatsApp */}
+          {step === 'whatsapp' && (
+            <>
+              <div className="bg-muted/50 rounded-lg p-2 text-sm font-medium flex items-center gap-2">
+                <User className="w-4 h-4 text-primary" />
+                {selectedCustomer?.name}
+              </div>
+              <div className="p-3 rounded-lg bg-muted/50 text-xs space-y-1">
+                <p className="font-medium">معاينة الرسالة:</p>
+                <pre className="whitespace-pre-wrap text-[11px] bg-background rounded p-2 border" dir="ltr">
+                  {buildQuickOrderWhatsAppMessage()}
+                </pre>
+              </div>
+              <p className="text-sm font-medium">اختر رقم واتساب:</p>
+              <ScrollArea className="h-[35vh]">
+                <div className="space-y-2">
+                  {(whatsappContacts || []).map((c: any) => (
+                    <Button
+                      key={c.id}
+                      variant="outline"
+                      className="w-full justify-start gap-2 h-auto py-3"
+                      onClick={() => sendViaWhatsApp(c.phone || '')}
+                    >
+                      <MessageCircle className="w-5 h-5 text-green-600 shrink-0" />
+                      <div className="text-start min-w-0">
+                        <span className="text-sm font-medium block">{c.name}</span>
+                        {c.phone && <span className="text-xs text-muted-foreground block" dir="ltr">{c.phone}</span>}
+                      </div>
+                    </Button>
+                  ))}
+                  {(whatsappContacts || []).length === 0 && (
+                    <p className="text-center text-muted-foreground text-sm py-4">
+                      لا توجد أرقام واتساب. أضفها من ⚙️ الإعدادات
+                    </p>
+                  )}
+                </div>
+              </ScrollArea>
             </>
           )}
         </div>
