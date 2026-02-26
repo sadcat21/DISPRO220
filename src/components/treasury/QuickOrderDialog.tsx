@@ -153,18 +153,12 @@ const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange, onOrderCreated 
     }
   }, [step, products]);
 
-  // Only show sectors that have registered customers
-  const sectorsWithCustomers = useMemo(() => {
-    if (!sectorCustomerCounts) return [];
-    return sectors.filter(s => sectorCustomerCounts[s.id] > 0);
-  }, [sectors, sectorCustomerCounts]);
-
   const filteredSectors = useMemo(() => {
-    if (!sectorSearch) return sectorsWithCustomers;
-    return sectorsWithCustomers.filter(s =>
+    if (!sectorSearch) return sectors;
+    return sectors.filter(s =>
       s.name?.includes(sectorSearch) || s.name_fr?.toLowerCase().includes(sectorSearch.toLowerCase())
     );
-  }, [sectorsWithCustomers, sectorSearch]);
+  }, [sectors, sectorSearch]);
 
   // Group customers by sector for display
   const groupedCustomers = useMemo(() => {
