@@ -479,12 +479,14 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
             {pendingCount > 0 && (
               <Badge variant="destructive" className="text-xs">{pendingCount}</Badge>
             )}
-            <Button size="icon" className="h-7 w-7 bg-destructive hover:bg-destructive/90 text-destructive-foreground border-0" onClick={() => setQuickOrderOpen(true)} title="إنشاء طلب سريع">
-              <Route className="w-4 h-4" />
-            </Button>
-            <Button size="icon" variant="outline" className="h-7 w-7 mr-auto" onClick={() => setSettingsOpen(true)} title="إعدادات">
-              <Settings className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center gap-1 mr-auto">
+              <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => setSettingsOpen(true)} title="إعدادات">
+                <Settings className="w-4 h-4" />
+              </Button>
+              <Button size="icon" className="h-7 w-7 bg-destructive hover:bg-destructive/90 text-destructive-foreground border-0" onClick={() => setQuickOrderOpen(true)} title="إنشاء طلب سريع">
+                <Route className="w-4 h-4" />
+              </Button>
+            </div>
           </DialogTitle>
         </DialogHeader>
 
