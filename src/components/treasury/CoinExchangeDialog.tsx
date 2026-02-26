@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,13 +24,23 @@ interface CoinExchangeDialogProps {
 const CoinExchangeDialog = ({ open, onOpenChange, preselectedWorkerId }: CoinExchangeDialogProps) => {
   const { t, dir } = useLanguage();
   const { activeBranch } = useAuth();
-  const [view, setView] = useState<'list' | 'create' | 'details'>(preselectedWorkerId ? 'create' : 'list');
+  const [view, setView] = useState<'list' | 'create' | 'details'>('list');
   const [selectedTask, setSelectedTask] = useState<CoinExchangeTask | null>(null);
-  const [workerId, setWorkerId] = useState(preselectedWorkerId || '');
+  const [workerId, setWorkerId] = useState('');
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
   const [returnAmount, setReturnAmount] = useState('');
   const [returnNotes, setReturnNotes] = useState('');
+
+  // Sync preselectedWorkerId when dialog opens
+  useEffect(() => {
+    if (open && preselectedWorkerId) {
+      setWorkerId(preselectedWorkerId);
+      setView('create');
+    } else if (open && !preselectedWorkerId) {
+      setView('list');
+    }
+  }, [open, preselectedWorkerId]);
 
   const { data: workers = [] } = useQuery({
     queryKey: ['workers-coin-exchange', activeBranch?.id],
