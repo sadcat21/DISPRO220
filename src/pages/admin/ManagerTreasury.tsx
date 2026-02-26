@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Banknote, CreditCard, Receipt, ArrowUpRight, Plus, Send, Coins } from 'lucide-react';
+import { Banknote, CreditCard, Receipt, ArrowUpRight, Plus, Send, Coins, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import InvoiceOCRScanner from '@/components/treasury/InvoiceOCRScanner';
 import { format } from 'date-fns';
@@ -277,6 +277,43 @@ const ManagerTreasury = () => {
           category={detailsCategory}
         />
       )}
+
+      {/* المبيعات والديون */}
+      <Card className="border-muted">
+        <CardContent className="p-3 space-y-2">
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <TrendingUp className="w-4 h-4 text-muted-foreground" />
+            <p className="text-xs font-medium text-muted-foreground">ملخص المبيعات والديون</p>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-lg bg-green-500/5 border border-green-500/20 p-2 text-center">
+              <p className="text-[10px] text-muted-foreground">قيمة المبيعات</p>
+              <p className="text-sm font-bold text-green-600 truncate">{(summary?.totalSales || 0).toLocaleString()} د.ج</p>
+            </div>
+            <div className="rounded-lg bg-muted/50 p-2 text-center">
+              <p className="text-[10px] text-muted-foreground">المستلم (خزينة)</p>
+              <p className="text-sm font-bold truncate">{summary?.total?.toLocaleString() || 0} د.ج</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="rounded-lg bg-orange-500/5 border border-orange-500/20 p-2 text-center">
+              <AlertCircle className="w-3 h-3 mx-auto mb-0.5 text-orange-500" />
+              <p className="text-[10px] text-muted-foreground">إجمالي الديون</p>
+              <p className="text-xs font-bold text-orange-500 truncate">{(summary?.totalDebts || 0).toLocaleString()} د.ج</p>
+            </div>
+            <div className="rounded-lg bg-green-500/5 border border-green-500/20 p-2 text-center">
+              <CheckCircle className="w-3 h-3 mx-auto mb-0.5 text-green-500" />
+              <p className="text-[10px] text-muted-foreground">ديون محصّلة</p>
+              <p className="text-xs font-bold text-green-500 truncate">{(summary?.collectedDebts || 0).toLocaleString()} د.ج</p>
+            </div>
+            <div className="rounded-lg bg-destructive/5 border border-destructive/20 p-2 text-center">
+              <AlertCircle className="w-3 h-3 mx-auto mb-0.5 text-destructive" />
+              <p className="text-[10px] text-muted-foreground">ديون غير محصّلة</p>
+              <p className="text-xs font-bold text-destructive truncate">{(summary?.uncollectedDebts || 0).toLocaleString()} د.ج</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Total & Remaining */}
       <div className="grid grid-cols-2 gap-3">
