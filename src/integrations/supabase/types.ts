@@ -1580,6 +1580,7 @@ export type Database = {
           delivery_date: string | null
           id: string
           invoice_payment_method: string | null
+          invoice_sent_at: string | null
           notes: string | null
           partial_amount: number | null
           payment_status: string | null
@@ -1598,6 +1599,7 @@ export type Database = {
           delivery_date?: string | null
           id?: string
           invoice_payment_method?: string | null
+          invoice_sent_at?: string | null
           notes?: string | null
           partial_amount?: number | null
           payment_status?: string | null
@@ -1616,6 +1618,7 @@ export type Database = {
           delivery_date?: string | null
           id?: string
           invoice_payment_method?: string | null
+          invoice_sent_at?: string | null
           notes?: string | null
           partial_amount?: number | null
           payment_status?: string | null
