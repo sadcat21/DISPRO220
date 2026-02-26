@@ -262,15 +262,6 @@ const ManagerTreasury = () => {
             <p className="text-lg font-bold text-orange-500">{summary?.bank_transfer?.toLocaleString() || 0} د.ج</p>
           </CardContent>
         </Card>
-        {(summary?.coins || 0) > 0 && (
-          <Card className="border-amber-500/30 bg-amber-500/5">
-            <CardContent className="p-3 text-center">
-              <Coins className="w-5 h-5 mx-auto mb-1 text-amber-500" />
-              <p className="text-xs text-muted-foreground">العملات المعدنية</p>
-              <p className="text-lg font-bold text-amber-500">{summary.coins.toLocaleString()} د.ج</p>
-            </CardContent>
-          </Card>
-        )}
       </div>
 
       {/* Stamp info */}
