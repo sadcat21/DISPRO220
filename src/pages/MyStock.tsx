@@ -3,7 +3,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Package, Loader2, ShoppingBag, TrendingDown, TrendingUp } from 'lucide-react';
+import { Package, Loader2, ShoppingBag, TrendingDown, TrendingUp, Gift } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import DirectSaleDialog from '@/components/warehouse/DirectSaleDialog';
@@ -43,6 +43,30 @@ const MyStock: React.FC = () => {
     enabled: !!workerId,
   });
 
+  // Fetch gift quantities from delivered orders
+  const { data: giftData } = useQuery({
+    queryKey: ['my-stock-gifts', workerId],
+    queryFn: async () => {
+      const { data: orders } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('assigned_worker_id', workerId!)
+        .eq('status', 'delivered');
+
+      if (!orders || orders.length === 0) return [];
+
+      const orderIds = orders.map(o => o.id);
+      const { data: items } = await supabase
+        .from('order_items')
+        .select('product_id, gift_quantity, gift_offer_id, product:products(name, pricing_unit)')
+        .in('order_id', orderIds)
+        .gt('gift_quantity', 0);
+
+      return items || [];
+    },
+    enabled: !!workerId,
+  });
+
   // Calculate loaded and sold per product
   const movementStats = useMemo(() => {
     const stats: Record<string, { loaded: number; sold: number }> = {};
@@ -53,6 +77,19 @@ const MyStock: React.FC = () => {
     }
     return stats;
   }, [movements]);
+
+  // Calculate gifts per product
+  const giftStats = useMemo(() => {
+    const stats: Record<string, { totalGifts: number; unit: string }> = {};
+    for (const item of (giftData || [])) {
+      const pid = item.product_id;
+      const product = (item as any).product;
+      const unit = product?.pricing_unit || 'box';
+      if (!stats[pid]) stats[pid] = { totalGifts: 0, unit };
+      stats[pid].totalGifts += item.gift_quantity;
+    }
+    return stats;
+  }, [giftData]);
 
   if (isLoading) {
     return (
@@ -100,6 +137,9 @@ const MyStock: React.FC = () => {
             const stats = movementStats[item.product_id];
             const loaded = stats?.loaded || 0;
             const sold = stats?.sold || 0;
+            const gifts = giftStats[item.product_id];
+            const giftQty = gifts?.totalGifts || 0;
+            const giftUnit = gifts?.unit === 'unit' ? 'قطعة' : gifts?.unit === 'kg' ? 'كغ' : 'صندوق';
             return (
               <Card key={item.id} className={isZero ? 'opacity-50' : ''}>
                 <CardContent className="p-3">
@@ -120,6 +160,12 @@ const MyStock: React.FC = () => {
                       <TrendingDown className="w-3 h-3 text-green-500" />
                       مباع: {sold}
                     </span>
+                    {giftQty > 0 && (
+                      <span className="flex items-center gap-0.5">
+                        <Gift className="w-3 h-3 text-orange-500" />
+                        هدايا: {giftQty} {giftUnit}
+                      </span>
+                    )}
                     <span className="font-semibold">باقي: {item.quantity}</span>
                   </div>
                 </CardContent>
