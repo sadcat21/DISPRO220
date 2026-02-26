@@ -36,6 +36,13 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   const [workerSubTab, setWorkerSubTab] = useState<'pending' | 'completed' | 'received'>('pending');
   const [receivingOrderId, setReceivingOrderId] = useState<string | null>(null);
   const [invoiceNumberInput, setInvoiceNumberInput] = useState('');
+  const [invoicePrefix, setInvoicePrefix] = useState('FC');
+  const [invoiceYear, setInvoiceYear] = useState(new Date().getFullYear().toString());
+
+  const buildInvoiceNumber = (num: string) => {
+    const padded = num.padStart(5, '0');
+    return `${invoicePrefix}${padded}/${invoiceYear}`;
+  };
   const [step, setStep] = useState<Step>('customer');
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -316,14 +323,36 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
           </div>
           {receivingOrderId === order.id && (
             <div className="p-2 border rounded-lg bg-muted/30 space-y-2">
-              <p className="text-xs font-medium">أدخل رقم الفاتورة (مثال: FC00294/2026):</p>
-              <Input
-                value={invoiceNumberInput}
-                onChange={(e) => setInvoiceNumberInput(e.target.value)}
-                placeholder="FC00000/2026"
-                className="h-8 text-sm"
-                dir="ltr"
-              />
+              <p className="text-xs font-medium">أدخل رقم الفاتورة:</p>
+              <div className="flex gap-1.5 items-center" dir="ltr">
+                <Input
+                  value={invoicePrefix}
+                  onChange={(e) => setInvoicePrefix(e.target.value.toUpperCase())}
+                  className="h-8 text-sm w-14 text-center font-mono"
+                  dir="ltr"
+                />
+                <Input
+                  value={invoiceNumberInput}
+                  onChange={(e) => setInvoiceNumberInput(e.target.value.replace(/\D/g, ''))}
+                  placeholder="294"
+                  className="h-8 text-sm flex-1 font-mono"
+                  dir="ltr"
+                  type="text"
+                  inputMode="numeric"
+                />
+                <span className="text-muted-foreground text-sm">/</span>
+                <Input
+                  value={invoiceYear}
+                  onChange={(e) => setInvoiceYear(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  className="h-8 text-sm w-16 text-center font-mono"
+                  dir="ltr"
+                />
+              </div>
+              {invoiceNumberInput && (
+                <p className="text-[11px] text-muted-foreground text-center font-mono" dir="ltr">
+                  المعاينة: <span className="font-semibold text-foreground">{buildInvoiceNumber(invoiceNumberInput)}</span>
+                </p>
+              )}
               <div className="flex gap-2">
                 <Button
                   size="sm"
@@ -336,7 +365,8 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                 <Button
                   size="sm"
                   className="flex-1 h-7 text-xs"
-                  onClick={() => markOrderAsReceived(order.id, invoiceNumberInput)}
+                  disabled={!invoiceNumberInput}
+                  onClick={() => markOrderAsReceived(order.id, buildInvoiceNumber(invoiceNumberInput))}
                 >
                   <CheckCircle className="w-3 h-3 ml-1" />
                   تأكيد
