@@ -63,6 +63,7 @@ export interface TreasurySummary {
   uncollectedDebts: number;
   debtCashCollected: number;
   totalExpenses: number;
+  totalGiftsValue: number;
 }
 
 export const useManagerTreasury = () => {
@@ -98,10 +99,10 @@ export const useTreasurySummary = () => {
         .eq('is_active', true)
         .order('min_amount', { ascending: true });
 
-      // Get delivered orders
+      // Get delivered orders with gift data
       let oQuery = supabase
         .from('orders')
-        .select('id, payment_type, invoice_payment_method, payment_status, total_amount, partial_amount, order_items(total_price)')
+        .select('id, payment_type, invoice_payment_method, payment_status, total_amount, partial_amount, order_items(total_price, gift_quantity, unit_price)')
         .eq('status', 'delivered');
       if (activeBranch?.id) oQuery = oQuery.eq('branch_id', activeBranch.id);
       const { data: orders, error: oErr } = await oQuery;
@@ -148,6 +149,15 @@ export const useTreasurySummary = () => {
       // Calculate total sales from all delivered orders
       const totalSales = (orders || []).reduce((s: number, o: any) => s + Number(o.total_amount || 0), 0);
 
+      // Calculate total gift value (gifts given without payment)
+      const totalGiftsValue = (orders || []).reduce((s: number, o: any) => {
+        return s + (o.order_items || []).reduce((is: number, item: any) => {
+          const giftQty = Number(item.gift_quantity || 0);
+          const unitPrice = Number(item.unit_price || 0);
+          return is + (giftQty * unitPrice);
+        }, 0);
+      }, 0);
+
       const summary: TreasurySummary = {
         cash_invoice1: 0, cash_invoice1_count: 0, cash_invoice1_stamp: 0,
         cash_invoice2: 0, cash_invoice2_count: 0,
@@ -156,7 +166,7 @@ export const useTreasurySummary = () => {
         bank_transfer: 0, transferCount: 0,
         coins: totalCoins,
         total: 0, handedOver: 0, remaining: 0,
-        totalSales, totalDebts, collectedDebts, uncollectedDebts, debtCashCollected, totalExpenses,
+        totalSales, totalDebts, collectedDebts, uncollectedDebts, debtCashCollected, totalExpenses, totalGiftsValue,
       };
 
       (orders || []).forEach((o: any) => {

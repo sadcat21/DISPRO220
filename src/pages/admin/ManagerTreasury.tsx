@@ -436,9 +436,10 @@ const ManagerTreasury = () => {
         const totalInTreasury = summary?.total || 0;
         const handedOver = summary?.handedOver || 0;
         const totalExpenses = summary?.totalExpenses || 0;
+        const totalGiftsValue = summary?.totalGiftsValue || 0;
         
-        // المتوقع = المبيعات - الديون + تحصيلات الديون
-        const expectedInTreasury = totalSales - totalDebts + collectedDebts;
+        // المتوقع = المبيعات - الديون + تحصيلات الديون - قيمة الهدايا
+        const expectedInTreasury = totalSales - totalDebts + collectedDebts - totalGiftsValue;
         // الموجود فعلياً + المُسلَّم + المصاريف = ما تم التصرف فيه
         const accountedFor = totalInTreasury + handedOver + totalExpenses;
         const gap = expectedInTreasury - accountedFor;
@@ -468,6 +469,12 @@ const ManagerTreasury = () => {
                   <span className="text-[10px] text-muted-foreground">+ تحصيلات ديون سابقة</span>
                   <span className="text-xs font-bold text-green-500">+{collectedDebts.toLocaleString()} د.ج</span>
                 </div>
+                {totalGiftsValue > 0 && (
+                  <div className="flex items-center justify-between rounded-lg bg-background p-2">
+                    <span className="text-[10px] text-muted-foreground">− قيمة الهدايا (بدون مقابل مالي) 🎁</span>
+                    <span className="text-xs font-bold text-purple-500">−{totalGiftsValue.toLocaleString()} د.ج</span>
+                  </div>
+                )}
                 <div className="border-t pt-1.5">
                   <div className="flex items-center justify-between rounded-lg bg-primary/5 border border-primary/20 p-2">
                     <span className="text-[10px] font-medium">= المتوقع في الخزينة</span>
@@ -579,10 +586,11 @@ const ManagerTreasury = () => {
               <div className="p-3 rounded-lg bg-muted/50 space-y-2">
                 <p className="font-medium text-xs">المعادلة الأساسية:</p>
                 <div className="bg-background rounded p-2 text-xs space-y-1">
-                  <p><strong>المتوقع</strong> = إجمالي المبيعات − الديون الجديدة + تحصيلات الديون السابقة</p>
+                  <p><strong>المتوقع</strong> = إجمالي المبيعات − الديون الجديدة + تحصيلات الديون − قيمة الهدايا 🎁</p>
                   <p><strong>مجموع التصرف</strong> = الموجود في الخزينة + المُسلَّم + المصاريف المعتمدة</p>
                   <p><strong>الفجوة</strong> = المتوقع − مجموع التصرف</p>
                 </div>
+                <p className="text-[10px] text-muted-foreground mt-1">💡 الهدايا تُخصم لأنها منتجات سُلِّمت للعملاء مجاناً ضمن العروض الترويجية — لا يوجد مقابل مالي لها.</p>
               </div>
 
               <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-2">
@@ -592,15 +600,16 @@ const ManagerTreasury = () => {
                     <p>• مبيعات = <strong>1,000,000 د.ج</strong></p>
                     <p>• ديون جديدة = <strong>200,000 د.ج</strong></p>
                     <p>• تحصيلات ديون سابقة = <strong>50,000 د.ج</strong></p>
+                    <p>• قيمة الهدايا = <strong>20,000 د.ج</strong> 🎁</p>
                   </div>
-                  <p className="font-medium mt-1">المتوقع = 1,000,000 − 200,000 + 50,000 = <strong>850,000 د.ج</strong></p>
+                  <p className="font-medium mt-1">المتوقع = 1,000,000 − 200,000 + 50,000 − 20,000 = <strong>830,000 د.ج</strong></p>
                   <div className="bg-background rounded p-2 space-y-1 mt-1">
-                    <p>• الموجود في الخزينة = <strong>800,000 د.ج</strong></p>
+                    <p>• الموجود في الخزينة = <strong>790,000 د.ج</strong></p>
                     <p>• المُسلَّم = <strong>30,000 د.ج</strong></p>
                     <p>• المصاريف = <strong>10,000 د.ج</strong></p>
                   </div>
-                  <p className="font-medium mt-1">مجموع التصرف = 800,000 + 30,000 + 10,000 = <strong>840,000 د.ج</strong></p>
-                  <p className="text-orange-600 font-medium">← عجز = 850,000 − 840,000 = 10,000 د.ج ⚠️</p>
+                  <p className="font-medium mt-1">مجموع التصرف = 790,000 + 30,000 + 10,000 = <strong>830,000 د.ج</strong></p>
+                  <p className="text-green-600 font-medium">✅ لا توجد فجوة — الميزانية متوازنة</p>
                 </div>
               </div>
             </div>
