@@ -224,7 +224,7 @@ const HandoverPrintView: React.FC<Props> = ({
             <span className="font-bold">{cashInvoice1.toLocaleString()} DA</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }}>
-            <span>Argent Sans Facture (F2):</span>
+            <span>Argent Facture (F2):</span>
             <span className="font-bold">{cashInvoice2.toLocaleString()} DA</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid black' }} className="font-bold">
