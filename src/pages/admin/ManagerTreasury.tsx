@@ -427,21 +427,35 @@ const ManagerTreasury = () => {
           <CardContent className="p-3 space-y-2">
             <div className="flex items-center justify-center gap-2">
               <AlertTriangle className="w-4 h-4 text-destructive" />
-              <p className="text-xs font-medium text-destructive">اختلالات في المحاسبة ({discrepancies.length})</p>
+              <p className="text-xs font-medium text-destructive">فروقات في المحاسبة ({discrepancies.length})</p>
             </div>
+            <p className="text-[10px] text-muted-foreground text-center">
+              مقارنة بين ما يجب أن يكون (حسب النظام) وما تم تسجيله فعلياً في جلسة المحاسبة
+            </p>
             <div className="space-y-1.5">
-              {discrepancies.map((d, i) => (
-                <div key={i} className="rounded-lg bg-background p-2 flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">{itemTypeLabels[d.item_type] || d.item_type}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">المتوقع: {d.expected.toLocaleString()}</span>
-                    <span className="text-muted-foreground">الفعلي: {d.actual.toLocaleString()}</span>
-                    <Badge variant={d.difference > 0 ? 'default' : 'destructive'} className="text-[10px]">
-                      {d.difference > 0 ? '+' : ''}{d.difference.toLocaleString()}
-                    </Badge>
+              {discrepancies.map((d, i) => {
+                const isSurplus = d.difference > 0;
+                return (
+                  <div key={i} className="rounded-lg bg-background p-2.5 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium">{itemTypeLabels[d.item_type] || d.item_type}</span>
+                      <Badge variant={isSurplus ? 'default' : 'destructive'} className="text-[10px]">
+                        {isSurplus ? 'فائض' : 'عجز'} {Math.abs(d.difference).toLocaleString()} د.ج
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                      <span>📊 المتوقع (النظام): {d.expected.toLocaleString()} د.ج</span>
+                      <span>✅ الفعلي (المُسجَّل): {d.actual.toLocaleString()} د.ج</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground/80">
+                      {isSurplus 
+                        ? `💡 تم تسجيل مبلغ أعلى بـ ${Math.abs(d.difference).toLocaleString()} د.ج مما هو متوقع حسب النظام`
+                        : `⚠️ ينقص ${Math.abs(d.difference).toLocaleString()} د.ج عن المبلغ المتوقع حسب النظام`
+                      }
+                    </p>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
@@ -452,7 +466,7 @@ const ManagerTreasury = () => {
           <CardContent className="p-3 text-center">
             <div className="flex items-center justify-center gap-2">
               <CheckCircle className="w-4 h-4 text-green-500" />
-              <p className="text-xs font-medium text-green-600">لا توجد اختلالات في المحاسبة ✓</p>
+              <p className="text-xs font-medium text-green-600">لا توجد فروقات في المحاسبة ✓</p>
             </div>
           </CardContent>
         </Card>
