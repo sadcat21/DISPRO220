@@ -113,14 +113,27 @@ const ManagerTreasury = () => {
   const [editCash2, setEditCash2] = useState(0);
   const [editNotes, setEditNotes] = useState('');
   const [editSaving, setEditSaving] = useState(false);
+  const [editItems, setEditItems] = useState<{checks: PickedItem[], receipts: PickedItem[], transfers: PickedItem[]}>({ checks: [], receipts: [], transfers: [] });
   const printRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
 
-  const openEditHandover = (h: any) => {
+  const openEditHandover = async (h: any) => {
     setEditCash1(Number(h.cash_invoice1 ?? 0));
     setEditCash2(Number(h.cash_invoice2 ?? 0));
     setEditNotes(h.notes || '');
     setEditHandover(h.id);
+    // Load existing handover items
+    const { data: items } = await supabase
+      .from('handover_items')
+      .select('order_id, payment_method, amount, customer_name')
+      .eq('handover_id', h.id);
+    if (items) {
+      setEditItems({
+        checks: items.filter(i => i.payment_method === 'check').map(i => ({ order_id: i.order_id || '', amount: Number(i.amount), customer_name: i.customer_name || '' })),
+        receipts: items.filter(i => i.payment_method === 'receipt').map(i => ({ order_id: i.order_id || '', amount: Number(i.amount), customer_name: i.customer_name || '' })),
+        transfers: items.filter(i => i.payment_method === 'transfer').map(i => ({ order_id: i.order_id || '', amount: Number(i.amount), customer_name: i.customer_name || '' })),
+      });
+    }
   };
 
   const saveEditHandover = async () => {
@@ -958,32 +971,99 @@ const ManagerTreasury = () => {
       })()}
 
       {/* Edit Handover Dialog */}
-      {editHandover && (
-        <Dialog open={!!editHandover} onOpenChange={(open) => !open && setEditHandover(null)}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>{t('treasury.edit_handover')}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label>{t('treasury.cash_f1')}</Label>
-                <Input type="number" value={editCash1} onChange={(e) => setEditCash1(Number(e.target.value))} />
+      {editHandover && (() => {
+        const h = handovers?.find(ho => ho.id === editHandover);
+        if (!h) return null;
+        const editChecksTotal = editItems.checks.reduce((s, i) => s + i.amount, 0);
+        const editReceiptsTotal = editItems.receipts.reduce((s, i) => s + i.amount, 0);
+        const editTransfersTotal = editItems.transfers.reduce((s, i) => s + i.amount, 0);
+        const editGrandTotal = editCash1 + editCash2 + editChecksTotal + editReceiptsTotal + editTransfersTotal;
+        return (
+          <Dialog open={!!editHandover} onOpenChange={(open) => !open && setEditHandover(null)}>
+            <DialogContent dir={dir} className="max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{t('treasury.edit_handover')}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                {/* Cash section - editable */}
+                <div className="p-3 rounded-lg bg-muted/50 space-y-3">
+                  <p className="font-medium text-sm">💵 {t('treasury.cash')}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div><Label className="text-xs">{t('treasury.cash_invoice1')}</Label><Input type="number" value={editCash1} onChange={e => setEditCash1(Number(e.target.value))} /></div>
+                    <div><Label className="text-xs">{t('treasury.cash_invoice2')}</Label><Input type="number" value={editCash2} onChange={e => setEditCash2(Number(e.target.value))} /></div>
+                  </div>
+                </div>
+
+                {/* Checks - read only */}
+                {editItems.checks.length > 0 && (
+                  <div className="p-3 rounded-lg bg-muted/50 space-y-2">
+                    <p className="font-medium text-sm">📝 {t('treasury.checks')} ({editItems.checks.length})</p>
+                    {editItems.checks.map((item, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs bg-background rounded-md px-2 py-1.5 border">
+                        <span className="truncate flex-1">{item.customer_name}</span>
+                        <span className="font-bold whitespace-nowrap">{item.amount.toLocaleString()} {cur}</span>
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-between text-xs pt-1 border-t">
+                      <span className="text-muted-foreground">{t('common.total')}</span>
+                      <span className="font-bold">{editChecksTotal.toLocaleString()} {cur}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Receipts - read only */}
+                {editItems.receipts.length > 0 && (
+                  <div className="p-3 rounded-lg bg-muted/50 space-y-2">
+                    <p className="font-medium text-sm">🧾 {t('treasury.versement')} ({editItems.receipts.length})</p>
+                    {editItems.receipts.map((item, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs bg-background rounded-md px-2 py-1.5 border">
+                        <span className="truncate flex-1">{item.customer_name}</span>
+                        <span className="font-bold whitespace-nowrap">{item.amount.toLocaleString()} {cur}</span>
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-between text-xs pt-1 border-t">
+                      <span className="text-muted-foreground">{t('common.total')}</span>
+                      <span className="font-bold">{editReceiptsTotal.toLocaleString()} {cur}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Transfers - read only */}
+                {editItems.transfers.length > 0 && (
+                  <div className="p-3 rounded-lg bg-muted/50 space-y-2">
+                    <p className="font-medium text-sm">🏦 {t('treasury.virement')} ({editItems.transfers.length})</p>
+                    {editItems.transfers.map((item, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs bg-background rounded-md px-2 py-1.5 border">
+                        <span className="truncate flex-1">{item.customer_name}</span>
+                        <span className="font-bold whitespace-nowrap">{item.amount.toLocaleString()} {cur}</span>
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-between text-xs pt-1 border-t">
+                      <span className="text-muted-foreground">{t('common.total')}</span>
+                      <span className="font-bold">{editTransfersTotal.toLocaleString()} {cur}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Total */}
+                {editGrandTotal > 0 && (
+                  <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{t('treasury.total_handover')}</span>
+                      <span className="text-sm font-bold text-primary">{editGrandTotal.toLocaleString()} {cur}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div><Label>{t('treasury.notes')}</Label><Textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} /></div>
+                <Button className="w-full" onClick={saveEditHandover} disabled={editSaving}>
+                  {editSaving ? t('common.saving') : t('common.save')}
+                </Button>
               </div>
-              <div>
-                <Label>{t('treasury.cash_f2')}</Label>
-                <Input type="number" value={editCash2} onChange={(e) => setEditCash2(Number(e.target.value))} />
-              </div>
-              <div>
-                <Label>{t('common.notes')}</Label>
-                <Textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} />
-              </div>
-              <Button className="w-full" onClick={saveEditHandover} disabled={editSaving}>
-                {editSaving ? t('common.saving') : t('common.save')}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
     </div>
   );
 };
