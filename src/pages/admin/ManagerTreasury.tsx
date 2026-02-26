@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTreasurySummary, useManagerTreasury, useManagerHandovers, useCreateHandover, useAddTreasuryEntry } from '@/hooks/useManagerTreasury';
@@ -15,7 +15,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Banknote, CreditCard, Receipt, ArrowUpRight, Plus, Send, Coins, TrendingUp, AlertCircle, CheckCircle, AlertTriangle, Info, RefreshCw, Printer, Eye, Pencil, Trash2, Settings } from 'lucide-react';
+import { Banknote, CreditCard, Receipt, ArrowUpRight, Plus, Send, Coins, TrendingUp, AlertCircle, CheckCircle, AlertTriangle, Info, RefreshCw, Printer, Eye, Pencil, Trash2, Settings, Download } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import { toast } from 'sonner';
 import InvoiceOCRScanner from '@/components/treasury/InvoiceOCRScanner';
 import { format } from 'date-fns';
@@ -1077,6 +1079,24 @@ const ManagerTreasury = () => {
                     w.print();
                   }}>
                     <Printer className="w-4 h-4 mx-1" /> طباعة
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={async () => {
+                    const el = printRef.current;
+                    if (!el) return;
+                    try {
+                      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+                      const imgData = canvas.toDataURL('image/png');
+                      const pdf = new jsPDF('p', 'mm', 'a4');
+                      const pdfW = pdf.internal.pageSize.getWidth();
+                      const pdfH = (canvas.height * pdfW) / canvas.width;
+                      pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
+                      pdf.save(`bordereau_${h.handover_date}.pdf`);
+                      toast.success('تم حفظ الملف بنجاح');
+                    } catch {
+                      toast.error('فشل في حفظ الملف');
+                    }
+                  }}>
+                    <Download className="w-4 h-4 mx-1" /> PDF
                   </Button>
                 </DialogTitle>
               </DialogHeader>
