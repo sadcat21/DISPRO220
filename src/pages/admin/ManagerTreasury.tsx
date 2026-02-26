@@ -110,6 +110,7 @@ const ManagerTreasury = () => {
                     setAddForm(f => ({
                       ...f,
                       amount: data.amount || f.amount,
+                      customer_name: data.customer_name || f.customer_name,
                       invoice_number: data.invoice_number || f.invoice_number,
                       check_number: data.check_number || f.check_number,
                       check_bank: data.check_bank || f.check_bank,
