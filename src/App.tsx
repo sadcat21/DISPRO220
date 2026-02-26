@@ -42,6 +42,7 @@ import WorkerActions from "./pages/admin/WorkerActions";
 import DailyReceipts from "./pages/admin/DailyReceipts";
 import ManagerTreasury from "./pages/admin/ManagerTreasury";
 import WorkerLiability from "./pages/admin/WorkerLiability";
+import ShareTarget from "./pages/ShareTarget";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -308,6 +309,9 @@ const AppRoutes = () => {
           <WorkerLiability />
         </ProtectedRoute>
       } />
+
+      {/* Share Target */}
+      <Route path="/share" element={<ShareTarget />} />
 
       {/* 404 */}
       <Route path="*" element={<NotFound />} />

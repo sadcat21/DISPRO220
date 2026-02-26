@@ -47,10 +47,27 @@ export default defineConfig(({ mode }) => ({
             purpose: "any maskable",
           },
         ],
-      },
+        share_target: {
+          action: "/share",
+          method: "POST",
+          enctype: "multipart/form-data",
+          params: {
+            title: "title",
+            text: "text",
+            url: "url",
+            files: [
+              {
+                name: "files",
+                accept: ["application/pdf", "image/*", "text/plain"],
+              },
+            ],
+          },
+        },
+      } as any,
       workbox: {
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MiB
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        navigateFallbackDenylist: [/^\/~oauth/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
@@ -59,7 +76,7 @@ export default defineConfig(({ mode }) => ({
               cacheName: "supabase-api",
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24, // 24 hours
+                maxAgeSeconds: 60 * 60 * 24,
               },
             },
           },
