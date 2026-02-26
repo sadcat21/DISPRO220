@@ -18,10 +18,11 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
 const paymentMethodLabels: Record<string, { ar: string; icon: any }> = {
-  cash: { ar: 'نقدي', icon: Banknote },
+  cash_invoice1: { ar: 'نقدي فاتورة 1', icon: Banknote },
+  cash_invoice2: { ar: 'نقدي فاتورة 2', icon: Coins },
   check: { ar: 'شيك', icon: CreditCard },
-  bank_receipt: { ar: 'فيرسمو (إيداع نقدي بالبنك)', icon: Receipt },
-  bank_transfer: { ar: 'فيرمو (تحويل بنكي)', icon: ArrowUpRight },
+  bank_receipt: { ar: 'فيرسمو', icon: Receipt },
+  bank_transfer: { ar: 'فيرمو', icon: ArrowUpRight },
 };
 
 const ManagerTreasury = () => {
@@ -35,7 +36,7 @@ const ManagerTreasury = () => {
   const [addOpen, setAddOpen] = useState(false);
   const [handoverOpen, setHandoverOpen] = useState(false);
   const [detailsCategory, setDetailsCategory] = useState<'cash_invoice1' | 'cash_invoice2' | 'check' | 'bank_receipt' | 'bank_transfer' | null>(null);
-  const [addForm, setAddForm] = useState({ payment_method: 'cash', amount: '', customer_name: '', invoice_number: '', invoice_date: '', check_number: '', check_bank: '', check_date: '', receipt_number: '', transfer_reference: '', notes: '' });
+  const [addForm, setAddForm] = useState({ payment_method: 'cash_invoice1', amount: '', customer_name: '', invoice_number: '', invoice_date: '', check_number: '', check_bank: '', check_date: '', receipt_number: '', transfer_reference: '', notes: '' });
   const [handoverForm, setHandoverForm] = useState({ cash_invoice1: '', cash_invoice2: '', checks_amount: '', check_count: '', receipts_amount: '', receipt_count: '', transfers_amount: '', transfer_count: '', notes: '' });
 
   const handleAddEntry = async () => {
@@ -45,7 +46,7 @@ const ManagerTreasury = () => {
     }
     try {
       await addEntry.mutateAsync({
-        payment_method: addForm.payment_method,
+        payment_method: addForm.payment_method.startsWith('cash') ? 'cash' : addForm.payment_method,
         amount: Number(addForm.amount),
         customer_name: addForm.customer_name || undefined,
         invoice_number: addForm.invoice_number || undefined,
@@ -59,7 +60,7 @@ const ManagerTreasury = () => {
       });
       toast.success('تم إضافة المبلغ بنجاح');
       setAddOpen(false);
-      setAddForm({ payment_method: 'cash', amount: '', customer_name: '', invoice_number: '', invoice_date: '', check_number: '', check_bank: '', check_date: '', receipt_number: '', transfer_reference: '', notes: '' });
+      setAddForm({ payment_method: 'cash_invoice1', amount: '', customer_name: '', invoice_number: '', invoice_date: '', check_number: '', check_bank: '', check_date: '', receipt_number: '', transfer_reference: '', notes: '' });
     } catch {
       toast.error('حدث خطأ');
     }
@@ -106,7 +107,7 @@ const ManagerTreasury = () => {
               <DialogHeader><DialogTitle>إضافة مبلغ يدوي</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 <InvoiceOCRScanner
-                  paymentMethod={addForm.payment_method}
+                  paymentMethod={addForm.payment_method.startsWith('cash') ? 'cash' : addForm.payment_method}
                   onDataExtracted={(data) => {
                     setAddForm(f => ({
                       ...f,
@@ -124,15 +125,25 @@ const ManagerTreasury = () => {
                   }}
                 />
                 <div>
-                  <Label>طريقة الدفع</Label>
-                  <Select value={addForm.payment_method} onValueChange={v => setAddForm(f => ({ ...f, payment_method: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(paymentMethodLabels).map(([k, v]) => (
-                        <SelectItem key={k} value={k}>{v.ar}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label className="mb-2 block">طريقة الدفع</Label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {Object.entries(paymentMethodLabels).map(([k, v]) => {
+                      const Icon = v.icon;
+                      return (
+                        <Button
+                          key={k}
+                          type="button"
+                          size="sm"
+                          variant={addForm.payment_method === k ? 'default' : 'outline'}
+                          className="gap-1 text-xs h-9"
+                          onClick={() => setAddForm(f => ({ ...f, payment_method: k }))}
+                        >
+                          <Icon className="w-3.5 h-3.5" />
+                          {v.ar}
+                        </Button>
+                      );
+                    })}
+                  </div>
                 </div>
                 <div>
                   <Label>اسم العميل</Label>
@@ -144,8 +155,8 @@ const ManagerTreasury = () => {
                 </div>
                 {/* رقم الفاتورة */}
                 <div>
-                  <Label>{addForm.payment_method === 'cash' ? 'رقم فاتورة 2' : 'رقم فاتورة 1'}</Label>
-                  <Input placeholder={addForm.payment_method === 'cash' ? 'رقم فاتورة 2' : 'رقم فاتورة 1'} value={addForm.invoice_number} onChange={e => setAddForm(f => ({ ...f, invoice_number: e.target.value }))} />
+                  <Label>رقم الفاتورة</Label>
+                  <Input placeholder="رقم الفاتورة" value={addForm.invoice_number} onChange={e => setAddForm(f => ({ ...f, invoice_number: e.target.value }))} />
                 </div>
                 <div>
                   <Label>تاريخ الفاتورة</Label>
