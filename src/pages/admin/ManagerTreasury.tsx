@@ -11,11 +11,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Banknote, CreditCard, Receipt, ArrowUpRight, Plus, Send, Coins, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
+import { Banknote, CreditCard, Receipt, ArrowUpRight, Plus, Send, Coins, TrendingUp, AlertCircle, CheckCircle, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import InvoiceOCRScanner from '@/components/treasury/InvoiceOCRScanner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
 
 const paymentMethodLabels: Record<string, { ar: string; icon: any }> = {
   cash_invoice1: { ar: 'كاش فاتورة 1', icon: Banknote },
@@ -25,13 +28,50 @@ const paymentMethodLabels: Record<string, { ar: string; icon: any }> = {
   bank_transfer: { ar: 'فيرمو', icon: ArrowUpRight },
 };
 
+const itemTypeLabels: Record<string, string> = {
+  total_sales: 'إجمالي المبيعات',
+  total_paid: 'المبالغ المدفوعة',
+  new_debts: 'ديون جديدة',
+  invoice1_total: 'فاتورة 1 - الإجمالي',
+  invoice1_check: 'فاتورة 1 - شيك',
+  invoice1_transfer: 'فاتورة 1 - تحويل بنكي',
+  invoice1_receipt: 'فاتورة 1 - تسبيق',
+  invoice1_espace_cash: 'فاتورة 1 - كاش',
+  invoice2_cash: 'فاتورة 2 - كاش',
+  debt_collections_total: 'تحصيل ديون - الإجمالي',
+  debt_collections_cash: 'تحصيل ديون - كاش',
+  physical_cash: 'الكاش المادي المستلم',
+  coin_amount: 'العملات المعدنية',
+  expenses: 'المصاريف',
+};
+
 const ManagerTreasury = () => {
   const { t } = useLanguage();
+  const { activeBranch } = useAuth();
   const { data: summary, isLoading: summaryLoading } = useTreasurySummary();
   const { data: entries } = useManagerTreasury();
   const { data: handovers } = useManagerHandovers();
   const createHandover = useCreateHandover();
   const addEntry = useAddTreasuryEntry();
+
+  // Fetch session discrepancies
+  const { data: discrepancies } = useQuery({
+    queryKey: ['treasury-discrepancies', activeBranch?.id],
+    queryFn: async () => {
+      let query = supabase
+        .from('accounting_session_items')
+        .select('item_type, expected_amount, actual_amount, difference, accounting_sessions!inner(branch_id, status)')
+        .neq('difference', 0);
+      if (activeBranch?.id) query = query.eq('accounting_sessions.branch_id', activeBranch.id);
+      const { data } = await query;
+      return (data || []).map((d: any) => ({
+        item_type: d.item_type,
+        expected: Number(d.expected_amount),
+        actual: Number(d.actual_amount),
+        difference: Number(d.difference),
+      }));
+    },
+  });
 
   const [addOpen, setAddOpen] = useState(false);
   const [handoverOpen, setHandoverOpen] = useState(false);
@@ -380,6 +420,43 @@ const ManagerTreasury = () => {
           </div>
         );
       })()}
+
+      {/* اختلالات المحاسبة */}
+      {discrepancies && discrepancies.length > 0 && (
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardContent className="p-3 space-y-2">
+            <div className="flex items-center justify-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-destructive" />
+              <p className="text-xs font-medium text-destructive">اختلالات في المحاسبة ({discrepancies.length})</p>
+            </div>
+            <div className="space-y-1.5">
+              {discrepancies.map((d, i) => (
+                <div key={i} className="rounded-lg bg-background p-2 flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">{itemTypeLabels[d.item_type] || d.item_type}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">المتوقع: {d.expected.toLocaleString()}</span>
+                    <span className="text-muted-foreground">الفعلي: {d.actual.toLocaleString()}</span>
+                    <Badge variant={d.difference > 0 ? 'default' : 'destructive'} className="text-[10px]">
+                      {d.difference > 0 ? '+' : ''}{d.difference.toLocaleString()}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {(!discrepancies || discrepancies.length === 0) && (
+        <Card className="border-green-500/20 bg-green-500/5">
+          <CardContent className="p-3 text-center">
+            <div className="flex items-center justify-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-500" />
+              <p className="text-xs font-medium text-green-600">لا توجد اختلالات في المحاسبة ✓</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tabs: Entries & Handovers */}
       <Tabs defaultValue="entries" dir="rtl">
