@@ -291,11 +291,11 @@ const ManagerTreasury = () => {
         transfers_amount: transfersAmount,
         transfer_count: pickedTransfers.length,
         notes: handoverForm.notes || null,
-        delivery_method: handoverForm.delivery_method,
-        intermediary_name: handoverForm.delivery_method === 'intermediary' ? handoverForm.intermediary_name || null : null,
-        bank_transfer_reference: handoverForm.delivery_method === 'bank_transfer' ? handoverForm.bank_transfer_reference || null : null,
-        bank_account_id: handoverForm.delivery_method === 'bank_transfer' && handoverForm.bank_account_id ? handoverForm.bank_account_id : null,
-        receipt_image_url: handoverForm.delivery_method === 'bank_transfer' ? handoverForm.receipt_image_url || null : null,
+        delivery_method: handoverForm.delivery_method !== 'direct' ? 'intermediary' : 'direct',
+        intermediary_name: handoverForm.delivery_method !== 'direct' ? handoverForm.intermediary_name || null : null,
+        bank_transfer_reference: null,
+        bank_account_id: null,
+        receipt_image_url: null,
         received_by: handoverForm.received_by || null,
       } as any).select('id').single();
 
@@ -447,114 +447,51 @@ const ManagerTreasury = () => {
                   </div>
                 )}
 
-                {/* Delivery Method */}
-                <div className="p-3 rounded-lg bg-muted/50 space-y-3">
-                  <p className="font-medium text-sm">🚚 {t('treasury.delivery_method') || 'طريقة التسليم'}</p>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {[
-                      { key: 'direct', label: t('treasury.direct_delivery') || 'تسليم مباشر', icon: '🏢' },
-                      { key: 'bank_transfer', label: t('treasury.bank_transfer_method') || 'تحويل بنكي', icon: '🏦' },
-                      { key: 'intermediary', label: t('treasury.via_intermediary') || 'عبر وسيط', icon: '🤝' },
-                    ].map(m => (
-                      <Button
-                        key={m.key}
-                        type="button"
-                        size="sm"
-                        variant={handoverForm.delivery_method === m.key ? 'default' : 'outline'}
-                        className="gap-1 text-xs h-9"
-                        onClick={() => setHandoverForm(f => ({ ...f, delivery_method: m.key }))}
-                      >
-                        {m.icon} {m.label}
-                      </Button>
-                    ))}
-                  </div>
+                {/* Delivery Method Toggle */}
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">🚚 {t('treasury.delivery_method') || 'طريقة التسليم'}</Label>
+                  <Switch checked={handoverForm.delivery_method !== 'direct'} onCheckedChange={(checked) => setHandoverForm(f => ({ ...f, delivery_method: checked ? 'intermediary' : 'direct', intermediary_name: '', received_by: '' }))} />
+                </div>
 
-                  {/* Receiver dropdown */}
-                  <div>
-                    <Label className="text-xs">{t('treasury.receiver') || 'المستلم'}</Label>
-                    <Select value={handoverForm.received_by} onValueChange={v => setHandoverForm(f => ({ ...f, received_by: v }))}>
-                      <SelectTrigger className="h-9">
-                        <SelectValue placeholder={t('treasury.select_receiver') || 'اختر المستلم'} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(contacts || []).filter((c: any) => c.contact_type === 'receiver').map((c: any) => (
-                          <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Intermediary name - shown when intermediary selected */}
-                  {handoverForm.delivery_method === 'intermediary' && (
-                    <div>
-                      <Label className="text-xs">{t('treasury.intermediary_name') || 'اسم الوسيط'}</Label>
-                      <Select value={handoverForm.intermediary_name} onValueChange={v => setHandoverForm(f => ({ ...f, intermediary_name: v }))}>
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder={t('treasury.select_intermediary') || 'اختر الوسيط'} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(contacts || []).filter((c: any) => c.contact_type === 'intermediary').map((c: any) => (
-                            <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  {/* Bank transfer fields */}
-                  {handoverForm.delivery_method === 'bank_transfer' && (
-                    <div className="space-y-2">
+                {handoverForm.delivery_method !== 'direct' && (
+                  <div className="p-3 rounded-lg bg-muted/50 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <Label className="text-xs">{t('treasury.select_bank_account')}</Label>
-                        <Select value={handoverForm.bank_account_id} onValueChange={v => setHandoverForm(f => ({ ...f, bank_account_id: v }))}>
+                        <Label className="text-xs">{t('treasury.via_intermediary') || 'الوسيط'}</Label>
+                        <Select value={handoverForm.intermediary_name} onValueChange={v => setHandoverForm(f => ({ ...f, intermediary_name: v }))}>
                           <SelectTrigger className="h-9">
-                            <SelectValue placeholder={t('treasury.select_bank_account')} />
+                            <SelectValue placeholder={t('treasury.select_intermediary') || 'اختر الوسيط'} />
                           </SelectTrigger>
                           <SelectContent>
-                            {(bankAccounts || []).map((b: any) => (
-                              <SelectItem key={b.id} value={b.id}>
-                                🏦 {b.bank_name} - {b.account_number} ({b.account_holder})
-                              </SelectItem>
+                            {(contacts || []).filter((c: any) => c.contact_type === 'intermediary').map((c: any) => (
+                              <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
                       <div>
-                        <Label className="text-xs">{t('treasury.transfer_ref')}</Label>
-                        <Input
-                          placeholder={t('treasury.transfer_ref')}
-                          value={handoverForm.bank_transfer_reference}
-                          onChange={e => setHandoverForm(f => ({ ...f, bank_transfer_reference: e.target.value }))}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">{t('treasury.receipt_image')}</Label>
-                        <div className="space-y-2">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            capture="environment"
-                            className="block w-full text-sm file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer"
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              const ext = file.name.split('.').pop();
-                              const path = `handover-receipts/${Date.now()}.${ext}`;
-                              const { error } = await supabase.storage.from('receipts').upload(path, file);
-                              if (error) { toast.error(error.message); return; }
-                              const { data: urlData } = supabase.storage.from('receipts').getPublicUrl(path);
-                              setHandoverForm(f => ({ ...f, receipt_image_url: urlData.publicUrl }));
-                              toast.success(t('common.saved'));
-                            }}
-                          />
-                          {handoverForm.receipt_image_url && (
-                            <img src={handoverForm.receipt_image_url} alt="receipt" className="w-full max-h-40 object-contain rounded-lg border" />
-                          )}
-                        </div>
+                        <Label className="text-xs">{t('treasury.receiver') || 'المستلم'}</Label>
+                        <Select value={handoverForm.received_by} onValueChange={v => setHandoverForm(f => ({ ...f, received_by: v }))}>
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder={t('treasury.select_receiver') || 'اختر المستلم'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(contacts || []).filter((c: any) => c.contact_type === 'receiver').map((c: any) => (
+                              <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
-                  )}
-                </div>
+                    {(handoverForm.intermediary_name || handoverForm.received_by) && (
+                      <p className="text-xs text-muted-foreground text-center border-t pt-2 mt-1">
+                        🏢 {t('treasury.branch_manager') || 'مدير الفرع'}
+                        {handoverForm.intermediary_name && <> ← 🤝 <span className="font-medium">{handoverForm.intermediary_name}</span></>}
+                        {handoverForm.received_by && <> ← 📥 <span className="font-medium">{handoverForm.received_by}</span></>}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <div><Label>{t('treasury.notes')}</Label><Textarea value={handoverForm.notes} onChange={e => setHandoverForm(f => ({ ...f, notes: e.target.value }))} /></div>
                 <Button onClick={handleHandover} disabled={createHandover.isPending} className="w-full">{t('treasury.register_handover')}</Button>
