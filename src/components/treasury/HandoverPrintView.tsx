@@ -73,7 +73,7 @@ const HandoverPrintView: React.FC<Props> = ({
         const t = d.treasury_entry_id ? treasuryMap[d.treasury_entry_id] : null;
         const order = d.order_id ? orderMap[d.order_id] : null;
         const customer = order?.customers;
-        const customerNameFr = customer?.store_name_fr || customer?.name_fr || customer?.store_name || customer?.name || d.customer_name;
+        const customerNameFr = customer?.name_fr || customer?.name || d.customer_name;
         return {
           ...d,
           customer_name: customerNameFr || d.customer_name,
@@ -106,10 +106,9 @@ const HandoverPrintView: React.FC<Props> = ({
       {/* Header */}
       <div className="text-center mb-6">
         <h1 className="text-lg font-bold" style={{ textAlign: 'center' }}>BORDEREAU D'ENVOI</h1>
-        {branchWilaya && <p className="text-sm mt-1" style={{ textAlign: 'center' }}>DART de {branchWilaya}</p>}
       </div>
 
-      <p className="mb-4" style={{ textAlign: 'left' }}><strong>Date d'envoi:</strong> {dateStr}</p>
+      <p className="mb-4" style={{ textAlign: 'left' }}><strong>Date d'envoi:</strong> {dateStr}{branchWilaya ? `  -  Depot ${branchWilaya}` : ''}</p>
 
       {/* Checks Table */}
       {checks.length > 0 && (
