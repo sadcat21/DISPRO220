@@ -36,7 +36,7 @@ const CoinExchangeDialog = ({ open, onOpenChange, preselectedWorkerId }: CoinExc
   useEffect(() => {
     if (open && preselectedWorkerId) {
       setWorkerId(preselectedWorkerId);
-      setView('create');
+      setView('list'); // Show list first so user can see active tasks & receive bills
     } else if (open && !preselectedWorkerId) {
       setView('list');
     }
@@ -85,8 +85,9 @@ const CoinExchangeDialog = ({ open, onOpenChange, preselectedWorkerId }: CoinExc
     enabled: open,
   });
 
-  const activeTasks = tasks.filter(t => t.status === 'active');
-  const completedTasks = tasks.filter(t => t.status === 'completed');
+  const filteredTasks = preselectedWorkerId ? tasks.filter(t => t.worker_id === preselectedWorkerId) : tasks;
+  const activeTasks = filteredTasks.filter(t => t.status === 'active');
+  const completedTasks = filteredTasks.filter(t => t.status === 'completed');
 
   const handleCreate = async () => {
     if (!workerId || !amount || Number(amount) <= 0) {
@@ -208,7 +209,7 @@ const CoinExchangeDialog = ({ open, onOpenChange, preselectedWorkerId }: CoinExc
               </div>
             )}
 
-            {tasks.length === 0 && (
+            {filteredTasks.length === 0 && (
               <p className="text-center text-muted-foreground text-sm py-4">{t('coin_exchange.no_tasks')}</p>
             )}
           </div>
