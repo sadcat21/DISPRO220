@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
+import { ALGERIAN_WILAYAS } from '@/data/algerianWilayas';
 
 interface HandoverItem {
   order_id: string;
@@ -100,6 +101,7 @@ const HandoverPrintView: React.FC<Props> = ({
   const receipts = items.filter(i => i.payment_method === 'receipt');
   const transfers = items.filter(i => i.payment_method === 'transfer');
   const dateStr = format(new Date(handoverDate), 'dd/MM/yyyy');
+  const wilayaFr = branchWilaya ? (ALGERIAN_WILAYAS.find(w => w.name === branchWilaya)?.nameFr || branchWilaya) : '';
 
   return (
     <div className="print-handover bg-white text-black p-8 font-sans" style={{ direction: 'ltr', fontSize: '12px', textAlign: 'left', unicodeBidi: 'plaintext' }}>
@@ -108,7 +110,7 @@ const HandoverPrintView: React.FC<Props> = ({
         <h1 className="text-lg font-bold" style={{ textAlign: 'center' }}>BORDEREAU D'ENVOI</h1>
       </div>
 
-      <p className="mb-4" style={{ textAlign: 'left' }}><strong>Date d'envoi:</strong> {dateStr}{branchWilaya ? `  -  Depot ${branchWilaya}` : ''}</p>
+      <p className="mb-4" style={{ textAlign: 'left' }}><strong>Date d'envoi:</strong> {dateStr}{wilayaFr ? `  -  Depot ${wilayaFr}` : ''}</p>
 
       {/* Checks Table */}
       {checks.length > 0 && (
