@@ -437,11 +437,12 @@ const ManagerTreasury = () => {
         const handedOver = summary?.handedOver || 0;
         const totalExpenses = summary?.totalExpenses || 0;
         const totalGiftsValue = summary?.totalGiftsValue || 0;
+        const workerHeldAmount = summary?.workerHeldAmount || 0;
         
         // المتوقع = المبيعات - الديون + تحصيلات الديون - قيمة الهدايا
         const expectedInTreasury = totalSales - totalDebts + collectedDebts - totalGiftsValue;
-        // الموجود فعلياً + المُسلَّم + المصاريف = ما تم التصرف فيه
-        const accountedFor = totalInTreasury + handedOver + totalExpenses;
+        // الموجود فعلياً + المُسلَّم + المصاريف + في ذمة العمال = ما تم التصرف فيه
+        const accountedFor = totalInTreasury + handedOver + totalExpenses + workerHeldAmount;
         const gap = expectedInTreasury - accountedFor;
         const hasGap = Math.abs(gap) > 1;
         
@@ -496,6 +497,12 @@ const ManagerTreasury = () => {
                   <div className="flex items-center justify-between rounded-lg bg-background p-2">
                     <span className="text-[10px] text-muted-foreground">المصاريف المعتمدة</span>
                     <span className="text-xs font-bold">{totalExpenses.toLocaleString()} د.ج</span>
+                  </div>
+                )}
+                {workerHeldAmount > 0 && (
+                  <div className="flex items-center justify-between rounded-lg bg-amber-500/5 border border-amber-500/20 p-2">
+                    <span className="text-[10px] text-muted-foreground">👷 في ذمة العمال (لم تُسلَّم بعد)</span>
+                    <span className="text-xs font-bold text-amber-600">{workerHeldAmount.toLocaleString()} د.ج</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between rounded-lg bg-muted/50 p-2">
@@ -587,10 +594,10 @@ const ManagerTreasury = () => {
                 <p className="font-medium text-xs">المعادلة الأساسية:</p>
                 <div className="bg-background rounded p-2 text-xs space-y-1">
                   <p><strong>المتوقع</strong> = إجمالي المبيعات − الديون الجديدة + تحصيلات الديون − قيمة الهدايا 🎁</p>
-                  <p><strong>مجموع التصرف</strong> = الموجود في الخزينة + المُسلَّم + المصاريف المعتمدة</p>
+                  <p><strong>مجموع التصرف</strong> = الموجود في الخزينة + المُسلَّم + المصاريف + <strong>في ذمة العمال 👷</strong></p>
                   <p><strong>الفجوة</strong> = المتوقع − مجموع التصرف</p>
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-1">💡 الهدايا تُخصم لأنها منتجات سُلِّمت للعملاء مجاناً ضمن العروض الترويجية — لا يوجد مقابل مالي لها.</p>
+                <p className="text-[10px] text-muted-foreground mt-1">💡 الهدايا تُخصم لأنها منتجات سُلِّمت مجاناً. المبالغ في ذمة العمال هي مبيعات تمت ولم تُدرج في أي جلسة محاسبة مكتملة.</p>
               </div>
 
               <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-2">
