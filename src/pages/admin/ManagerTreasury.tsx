@@ -428,6 +428,81 @@ const ManagerTreasury = () => {
         );
       })()}
 
+      {/* ميزانية الخزينة - دراسة الفجوات */}
+      {(() => {
+        const totalSales = summary?.totalSales || 0;
+        const totalDebts = summary?.totalDebts || 0;
+        const collectedDebts = summary?.collectedDebts || 0;
+        const totalInTreasury = summary?.total || 0;
+        const handedOver = summary?.handedOver || 0;
+        
+        // ما يجب أن يكون في الخزينة = المبيعات - الديون الجديدة + تحصيلات الديون
+        const expectedInTreasury = totalSales - totalDebts + collectedDebts;
+        const gap = expectedInTreasury - totalInTreasury;
+        const hasGap = Math.abs(gap) > 1;
+        
+        return (
+          <Card className={`border-2 ${hasGap ? 'border-orange-500/30 bg-orange-500/5' : 'border-green-500/20 bg-green-500/5'}`}>
+            <CardContent className="p-3 space-y-3">
+              <div className="flex items-center justify-center gap-2">
+                {hasGap ? <AlertTriangle className="w-4 h-4 text-orange-500" /> : <CheckCircle className="w-4 h-4 text-green-500" />}
+                <p className={`text-xs font-bold ${hasGap ? 'text-orange-600' : 'text-green-600'}`}>⚖️ ميزانية الخزينة</p>
+                <button onClick={() => setInfoOpen(true)} className="p-0.5 rounded-full hover:bg-muted">
+                  <Info className="w-3.5 h-3.5 text-muted-foreground" />
+                </button>
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between rounded-lg bg-background p-2">
+                  <span className="text-[10px] text-muted-foreground">إجمالي المبيعات</span>
+                  <span className="text-xs font-bold">{totalSales.toLocaleString()} د.ج</span>
+                </div>
+                <div className="flex items-center justify-between rounded-lg bg-background p-2">
+                  <span className="text-[10px] text-muted-foreground">− ديون جديدة (لم تُدفع)</span>
+                  <span className="text-xs font-bold text-orange-500">−{totalDebts.toLocaleString()} د.ج</span>
+                </div>
+                <div className="flex items-center justify-between rounded-lg bg-background p-2">
+                  <span className="text-[10px] text-muted-foreground">+ تحصيلات ديون سابقة</span>
+                  <span className="text-xs font-bold text-green-500">+{collectedDebts.toLocaleString()} د.ج</span>
+                </div>
+                <div className="border-t pt-1.5">
+                  <div className="flex items-center justify-between rounded-lg bg-primary/5 border border-primary/20 p-2">
+                    <span className="text-[10px] font-medium">= المتوقع في الخزينة</span>
+                    <span className="text-xs font-bold text-primary">{expectedInTreasury.toLocaleString()} د.ج</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between rounded-lg bg-background p-2">
+                  <span className="text-[10px] text-muted-foreground">الموجود فعلياً في الخزينة</span>
+                  <span className="text-xs font-bold">{totalInTreasury.toLocaleString()} د.ج</span>
+                </div>
+                <div className="flex items-center justify-between rounded-lg bg-background p-2">
+                  <span className="text-[10px] text-muted-foreground">المُسلَّم للجهة العليا</span>
+                  <span className="text-xs font-bold">{handedOver.toLocaleString()} د.ج</span>
+                </div>
+              </div>
+
+              <div className={`rounded-lg p-2.5 text-center ${hasGap ? (gap > 0 ? 'bg-orange-500/10 border border-orange-500/20' : 'bg-green-500/10 border border-green-500/20') : 'bg-green-500/10 border border-green-500/20'}`}>
+                {hasGap ? (
+                  <>
+                    <p className="text-[10px] text-muted-foreground mb-1">
+                      {gap > 0 ? '⚠️ عجز في الخزينة' : '💰 فائض في الخزينة'}
+                    </p>
+                    <p className={`text-sm font-bold ${gap > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                      {Math.abs(gap).toLocaleString()} د.ج
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {gap > 0 ? 'المبلغ الموجود أقل من المتوقع — يرجى التحقق' : 'المبلغ الموجود أكثر من المتوقع'}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-xs font-medium text-green-600">✅ الميزانية متوازنة — لا توجد فجوات</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
+
       {/* زر معلومات + نافذة الشرح */}
       <Dialog open={infoOpen} onOpenChange={setInfoOpen}>
         <DialogContent dir="rtl" className="max-h-[85vh] overflow-y-auto">
@@ -480,6 +555,33 @@ const ManagerTreasury = () => {
             <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20 space-y-1">
               <p className="font-bold text-sm text-green-600">✅ متى تكون المحاسبة سليمة؟</p>
               <p className="text-xs text-muted-foreground">عندما تتطابق جميع المبالغ المتوقعة مع المبالغ الفعلية المُسجَّلة (الفرق = 0 لكل بند).</p>
+            </div>
+
+            <div className="border-t pt-3 space-y-3">
+              <p className="font-bold text-sm">⚖️ ميزانية الخزينة (دراسة الفجوات)</p>
+              
+              <div className="p-3 rounded-lg bg-muted/50 space-y-2">
+                <p className="font-medium text-xs">المعادلة الأساسية:</p>
+                <div className="bg-background rounded p-2 text-xs space-y-1">
+                  <p><strong>المتوقع في الخزينة</strong> = إجمالي المبيعات − الديون الجديدة + تحصيلات الديون السابقة</p>
+                  <p><strong>الفجوة</strong> = المتوقع − الموجود فعلياً</p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-2">
+                <p className="font-medium text-xs">💡 مثال:</p>
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <div className="bg-background rounded p-2 space-y-1">
+                    <p>• مبيعات = <strong>1,000,000 د.ج</strong></p>
+                    <p>• ديون جديدة = <strong>200,000 د.ج</strong></p>
+                    <p>• تحصيلات ديون سابقة = <strong>50,000 د.ج</strong></p>
+                  </div>
+                  <p className="font-medium mt-1">المتوقع = 1,000,000 − 200,000 + 50,000 = <strong>850,000 د.ج</strong></p>
+                  <p>إذا كان الموجود في الخزينة = <strong>840,000 د.ج</strong></p>
+                  <p className="text-orange-600 font-medium">← عجز = 10,000 د.ج ⚠️</p>
+                  <p className="text-muted-foreground/70">يجب البحث عن سبب النقص (خطأ حسابي، مبلغ ضائع...)</p>
+                </div>
+              </div>
             </div>
           </div>
         </DialogContent>
