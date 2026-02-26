@@ -301,39 +301,46 @@ const ManagerTreasury = () => {
         const physicalRemaining = cashPhysical - (summary?.handedOver || 0);
         const paperMoney = physicalRemaining - (summary?.coins || 0);
         return (
-          <Card className="border-primary/30">
-            <CardContent className="p-3 space-y-3">
-              <div className="text-center">
+          <div className="space-y-3">
+            {/* المتبقي الكلي */}
+            <Card className="border-primary/30">
+              <CardContent className="p-3 text-center">
                 <p className="text-xs text-muted-foreground">المتبقي الكلي</p>
                 <p className="text-base font-bold text-primary truncate">{summary?.remaining?.toLocaleString() || 0} د.ج</p>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {/* القسم 1: مستلم مادياً */}
-                <div className="rounded-lg bg-muted/50 p-2 space-y-1.5">
-                  <p className="text-[10px] font-medium text-muted-foreground text-center">💵 مستلم مادياً (كاش)</p>
-                  <p className="text-xs font-bold text-center truncate">{Math.max(physicalRemaining, 0).toLocaleString()} د.ج</p>
-                  <div className="grid grid-cols-2 gap-1">
-                    <div className="text-center">
-                      <Banknote className="w-3 h-3 mx-auto text-muted-foreground" />
-                      <p className="text-[9px] text-muted-foreground">ورقي</p>
-                      <p className="text-[10px] font-bold truncate">{Math.max(paperMoney, 0).toLocaleString()}</p>
-                    </div>
-                    <div className="text-center">
-                      <Coins className="w-3 h-3 mx-auto text-amber-500" />
-                      <p className="text-[9px] text-muted-foreground">معدني</p>
-                      <p className="text-[10px] font-bold text-amber-500 truncate">{(summary?.coins || 0).toLocaleString()}</p>
-                    </div>
+              </CardContent>
+            </Card>
+
+            {/* القسم 1: مستلم مادياً */}
+            <Card className="border-green-500/20">
+              <CardContent className="p-3 space-y-2">
+                <div className="text-center">
+                  <p className="text-[11px] font-medium text-muted-foreground">💵 مستلم مادياً (كاش)</p>
+                  <p className="text-sm font-bold truncate">{Math.max(physicalRemaining, 0).toLocaleString()} د.ج</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-lg bg-muted/50 p-2 text-center">
+                    <Banknote className="w-3.5 h-3.5 mx-auto mb-0.5 text-muted-foreground" />
+                    <p className="text-[10px] text-muted-foreground">ورقي</p>
+                    <p className="text-xs font-bold truncate">{Math.max(paperMoney, 0).toLocaleString()} د.ج</p>
+                  </div>
+                  <div className="rounded-lg bg-muted/50 p-2 text-center">
+                    <Coins className="w-3.5 h-3.5 mx-auto mb-0.5 text-amber-500" />
+                    <p className="text-[10px] text-muted-foreground">معدني</p>
+                    <p className="text-xs font-bold text-amber-500 truncate">{(summary?.coins || 0).toLocaleString()} د.ج</p>
                   </div>
                 </div>
-                {/* القسم 2: غير مستلم مادياً */}
-                <div className="rounded-lg bg-muted/50 p-2 space-y-1.5">
-                  <p className="text-[10px] font-medium text-muted-foreground text-center">🏦 غير مستلم مادياً</p>
-                  <p className="text-xs font-bold text-center truncate">{nonCash.toLocaleString()} د.ج</p>
-                  <p className="text-[9px] text-muted-foreground text-center">(شيكات + فيرسمو + فيرمو)</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            {/* القسم 2: غير مستلم مادياً */}
+            <Card className="border-blue-500/20">
+              <CardContent className="p-3 text-center">
+                <p className="text-[11px] font-medium text-muted-foreground">🏦 غير مستلم مادياً</p>
+                <p className="text-sm font-bold truncate">{nonCash.toLocaleString()} د.ج</p>
+                <p className="text-[10px] text-muted-foreground mt-1">(شيكات + فيرسمو + فيرمو)</p>
+              </CardContent>
+            </Card>
+          </div>
         );
       })()}
 
