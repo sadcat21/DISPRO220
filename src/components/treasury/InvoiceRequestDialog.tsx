@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Search, ShoppingCart, Send, ArrowRight, X, MessageCircle, User, FileText, Clock, CheckCircle, RefreshCw, PackageCheck } from 'lucide-react';
+import { Search, ShoppingCart, Send, ArrowRight, X, MessageCircle, User, FileText, Clock, CheckCircle, RefreshCw, PackageCheck, Route } from 'lucide-react';
+import QuickOrderDialog from './QuickOrderDialog';
 import { toast } from 'sonner';
 import { getLocalizedName } from '@/utils/sectorName';
 import { format } from 'date-fns';
@@ -35,6 +36,7 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   const [activeTab, setActiveTab] = useState<'manual' | 'worker_requests' | 'status'>('worker_requests');
   const [statusSubTab, setStatusSubTab] = useState<'sent' | 'received'>('sent');
   const [receivingOrderId, setReceivingOrderId] = useState<string | null>(null);
+  const [quickOrderOpen, setQuickOrderOpen] = useState(false);
   const [invoiceNumberInput, setInvoiceNumberInput] = useState('');
   const [invoicePrefix, setInvoicePrefix] = useState('F');
   const [invoiceYear, setInvoiceYear] = useState(new Date().getFullYear().toString());
@@ -457,8 +459,13 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
             {pendingCount > 0 && (
               <Badge variant="destructive" className="text-xs">{pendingCount}</Badge>
             )}
+            <Button size="icon" variant="outline" className="h-7 w-7 mr-auto" onClick={() => setQuickOrderOpen(true)} title="إنشاء طلب سريع">
+              <Route className="w-4 h-4" />
+            </Button>
           </DialogTitle>
         </DialogHeader>
+
+        <QuickOrderDialog open={quickOrderOpen} onOpenChange={setQuickOrderOpen} />
 
         <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as any); resetState(); }}>
           <TabsList className="w-full grid grid-cols-3">
