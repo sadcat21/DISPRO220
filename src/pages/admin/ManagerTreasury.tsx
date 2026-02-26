@@ -935,6 +935,7 @@ const ManagerTreasury = () => {
                   transfersAmount={Number(h.transfers_amount)}
                   totalAmount={Number(h.amount)}
                   branchName={activeBranch?.name}
+                  branchWilaya={activeBranch?.wilaya}
                 />
               </div>
             </DialogContent>
@@ -963,6 +964,7 @@ const ManagerTreasury = () => {
                   transfersAmount={Number(h.transfers_amount)}
                   totalAmount={Number(h.amount)}
                   branchName={activeBranch?.name}
+                  branchWilaya={activeBranch?.wilaya}
                 />
               </div>
             </DialogContent>

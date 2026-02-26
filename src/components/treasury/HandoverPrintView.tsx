@@ -27,12 +27,13 @@ interface Props {
   transfersAmount: number;
   totalAmount: number;
   branchName?: string;
+  branchWilaya?: string;
   onReady?: () => void;
 }
 
 const HandoverPrintView: React.FC<Props> = ({
   handoverId, handoverDate, cashInvoice1, cashInvoice2,
-  checksAmount, receiptsAmount, transfersAmount, totalAmount, branchName, onReady
+  checksAmount, receiptsAmount, transfersAmount, totalAmount, branchName, branchWilaya, onReady
 }) => {
   const [items, setItems] = useState<HandoverItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,8 +105,8 @@ const HandoverPrintView: React.FC<Props> = ({
     <div className="print-handover bg-white text-black p-8 font-sans" style={{ direction: 'ltr', fontSize: '12px', textAlign: 'left', unicodeBidi: 'plaintext' }}>
       {/* Header */}
       <div className="text-center mb-6">
-        <h1 className="text-lg font-bold" style={{ textAlign: 'center' }}>{branchName || 'BORDEREAU D\'ENVOI'}</h1>
-        <h2 className="text-base font-bold mt-1" style={{ textAlign: 'center' }}>BORDEREAU D'ENVOI</h2>
+        <h1 className="text-lg font-bold" style={{ textAlign: 'center' }}>BORDEREAU D'ENVOI</h1>
+        {branchWilaya && <p className="text-sm mt-1" style={{ textAlign: 'center' }}>DART de {branchWilaya}</p>}
       </div>
 
       <p className="mb-4" style={{ textAlign: 'left' }}><strong>Date d'envoi:</strong> {dateStr}</p>
