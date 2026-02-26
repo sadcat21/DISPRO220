@@ -56,7 +56,7 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
     queryFn: async () => {
       let query = supabase
         .from('orders')
-        .select('id, total_amount, payment_type, invoice_payment_method, created_at, customer_id, customer:customers(name, store_name), order_items(total_price)')
+        .select('id, total_amount, payment_status, partial_amount, payment_type, invoice_payment_method, created_at, customer_id, customer:customers(name, store_name), order_items(total_price)')
         .eq('status', 'delivered')
         .order('created_at', { ascending: false });
 
@@ -92,14 +92,21 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
         const totalAmount = Number(o.total_amount || 0);
         const itemsSubtotal = (o.order_items || []).reduce((s: number, i: any) => s + Number(i.total_price || 0), 0);
 
+        // Match hook logic: account for partial/debt payments
+        let paidAmount = totalAmount;
+        if (o.payment_status === 'partial') {
+          paidAmount = Number(o.partial_amount || 0);
+        } else if (o.payment_status === 'debt') {
+          paidAmount = 0;
+        }
+        if (paidAmount <= 0) return;
+
         // Calculate stamp using tiers for cash_invoice1
         let stampAmount = 0;
         let stampPercentage = 0;
         if (isCashInvoice1 && stampTiers?.length) {
-          // Use items subtotal if available, otherwise reverse-calculate from total
-          const baseAmount = itemsSubtotal > 0 ? itemsSubtotal : totalAmount;
+          const baseAmount = itemsSubtotal > 0 ? itemsSubtotal : paidAmount;
           stampAmount = calculateStampAmount(baseAmount, stampTiers);
-          // Find matching tier percentage
           const activeTiers = stampTiers.filter(t => t.is_active);
           const matchedTier = activeTiers.find(t => baseAmount >= t.min_amount && (t.max_amount === null || baseAmount <= t.max_amount));
           if (matchedTier) stampPercentage = matchedTier.percentage;
@@ -107,7 +114,7 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
 
         const processedOrder: ProcessedOrder = {
           id: o.id,
-          total_amount: totalAmount,
+          total_amount: paidAmount,
           items_subtotal: itemsSubtotal,
           stamp_amount: stampAmount,
           stamp_percentage: stampPercentage,
@@ -127,7 +134,7 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
 
         const group = groupMap.get(customerId)!;
         group.orders.push(processedOrder);
-        group.total += totalAmount;
+        group.total += paidAmount;
         group.totalStamp += stampAmount;
       });
 
