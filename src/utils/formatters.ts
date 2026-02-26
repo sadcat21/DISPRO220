@@ -36,3 +36,12 @@ export const formatNumber = (
 ): string => {
   return value.toLocaleString(numberLocaleMap[language]);
 };
+
+/**
+ * Format a currency amount, rounding to avoid long decimals.
+ */
+export const formatAmount = (value: number): string => {
+  const rounded = Math.round(value * 100) / 100;
+  if (rounded === Math.floor(rounded)) return rounded.toLocaleString();
+  return rounded.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};

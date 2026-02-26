@@ -25,6 +25,7 @@ interface DeliveryPaymentDialogProps {
     paymentMethod: string;
     notes?: string;
     isFullPayment: boolean;
+    isNoPayment?: boolean;
     /** Echo back frozen values so caller can use them directly */
     confirmedPaymentType?: string;
     confirmedInvoiceMethod?: string | null;
@@ -41,7 +42,7 @@ const DeliveryPaymentDialog: React.FC<DeliveryPaymentDialogProps> = ({
   onConfirm,
 }) => {
   const { t, language, dir } = useLanguage();
-  const [paymentMode, setPaymentMode] = useState<'full' | 'partial'>('full');
+  const [paymentMode, setPaymentMode] = useState<'full' | 'partial' | 'no_payment'>('full');
   const [paidAmount, setPaidAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [notes, setNotes] = useState('');
@@ -49,12 +50,13 @@ const DeliveryPaymentDialog: React.FC<DeliveryPaymentDialogProps> = ({
 
   const remainingAmount = useMemo(() => {
     if (paymentMode === 'full') return 0;
+    if (paymentMode === 'no_payment') return orderTotal;
     const paid = Number(paidAmount) || 0;
     return Math.max(0, orderTotal - paid);
   }, [paymentMode, paidAmount, orderTotal]);
 
   const handleConfirm = async () => {
-    const paid = paymentMode === 'full' ? orderTotal : (Number(paidAmount) || 0);
+    const paid = paymentMode === 'full' ? orderTotal : paymentMode === 'no_payment' ? 0 : (Number(paidAmount) || 0);
     if (paymentMode === 'partial' && paid <= 0) return;
 
     setIsSubmitting(true);
@@ -65,6 +67,7 @@ const DeliveryPaymentDialog: React.FC<DeliveryPaymentDialogProps> = ({
         paymentMethod,
         notes: notes || undefined,
         isFullPayment: paymentMode === 'full',
+        isNoPayment: paymentMode === 'no_payment',
         confirmedPaymentType: frozenPaymentType,
         confirmedInvoiceMethod: frozenInvoiceMethod,
       });
@@ -124,24 +127,33 @@ const DeliveryPaymentDialog: React.FC<DeliveryPaymentDialogProps> = ({
           </div>
 
           {/* Payment mode selection */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <Button
               type="button"
               variant={paymentMode === 'full' ? 'default' : 'outline'}
-              className="h-12"
+              className="h-12 text-xs"
               onClick={() => setPaymentMode('full')}
             >
-              <CheckCircle className="w-4 h-4 me-2" />
+              <CheckCircle className="w-4 h-4 me-1" />
               {t('debts.full_payment')}
             </Button>
             <Button
               type="button"
               variant={paymentMode === 'partial' ? 'default' : 'outline'}
-              className="h-12"
+              className="h-12 text-xs"
               onClick={() => setPaymentMode('partial')}
             >
-              <CreditCard className="w-4 h-4 me-2" />
+              <CreditCard className="w-4 h-4 me-1" />
               {t('debts.partial_payment')}
+            </Button>
+            <Button
+              type="button"
+              variant={paymentMode === 'no_payment' ? 'destructive' : 'outline'}
+              className="h-12 text-xs"
+              onClick={() => setPaymentMode('no_payment')}
+            >
+              <AlertTriangle className="w-4 h-4 me-1" />
+              بدون دفع
             </Button>
           </div>
 
@@ -177,6 +189,19 @@ const DeliveryPaymentDialog: React.FC<DeliveryPaymentDialogProps> = ({
             </div>
           )}
 
+          {/* No payment warning */}
+          {paymentMode === 'no_payment' && (
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-destructive">سيتم تسجيل كامل المبلغ كدين</p>
+                <p className="text-lg font-bold text-destructive">
+                  {orderTotal.toLocaleString()} {t('common.currency')}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Notes */}
           <div>
             <Label>{t('common.notes')} ({t('common.optional')})</Label>
@@ -192,6 +217,7 @@ const DeliveryPaymentDialog: React.FC<DeliveryPaymentDialogProps> = ({
             className="w-full h-12 text-base"
             onClick={handleConfirm}
             disabled={isSubmitting || (paymentMode === 'partial' && (!paidAmount || Number(paidAmount) <= 0))}
+
           >
             {isSubmitting ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -200,6 +226,8 @@ const DeliveryPaymentDialog: React.FC<DeliveryPaymentDialogProps> = ({
                 <CheckCircle className="w-5 h-5 me-2" />
                 {paymentMode === 'full'
                   ? t('debts.confirm_full_payment')
+                  : paymentMode === 'no_payment'
+                  ? 'تأكيد بدون دفع (تسجيل دين)'
                   : t('debts.confirm_and_record_debt')}
               </>
             )}

@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Package, Loader2, ShoppingBag } from 'lucide-react';
+import { Package, Loader2, ShoppingBag, TrendingDown, TrendingUp } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import DirectSaleDialog from '@/components/warehouse/DirectSaleDialog';
@@ -26,6 +26,33 @@ const MyStock: React.FC = () => {
     },
     enabled: !!workerId,
   });
+
+  // Fetch stock movements to calculate loaded and sold quantities
+  const { data: movements } = useQuery({
+    queryKey: ['my-stock-movements', workerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('stock_movements')
+        .select('product_id, quantity, movement_type')
+        .eq('worker_id', workerId!)
+        .in('movement_type', ['load', 'delivery']);
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!workerId,
+  });
+
+  // Calculate loaded and sold per product
+  const movementStats = useMemo(() => {
+    const stats: Record<string, { loaded: number; sold: number }> = {};
+    for (const m of (movements || [])) {
+      if (!stats[m.product_id]) stats[m.product_id] = { loaded: 0, sold: 0 };
+      if (m.movement_type === 'load') stats[m.product_id].loaded += m.quantity;
+      else if (m.movement_type === 'delivery') stats[m.product_id].sold += m.quantity;
+    }
+    return stats;
+  }, [movements]);
 
   if (isLoading) {
     return (
@@ -70,15 +97,33 @@ const MyStock: React.FC = () => {
         <div className="grid gap-2">
           {sortedItems.map(item => {
             const isZero = item.quantity === 0;
+            const stats = movementStats[item.product_id];
+            const loaded = stats?.loaded || 0;
+            const sold = stats?.sold || 0;
             return (
               <Card key={item.id} className={isZero ? 'opacity-50' : ''}>
-                <CardContent className="p-3 flex items-center justify-between">
-                  <span className={`font-medium ${isZero ? 'text-muted-foreground' : ''}`}>
-                    {(item as any).product?.name}
-                  </span>
-                  <span className={`font-bold text-lg ${isZero ? 'text-muted-foreground' : 'text-primary'}`}>
-                    {item.quantity}
-                  </span>
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={`font-medium ${isZero ? 'text-muted-foreground' : ''}`}>
+                      {(item as any).product?.name}
+                    </span>
+                    <span className={`font-bold text-lg ${isZero ? 'text-muted-foreground' : 'text-primary'}`}>
+                      {item.quantity}
+                    </span>
+                  </div>
+                  {(loaded > 0 || sold > 0) && (
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-0.5">
+                        <TrendingUp className="w-3 h-3 text-blue-500" />
+                        شحن: {loaded}
+                      </span>
+                      <span className="flex items-center gap-0.5">
+                        <TrendingDown className="w-3 h-3 text-green-500" />
+                        مباع: {sold}
+                      </span>
+                      <span>باقي: {item.quantity}</span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );

@@ -241,6 +241,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
     paymentMethod: string;
     notes?: string;
     isFullPayment: boolean;
+    isNoPayment?: boolean;
   }) => {
     setIsSaving(true);
     try {
@@ -280,7 +281,9 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
 
       // Determine correct payment status based on invoice payment method
       let paymentStatus: string;
-      if (!paymentData.isFullPayment) {
+      if (paymentData.isNoPayment) {
+        paymentStatus = 'pending';
+      } else if (!paymentData.isFullPayment) {
         paymentStatus = 'partial';
       } else if (order.payment_type === 'with_invoice' && (order as any).invoice_payment_method === 'check') {
         paymentStatus = 'check';
