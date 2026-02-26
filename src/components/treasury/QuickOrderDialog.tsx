@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, ArrowRight, User, Shuffle, Trash2, Check, MapPin, Send, MessageCircle } from 'lucide-react';
+import { Search, ArrowRight, User, Shuffle, Trash2, Check, MapPin, Send, MessageCircle, Route } from 'lucide-react';
 import { toast } from 'sonner';
 import { getLocalizedName } from '@/utils/sectorName';
 import { useSectors } from '@/hooks/useSectors';
@@ -63,13 +63,45 @@ const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange, onOrderCreated 
     enabled: open,
   });
 
-  // Fetch customers for selected sector
+  // Fetch delivery routes
+  const { data: routes } = useQuery({
+    queryKey: ['delivery-routes', activeBranch?.id],
+    queryFn: async () => {
+      let q = supabase.from('delivery_routes').select('*, delivery_route_sectors(*, sectors(*))').order('name');
+      if (activeBranch?.id) q = q.eq('branch_id', activeBranch.id);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data || []).map((r: any) => ({
+        ...r,
+        delivery_route_sectors: (r.delivery_route_sectors || []).sort((a: any, b: any) => a.sort_order - b.sort_order),
+      }));
+    },
+    enabled: open,
+  });
+
+  // Get sector IDs that should show customers (selected + subsequent in route)
+  const routeSectorIds = useMemo(() => {
+    if (!selectedSector?.id || !routes) return [selectedSector?.id].filter(Boolean);
+    
+    // Find all routes that contain the selected sector
+    for (const route of routes) {
+      const sectorEntries = route.delivery_route_sectors || [];
+      const idx = sectorEntries.findIndex((rs: any) => rs.sector_id === selectedSector.id);
+      if (idx >= 0) {
+        // Return selected sector + all subsequent sectors
+        return sectorEntries.slice(idx).map((rs: any) => rs.sector_id);
+      }
+    }
+    return [selectedSector.id];
+  }, [selectedSector?.id, routes]);
+
+  // Fetch customers for selected sector + route sectors
   const { data: sectorCustomers, isLoading: loadingCustomers } = useQuery({
-    queryKey: ['sector-customers', selectedSector?.id, activeBranch?.id],
+    queryKey: ['sector-customers', routeSectorIds, activeBranch?.id],
     queryFn: async () => {
       let q = supabase.from('customers')
-        .select('id, name, name_fr, store_name, phone')
-        .eq('sector_id', selectedSector.id)
+        .select('id, name, name_fr, store_name, phone, sector_id')
+        .in('sector_id', routeSectorIds)
         .eq('is_registered', true)
         .eq('status', 'active')
         .order('name');
@@ -78,7 +110,7 @@ const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange, onOrderCreated 
       if (error) throw error;
       return data || [];
     },
-    enabled: open && !!selectedSector?.id && step === 'customers',
+    enabled: open && routeSectorIds.length > 0 && step === 'customers',
   });
 
   // Fetch products for order
@@ -134,13 +166,40 @@ const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange, onOrderCreated 
     );
   }, [sectorsWithCustomers, sectorSearch]);
 
+  // Group customers by sector for display
+  const groupedCustomers = useMemo(() => {
+    const customers = sectorCustomers || [];
+    const filtered = customerSearch
+      ? customers.filter((c: any) => c.name?.includes(customerSearch) || c.name_fr?.toLowerCase().includes(customerSearch.toLowerCase()) || c.phone?.includes(customerSearch))
+      : customers;
+
+    // Group by sector_id
+    const groups: { sectorId: string; sectorName: string; customers: any[] }[] = [];
+    const sectorMap = new Map<string, any[]>();
+    for (const c of filtered) {
+      const sid = c.sector_id || 'unknown';
+      if (!sectorMap.has(sid)) sectorMap.set(sid, []);
+      sectorMap.get(sid)!.push(c);
+    }
+
+    // Order groups by route order
+    for (const sid of routeSectorIds) {
+      const custs = sectorMap.get(sid);
+      if (custs && custs.length > 0) {
+        const sector = sectors.find(s => s.id === sid);
+        groups.push({
+          sectorId: sid,
+          sectorName: sector ? getLocalizedName(sector, language) : '—',
+          customers: custs,
+        });
+      }
+    }
+    return groups;
+  }, [sectorCustomers, customerSearch, routeSectorIds, sectors, language]);
+
   const filteredCustomers = useMemo(() => {
-    if (!sectorCustomers) return [];
-    if (!customerSearch) return sectorCustomers;
-    return sectorCustomers.filter((c: any) =>
-      c.name?.includes(customerSearch) || c.name_fr?.toLowerCase().includes(customerSearch.toLowerCase()) || c.phone?.includes(customerSearch)
-    );
-  }, [sectorCustomers, customerSearch]);
+    return groupedCustomers.flatMap(g => g.customers);
+  }, [groupedCustomers]);
 
   const applyDefaultQty = () => {
     const qty = parseInt(defaultQty) || 10;
@@ -324,6 +383,12 @@ const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange, onOrderCreated 
               <div className="bg-muted/50 rounded-lg p-2 text-sm font-medium flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-primary" />
                 {selectedSector && getLocalizedName(selectedSector, language)}
+                {routeSectorIds.length > 1 && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    <Route className="w-3 h-3 ml-1" />
+                    {routeSectorIds.length} سكتورات
+                  </Badge>
+                )}
               </div>
               <div className="relative">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -334,22 +399,33 @@ const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange, onOrderCreated 
                   {loadingCustomers ? (
                     <p className="text-center text-muted-foreground text-sm py-8">جاري التحميل...</p>
                   ) : filteredCustomers.length > 0 ? (
-                    filteredCustomers.map((c: any) => (
-                      <Button
-                        key={c.id}
-                        variant="ghost"
-                        className="w-full justify-start text-start h-auto py-2 px-3"
-                        onClick={() => { setSelectedCustomer(c); setStep('products'); }}
-                      >
-                        <User className="w-4 h-4 ml-2 shrink-0 text-primary" />
-                        <div className="min-w-0">
-                          <span className="text-sm font-medium block truncate">{c.name}</span>
-                          {c.name_fr && <span className="text-[11px] text-muted-foreground block" dir="ltr">{c.name_fr}</span>}
-                        </div>
-                      </Button>
+                    groupedCustomers.map(group => (
+                      <div key={group.sectorId}>
+                        {groupedCustomers.length > 1 && (
+                          <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/30 rounded mt-1 mb-0.5">
+                            <MapPin className="w-3 h-3 text-primary" />
+                            <span className="text-xs font-semibold text-muted-foreground">{group.sectorName}</span>
+                            <Badge variant="outline" className="text-[9px] h-4">{group.customers.length}</Badge>
+                          </div>
+                        )}
+                        {group.customers.map((c: any) => (
+                          <Button
+                            key={c.id}
+                            variant="ghost"
+                            className="w-full justify-start text-start h-auto py-2 px-3"
+                            onClick={() => { setSelectedCustomer(c); setStep('products'); }}
+                          >
+                            <User className="w-4 h-4 ml-2 shrink-0 text-primary" />
+                            <div className="min-w-0">
+                              <span className="text-sm font-medium block truncate">{c.name}</span>
+                              {c.name_fr && <span className="text-[11px] text-muted-foreground block" dir="ltr">{c.name_fr}</span>}
+                            </div>
+                          </Button>
+                        ))}
+                      </div>
                     ))
                   ) : (
-                    <p className="text-center text-muted-foreground text-sm py-8">لا يوجد عملاء مسجلين في هذا السكتور</p>
+                    <p className="text-center text-muted-foreground text-sm py-8">لا يوجد عملاء مسجلين</p>
                   )}
                 </div>
               </ScrollArea>

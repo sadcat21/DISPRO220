@@ -9,8 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Search, ShoppingCart, Send, ArrowRight, X, MessageCircle, User, FileText, Clock, CheckCircle, RefreshCw, PackageCheck, Route, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, ShoppingCart, Send, ArrowRight, X, MessageCircle, User, FileText, Clock, CheckCircle, RefreshCw, PackageCheck, Route, ChevronDown, ChevronUp, Settings } from 'lucide-react';
 import QuickOrderDialog from './QuickOrderDialog';
+import InvoiceSettingsDialog from './InvoiceSettingsDialog';
 import { toast } from 'sonner';
 import { getLocalizedName } from '@/utils/sectorName';
 import { format } from 'date-fns';
@@ -37,6 +38,7 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   const [statusSubTab, setStatusSubTab] = useState<'sent' | 'received'>('sent');
   const [receivingOrderId, setReceivingOrderId] = useState<string | null>(null);
   const [quickOrderOpen, setQuickOrderOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [invoiceNumberInput, setInvoiceNumberInput] = useState('');
   const [invoicePrefix, setInvoicePrefix] = useState('F');
   const [invoiceYear, setInvoiceYear] = useState(new Date().getFullYear().toString());
@@ -477,13 +479,17 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
             {pendingCount > 0 && (
               <Badge variant="destructive" className="text-xs">{pendingCount}</Badge>
             )}
-            <Button size="icon" variant="outline" className="h-7 w-7 mr-auto" onClick={() => setQuickOrderOpen(true)} title="إنشاء طلب سريع">
+            <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => setQuickOrderOpen(true)} title="إنشاء طلب سريع">
               <Route className="w-4 h-4" />
+            </Button>
+            <Button size="icon" variant="outline" className="h-7 w-7 mr-auto" onClick={() => setSettingsOpen(true)} title="إعدادات">
+              <Settings className="w-4 h-4" />
             </Button>
           </DialogTitle>
         </DialogHeader>
 
         <QuickOrderDialog open={quickOrderOpen} onOpenChange={setQuickOrderOpen} onOrderCreated={() => { setActiveTab('status'); setStatusSubTab('sent'); queryClient.invalidateQueries({ queryKey: ['invoice-orders'] }); queryClient.invalidateQueries({ queryKey: ['manual-invoice-requests'] }); }} />
+        <InvoiceSettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
 
         <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as any); resetState(); }}>
           <TabsList className="w-full grid grid-cols-3">
