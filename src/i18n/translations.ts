@@ -1232,6 +1232,8 @@ export const translations: Translations = {
   'treasury.cash': { ar: 'الكاش', fr: 'Espèces', en: 'Cash' },
   'treasury.cash_invoice1': { ar: 'كاش فاتورة 1', fr: 'Espèces Facture 1', en: 'Cash Invoice 1' },
   'treasury.cash_invoice2': { ar: 'كاش فاتورة 2', fr: 'Espèces Facture 2', en: 'Cash Invoice 2' },
+  'treasury.unified_cash': { ar: 'موحد', fr: 'Unifié', en: 'Unified' },
+  'treasury.cash_amount': { ar: 'المبلغ النقدي', fr: 'Montant espèces', en: 'Cash Amount' },
   'treasury.checks': { ar: 'Chèques', fr: 'Chèques', en: 'Checks' },
   'treasury.versement': { ar: 'Versement', fr: 'Versement', en: 'Deposit' },
   'treasury.virement': { ar: 'Virement', fr: 'Virement', en: 'Transfer' },

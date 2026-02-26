@@ -1,0 +1,1 @@
+ALTER TABLE public.manager_handovers ADD COLUMN unified_cash boolean NOT NULL DEFAULT true;

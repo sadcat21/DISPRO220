@@ -329,6 +329,7 @@ const ManagerTreasury = () => {
         receipt_image_url: null,
         received_by: null,
         receiver_name: handoverForm.received_by || null,
+        unified_cash: unifiedCash,
       } as any).select('id').single();
 
       if (error) throw error;
@@ -1136,6 +1137,7 @@ const ManagerTreasury = () => {
                   intermediaryName={(h as any).intermediary_name}
                   bankTransferReference={(h as any).bank_transfer_reference}
                   receivedBy={(h as any).receiver_name || (h as any).received_by}
+                  unifiedCash={(h as any).unified_cash ?? true}
                 />
               </div>
             </DialogContent>
@@ -1200,6 +1202,7 @@ const ManagerTreasury = () => {
                   intermediaryName={(h as any).intermediary_name}
                   bankTransferReference={(h as any).bank_transfer_reference}
                   receivedBy={(h as any).receiver_name || (h as any).received_by}
+                  unifiedCash={(h as any).unified_cash ?? true}
                 />
               </div>
             </DialogContent>

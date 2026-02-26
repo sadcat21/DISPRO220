@@ -1140,6 +1140,7 @@ export type Database = {
           stamp_amount: number
           transfer_count: number | null
           transfers_amount: number
+          unified_cash: boolean
         }
         Insert: {
           amount?: number
@@ -1166,6 +1167,7 @@ export type Database = {
           stamp_amount?: number
           transfer_count?: number | null
           transfers_amount?: number
+          unified_cash?: boolean
         }
         Update: {
           amount?: number
@@ -1192,6 +1194,7 @@ export type Database = {
           stamp_amount?: number
           transfer_count?: number | null
           transfers_amount?: number
+          unified_cash?: boolean
         }
         Relationships: [
           {
