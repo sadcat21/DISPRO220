@@ -629,15 +629,33 @@ const OrderSearchDialog: React.FC<OrderSearchDialogProps> = ({ open, onOpenChang
         .select(`*, product:products(*)`)
         .eq('order_id', foundOrder.id);
       
+      // Enrich items with gift unit from offer tiers
+      let enrichedItems = items || [];
+      if (!itemsError && items) {
+        const giftOfferIds = [...new Set(items.map(i => i.gift_offer_id).filter(Boolean))] as string[];
+        if (giftOfferIds.length > 0) {
+          const { data: tiers } = await supabase
+            .from('product_offer_tiers')
+            .select('offer_id, gift_quantity_unit')
+            .in('offer_id', giftOfferIds);
+          const unitMap: Record<string, string> = {};
+          for (const t of (tiers || [])) {
+            unitMap[t.offer_id] = t.gift_quantity_unit || 'piece';
+          }
+          enrichedItems = items.map(i => ({
+            ...i,
+            gift_unit: i.gift_offer_id ? (unitMap[i.gift_offer_id] || 'piece') : 'piece',
+          }));
+        }
+      }
+      
       if (isContinuousMode) {
         // Add to scanned orders list
         setScannedOrders(prev => [...prev, foundOrder]);
         toast.success(`تم إضافة طلبية ${foundOrder.customer?.store_name || foundOrder.customer?.name || 'غير معروف'}`);
       } else {
         setOrder(foundOrder);
-        if (!itemsError && items) {
-          setOrderItems(items);
-        }
+        setOrderItems(enrichedItems);
         // Close scanner automatically after finding order
         stopScanning();
         toast.success('تم العثور على الطلبية');
@@ -963,7 +981,7 @@ const OrderSearchDialog: React.FC<OrderSearchDialogProps> = ({ open, onOpenChang
                             {item.gift_quantity > 0 && (
                               <Badge variant="outline" className="ms-1 text-[10px] px-1 py-0 border-green-500 text-green-600">
                                 <Gift className="w-3 h-3 ms-0.5" />
-                                {item.gift_quantity} صندوق مجاناً
+                                {item.gift_quantity} {item.gift_unit === 'box' ? 'صندوق' : item.gift_unit === 'kg' ? 'كغ' : 'قطعة'} مجاناً
                               </Badge>
                             )}
                           </span>
