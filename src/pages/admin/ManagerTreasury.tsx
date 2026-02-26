@@ -1116,6 +1116,17 @@ const ManagerTreasury = () => {
               <DialogHeader>
                 <DialogTitle className="flex items-center justify-between">
                   <span>{t('treasury.handover_details')}</span>
+                  <Button size="sm" variant="outline" onClick={() => {
+                    const printContent = viewRef.current;
+                    if (!printContent) return;
+                    const w = window.open('', '_blank');
+                    if (!w) return;
+                    w.document.write(`<html><head><style>body{font-family:sans-serif;direction:ltr;padding:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #000;padding:4px 8px;text-align:left}@media print{body{padding:0}}</style></head><body>${printContent.innerHTML}</body></html>`);
+                    w.document.close();
+                    w.print();
+                  }}>
+                    <Printer className="w-4 h-4 mx-1" /> طباعة
+                  </Button>
                   <Button size="sm" variant="outline" onClick={async () => {
                     if (!viewRef.current) return;
                     try {
