@@ -208,8 +208,7 @@ const StampDetailsDialog = ({ open, onOpenChange }: Props) => {
                       {group.store_name && <p className="text-xs text-muted-foreground">{group.store_name}</p>}
                     </div>
                     <div className="text-end">
-                      <p className="font-bold text-amber-600">{group.totalStamp.toLocaleString()} {cur}</p>
-                      <p className="text-[10px] text-muted-foreground">{t('treasury.total')}: {group.total.toLocaleString()} {cur}</p>
+                      <p className="font-bold">{group.total.toLocaleString()} {cur}</p>
                       {group.orders.length > 1 && (
                         <Badge variant="outline" className="text-[10px] mt-1">{group.orders.length}</Badge>
                       )}
