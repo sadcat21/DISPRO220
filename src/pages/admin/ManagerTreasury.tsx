@@ -431,7 +431,7 @@ const ManagerTreasury = () => {
       {/* ميزانية الخزينة - دراسة الفجوات */}
       {(() => {
         const totalSales = summary?.totalSales || 0;
-        const totalDebts = summary?.totalDebts || 0;
+        const orderUnpaidAmount = summary?.orderUnpaidAmount || 0;
         const collectedDebts = summary?.collectedDebts || 0;
         const totalInTreasury = summary?.total || 0;
         const handedOver = summary?.handedOver || 0;
@@ -439,9 +439,9 @@ const ManagerTreasury = () => {
         const totalGiftsValue = summary?.totalGiftsValue || 0;
         const workerHeldAmount = summary?.workerHeldAmount || 0;
         
-        // المتوقع = المبيعات - الديون + تحصيلات الديون - قيمة الهدايا
-        const expectedInTreasury = totalSales - totalDebts + collectedDebts - totalGiftsValue;
-        // الموجود فعلياً + المُسلَّم + المصاريف + في ذمة العمال = ما تم التصرف فيه
+        // المتوقع = المبيعات - المبالغ غير المدفوعة من الطلبيات + تحصيلات ديون - الهدايا
+        const expectedInTreasury = totalSales - orderUnpaidAmount + collectedDebts - totalGiftsValue;
+        // الموجود فعلياً + المُسلَّم + المصاريف + في ذمة العمال
         const accountedFor = totalInTreasury + handedOver + totalExpenses + workerHeldAmount;
         const gap = expectedInTreasury - accountedFor;
         const hasGap = Math.abs(gap) > 1;
@@ -463,8 +463,8 @@ const ManagerTreasury = () => {
                   <span className="text-xs font-bold">{totalSales.toLocaleString()} د.ج</span>
                 </div>
                 <div className="flex items-center justify-between rounded-lg bg-background p-2">
-                  <span className="text-[10px] text-muted-foreground">− ديون جديدة (لم تُدفع)</span>
-                  <span className="text-xs font-bold text-orange-500">−{totalDebts.toLocaleString()} د.ج</span>
+                  <span className="text-[10px] text-muted-foreground">− مبالغ غير مدفوعة (ديون/جزئي)</span>
+                  <span className="text-xs font-bold text-orange-500">−{orderUnpaidAmount.toLocaleString()} د.ج</span>
                 </div>
                 <div className="flex items-center justify-between rounded-lg bg-background p-2">
                   <span className="text-[10px] text-muted-foreground">+ تحصيلات ديون سابقة</span>
@@ -593,7 +593,7 @@ const ManagerTreasury = () => {
               <div className="p-3 rounded-lg bg-muted/50 space-y-2">
                 <p className="font-medium text-xs">المعادلة الأساسية:</p>
                 <div className="bg-background rounded p-2 text-xs space-y-1">
-                  <p><strong>المتوقع</strong> = إجمالي المبيعات − الديون الجديدة + تحصيلات الديون − قيمة الهدايا 🎁</p>
+                  <p><strong>المتوقع</strong> = إجمالي المبيعات − المبالغ غير المدفوعة (من الطلبيات الجزئية والديون) + تحصيلات الديون − قيمة الهدايا 🎁</p>
                   <p><strong>مجموع التصرف</strong> = الموجود في الخزينة + المُسلَّم + المصاريف + <strong>في ذمة العمال 👷</strong></p>
                   <p><strong>الفجوة</strong> = المتوقع − مجموع التصرف</p>
                 </div>

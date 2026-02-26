@@ -65,6 +65,7 @@ export interface TreasurySummary {
   totalExpenses: number;
   totalGiftsValue: number;
   workerHeldAmount: number;
+  orderUnpaidAmount: number;
 }
 
 export const useManagerTreasury = () => {
@@ -175,6 +176,17 @@ export const useTreasurySummary = () => {
       // Calculate total sales from all delivered orders
       const totalSales = (orders || []).reduce((s: number, o: any) => s + Number(o.total_amount || 0), 0);
 
+      // Calculate actual paid amount from orders (what should be in treasury from order payments)
+      const paidFromOrders = (orders || []).reduce((s: number, o: any) => {
+        let paid = Number(o.total_amount || 0);
+        if (o.payment_status === 'partial') paid = Number(o.partial_amount || 0);
+        else if (o.payment_status === 'debt') paid = 0;
+        return s + paid;
+      }, 0);
+
+      // Actual unpaid amount from orders (more accurate than customer_debts table)
+      const orderUnpaidAmount = totalSales - paidFromOrders;
+
       // Calculate total gift value (gifts given without payment)
       const totalGiftsValue = (orders || []).reduce((s: number, o: any) => {
         return s + (o.order_items || []).reduce((is: number, item: any) => {
@@ -193,7 +205,7 @@ export const useTreasurySummary = () => {
         coins: totalCoins,
         total: 0, handedOver: 0, remaining: 0,
         totalSales, totalDebts, collectedDebts, uncollectedDebts, debtCashCollected, totalExpenses, totalGiftsValue,
-        workerHeldAmount,
+        workerHeldAmount, orderUnpaidAmount,
       };
 
       (orders || []).forEach((o: any) => {
