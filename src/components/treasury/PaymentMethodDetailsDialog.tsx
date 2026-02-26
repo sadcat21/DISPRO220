@@ -159,7 +159,7 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
           <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center mb-2">
             <div className="flex items-center justify-center gap-1 mb-1">
               <Coins className="w-4 h-4 text-amber-600" />
-              <p className="text-xs font-medium text-amber-700">إجمالي الطوابع (العملات المعدنية)</p>
+              <p className="text-xs font-medium text-amber-700">إجمالي الطوابع (ضريبة)</p>
             </div>
             <p className="text-lg font-bold text-amber-600">{grandStamp.toLocaleString()} د.ج</p>
           </div>

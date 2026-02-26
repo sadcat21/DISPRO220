@@ -232,12 +232,6 @@ const ManagerTreasury = () => {
             <Banknote className="w-5 h-5 mx-auto mb-1 text-green-500" />
             <p className="text-xs text-muted-foreground">كاش فاتورة 1 ({summary?.cash_invoice1_count || 0})</p>
             <p className="text-lg font-bold text-green-500">{summary?.cash_invoice1?.toLocaleString() || 0} د.ج</p>
-            {(summary?.cash_invoice1_stamp || 0) > 0 && (
-              <p className="text-[10px] text-amber-600 flex items-center justify-center gap-1 mt-1">
-                <Coins className="w-3 h-3" />
-                طابع: {summary.cash_invoice1_stamp.toLocaleString()} د.ج
-              </p>
-            )}
           </CardContent>
         </Card>
         <Card className="border-emerald-500/30 bg-emerald-500/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDetailsCategory('cash_invoice2')}>
@@ -261,14 +255,33 @@ const ManagerTreasury = () => {
             <p className="text-lg font-bold text-purple-500">{summary?.bank_receipt?.toLocaleString() || 0} د.ج</p>
           </CardContent>
         </Card>
-        <Card className="col-span-2 border-orange-500/30 bg-orange-500/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDetailsCategory('bank_transfer')}>
+        <Card className="border-orange-500/30 bg-orange-500/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDetailsCategory('bank_transfer')}>
           <CardContent className="p-3 text-center">
             <ArrowUpRight className="w-5 h-5 mx-auto mb-1 text-orange-500" />
             <p className="text-xs text-muted-foreground">فيرمو ({summary?.transferCount || 0})</p>
             <p className="text-lg font-bold text-orange-500">{summary?.bank_transfer?.toLocaleString() || 0} د.ج</p>
           </CardContent>
         </Card>
+        {(summary?.coins || 0) > 0 && (
+          <Card className="border-amber-500/30 bg-amber-500/5">
+            <CardContent className="p-3 text-center">
+              <Coins className="w-5 h-5 mx-auto mb-1 text-amber-500" />
+              <p className="text-xs text-muted-foreground">العملات المعدنية</p>
+              <p className="text-lg font-bold text-amber-500">{summary.coins.toLocaleString()} د.ج</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
+
+      {/* Stamp info */}
+      {(summary?.cash_invoice1_stamp || 0) > 0 && (
+        <Card className="border-amber-600/30 bg-amber-600/5">
+          <CardContent className="p-3 text-center">
+            <p className="text-xs text-muted-foreground">إجمالي الطوابع (ضريبة على فاتورة 1)</p>
+            <p className="text-lg font-bold text-amber-600">{summary.cash_invoice1_stamp.toLocaleString()} د.ج</p>
+          </CardContent>
+        </Card>
+      )}
 
       {detailsCategory && (
         <PaymentMethodDetailsDialog

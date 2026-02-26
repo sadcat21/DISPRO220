@@ -1121,7 +1121,7 @@ export const translations: Translations = {
   'accounting.method_cash': { ar: 'كاش', fr: 'Espèces', en: 'Cash' },
   'accounting.physical_cash': { ar: 'الكاش المادي المستلم', fr: 'Espèces physiques reçues', en: 'Physical Cash Received' },
   'accounting.actual_cash_received': { ar: 'المبلغ المسلّم فعلياً', fr: 'Montant réellement remis', en: 'Actually Received Amount' },
-  'accounting.coin_amount': { ar: 'الصرف (العملات المعدنية)', fr: 'Monnaie (pièces)', en: 'Coins (Change)' },
+  'accounting.coin_amount': { ar: 'العملات المعدنية (الصرف)', fr: 'Monnaie (pièces)', en: 'Coins (Change)' },
   'accounting.grand_summary': { ar: 'الملخص العام', fr: 'Résumé général', en: 'Grand Summary' },
   'accounting.sales_tracking': { ar: 'تتبع المبيعات', fr: 'Suivi des ventes', en: 'Sales Tracking' },
   'accounting.customer_sales': { ar: 'مبيعات حسب التاجر', fr: 'Ventes par client', en: 'Sales by Customer' },

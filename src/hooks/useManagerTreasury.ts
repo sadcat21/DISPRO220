@@ -53,6 +53,7 @@ export interface TreasurySummary {
   receiptCount: number;
   bank_transfer: number;
   transferCount: number;
+  coins: number;
   total: number;
   handedOver: number;
   remaining: number;
@@ -106,12 +107,22 @@ export const useTreasurySummary = () => {
       const { data: handovers, error: hErr } = await hQuery;
       if (hErr) throw hErr;
 
+      // Get coins from accounting sessions
+      let coinQuery = supabase
+        .from('accounting_session_items')
+        .select('actual_amount, session_id, accounting_sessions!inner(branch_id)')
+        .eq('item_type', 'coin_amount');
+      if (activeBranch?.id) coinQuery = coinQuery.eq('accounting_sessions.branch_id', activeBranch.id);
+      const { data: coinItems } = await coinQuery;
+      const totalCoins = (coinItems || []).reduce((s: number, item: any) => s + Number(item.actual_amount || 0), 0);
+
       const summary: TreasurySummary = {
         cash_invoice1: 0, cash_invoice1_count: 0, cash_invoice1_stamp: 0,
         cash_invoice2: 0, cash_invoice2_count: 0,
         check: 0, checkCount: 0,
         bank_receipt: 0, receiptCount: 0,
         bank_transfer: 0, transferCount: 0,
+        coins: totalCoins,
         total: 0, handedOver: 0, remaining: 0,
       };
 
