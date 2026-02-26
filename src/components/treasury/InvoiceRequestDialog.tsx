@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Search, ShoppingCart, Send, ArrowRight, X, MessageCircle, User, FileText, Clock, CheckCircle, RefreshCw, PackageCheck, Route } from 'lucide-react';
+import { Search, ShoppingCart, Send, ArrowRight, X, MessageCircle, User, FileText, Clock, CheckCircle, RefreshCw, PackageCheck, Route, ChevronDown, ChevronUp } from 'lucide-react';
 import QuickOrderDialog from './QuickOrderDialog';
 import { toast } from 'sonner';
 import { getLocalizedName } from '@/utils/sectorName';
@@ -304,6 +304,31 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
 
   const pendingCount = pendingInvoiceOrders.length;
 
+  const CollapsibleProducts = ({ items }: { items: any[] }) => {
+    const [expanded, setExpanded] = useState(false);
+    return (
+      <div className="text-xs">
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="w-full flex items-center justify-between bg-muted/30 rounded p-2 hover:bg-muted/50 transition-colors"
+        >
+          <span className="text-muted-foreground">{items.length} منتج</span>
+          {expanded ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
+        </button>
+        {expanded && (
+          <div className="bg-muted/30 rounded-b p-2 space-y-0.5 -mt-1">
+            {items.map((item: any) => (
+              <div key={item.id} className="flex justify-between">
+                <span className="truncate flex-1">{item.products?.name || '—'}</span>
+                <Badge variant="secondary" className="text-[10px] mr-1">{item.quantity}</Badge>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderOrderCard = (order: any, mode: 'pending' | 'sent' | 'received') => (
     <div key={order.id} className="border rounded-lg p-3 space-y-2">
       <div className="flex items-start justify-between">
@@ -337,14 +362,7 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
           )}
         </div>
       </div>
-      <div className="text-xs bg-muted/30 rounded p-2 space-y-0.5">
-        {(order.order_items || []).map((item: any) => (
-          <div key={item.id} className="flex justify-between">
-            <span className="truncate flex-1">{item.products?.name || '—'}</span>
-            <Badge variant="secondary" className="text-[10px] mr-1">{item.quantity}</Badge>
-          </div>
-        ))}
-      </div>
+      <CollapsibleProducts items={order.order_items || []} />
 
       {/* Pending: send button */}
       {mode === 'pending' && (
@@ -465,7 +483,7 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
           </DialogTitle>
         </DialogHeader>
 
-        <QuickOrderDialog open={quickOrderOpen} onOpenChange={setQuickOrderOpen} />
+        <QuickOrderDialog open={quickOrderOpen} onOpenChange={setQuickOrderOpen} onOrderCreated={() => { setActiveTab('status'); setStatusSubTab('sent'); }} />
 
         <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as any); resetState(); }}>
           <TabsList className="w-full grid grid-cols-3">

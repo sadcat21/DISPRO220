@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, ArrowRight, User, Shuffle, Trash2, Check, MapPin, Package } from 'lucide-react';
+import { Search, ArrowRight, User, Shuffle, Trash2, Check, MapPin, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { getLocalizedName } from '@/utils/sectorName';
 import { useSectors } from '@/hooks/useSectors';
@@ -16,6 +16,7 @@ import { useSectors } from '@/hooks/useSectors';
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onOrderCreated?: () => void;
 }
 
 interface ProductItem {
@@ -27,7 +28,7 @@ interface ProductItem {
 
 type Step = 'sectors' | 'customers' | 'products';
 
-const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange }) => {
+const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange, onOrderCreated }) => {
   const { language, dir } = useLanguage();
   const { activeBranch, workerId } = useAuth();
   const queryClient = useQueryClient();
@@ -187,8 +188,9 @@ const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange }) => {
 
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['invoice-orders'] });
-      toast.success('تم إنشاء الطلب بنجاح ✅');
+      toast.success('تم إرسال الطلب بنجاح ✅');
       handleClose();
+      onOrderCreated?.();
     } catch (error: any) {
       toast.error(error.message || 'فشل إنشاء الطلب');
     } finally {
@@ -375,8 +377,8 @@ const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                 onClick={handleSubmit}
                 disabled={selectedProducts.length === 0 || isSubmitting}
               >
-                <Package className="w-4 h-4" />
-                {isSubmitting ? 'جاري الإنشاء...' : `إنشاء طلب (${selectedProducts.length} منتج)`}
+                <Send className="w-4 h-4" />
+                {isSubmitting ? 'جاري الإرسال...' : `إرسال الطلب (${selectedProducts.length} منتج)`}
               </Button>
             </>
           )}
