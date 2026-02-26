@@ -767,9 +767,10 @@ const ManagerTreasury = () => {
         const totalExpenses = summary?.totalExpenses || 0;
         const workerHeldAmount = summary?.workerHeldAmount || 0;
         
+        const coinExchangeOut = summary?.coinExchangeOut || 0;
         const expectedInTreasury = totalSales - orderUnpaidAmount + debtCashCollected;
         const netInTreasury = totalInTreasury - handedOver - totalExpenses;
-        const accountedFor = netInTreasury + handedOver + totalExpenses + workerHeldAmount;
+        const accountedFor = netInTreasury + handedOver + totalExpenses + workerHeldAmount + coinExchangeOut;
         const gap = expectedInTreasury - accountedFor;
         const hasGap = Math.abs(gap) > 1;
         
@@ -826,6 +827,12 @@ const ManagerTreasury = () => {
                   <div className="flex items-center justify-between rounded-lg bg-amber-500/5 border border-amber-500/20 p-2">
                     <span className="text-[10px] text-muted-foreground">👷 {t('treasury.worker_held')}</span>
                     <span className="text-xs font-bold text-amber-600">{workerHeldAmount.toLocaleString()} {cur}</span>
+                  </div>
+                )}
+                {coinExchangeOut > 0 && (
+                  <div className="flex items-center justify-between rounded-lg bg-amber-500/5 border border-amber-500/20 p-2">
+                    <span className="text-[10px] text-muted-foreground">🪙 {t('coin_exchange.title') || 'تحويل عملات'}</span>
+                    <span className="text-xs font-bold text-amber-600">{coinExchangeOut.toLocaleString()} {cur}</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between rounded-lg bg-muted/50 p-2">
