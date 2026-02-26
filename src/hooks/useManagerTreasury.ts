@@ -61,6 +61,7 @@ export interface TreasurySummary {
   totalDebts: number;
   collectedDebts: number;
   uncollectedDebts: number;
+  debtCashCollected: number;
 }
 
 export const useManagerTreasury = () => {
@@ -129,6 +130,14 @@ export const useTreasurySummary = () => {
       const collectedDebts = (debts || []).reduce((s: number, d: any) => s + Number(d.paid_amount || 0), 0);
       const uncollectedDebts = (debts || []).reduce((s: number, d: any) => s + Number(d.remaining_amount || 0), 0);
 
+      // Get debt payments (cash collections to add to treasury)
+      let dpQuery = supabase.from('debt_payments').select('amount, payment_method');
+      const { data: debtPayments } = await dpQuery;
+      const debtCashCollected = (debtPayments || []).reduce((s: number, dp: any) => {
+        if (dp.payment_method === 'cash' || !dp.payment_method) return s + Number(dp.amount || 0);
+        return s;
+      }, 0);
+
       // Calculate total sales from all delivered orders
       const totalSales = (orders || []).reduce((s: number, o: any) => s + Number(o.total_amount || 0), 0);
 
@@ -140,53 +149,66 @@ export const useTreasurySummary = () => {
         bank_transfer: 0, transferCount: 0,
         coins: totalCoins,
         total: 0, handedOver: 0, remaining: 0,
-        totalSales, totalDebts, collectedDebts, uncollectedDebts,
+        totalSales, totalDebts, collectedDebts, uncollectedDebts, debtCashCollected,
       };
 
       (orders || []).forEach((o: any) => {
-        const amount = Number(o.total_amount || 0);
+        const totalAmount = Number(o.total_amount || 0);
         const itemsSubtotal = (o.order_items || []).reduce((s: number, i: any) => s + Number(i.total_price || 0), 0);
         
+        // For partial payment orders, only the paid amount goes to treasury
+        // For debt orders, nothing goes to treasury from this order
+        let paidAmount = totalAmount;
+        if (o.payment_status === 'partial') {
+          paidAmount = Number(o.partial_amount || 0);
+        } else if (o.payment_status === 'debt') {
+          paidAmount = 0;
+        }
+        
+        if (paidAmount <= 0) return;
+
         if (o.payment_type === 'with_invoice') {
           switch (o.invoice_payment_method) {
             case 'cash': {
-              summary.cash_invoice1 += amount;
+              summary.cash_invoice1 += paidAmount;
               summary.cash_invoice1_count++;
-              // Calculate stamp using tiers
               if (stampTiers?.length) {
-                const baseAmount = itemsSubtotal > 0 ? itemsSubtotal : amount;
+                const baseAmount = itemsSubtotal > 0 ? itemsSubtotal : paidAmount;
                 summary.cash_invoice1_stamp += calculateStampAmount(baseAmount, stampTiers as StampPriceTier[]);
               }
               break;
             }
             case 'check':
-              summary.check += amount;
+              summary.check += paidAmount;
               summary.checkCount++;
               break;
             case 'receipt':
-              summary.bank_receipt += amount;
+              summary.bank_receipt += paidAmount;
               summary.receiptCount++;
               break;
             case 'transfer':
-              summary.bank_transfer += amount;
+              summary.bank_transfer += paidAmount;
               summary.transferCount++;
               break;
             default:
-              summary.cash_invoice1 += amount;
+              summary.cash_invoice1 += paidAmount;
               summary.cash_invoice1_count++;
               if (stampTiers?.length) {
-                const baseAmount = itemsSubtotal > 0 ? itemsSubtotal : amount;
+                const baseAmount = itemsSubtotal > 0 ? itemsSubtotal : paidAmount;
                 summary.cash_invoice1_stamp += calculateStampAmount(baseAmount, stampTiers as StampPriceTier[]);
               }
               break;
           }
         } else {
-          summary.cash_invoice2 += amount;
+          summary.cash_invoice2 += paidAmount;
           summary.cash_invoice2_count++;
         }
       });
 
-      summary.total = summary.cash_invoice1 + summary.cash_invoice2 + summary.check + summary.bank_receipt + summary.bank_transfer;
+      // Debt cash collections are additional cash received by manager (not invoice-related)
+      // Add to total but not to any invoice category
+
+      summary.total = summary.cash_invoice1 + summary.cash_invoice2 + summary.check + summary.bank_receipt + summary.bank_transfer + debtCashCollected;
       summary.handedOver = (handovers || []).reduce((s: number, h: any) => s + Number(h.amount), 0);
       summary.remaining = summary.total - summary.handedOver;
 
