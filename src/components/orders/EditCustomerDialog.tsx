@@ -81,6 +81,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
   const [defaultPaymentType, setDefaultPaymentType] = useState<string>('without_invoice');
   const [defaultPriceSubtype, setDefaultPriceSubtype] = useState<string>('gros');
   const [customerType, setCustomerType] = useState<string>('');
+  const [isRegistered, setIsRegistered] = useState(false);
 
   // Fetch zones when sector changes
   const pendingZoneId = React.useRef<string>('');
@@ -188,6 +189,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
       setDefaultPaymentType(customer.default_payment_type || 'without_invoice');
       setDefaultPriceSubtype(customer.default_price_subtype || 'gros');
       setCustomerType(customer.customer_type || '');
+      setIsRegistered((customer as any).is_registered || false);
       setShowMap(!!(customer.latitude && customer.longitude));
 
       if (customer.latitude && customer.longitude && !customer.address) {
@@ -312,6 +314,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
         default_payment_type: defaultPaymentType,
         default_price_subtype: defaultPriceSubtype,
         customer_type: customerType || null,
+        is_registered: isRegistered,
       };
       // Workers must go through approval for updates, admins can update directly
       const isManager = role === 'admin' || role === 'branch_admin';
@@ -697,6 +700,19 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
               <Input type="number" min="0" value={debtAmount} onChange={(e) => setDebtAmount(e.target.value)} placeholder="0" className="text-right" dir="ltr" />
               {debtSummary && debtSummary.count > 0 && (
                 <p className="text-xs text-muted-foreground">{debtSummary.count} سند(ات) نشطة</p>
+              )}
+            </div>
+
+            <div className="border rounded-lg p-4 space-y-3 bg-background/60">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-blue-600" />
+                  <Label htmlFor="edit-registered-switch">عميل مسجل (ملف تجاري)</Label>
+                </div>
+                <Switch id="edit-registered-switch" checked={isRegistered} onCheckedChange={setIsRegistered} />
+              </div>
+              {isRegistered && (
+                <p className="text-xs text-muted-foreground">✅ هذا العميل مسجل رسمياً ويمكنه الشراء بالفاتورة 1</p>
               )}
             </div>
 

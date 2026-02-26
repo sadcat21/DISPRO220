@@ -799,6 +799,7 @@ export type Database = {
           default_price_subtype: string | null
           id: string
           internal_name: string | null
+          is_registered: boolean | null
           is_trusted: boolean | null
           latitude: number | null
           location_type: string | null
@@ -827,6 +828,7 @@ export type Database = {
           default_price_subtype?: string | null
           id?: string
           internal_name?: string | null
+          is_registered?: boolean | null
           is_trusted?: boolean | null
           latitude?: number | null
           location_type?: string | null
@@ -855,6 +857,7 @@ export type Database = {
           default_price_subtype?: string | null
           id?: string
           internal_name?: string | null
+          is_registered?: boolean | null
           is_trusted?: boolean | null
           latitude?: number | null
           location_type?: string | null

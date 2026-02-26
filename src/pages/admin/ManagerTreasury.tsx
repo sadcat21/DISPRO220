@@ -27,6 +27,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import TreasurySettingsDialog from '@/components/treasury/TreasurySettingsDialog';
 import CoinExchangeDialog from '@/components/treasury/CoinExchangeDialog';
+import InvoiceRequestDialog from '@/components/treasury/InvoiceRequestDialog';
 import { useTreasuryContacts } from '@/hooks/useTreasuryContacts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -114,6 +115,7 @@ const ManagerTreasury = () => {
   const [pickedReceipts, setPickedReceipts] = useState<PickedItem[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [coinExchangeOpen, setCoinExchangeOpen] = useState(false);
+  const [invoiceRequestOpen, setInvoiceRequestOpen] = useState(false);
   const { data: contacts } = useTreasuryContacts();
   const { data: bankAccounts } = useQuery({
     queryKey: ['treasury-bank-accounts', activeBranch?.id],
@@ -376,6 +378,9 @@ const ManagerTreasury = () => {
           </Button>
           <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => setCoinExchangeOpen(true)} title={t('coin_exchange.title')}>
             <ArrowLeftRight className="w-4 h-4" />
+          </Button>
+          <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => setInvoiceRequestOpen(true)} title="طلب فاتورة">
+            <Receipt className="w-4 h-4" />
           </Button>
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
@@ -1363,6 +1368,7 @@ const ManagerTreasury = () => {
       })()}
       <TreasurySettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
       <CoinExchangeDialog open={coinExchangeOpen} onOpenChange={setCoinExchangeOpen} />
+      <InvoiceRequestDialog open={invoiceRequestOpen} onOpenChange={setInvoiceRequestOpen} />
     </div>
   );
 };

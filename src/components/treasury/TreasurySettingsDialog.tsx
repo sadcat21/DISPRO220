@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2, Users, UserCheck, Phone, Pencil, Check, X, Landmark } from 'lucide-react';
+import { Plus, Trash2, Users, UserCheck, Phone, Pencil, Check, X, Landmark, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Props {
@@ -252,6 +252,10 @@ const TreasurySettingsDialog: React.FC<Props> = ({ open, onOpenChange }) => {
               <Landmark className="w-3.5 h-3.5" />
               {t('treasury.bank_accounts')}
             </TabsTrigger>
+            <TabsTrigger value="whatsapp" className="flex-1 gap-1">
+              <MessageCircle className="w-3.5 h-3.5" />
+              واتساب
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="receivers" className="space-y-3 mt-3">
@@ -306,6 +310,11 @@ const TreasurySettingsDialog: React.FC<Props> = ({ open, onOpenChange }) => {
               ))}
               {(bankAccounts || []).length === 0 && <p className="text-xs text-muted-foreground text-center py-4">{t('common.no_data')}</p>}
             </div>
+          </TabsContent>
+
+          <TabsContent value="whatsapp" className="space-y-3 mt-3">
+            {renderAddForm('whatsapp', 'اسم جهة الاتصال')}
+            {renderContactList((contacts || []).filter((c: any) => c.contact_type === 'whatsapp'))}
           </TabsContent>
         </Tabs>
       </DialogContent>
