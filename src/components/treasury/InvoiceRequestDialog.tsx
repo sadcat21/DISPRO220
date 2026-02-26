@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Search, ShoppingCart, Send, ArrowRight, X, MessageCircle, User, FileText, Clock, CheckCircle } from 'lucide-react';
+import { Search, ShoppingCart, Send, ArrowRight, X, MessageCircle, User, FileText, Clock, CheckCircle, RefreshCw, PackageCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { getLocalizedName } from '@/utils/sectorName';
 import { format } from 'date-fns';
@@ -33,7 +33,9 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   const { activeBranch } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'manual' | 'worker_requests'>('worker_requests');
-  const [workerSubTab, setWorkerSubTab] = useState<'pending' | 'completed'>('pending');
+  const [workerSubTab, setWorkerSubTab] = useState<'pending' | 'completed' | 'received'>('pending');
+  const [receivingOrderId, setReceivingOrderId] = useState<string | null>(null);
+  const [invoiceNumberInput, setInvoiceNumberInput] = useState('');
   const [step, setStep] = useState<Step>('customer');
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -49,7 +51,7 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
       let q = supabase
         .from('orders')
         .select(`
-          id, customer_id, created_by, status, payment_type, invoice_payment_method, total_amount, created_at, notes, invoice_sent_at,
+          id, customer_id, created_by, status, payment_type, invoice_payment_method, total_amount, created_at, notes, invoice_sent_at, invoice_number, invoice_received_at,
           customers!orders_customer_id_fkey(id, name, name_fr, store_name),
           workers!orders_created_by_fkey(id, full_name, username),
           order_items(id, product_id, quantity, unit_price, total_price, products!order_items_product_id_fkey(id, name))
@@ -68,7 +70,9 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   const pendingInvoiceOrders = useMemo(() =>
     (invoiceOrders || []).filter((o: any) => !o.invoice_sent_at), [invoiceOrders]);
   const completedInvoiceOrders = useMemo(() =>
-    (invoiceOrders || []).filter((o: any) => !!o.invoice_sent_at), [invoiceOrders]);
+    (invoiceOrders || []).filter((o: any) => !!o.invoice_sent_at && !o.invoice_received_at), [invoiceOrders]);
+  const receivedInvoiceOrders = useMemo(() =>
+    (invoiceOrders || []).filter((o: any) => !!o.invoice_received_at), [invoiceOrders]);
 
   // Fetch registered customers with sector info
   const { data: customers } = useQuery({
@@ -173,6 +177,26 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
     }
   };
 
+  const markOrderAsReceived = async (orderId: string, invoiceNumber: string) => {
+    if (!invoiceNumber.trim()) {
+      toast.error('الرجاء إدخال رقم الفاتورة');
+      return;
+    }
+    const { error } = await supabase
+      .from('orders')
+      .update({ invoice_received_at: new Date().toISOString(), invoice_number: invoiceNumber.trim() } as any)
+      .eq('id', orderId);
+    if (error) {
+      console.error('Failed to mark invoice as received:', error);
+      toast.error('فشل تسجيل الاستلام');
+    } else {
+      queryClient.invalidateQueries({ queryKey: ['invoice-orders'] });
+      toast.success('تم تسجيل استلام الفاتورة ✅');
+      setReceivingOrderId(null);
+      setInvoiceNumberInput('');
+    }
+  };
+
   const sendWhatsApp = async (phone: string, message?: string, orderId?: string) => {
     const msg = message || buildWhatsAppMessage();
     const cleanPhone = phone.replace(/[^0-9+]/g, '');
@@ -180,7 +204,6 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
     const url = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
     
-    // Mark as sent if it's a worker order
     if (orderId) {
       await markOrderAsSent(orderId);
       toast.success('تم فتح واتساب وتعليم الطلب كمنجز ✅');
@@ -200,6 +223,8 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
     setProductSearch('');
     setSelectedPayment(null);
     setSelectedWorkerOrder(null);
+    setReceivingOrderId(null);
+    setInvoiceNumberInput('');
   };
 
   const handleClose = (v: boolean) => {
@@ -209,7 +234,7 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
 
   const pendingCount = pendingInvoiceOrders.length;
 
-  const renderOrderCard = (order: any, showSentBadge = false) => (
+  const renderOrderCard = (order: any, mode: 'pending' | 'sent' | 'received') => (
     <div key={order.id} className="border rounded-lg p-3 space-y-2">
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1">
@@ -230,9 +255,14 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
           <Badge variant="outline" className="text-[10px] shrink-0">
             {order.invoice_payment_method || 'فاتورة'}
           </Badge>
-          {showSentBadge && order.invoice_sent_at && (
+          {mode === 'sent' && order.invoice_sent_at && (
             <Badge variant="secondary" className="text-[10px] gap-0.5">
               <CheckCircle className="w-3 h-3" /> تم الإرسال
+            </Badge>
+          )}
+          {mode === 'received' && order.invoice_number && (
+            <Badge variant="default" className="text-[10px] gap-0.5">
+              <PackageCheck className="w-3 h-3" /> {order.invoice_number}
             </Badge>
           )}
         </div>
@@ -245,7 +275,9 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
           </div>
         ))}
       </div>
-      {!showSentBadge && (
+
+      {/* Pending: send button */}
+      {mode === 'pending' && (
         <Button
           size="sm"
           className="w-full gap-1 h-8 text-xs"
@@ -255,10 +287,72 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
           إرسال عبر واتساب
         </Button>
       )}
-      {showSentBadge && order.invoice_sent_at && (
-        <p className="text-[10px] text-muted-foreground text-center">
-          أُرسل في {format(new Date(order.invoice_sent_at), 'dd/MM HH:mm')}
-        </p>
+
+      {/* Sent: resend + receive buttons */}
+      {mode === 'sent' && (
+        <div className="space-y-2">
+          <p className="text-[10px] text-muted-foreground text-center">
+            أُرسل في {format(new Date(order.invoice_sent_at), 'dd/MM HH:mm')}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1 gap-1 h-8 text-xs"
+              onClick={() => setSelectedWorkerOrder(order)}
+            >
+              <RefreshCw className="w-3 h-3" />
+              إعادة إرسال
+            </Button>
+            <Button
+              size="sm"
+              variant="default"
+              className="flex-1 gap-1 h-8 text-xs"
+              onClick={() => { setReceivingOrderId(order.id); setInvoiceNumberInput(''); }}
+            >
+              <PackageCheck className="w-3 h-3" />
+              تأكيد الاستلام
+            </Button>
+          </div>
+          {receivingOrderId === order.id && (
+            <div className="p-2 border rounded-lg bg-muted/30 space-y-2">
+              <p className="text-xs font-medium">أدخل رقم الفاتورة (مثال: FC00294/2026):</p>
+              <Input
+                value={invoiceNumberInput}
+                onChange={(e) => setInvoiceNumberInput(e.target.value)}
+                placeholder="FC00000/2026"
+                className="h-8 text-sm"
+                dir="ltr"
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="flex-1 h-7 text-xs"
+                  onClick={() => setReceivingOrderId(null)}
+                >
+                  إلغاء
+                </Button>
+                <Button
+                  size="sm"
+                  className="flex-1 h-7 text-xs"
+                  onClick={() => markOrderAsReceived(order.id, invoiceNumberInput)}
+                >
+                  <CheckCircle className="w-3 h-3 ml-1" />
+                  تأكيد
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Received: show invoice info */}
+      {mode === 'received' && (
+        <div className="text-[10px] text-muted-foreground text-center space-y-0.5">
+          <p>📄 رقم الفاتورة: <span className="font-semibold text-foreground">{order.invoice_number}</span></p>
+          {order.invoice_received_at && <p>تم الاستلام في {format(new Date(order.invoice_received_at), 'dd/MM HH:mm')}</p>}
+        </div>
       )}
     </div>
   );
@@ -333,7 +427,7 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                   <Button
                     size="sm"
                     variant={workerSubTab === 'pending' ? 'default' : 'ghost'}
-                    className="flex-1 h-8 text-xs gap-1"
+                    className="flex-1 h-8 text-[10px] gap-1"
                     onClick={() => setWorkerSubTab('pending')}
                   >
                     قيد الانتظار
@@ -342,11 +436,19 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                   <Button
                     size="sm"
                     variant={workerSubTab === 'completed' ? 'default' : 'ghost'}
-                    className="flex-1 h-8 text-xs gap-1"
+                    className="flex-1 h-8 text-[10px] gap-1"
                     onClick={() => setWorkerSubTab('completed')}
                   >
-                    <CheckCircle className="w-3 h-3" />
                     تم الإرسال ({completedInvoiceOrders.length})
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={workerSubTab === 'received' ? 'default' : 'ghost'}
+                    className="flex-1 h-8 text-[10px] gap-1"
+                    onClick={() => setWorkerSubTab('received')}
+                  >
+                    <PackageCheck className="w-3 h-3" />
+                    تم الاستلام ({receivedInvoiceOrders.length})
                   </Button>
                 </div>
 
@@ -356,18 +458,26 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                   ) : workerSubTab === 'pending' ? (
                     pendingInvoiceOrders.length > 0 ? (
                       <div className="space-y-2">
-                        {pendingInvoiceOrders.map((order: any) => renderOrderCard(order, false))}
+                        {pendingInvoiceOrders.map((order: any) => renderOrderCard(order, 'pending'))}
                       </div>
                     ) : (
                       <p className="text-center text-muted-foreground text-sm py-8">لا توجد طلبات فواتير معلقة</p>
                     )
-                  ) : (
+                  ) : workerSubTab === 'completed' ? (
                     completedInvoiceOrders.length > 0 ? (
                       <div className="space-y-2">
-                        {completedInvoiceOrders.map((order: any) => renderOrderCard(order, true))}
+                        {completedInvoiceOrders.map((order: any) => renderOrderCard(order, 'sent'))}
                       </div>
                     ) : (
                       <p className="text-center text-muted-foreground text-sm py-8">لا توجد طلبات منجزة</p>
+                    )
+                  ) : (
+                    receivedInvoiceOrders.length > 0 ? (
+                      <div className="space-y-2">
+                        {receivedInvoiceOrders.map((order: any) => renderOrderCard(order, 'received'))}
+                      </div>
+                    ) : (
+                      <p className="text-center text-muted-foreground text-sm py-8">لا توجد فواتير مستلمة</p>
                     )
                   )}
                 </ScrollArea>

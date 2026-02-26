@@ -1579,7 +1579,9 @@ export type Database = {
           customer_id: string
           delivery_date: string | null
           id: string
+          invoice_number: string | null
           invoice_payment_method: string | null
+          invoice_received_at: string | null
           invoice_sent_at: string | null
           notes: string | null
           partial_amount: number | null
@@ -1598,7 +1600,9 @@ export type Database = {
           customer_id: string
           delivery_date?: string | null
           id?: string
+          invoice_number?: string | null
           invoice_payment_method?: string | null
+          invoice_received_at?: string | null
           invoice_sent_at?: string | null
           notes?: string | null
           partial_amount?: number | null
@@ -1617,7 +1621,9 @@ export type Database = {
           customer_id?: string
           delivery_date?: string | null
           id?: string
+          invoice_number?: string | null
           invoice_payment_method?: string | null
+          invoice_received_at?: string | null
           invoice_sent_at?: string | null
           notes?: string | null
           partial_amount?: number | null
