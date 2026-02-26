@@ -10,6 +10,7 @@ export interface WorkerLiabilitySummary {
   approvedExpenses: number;
   accountedAmount: number;
   manualAdjustment: number;
+  coinExchangeAmount: number;
   totalLiability: number;
 }
 
@@ -78,7 +79,17 @@ async function calcWorkerLiability(workerId: string, branchId?: string | null): 
     return s + (a.adjustment_type === 'add' ? Number(a.amount || 0) : -Number(a.amount || 0));
   }, 0);
 
-  const totalLiability = deliveredCash + debtCollectionsCash - approvedExpenses - accountedAmount + manualAdjustment;
+  // 8. Active coin exchange tasks (coins given to this worker)
+  let ceQuery = supabase
+    .from('coin_exchange_tasks')
+    .select('coin_amount, returned_amount')
+    .eq('worker_id', workerId)
+    .eq('status', 'active');
+  if (branchId) ceQuery = ceQuery.eq('branch_id', branchId);
+  const { data: coinTasks = [] } = await ceQuery;
+  const coinExchangeAmount = coinTasks.reduce((s, t) => s + Number(t.coin_amount || 0) - Number(t.returned_amount || 0), 0);
+
+  const totalLiability = deliveredCash + debtCollectionsCash - approvedExpenses - accountedAmount + manualAdjustment + coinExchangeAmount;
 
   return {
     workerId: worker.id,
@@ -88,6 +99,7 @@ async function calcWorkerLiability(workerId: string, branchId?: string | null): 
     approvedExpenses,
     accountedAmount,
     manualAdjustment,
+    coinExchangeAmount,
     totalLiability,
   };
 }
