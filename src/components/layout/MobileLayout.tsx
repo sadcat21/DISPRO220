@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation } from 'react-router-dom';
 import { LogOut, MoreHorizontal, Bluetooth, BluetoothOff, Printer, Receipt } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,6 +38,26 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   const { isConnected, deviceName, scanAndConnect, disconnect, status: printerStatus } = useBluetoothPrinter();
   const [invoiceRequestOpen, setInvoiceRequestOpen] = useState(false);
   const showInvoiceButton = role === 'admin' || role === 'branch_admin';
+
+  // Fetch pending invoice orders count for badge
+  const { data: pendingInvoiceCount } = useQuery({
+    queryKey: ['pending-invoice-count', activeBranch?.id],
+    queryFn: async () => {
+      const { supabase } = await import('@/integrations/supabase/client');
+      let q = supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('payment_type', 'with_invoice')
+        .is('invoice_sent_at', null)
+        .in('status', ['pending', 'assigned', 'in_progress', 'delivered']);
+      if (activeBranch?.id) q = q.eq('branch_id', activeBranch.id);
+      const { count, error } = await q;
+      if (error) return 0;
+      return count || 0;
+    },
+    enabled: showInvoiceButton,
+    refetchInterval: 30000,
+  });
 
   const LANGUAGES: { code: Language; label: string; flag: string }[] = [
     { code: 'ar', label: 'العربية', flag: '🇩🇿' },
@@ -230,12 +251,17 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
             <button
               onClick={() => setInvoiceRequestOpen(true)}
               className={cn(
-                'flex items-center justify-center w-9 h-9 rounded-lg transition-colors',
+                'relative flex items-center justify-center w-9 h-9 rounded-lg transition-colors',
                 'text-secondary-foreground hover:text-primary'
               )}
               title="طلب فاتورة"
             >
               <Receipt className="w-5 h-5" />
+              {(pendingInvoiceCount || 0) > 0 && (
+                <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                  {pendingInvoiceCount}
+                </span>
+              )}
             </button>
           )}
 
