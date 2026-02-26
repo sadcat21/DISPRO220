@@ -34,6 +34,7 @@ import { useIsElementHidden } from '@/hooks/useUIOverrides';
 import { useSectors } from '@/hooks/useSectors';
 import ModifyOrderDialog from '@/components/orders/ModifyOrderDialog';
 import { Edit } from 'lucide-react';
+import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
 
 const getDateLocale = (lang: string) => {
   switch (lang) {
@@ -48,6 +49,7 @@ const OrdersContent: React.FC = () => {
   const { workerId, activeBranch, role } = useAuth();
   const { t, tp, language, loadPrintSettingsFromDB } = useLanguage();
   const isAdminOrBranchAdmin = role === 'admin' || role === 'branch_admin';
+  const { workerId: contextWorkerId, workerName: contextWorkerName, clearSelectedWorker } = useSelectedWorker();
 
   const STATUS_CONFIG = {
     pending: { label: t('orders.pending'), color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: Clock },
@@ -583,6 +585,22 @@ const OrdersContent: React.FC = () => {
           </div>
         </div>
 
+        {contextWorkerId && contextWorkerName && (
+          <div className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-md text-sm animate-in fade-in slide-in-from-top-1">
+            <UserCheck className="w-4 h-4" />
+            <span className="font-medium">
+              {t('common.filter_by')}: {contextWorkerName}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 ml-auto hover:bg-primary/20"
+              onClick={() => clearSelectedWorker()}
+            >
+              <X className="w-3 h-3" />
+            </Button>
+          </div>
+        )}
         {customerIdFilter && (
           <div className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-md text-sm animate-in fade-in slide-in-from-top-1">
             <User className="w-4 h-4" />
@@ -630,6 +648,8 @@ const OrdersContent: React.FC = () => {
       {/* Orders List - Filtered by Tab */}
       <div className="space-y-3">
         {orders?.filter(order => {
+          // If context worker filter is active, only show that worker's orders
+          if (contextWorkerId && order.assigned_worker_id !== contextWorkerId && order.created_by !== contextWorkerId) return false;
           // If customer filter is active, only show that customer's orders
           if (customerIdFilter && order.customer_id !== customerIdFilter) return false;
 

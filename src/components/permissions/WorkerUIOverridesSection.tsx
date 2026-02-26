@@ -25,10 +25,10 @@ const CATEGORIES = [
   { key: 'actions', label: 'الإجراءات', icon: Zap, type: 'action', items: UI_ELEMENTS.actions },
 ];
 
-const WorkerUIOverridesSection: React.FC = () => {
+const WorkerUIOverridesSection: React.FC<{ initialWorkerId?: string | null }> = ({ initialWorkerId }) => {
   const toggleOverride = useToggleUIOverride();
   const [search, setSearch] = useState('');
-  const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
+  const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(initialWorkerId || null);
 
   const { data: workers, isLoading: workersLoading } = useQuery({
     queryKey: ['workers-basic'],

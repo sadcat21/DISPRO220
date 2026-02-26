@@ -20,8 +20,8 @@ import { toast } from 'sonner';
 const WorkerDebtsPage: React.FC = () => {
   const { t, dir } = useLanguage();
   const { activeBranch } = useAuth();
-  const { workerId: contextWorkerId } = useSelectedWorker();
-  const { data: debts, isLoading } = useWorkerDebts();
+  const { workerId: contextWorkerId, workerName: contextWorkerName } = useSelectedWorker();
+  const { data: debts, isLoading } = useWorkerDebts(contextWorkerId || undefined);
   const createDebt = useCreateWorkerDebt();
 
   const [showAdd, setShowAdd] = useState(false);
@@ -149,10 +149,13 @@ const WorkerDebtsPage: React.FC = () => {
   return (
     <div className="p-4 space-y-4" dir={dir}>
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold flex items-center gap-2">
-          <Banknote className="w-5 h-5 text-primary" />
-          ديون العمال
-        </h2>
+        <div>
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <Banknote className="w-5 h-5 text-primary" />
+            ديون العمال
+          </h2>
+          {contextWorkerName && <p className="text-sm text-muted-foreground">{contextWorkerName}</p>}
+        </div>
         <div className="flex items-center gap-2">
           <Button size="sm" onClick={handleOpenAdd}>
             <Plus className="w-4 h-4 ml-1" />

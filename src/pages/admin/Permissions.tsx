@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Shield, Trash2, Edit, Save, X, ChevronDown, ChevronUp, Briefcase, User, EyeOff } from 'lucide-react';
+import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,6 +45,7 @@ import WorkerUIOverridesSection from '@/components/permissions/WorkerUIOverrides
 const Permissions: React.FC = () => {
   const { toast } = useToast();
   const { t } = useLanguage();
+  const { workerId: contextWorkerId } = useSelectedWorker();
   const { data: permissions, isLoading: permissionsLoading } = usePermissions();
   const { data: roles, isLoading: rolesLoading } = useRolesWithPermissions();
   const createRole = useCreateRole();
@@ -305,11 +307,11 @@ const Permissions: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="individual" className="mt-4">
-          <WorkerPermissionsSection />
+          <WorkerPermissionsSection initialWorkerId={contextWorkerId} />
         </TabsContent>
 
         <TabsContent value="ui-overrides" className="mt-4">
-          <WorkerUIOverridesSection />
+          <WorkerUIOverridesSection initialWorkerId={contextWorkerId} />
         </TabsContent>
       </Tabs>
 

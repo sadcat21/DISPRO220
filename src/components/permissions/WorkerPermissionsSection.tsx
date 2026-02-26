@@ -19,12 +19,12 @@ interface WorkerBasic {
   is_active: boolean;
 }
 
-const WorkerPermissionsSection: React.FC = () => {
+const WorkerPermissionsSection: React.FC<{ initialWorkerId?: string | null }> = ({ initialWorkerId }) => {
   const { t } = useLanguage();
   const { data: permissions } = usePermissions();
   const togglePermission = useToggleWorkerPermission();
   const [search, setSearch] = useState('');
-  const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
+  const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(initialWorkerId || null);
 
   // Get all workers
   const { data: workers, isLoading: workersLoading } = useQuery({
