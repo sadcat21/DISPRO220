@@ -292,23 +292,39 @@ const ManagerTreasury = () => {
       )}
 
       {/* Total & Remaining */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <Card>
           <CardContent className="p-3 text-center">
             <p className="text-xs text-muted-foreground">الإجمالي</p>
             <p className="text-lg font-bold">{summary?.total?.toLocaleString() || 0} د.ج</p>
           </CardContent>
         </Card>
-        <Card className="border-red-500/30">
+        <Card className="border-destructive/30">
           <CardContent className="p-3 text-center">
             <p className="text-xs text-muted-foreground">المُسلَّم</p>
-            <p className="text-lg font-bold text-red-500">{summary?.handedOver?.toLocaleString() || 0} د.ج</p>
+            <p className="text-lg font-bold text-destructive">{summary?.handedOver?.toLocaleString() || 0} د.ج</p>
           </CardContent>
         </Card>
+      </div>
+      <div className="grid grid-cols-3 gap-3">
         <Card className="border-primary/30">
           <CardContent className="p-3 text-center">
-            <p className="text-xs text-muted-foreground">المتبقي</p>
+            <p className="text-xs text-muted-foreground">المتبقي الكلي</p>
             <p className="text-lg font-bold text-primary">{summary?.remaining?.toLocaleString() || 0} د.ج</p>
+          </CardContent>
+        </Card>
+        <Card className="border-primary/20">
+          <CardContent className="p-3 text-center">
+            <Banknote className="w-4 h-4 mx-auto mb-1 text-muted-foreground" />
+            <p className="text-xs text-muted-foreground">الورقي</p>
+            <p className="text-lg font-bold">{((summary?.remaining || 0) - (summary?.coins || 0)).toLocaleString()} د.ج</p>
+          </CardContent>
+        </Card>
+        <Card className="border-amber-500/30">
+          <CardContent className="p-3 text-center">
+            <Coins className="w-4 h-4 mx-auto mb-1 text-amber-500" />
+            <p className="text-xs text-muted-foreground">المعدني</p>
+            <p className="text-lg font-bold text-amber-500">{(summary?.coins || 0).toLocaleString()} د.ج</p>
           </CardContent>
         </Card>
       </div>
