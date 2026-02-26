@@ -145,7 +145,7 @@ const StampDetailsDialog = ({ open, onOpenChange }: Props) => {
         const processedOrder: ProcessedOrder = {
           id: o.id,
           total_amount: totalAmount,
-          items_subtotal: itemsSubtotal,
+          items_subtotal: baseAmount,
           stamp_amount: stampAmount,
           stamp_percentage: stampPercentage,
           created_at: o.created_at,
@@ -165,7 +165,7 @@ const StampDetailsDialog = ({ open, onOpenChange }: Props) => {
 
         const group = groupMap.get(customerId)!;
         group.orders.push(processedOrder);
-        group.total += itemsSubtotal;
+        group.total += baseAmount;
         group.totalStamp += stampAmount;
       });
 
