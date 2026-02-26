@@ -1160,6 +1160,7 @@ export type Database = {
           check_date: string | null
           check_number: string | null
           created_at: string
+          customer_name: string | null
           id: string
           invoice_number: string | null
           manager_id: string
@@ -1177,6 +1178,7 @@ export type Database = {
           check_date?: string | null
           check_number?: string | null
           created_at?: string
+          customer_name?: string | null
           id?: string
           invoice_number?: string | null
           manager_id: string
@@ -1194,6 +1196,7 @@ export type Database = {
           check_date?: string | null
           check_number?: string | null
           created_at?: string
+          customer_name?: string | null
           id?: string
           invoice_number?: string | null
           manager_id?: string

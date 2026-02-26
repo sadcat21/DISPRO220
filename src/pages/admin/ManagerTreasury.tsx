@@ -35,7 +35,7 @@ const ManagerTreasury = () => {
   const [addOpen, setAddOpen] = useState(false);
   const [handoverOpen, setHandoverOpen] = useState(false);
   const [detailsCategory, setDetailsCategory] = useState<'cash_invoice1' | 'cash_invoice2' | 'check' | 'bank_receipt' | 'bank_transfer' | null>(null);
-  const [addForm, setAddForm] = useState({ payment_method: 'cash', amount: '', invoice_number: '', check_number: '', check_bank: '', check_date: '', receipt_number: '', transfer_reference: '', notes: '' });
+  const [addForm, setAddForm] = useState({ payment_method: 'cash', amount: '', customer_name: '', invoice_number: '', check_number: '', check_bank: '', check_date: '', receipt_number: '', transfer_reference: '', notes: '' });
   const [handoverForm, setHandoverForm] = useState({ cash_invoice1: '', cash_invoice2: '', checks_amount: '', check_count: '', receipts_amount: '', receipt_count: '', transfers_amount: '', transfer_count: '', notes: '' });
 
   const handleAddEntry = async () => {
@@ -47,6 +47,7 @@ const ManagerTreasury = () => {
       await addEntry.mutateAsync({
         payment_method: addForm.payment_method,
         amount: Number(addForm.amount),
+        customer_name: addForm.customer_name || undefined,
         invoice_number: addForm.invoice_number || undefined,
         check_number: addForm.check_number || undefined,
         check_bank: addForm.check_bank || undefined,
@@ -57,7 +58,7 @@ const ManagerTreasury = () => {
       });
       toast.success('تم إضافة المبلغ بنجاح');
       setAddOpen(false);
-      setAddForm({ payment_method: 'cash', amount: '', invoice_number: '', check_number: '', check_bank: '', check_date: '', receipt_number: '', transfer_reference: '', notes: '' });
+      setAddForm({ payment_method: 'cash', amount: '', customer_name: '', invoice_number: '', check_number: '', check_bank: '', check_date: '', receipt_number: '', transfer_reference: '', notes: '' });
     } catch {
       toast.error('حدث خطأ');
     }
@@ -128,6 +129,10 @@ const ManagerTreasury = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div>
+                  <Label>اسم العميل</Label>
+                  <Input placeholder="اسم العميل" value={addForm.customer_name} onChange={e => setAddForm(f => ({ ...f, customer_name: e.target.value }))} />
                 </div>
                 <div>
                   <Label>المبلغ</Label>
