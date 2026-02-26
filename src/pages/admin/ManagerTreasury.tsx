@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Banknote, CreditCard, Receipt, ArrowUpRight, FilePlus, Send, Coins, TrendingUp, AlertCircle, CheckCircle, AlertTriangle, Info, RefreshCw, Printer, Eye, Pencil, Trash2, Settings, Download, Image, Table2 } from 'lucide-react';
+import { Banknote, CreditCard, Receipt, ArrowUpRight, FilePlus, Send, Coins, TrendingUp, AlertCircle, CheckCircle, AlertTriangle, Info, RefreshCw, Printer, Eye, Pencil, Trash2, Settings, Download, Image, Table2, ArrowLeftRight } from 'lucide-react';
 import { generatePDF } from '@/utils/generatePDF';
 import { generateImage } from '@/utils/generateImage';
 import { toast } from 'sonner';
@@ -26,6 +26,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import TreasurySettingsDialog from '@/components/treasury/TreasurySettingsDialog';
+import CoinExchangeDialog from '@/components/treasury/CoinExchangeDialog';
 import { useTreasuryContacts } from '@/hooks/useTreasuryContacts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -112,6 +113,7 @@ const ManagerTreasury = () => {
   const [pickedChecks, setPickedChecks] = useState<PickedItem[]>([]);
   const [pickedReceipts, setPickedReceipts] = useState<PickedItem[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [coinExchangeOpen, setCoinExchangeOpen] = useState(false);
   const { data: contacts } = useTreasuryContacts();
   const { data: bankAccounts } = useQuery({
     queryKey: ['treasury-bank-accounts', activeBranch?.id],
@@ -371,6 +373,9 @@ const ManagerTreasury = () => {
           </Button>
           <Button size="sm" variant="ghost" onClick={syncOldSessions} disabled={syncing}>
             <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+          </Button>
+          <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => setCoinExchangeOpen(true)} title={t('coin_exchange.title')}>
+            <ArrowLeftRight className="w-4 h-4" />
           </Button>
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
@@ -1350,6 +1355,7 @@ const ManagerTreasury = () => {
         );
       })()}
       <TreasurySettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <CoinExchangeDialog open={coinExchangeOpen} onOpenChange={setCoinExchangeOpen} />
     </div>
   );
 };

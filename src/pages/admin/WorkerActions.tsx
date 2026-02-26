@@ -5,16 +5,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
-import { ArrowRight, Calculator, Truck, Banknote, Wallet, MapPin, ShoppingCart, Activity, Shield, User, HandCoins } from 'lucide-react';
+import { ArrowRight, Calculator, Truck, Banknote, Wallet, MapPin, ShoppingCart, Activity, Shield, User, HandCoins, ArrowLeftRight } from 'lucide-react';
 import { useWorkerLiability } from '@/hooks/useWorkerLiability';
 import { Badge } from '@/components/ui/badge';
 import { Worker } from '@/types/database';
+import CoinExchangeDialog from '@/components/treasury/CoinExchangeDialog';
 
 const workerActions = [
   { key: 'accounting', icon: Calculator, path: '/accounting', labelKey: 'accounting.title', color: 'bg-amber-50 border-amber-200 text-amber-700' },
   { key: 'load_stock', icon: Truck, path: '/load-stock', labelKey: 'stock.load_to_worker', color: 'bg-green-50 border-green-200 text-green-700' },
   { key: 'worker_debts', icon: Banknote, path: '/worker-debts', labelKey: 'nav.worker_debts', color: 'bg-rose-50 border-rose-200 text-rose-700' },
   { key: 'liability', icon: HandCoins, path: '/worker-liability', labelKey: 'liability.title', color: 'bg-orange-50 border-orange-200 text-orange-700' },
+  { key: 'coin_exchange', icon: ArrowLeftRight, path: '', labelKey: 'coin_exchange.title', color: 'bg-cyan-50 border-cyan-200 text-cyan-700', isDialog: true },
   { key: 'expenses', icon: Wallet, path: '/expenses-management', labelKey: 'expenses.title', color: 'bg-yellow-50 border-yellow-200 text-yellow-700' },
   { key: 'tracking', icon: MapPin, path: '/worker-tracking', labelKey: 'navigation.worker_tracking', color: 'bg-teal-50 border-teal-200 text-teal-700' },
   { key: 'orders', icon: ShoppingCart, path: '/orders', labelKey: 'nav.orders', color: 'bg-blue-50 border-blue-200 text-blue-700' },
@@ -29,6 +31,7 @@ const WorkerActions: React.FC = () => {
   const { setSelectedWorker: setContextWorker } = useSelectedWorker();
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
   const { data: liability } = useWorkerLiability(selectedWorker?.id);
+  const [coinExchangeOpen, setCoinExchangeOpen] = useState(false);
 
   const { data: workers = [] } = useQuery({
     queryKey: ['workers-for-actions', activeBranch?.id],
@@ -52,6 +55,10 @@ const WorkerActions: React.FC = () => {
 
   const handleAction = (action: typeof workerActions[0]) => {
     if (!selectedWorker) return;
+    if ((action as any).isDialog && action.key === 'coin_exchange') {
+      setCoinExchangeOpen(true);
+      return;
+    }
     navigate(action.path);
   };
 
@@ -103,6 +110,7 @@ const WorkerActions: React.FC = () => {
           ))}
         </div>
       )}
+      <CoinExchangeDialog open={coinExchangeOpen} onOpenChange={setCoinExchangeOpen} preselectedWorkerId={selectedWorker?.id} />
     </div>
   );
 };

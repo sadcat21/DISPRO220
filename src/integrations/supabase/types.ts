@@ -288,6 +288,136 @@ export type Database = {
           },
         ]
       }
+      coin_exchange_returns: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          notes: string | null
+          received_by: string
+          task_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          received_by: string
+          task_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          received_by?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coin_exchange_returns_received_by_fkey"
+            columns: ["received_by"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coin_exchange_returns_received_by_fkey"
+            columns: ["received_by"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coin_exchange_returns_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "coin_exchange_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coin_exchange_tasks: {
+        Row: {
+          branch_id: string | null
+          coin_amount: number
+          completed_at: string | null
+          created_at: string
+          id: string
+          manager_id: string
+          notes: string | null
+          remaining_amount: number | null
+          returned_amount: number
+          status: string
+          updated_at: string
+          worker_id: string
+        }
+        Insert: {
+          branch_id?: string | null
+          coin_amount?: number
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          manager_id: string
+          notes?: string | null
+          remaining_amount?: number | null
+          returned_amount?: number
+          status?: string
+          updated_at?: string
+          worker_id: string
+        }
+        Update: {
+          branch_id?: string | null
+          coin_amount?: number
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          manager_id?: string
+          notes?: string | null
+          remaining_amount?: number | null
+          returned_amount?: number
+          status?: string
+          updated_at?: string
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coin_exchange_tasks_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coin_exchange_tasks_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coin_exchange_tasks_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coin_exchange_tasks_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coin_exchange_tasks_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_roles: {
         Row: {
           code: string
