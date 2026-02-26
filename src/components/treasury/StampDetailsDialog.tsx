@@ -49,19 +49,19 @@ const OrderDetails = ({ order, cur, dateLocale, t }: { order: ProcessedOrder; cu
   return (
     <Collapsible open={expanded} onOpenChange={setExpanded}>
       <CollapsibleTrigger asChild>
-        <div className="flex items-center justify-between text-xs bg-muted/30 rounded p-2 cursor-pointer hover:bg-muted/50 transition-colors">
-          <div>
+        <div className="grid grid-cols-3 items-center text-xs bg-muted/30 rounded p-2 cursor-pointer hover:bg-muted/50 transition-colors gap-2">
+          <div className="text-start">
             <p className="text-muted-foreground">
-              {format(new Date(order.created_at), 'dd/MM HH:mm', { locale: dateLocale })}
+              {format(new Date(order.created_at), 'HH:mm dd/MM', { locale: dateLocale })}
             </p>
             <p className="font-medium">{order.items_subtotal.toLocaleString()} {cur}</p>
           </div>
-          <div className="flex items-center gap-1">
-            <div className="text-end">
-              <p className="text-amber-600 font-medium">{order.stamp_amount.toLocaleString()} {cur}</p>
-              <p className="text-[10px] text-muted-foreground">{order.stamp_percentage}%</p>
-            </div>
-            {expanded ? <ChevronUp className="w-3 h-3 text-muted-foreground" /> : <ChevronDown className="w-3 h-3 text-muted-foreground" />}
+          <div className="text-center">
+            <p className="text-amber-600 font-semibold">{order.stamp_amount.toLocaleString()} {cur}</p>
+            <p className="text-[10px] text-muted-foreground">{order.stamp_percentage}%</p>
+          </div>
+          <div className="flex items-center justify-end">
+            {expanded ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
           </div>
         </div>
       </CollapsibleTrigger>
