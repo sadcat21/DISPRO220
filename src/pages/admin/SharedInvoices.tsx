@@ -217,13 +217,21 @@ const SharedInvoices: React.FC = () => {
 
       {/* Preview Dialog */}
       {previewUrl && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={() => setPreviewUrl(null)}>
-          <div className="bg-background rounded-lg w-full max-w-lg max-h-[80vh] overflow-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-3 border-b">
+        <div className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center p-2" onClick={() => setPreviewUrl(null)}>
+          <div className="bg-background rounded-lg w-full max-w-2xl flex flex-col" style={{ height: '90vh' }} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-3 border-b shrink-0">
               <span className="text-sm font-medium">معاينة الملف</span>
-              <Button variant="ghost" size="sm" onClick={() => setPreviewUrl(null)}>✕</Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => window.open(previewUrl, '_blank')}>
+                  <Download className="w-4 h-4 me-1" />
+                  فتح
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewUrl(null)}>✕</Button>
+              </div>
             </div>
-            <iframe src={previewUrl} className="w-full h-[70vh]" />
+            <div className="flex-1 min-h-0">
+              <iframe src={previewUrl + '#toolbar=1&navpanes=0'} className="w-full h-full border-0" title="معاينة PDF" />
+            </div>
           </div>
         </div>
       )}
