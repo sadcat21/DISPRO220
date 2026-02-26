@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Banknote, CreditCard, Receipt, ArrowUpRight, Plus, Send, Coins, TrendingUp, AlertCircle, CheckCircle, AlertTriangle, Info, RefreshCw, Printer, Eye, Pencil, Trash2, Settings, Download, Image } from 'lucide-react';
+import { Banknote, CreditCard, Receipt, ArrowUpRight, FilePlus, Send, Coins, TrendingUp, AlertCircle, CheckCircle, AlertTriangle, Info, RefreshCw, Printer, Eye, Pencil, Trash2, Settings, Download, Image, Table2 } from 'lucide-react';
 import { generatePDF } from '@/utils/generatePDF';
 import { generateImage } from '@/utils/generateImage';
 import { toast } from 'sonner';
@@ -100,6 +100,7 @@ const ManagerTreasury = () => {
 
   const [addOpen, setAddOpen] = useState(false);
   const [handoverOpen, setHandoverOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('handovers');
   const [showCardDetails, setShowCardDetails] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [stampOpen, setStampOpen] = useState(false);
@@ -356,7 +357,7 @@ const ManagerTreasury = () => {
           </Button>
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" variant="outline"><Plus className="w-4 h-4 mx-1" />{t('treasury.add')}</Button>
+              <Button size="sm" variant="outline" className="h-8 w-8 p-0"><FilePlus className="w-4 h-4" /></Button>
             </DialogTrigger>
             <DialogContent dir={dir}>
               <DialogHeader><DialogTitle>{t('treasury.add_manual')}</DialogTitle></DialogHeader>
@@ -434,9 +435,12 @@ const ManagerTreasury = () => {
               </div>
             </DialogContent>
           </Dialog>
+          <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => { setActiveTab('handovers'); setTimeout(() => document.getElementById('handovers-section')?.scrollIntoView({ behavior: 'smooth' }), 100); }}>
+            <Table2 className="w-4 h-4" />
+          </Button>
           <Dialog open={handoverOpen} onOpenChange={setHandoverOpen}>
             <DialogTrigger asChild>
-              <Button size="sm"><Send className="w-4 h-4 mx-1" />{t('treasury.handover')}</Button>
+              <Button size="sm" className="h-8 w-8 p-0"><Send className="w-4 h-4" /></Button>
             </DialogTrigger>
             <DialogContent dir={dir} className="max-h-[90vh] overflow-y-auto">
               <DialogHeader><DialogTitle>{t('treasury.handover_to_upper')}</DialogTitle></DialogHeader>
@@ -893,7 +897,7 @@ const ManagerTreasury = () => {
       )}
 
       {/* Tabs: Entries & Handovers */}
-      <Tabs defaultValue="entries" dir={dir}>
+      <Tabs value={activeTab} onValueChange={setActiveTab} dir={dir}>
         <TabsList className="w-full">
           <TabsTrigger value="entries" className="flex-1">{t('treasury.entries_tab')}</TabsTrigger>
           <TabsTrigger value="handovers" className="flex-1">{t('treasury.handovers_tab')}</TabsTrigger>
@@ -935,7 +939,7 @@ const ManagerTreasury = () => {
           })}
         </TabsContent>
 
-        <TabsContent value="handovers" className="space-y-2 mt-2">
+        <TabsContent value="handovers" id="handovers-section" className="space-y-2 mt-2">
           {(!handovers || handovers.length === 0) ? (
             <p className="text-center text-muted-foreground py-8">{t('treasury.no_handovers')}</p>
           ) : handovers.map(h => {
