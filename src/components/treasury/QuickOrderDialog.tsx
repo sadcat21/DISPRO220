@@ -105,7 +105,7 @@ const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange, onOrderCreated 
         .eq('is_registered', true)
         .eq('status', 'active')
         .order('name');
-      if (activeBranch?.id) q = q.eq('branch_id', activeBranch.id);
+      if (activeBranch?.id) q = q.or(`branch_id.eq.${activeBranch.id},branch_id.is.null`);
       const { data, error } = await q;
       if (error) throw error;
       return data || [];
