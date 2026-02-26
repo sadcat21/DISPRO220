@@ -33,13 +33,14 @@ interface Props {
   intermediaryName?: string;
   bankTransferReference?: string;
   receivedBy?: string;
+  unifiedCash?: boolean;
   onReady?: () => void;
 }
 
 const HandoverPrintView: React.FC<Props> = ({
   handoverId, handoverDate, cashInvoice1, cashInvoice2,
   checksAmount, receiptsAmount, transfersAmount, totalAmount, branchName, branchWilaya,
-  deliveryMethod, intermediaryName, bankTransferReference, receivedBy, onReady
+  deliveryMethod, intermediaryName, bankTransferReference, receivedBy, unifiedCash, onReady
 }) => {
   const [items, setItems] = useState<HandoverItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -252,18 +253,27 @@ const HandoverPrintView: React.FC<Props> = ({
         {/* Section 1: Argent Physique (Cash) */}
         <div className="border-2 border-black p-3 mb-4">
           <h3 className="font-bold text-center mb-2 text-base underline" style={{ textAlign: 'center' }}>ARGENT PHYSIQUE (ESPÈCES)</h3>
-          <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }}>
-            <span>Argent Factures (F1):</span>
-            <span className="font-bold">{cashInvoice1.toLocaleString()} DA</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }}>
-            <span>Argent Facture (F2):</span>
-            <span className="font-bold">{cashInvoice2.toLocaleString()} DA</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid black' }} className="font-bold">
-            <span>Total Espèces:</span>
-            <span>{(cashInvoice1 + cashInvoice2).toLocaleString()} DA</span>
-          </div>
+          {unifiedCash ? (
+            <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }} className="font-bold">
+              <span>Espèces:</span>
+              <span>{(cashInvoice1 + cashInvoice2).toLocaleString()} DA</span>
+            </div>
+          ) : (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }}>
+                <span>Argent Factures (F1):</span>
+                <span className="font-bold">{cashInvoice1.toLocaleString()} DA</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }}>
+                <span>Argent Facture (F2):</span>
+                <span className="font-bold">{cashInvoice2.toLocaleString()} DA</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid black' }} className="font-bold">
+                <span>Total Espèces:</span>
+                <span>{(cashInvoice1 + cashInvoice2).toLocaleString()} DA</span>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Section 2: Valeurs (Non-cash) */}

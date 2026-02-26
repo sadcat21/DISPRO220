@@ -107,6 +107,8 @@ const ManagerTreasury = () => {
   const [detailsCategory, setDetailsCategory] = useState<'cash_invoice1' | 'cash_invoice2' | 'check' | 'bank_receipt' | 'bank_transfer' | null>(null);
   const [addForm, setAddForm] = useState({ payment_method: 'cash_invoice1', amount: '', customer_name: '', invoice_number: '', invoice_date: '', check_number: '', check_bank: '', check_date: '', receipt_number: '', transfer_reference: '', notes: '' });
   const [handoverForm, setHandoverForm] = useState({ cash_invoice1: '', cash_invoice2: '', notes: '', delivery_method: 'direct', intermediary_name: '', bank_transfer_reference: '', received_by: '', bank_account_id: '', receipt_image_url: '' });
+  const [unifiedCash, setUnifiedCash] = useState(true);
+  const [unifiedCashAmount, setUnifiedCashAmount] = useState('');
   const [pickedChecks, setPickedChecks] = useState<PickedItem[]>([]);
   const [pickedReceipts, setPickedReceipts] = useState<PickedItem[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -286,8 +288,21 @@ const ManagerTreasury = () => {
   const transfersAmount = pickedTransfers.reduce((s, i) => s + i.amount, 0);
 
   const handleHandover = async () => {
-    const total = Number(handoverForm.cash_invoice1 || 0) + Number(handoverForm.cash_invoice2 || 0) +
-                  checksAmount + receiptsAmount + transfersAmount;
+    // Calculate cash amounts based on unified or split mode
+    let finalCash1 = Number(handoverForm.cash_invoice1 || 0);
+    let finalCash2 = Number(handoverForm.cash_invoice2 || 0);
+    if (unifiedCash) {
+      const totalCash = Number(unifiedCashAmount || 0);
+      const remainingCash1 = (summary?.cash_invoice1 || 0) - (handovers || []).reduce((s: number, h: any) => s + Number(h.cash_invoice1 || 0), 0);
+      if (totalCash <= remainingCash1) {
+        finalCash1 = totalCash;
+        finalCash2 = 0;
+      } else {
+        finalCash1 = remainingCash1;
+        finalCash2 = totalCash - remainingCash1;
+      }
+    }
+    const total = finalCash1 + finalCash2 + checksAmount + receiptsAmount + transfersAmount;
     if (total <= 0) {
       toast.error(t('treasury.enter_at_least_one'));
       return;
@@ -298,8 +313,8 @@ const ManagerTreasury = () => {
         branch_id: activeBranch?.id || null,
         payment_method: 'mixed',
         amount: total,
-        cash_invoice1: Number(handoverForm.cash_invoice1) || 0,
-        cash_invoice2: Number(handoverForm.cash_invoice2) || 0,
+        cash_invoice1: finalCash1,
+        cash_invoice2: finalCash2,
         checks_amount: checksAmount,
         check_count: pickedChecks.length,
         receipts_amount: receiptsAmount,
@@ -330,6 +345,7 @@ const ManagerTreasury = () => {
       toast.success(t('treasury.handover_success'));
       setHandoverOpen(false);
       setHandoverForm({ cash_invoice1: '', cash_invoice2: '', notes: '', delivery_method: 'direct', intermediary_name: '', bank_transfer_reference: '', received_by: '', bank_account_id: '', receipt_image_url: '' });
+      setUnifiedCashAmount('');
       setPickedChecks([]);
       setPickedReceipts([]);
       setPickedTransfers([]);
@@ -446,26 +462,43 @@ const ManagerTreasury = () => {
               <DialogHeader><DialogTitle>{t('treasury.handover_to_upper')}</DialogTitle></DialogHeader>
               <div className="space-y-4">
                 <div className="p-3 rounded-lg bg-muted/50 space-y-3">
-                  <p className="font-medium text-sm">💵 {t('treasury.cash')}</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div><Label className="text-xs">{t('treasury.cash_invoice1')}</Label><Input type="number" placeholder="0" value={handoverForm.cash_invoice1} onChange={e => setHandoverForm(f => ({ ...f, cash_invoice1: e.target.value }))} /></div>
-                    <div><Label className="text-xs">{t('treasury.cash_invoice2')}</Label><Input type="number" placeholder="0" value={handoverForm.cash_invoice2} onChange={e => setHandoverForm(f => ({ ...f, cash_invoice2: e.target.value }))} /></div>
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-sm">💵 {t('treasury.cash')}</p>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs">{t('treasury.unified_cash') || 'موحد'}</Label>
+                      <Switch checked={unifiedCash} onCheckedChange={setUnifiedCash} />
+                    </div>
                   </div>
+                  {unifiedCash ? (
+                    <div>
+                      <Label className="text-xs">{t('treasury.cash_amount') || 'المبلغ النقدي'}</Label>
+                      <Input type="number" placeholder="0" value={unifiedCashAmount} onChange={e => setUnifiedCashAmount(e.target.value)} />
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div><Label className="text-xs">{t('treasury.cash_invoice1')}</Label><Input type="number" placeholder="0" value={handoverForm.cash_invoice1} onChange={e => setHandoverForm(f => ({ ...f, cash_invoice1: e.target.value }))} /></div>
+                      <div><Label className="text-xs">{t('treasury.cash_invoice2')}</Label><Input type="number" placeholder="0" value={handoverForm.cash_invoice2} onChange={e => setHandoverForm(f => ({ ...f, cash_invoice2: e.target.value }))} /></div>
+                    </div>
+                  )}
                 </div>
                 <PickerSection label={`📝 ${t('treasury.checks')}`} items={pickedChecks} onOpen={() => setPickerType('check')} onRemove={(id) => setPickedChecks(p => p.filter(i => i.order_id !== id))} currency={cur} />
                 <PickerSection label={`🧾 ${t('treasury.versement')}`} items={pickedReceipts} onOpen={() => setPickerType('receipt')} onRemove={(id) => setPickedReceipts(p => p.filter(i => i.order_id !== id))} currency={cur} />
                 <PickerSection label={`🏦 ${t('treasury.virement')}`} items={pickedTransfers} onOpen={() => setPickerType('transfer')} onRemove={(id) => setPickedTransfers(p => p.filter(i => i.order_id !== id))} currency={cur} />
                 
-                {(Number(handoverForm.cash_invoice1 || 0) + Number(handoverForm.cash_invoice2 || 0) + checksAmount + receiptsAmount + transfersAmount) > 0 && (
+                {(() => {
+                  const cashTotal = unifiedCash ? Number(unifiedCashAmount || 0) : (Number(handoverForm.cash_invoice1 || 0) + Number(handoverForm.cash_invoice2 || 0));
+                  const grandTotal = cashTotal + checksAmount + receiptsAmount + transfersAmount;
+                  return grandTotal > 0 ? (
                   <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">{t('treasury.total_handover')}</span>
                       <span className="text-sm font-bold text-primary">
-                        {(Number(handoverForm.cash_invoice1 || 0) + Number(handoverForm.cash_invoice2 || 0) + checksAmount + receiptsAmount + transfersAmount).toLocaleString()} {cur}
+                        {grandTotal.toLocaleString()} {cur}
                       </span>
                     </div>
                   </div>
-                )}
+                  ) : null;
+                })()}
 
                 {/* Delivery Method Toggle */}
                 <div className="flex items-center justify-between">
