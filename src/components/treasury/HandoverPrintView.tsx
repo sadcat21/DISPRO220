@@ -234,7 +234,7 @@ const HandoverPrintView: React.FC<Props> = ({
         {/* Section 2: Valeurs (Non-cash) */}
         {(checksAmount > 0 || receiptsAmount > 0 || transfersAmount > 0) && (
           <div className="border-2 border-black p-3 mb-4">
-            <h3 className="font-bold text-center mb-2 text-base underline" style={{ textAlign: 'center' }}>VALEURS (EFFETS)</h3>
+            <h3 className="font-bold text-center mb-2 text-base underline" style={{ textAlign: 'center' }}>VALEURS EN TRANSIT</h3>
             {checksAmount > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }}>
                 <span>Chèques:</span>
