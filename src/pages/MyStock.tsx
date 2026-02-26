@@ -111,19 +111,17 @@ const MyStock: React.FC = () => {
                       {item.quantity}
                     </span>
                   </div>
-                  {(loaded > 0 || sold > 0) && (
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-0.5">
-                        <TrendingUp className="w-3 h-3 text-blue-500" />
-                        شحن: {loaded}
-                      </span>
-                      <span className="flex items-center gap-0.5">
-                        <TrendingDown className="w-3 h-3 text-green-500" />
-                        مباع: {sold}
-                      </span>
-                      <span>باقي: {item.quantity}</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground border-t pt-1 mt-1">
+                    <span className="flex items-center gap-0.5">
+                      <TrendingUp className="w-3 h-3 text-blue-500" />
+                      شحن: {loaded}
+                    </span>
+                    <span className="flex items-center gap-0.5">
+                      <TrendingDown className="w-3 h-3 text-green-500" />
+                      مباع: {sold}
+                    </span>
+                    <span className="font-semibold">باقي: {item.quantity}</span>
+                  </div>
                 </CardContent>
               </Card>
             );
