@@ -43,6 +43,7 @@ import DailyReceipts from "./pages/admin/DailyReceipts";
 import ManagerTreasury from "./pages/admin/ManagerTreasury";
 import WorkerLiability from "./pages/admin/WorkerLiability";
 import ShareTarget from "./pages/ShareTarget";
+import SharedInvoices from "./pages/admin/SharedInvoices";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -307,6 +308,12 @@ const AppRoutes = () => {
       <Route path="/worker-liability" element={
         <ProtectedRoute allowedRoles={['admin', 'branch_admin']}>
           <WorkerLiability />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/shared-invoices" element={
+        <ProtectedRoute allowedRoles={['admin', 'branch_admin']}>
+          <SharedInvoices />
         </ProtectedRoute>
       } />
 
