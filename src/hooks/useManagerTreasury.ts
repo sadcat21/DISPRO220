@@ -293,7 +293,7 @@ export const useTreasurySummary = () => {
       // Debt cash collections are additional cash received by manager (not invoice-related)
       // Add to total but not to any invoice category
 
-      summary.total = summary.cash_invoice1 + summary.cash_invoice2 + summary.check + summary.bank_receipt + summary.bank_transfer + debtCashCollected;
+      summary.total = summary.cash_invoice1 + summary.cash_invoice2 + summary.check + summary.bank_receipt + summary.bank_transfer + debtCashCollected - coinExchangeOut;
       summary.handedOver = (handovers || []).reduce((s: number, h: any) => s + Number(h.amount), 0);
       summary.remaining = summary.total - summary.handedOver;
 
