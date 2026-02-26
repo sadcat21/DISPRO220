@@ -119,16 +119,6 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
             <StockAlertsNotification />
             <OffersNotification />
             
-            {showInvoiceButton && (
-              <button
-                onClick={() => setInvoiceRequestOpen(true)}
-                className="flex items-center justify-center gap-1 h-8 px-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                title="طلب فاتورة"
-              >
-                <Receipt className="w-4 h-4" />
-                <span className="text-[10px] font-bold">فاتورة</span>
-              </button>
-            )}
             
             {/* More actions dropdown: Language, Branch, Logout */}
             <DropdownMenu>
@@ -235,6 +225,20 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
             );
           })}
           
+          {/* Invoice Request Button */}
+          {showInvoiceButton && (
+            <button
+              onClick={() => setInvoiceRequestOpen(true)}
+              className={cn(
+                'flex items-center justify-center w-9 h-9 rounded-lg transition-colors',
+                'text-secondary-foreground hover:text-primary'
+              )}
+              title="طلب فاتورة"
+            >
+              <Receipt className="w-5 h-5" />
+            </button>
+          )}
+
           {/* More Menu for Admin and Branch Admin */}
           {moreNavItems.length > 0 && (
             <DropdownMenu>
