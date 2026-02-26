@@ -23,7 +23,8 @@ interface CartItem {
   quantity: number;
 }
 
-type Step = 'customer' | 'products' | 'whatsapp';
+type PaymentMethod = 'Chèque' | 'Virement' | 'Versement';
+type Step = 'customer' | 'products' | 'payment' | 'whatsapp';
 
 const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   const { language, dir } = useLanguage();
@@ -33,6 +34,7 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [search, setSearch] = useState('');
   const [productSearch, setProductSearch] = useState('');
+  const [selectedPayment, setSelectedPayment] = useState<PaymentMethod | null>(null);
 
   // Fetch registered customers with sector info
   const { data: customers } = useQuery({
@@ -105,11 +107,11 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
 
   const buildWhatsAppMessage = () => {
     const customerName = selectedCustomer?.name_fr || selectedCustomer?.name || '';
-    const lines = [customerName, ''];
+    const lines = [customerName, '', selectedPayment || '', ''];
     for (const item of cart) {
       const product = products?.find((p: any) => p.id === item.productId);
       const name = product?.name || item.productName;
-      lines.push(`${name} ${item.quantity}`);
+      lines.push(`${item.quantity} ${name}`);
     }
     return lines.join('\n');
   };
@@ -131,6 +133,7 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
     setCart([]);
     setSearch('');
     setProductSearch('');
+    setSelectedPayment(null);
   };
 
   const handleClose = (v: boolean) => {
@@ -145,7 +148,11 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
           <DialogTitle className="flex items-center gap-2">
             📄 طلب فاتورة
             {step !== 'customer' && (
-              <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setStep(step === 'whatsapp' ? 'products' : 'customer')}>
+              <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => {
+                if (step === 'whatsapp') setStep('payment');
+                else if (step === 'payment') setStep('products');
+                else setStep('customer');
+              }}>
                 <ArrowRight className="w-3 h-3 ml-1" /> رجوع
               </Button>
             )}
@@ -244,15 +251,39 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                     );
                   })}
                 </div>
-                <Button className="w-full gap-2 mt-2" onClick={() => setStep('whatsapp')}>
-                  <Send className="w-4 h-4" /> إرسال عبر واتساب
+                <Button className="w-full gap-2 mt-2" onClick={() => setStep('payment')}>
+                  <ArrowRight className="w-4 h-4" /> التالي: طريقة الدفع
                 </Button>
               </div>
             )}
           </div>
         )}
 
-        {/* Step 3: WhatsApp contact selection */}
+        {/* Step 3: Payment method */}
+        {step === 'payment' && (
+          <div className="space-y-4">
+            <p className="text-sm font-medium">اختر طريقة الدفع:</p>
+            <div className="grid grid-cols-3 gap-2">
+              {(['Chèque', 'Virement', 'Versement'] as PaymentMethod[]).map(method => (
+                <Button
+                  key={method}
+                  variant={selectedPayment === method ? 'default' : 'outline'}
+                  className="h-12 text-sm font-semibold"
+                  onClick={() => setSelectedPayment(method)}
+                >
+                  {method}
+                </Button>
+              ))}
+            </div>
+            {selectedPayment && (
+              <Button className="w-full gap-2 mt-2" onClick={() => setStep('whatsapp')}>
+                <Send className="w-4 h-4" /> إرسال عبر واتساب
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Step 4: WhatsApp contact selection */}
         {step === 'whatsapp' && (
           <div className="space-y-3">
             <div className="p-3 rounded-lg bg-muted/50 text-xs space-y-1">
