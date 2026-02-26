@@ -11,9 +11,9 @@ serve(async (req) => {
   }
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    const GOOGLE_AI_KEY = Deno.env.get('GOOGLE_AI_KEY');
+    if (!GOOGLE_AI_KEY) {
+      throw new Error('GOOGLE_AI_KEY not configured');
     }
 
     const { image_base64, payment_method } = await req.json();
@@ -35,54 +35,39 @@ ${payment_method === 'bank_transfer' ? '4. مرجع التحويل (transfer_ref
 
 إذا لم تجد قيمة معينة، اتركها فارغة "".`;
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: prompt },
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_AI_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: prompt },
               {
-                type: 'image_url',
-                image_url: {
-                  url: `data:image/jpeg;base64,${image_base64}`
+                inline_data: {
+                  mime_type: 'image/jpeg',
+                  data: image_base64
                 }
               }
             ]
+          }],
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 1024,
           }
-        ],
-        temperature: 0.1,
-        max_tokens: 1024,
-      })
-    });
+        })
+      }
+    );
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error('AI Gateway error:', response.status, errText);
-      
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ success: false, error: 'تم تجاوز حد الطلبات، حاول مرة أخرى لاحقاً' }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ success: false, error: 'يرجى إضافة رصيد لحساب Lovable AI' }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      throw new Error(`AI Gateway error: ${response.status}`);
+      console.error('Gemini API error:', response.status, errText);
+      throw new Error(`Gemini API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const textContent = data.choices?.[0]?.message?.content || '';
+    const textContent = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     // Extract JSON from response
     const jsonMatch = textContent.match(/\{[\s\S]*?\}/);
