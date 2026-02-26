@@ -1310,6 +1310,9 @@ export const translations: Translations = {
   'treasury.via_intermediary': { ar: 'عبر وسيط', fr: 'Via intermédiaire', en: 'Via Intermediary' },
   'treasury.bank_reference': { ar: 'مرجع التحويل', fr: 'Réf. virement', en: 'Transfer Reference' },
   'treasury.received_by': { ar: 'المستلم', fr: 'Reçu par', en: 'Received By' },
+  'treasury.phone': { ar: 'رقم الهاتف', fr: 'Téléphone', en: 'Phone' },
+  'treasury.name_required': { ar: 'الاسم مطلوب', fr: 'Le nom est requis', en: 'Name is required' },
+  'treasury.name_fr_hint': { ar: 'يُفضل إدخال الاسم باللغة الفرنسية ليظهر في وثيقة التسليم', fr: 'Préférez saisir le nom en français pour le bordereau', en: 'Prefer entering the name in French for the handover document' },
 
   // Treasury item type labels
   'treasury.item.total_sales': { ar: 'إجمالي المبيعات', fr: 'Total ventes', en: 'Total Sales' },

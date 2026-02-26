@@ -2920,6 +2920,8 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          name_fr: string | null
+          phone: string | null
         }
         Insert: {
           branch_id?: string | null
@@ -2929,6 +2931,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          name_fr?: string | null
+          phone?: string | null
         }
         Update: {
           branch_id?: string | null
@@ -2938,6 +2942,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          name_fr?: string | null
+          phone?: string | null
         }
         Relationships: [
           {

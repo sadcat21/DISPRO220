@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2, Users, UserCheck } from 'lucide-react';
+import { Plus, Trash2, Users, UserCheck, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Props {
@@ -21,6 +21,7 @@ const TreasurySettingsDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   const { workerId, activeBranch } = useAuth();
   const queryClient = useQueryClient();
   const [newName, setNewName] = useState('');
+  const [newPhone, setNewPhone] = useState('');
   const [activeTab, setActiveTab] = useState('receivers');
 
   const { data: contacts } = useQuery({
@@ -37,17 +38,19 @@ const TreasurySettingsDialog: React.FC<Props> = ({ open, onOpenChange }) => {
 
   const addContact = useMutation({
     mutationFn: async (type: string) => {
-      if (!newName.trim()) throw new Error('الاسم مطلوب');
+      if (!newName.trim()) throw new Error(t('treasury.name_required') || 'الاسم مطلوب');
       const { error } = await supabase.from('treasury_contacts').insert({
         branch_id: activeBranch?.id || null,
         contact_type: type,
         name: newName.trim(),
+        phone: newPhone.trim() || null,
         created_by: workerId,
       } as any);
       if (error) throw error;
     },
     onSuccess: () => {
       setNewName('');
+      setNewPhone('');
       queryClient.invalidateQueries({ queryKey: ['treasury-contacts'] });
       toast.success(t('common.saved'));
     },
@@ -68,72 +71,85 @@ const TreasurySettingsDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   const receivers = (contacts || []).filter((c: any) => c.contact_type === 'receiver');
   const intermediaries = (contacts || []).filter((c: any) => c.contact_type === 'intermediary');
 
+  const renderAddForm = (type: string, placeholder: string) => (
+    <div className="space-y-2">
+      <div className="flex gap-2">
+        <div className="flex-1 space-y-1">
+          <Input
+            placeholder={placeholder}
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && addContact.mutate(type)}
+          />
+          <p className="text-[10px] text-muted-foreground px-1">
+            💡 {t('treasury.name_fr_hint') || 'يُفضل إدخال الاسم باللغة الفرنسية ليظهر في وثيقة التسليم'}
+          </p>
+        </div>
+        <Button size="sm" onClick={() => addContact.mutate(type)} disabled={addContact.isPending} className="self-start">
+          <Plus className="w-4 h-4" />
+        </Button>
+      </div>
+      <div className="flex gap-2 items-center">
+        <Phone className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+        <Input
+          placeholder={t('treasury.phone') || 'رقم الهاتف'}
+          value={newPhone}
+          onChange={e => setNewPhone(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && addContact.mutate(type)}
+          type="tel"
+          dir="ltr"
+        />
+      </div>
+    </div>
+  );
+
+  const renderContactList = (list: any[]) => (
+    <div className="space-y-1.5">
+      {list.map((c: any) => (
+        <div key={c.id} className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2">
+          <div className="flex-1 min-w-0">
+            <span className="text-sm font-medium block">{c.name}</span>
+            {c.phone && (
+              <span className="text-[11px] text-muted-foreground flex items-center gap-1" dir="ltr">
+                <Phone className="w-3 h-3" /> {c.phone}
+              </span>
+            )}
+          </div>
+          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive shrink-0" onClick={() => deleteContact.mutate(c.id)}>
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      ))}
+      {list.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">{t('common.no_data') || 'لا توجد بيانات'}</p>}
+    </div>
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent dir={dir} className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>⚙️ {t('treasury.settings_title') || 'إعدادات الخزينة'}</DialogTitle>
+          <DialogTitle>⚙️ {t('treasury.settings_title')}</DialogTitle>
         </DialogHeader>
-        <Tabs value={activeTab} onValueChange={setActiveTab} dir={dir}>
+        <Tabs value={activeTab} onValueChange={v => { setActiveTab(v); setNewName(''); setNewPhone(''); }} dir={dir}>
           <TabsList className="w-full">
             <TabsTrigger value="receivers" className="flex-1 gap-1">
               <UserCheck className="w-3.5 h-3.5" />
-              {t('treasury.receivers') || 'المستلمون'}
+              {t('treasury.receivers')}
             </TabsTrigger>
             <TabsTrigger value="intermediaries" className="flex-1 gap-1">
               <Users className="w-3.5 h-3.5" />
-              {t('treasury.intermediaries') || 'الوسطاء'}
+              {t('treasury.intermediaries')}
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="receivers" className="space-y-3 mt-3">
-            <div className="flex gap-2">
-              <Input
-                placeholder={t('treasury.receiver_name') || 'اسم المستلم'}
-                value={activeTab === 'receivers' ? newName : ''}
-                onChange={e => setNewName(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && addContact.mutate('receiver')}
-              />
-              <Button size="sm" onClick={() => addContact.mutate('receiver')} disabled={addContact.isPending}>
-                <Plus className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="space-y-1.5">
-              {receivers.map((c: any) => (
-                <div key={c.id} className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2">
-                  <span className="text-sm">{c.name}</span>
-                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteContact.mutate(c.id)}>
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-              ))}
-              {receivers.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">{t('common.no_data') || 'لا توجد بيانات'}</p>}
-            </div>
+            {renderAddForm('receiver', t('treasury.receiver_name'))}
+            {renderContactList(receivers)}
           </TabsContent>
 
           <TabsContent value="intermediaries" className="space-y-3 mt-3">
-            <div className="flex gap-2">
-              <Input
-                placeholder={t('treasury.intermediary_name') || 'اسم الوسيط'}
-                value={activeTab === 'intermediaries' ? newName : ''}
-                onChange={e => setNewName(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && addContact.mutate('intermediary')}
-              />
-              <Button size="sm" onClick={() => addContact.mutate('intermediary')} disabled={addContact.isPending}>
-                <Plus className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="space-y-1.5">
-              {intermediaries.map((c: any) => (
-                <div key={c.id} className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2">
-                  <span className="text-sm">{c.name}</span>
-                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteContact.mutate(c.id)}>
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-              ))}
-              {intermediaries.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">{t('common.no_data') || 'لا توجد بيانات'}</p>}
-            </div>
+            {renderAddForm('intermediary', t('treasury.intermediary_name'))}
+            {renderContactList(intermediaries)}
           </TabsContent>
         </Tabs>
       </DialogContent>
