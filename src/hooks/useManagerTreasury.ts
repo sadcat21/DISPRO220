@@ -49,10 +49,16 @@ export interface TreasurySummary {
   cash_invoice2_count: number;
   check: number;
   checkCount: number;
+  check_handed: number;
+  check_handed_count: number;
   bank_receipt: number;
   receiptCount: number;
+  receipt_handed: number;
+  receipt_handed_count: number;
   bank_transfer: number;
   transferCount: number;
+  transfer_handed: number;
+  transfer_handed_count: number;
   coins: number;
   total: number;
   handedOver: number;
@@ -111,7 +117,7 @@ export const useTreasurySummary = () => {
       if (oErr) throw oErr;
 
       // Get handovers
-      let hQuery = supabase.from('manager_handovers').select('amount');
+      let hQuery = supabase.from('manager_handovers').select('amount, cash_invoice1, cash_invoice2, checks_amount, check_count, receipts_amount, receipt_count, transfers_amount, transfer_count');
       if (activeBranch?.id) hQuery = hQuery.eq('branch_id', activeBranch.id);
       const { data: handovers, error: hErr } = await hQuery;
       if (hErr) throw hErr;
@@ -196,12 +202,23 @@ export const useTreasurySummary = () => {
         }, 0);
       }, 0);
 
+      // Calculate handed-over amounts per category
+      const handedChecks = (handovers || []).reduce((s: number, h: any) => s + Number(h.checks_amount || 0), 0);
+      const handedChecksCount = (handovers || []).reduce((s: number, h: any) => s + Number(h.check_count || 0), 0);
+      const handedReceipts = (handovers || []).reduce((s: number, h: any) => s + Number(h.receipts_amount || 0), 0);
+      const handedReceiptsCount = (handovers || []).reduce((s: number, h: any) => s + Number(h.receipt_count || 0), 0);
+      const handedTransfers = (handovers || []).reduce((s: number, h: any) => s + Number(h.transfers_amount || 0), 0);
+      const handedTransfersCount = (handovers || []).reduce((s: number, h: any) => s + Number(h.transfer_count || 0), 0);
+
       const summary: TreasurySummary = {
         cash_invoice1: 0, cash_invoice1_count: 0, cash_invoice1_stamp: 0,
         cash_invoice2: 0, cash_invoice2_count: 0,
         check: 0, checkCount: 0,
+        check_handed: handedChecks, check_handed_count: handedChecksCount,
         bank_receipt: 0, receiptCount: 0,
+        receipt_handed: handedReceipts, receipt_handed_count: handedReceiptsCount,
         bank_transfer: 0, transferCount: 0,
+        transfer_handed: handedTransfers, transfer_handed_count: handedTransfersCount,
         coins: totalCoins,
         total: 0, handedOver: 0, remaining: 0,
         totalSales, totalDebts, collectedDebts, uncollectedDebts, debtCashCollected, totalExpenses, totalGiftsValue,

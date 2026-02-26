@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTreasurySummary, useManagerTreasury, useManagerHandovers, useCreateHandover, useAddTreasuryEntry } from '@/hooks/useManagerTreasury';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,6 +50,7 @@ const itemTypeLabels: Record<string, string> = {
 const ManagerTreasury = () => {
   const { t } = useLanguage();
   const { activeBranch, workerId } = useAuth();
+  const queryClient = useQueryClient();
   const { data: summary, isLoading: summaryLoading } = useTreasurySummary();
   const { data: entries } = useManagerTreasury();
   const { data: handovers } = useManagerHandovers();
@@ -159,8 +161,9 @@ const ManagerTreasury = () => {
       setPickedChecks([]);
       setPickedReceipts([]);
       setPickedTransfers([]);
-      // Refresh data
-      window.location.reload();
+      queryClient.invalidateQueries({ queryKey: ['manager-handovers'] });
+      queryClient.invalidateQueries({ queryKey: ['treasury-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['handover-picker'] });
     } catch (err: any) {
       toast.error('حدث خطأ: ' + (err.message || ''));
     }
@@ -323,22 +326,25 @@ const ManagerTreasury = () => {
         <Card className="border-blue-500/30 bg-blue-500/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDetailsCategory('check')}>
           <CardContent className="p-3 text-center">
             <CreditCard className="w-5 h-5 mx-auto mb-1 text-blue-500" />
-            <p className="text-xs text-muted-foreground">شيكات ({summary?.checkCount || 0})</p>
+            <p className="text-xs text-muted-foreground">شيكات ({summary?.checkCount || 0}) {(summary?.check_handed_count || 0) > 0 && <span className="text-green-500">✓{summary?.check_handed_count}</span>}</p>
             <p className="text-sm font-bold text-blue-500 truncate">{summary?.check?.toLocaleString() || 0} د.ج</p>
+            {(summary?.check_handed || 0) > 0 && <p className="text-[10px] text-green-500">مسلّم: {summary?.check_handed?.toLocaleString()} د.ج</p>}
           </CardContent>
         </Card>
         <Card className="border-purple-500/30 bg-purple-500/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDetailsCategory('bank_receipt')}>
           <CardContent className="p-3 text-center">
             <Receipt className="w-5 h-5 mx-auto mb-1 text-purple-500" />
-            <p className="text-xs text-muted-foreground">فيرسمو ({summary?.receiptCount || 0})</p>
+            <p className="text-xs text-muted-foreground">فيرسمو ({summary?.receiptCount || 0}) {(summary?.receipt_handed_count || 0) > 0 && <span className="text-green-500">✓{summary?.receipt_handed_count}</span>}</p>
             <p className="text-sm font-bold text-purple-500 truncate">{summary?.bank_receipt?.toLocaleString() || 0} د.ج</p>
+            {(summary?.receipt_handed || 0) > 0 && <p className="text-[10px] text-green-500">مسلّم: {summary?.receipt_handed?.toLocaleString()} د.ج</p>}
           </CardContent>
         </Card>
         <Card className="border-orange-500/30 bg-orange-500/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDetailsCategory('bank_transfer')}>
           <CardContent className="p-3 text-center">
             <ArrowUpRight className="w-5 h-5 mx-auto mb-1 text-orange-500" />
-            <p className="text-xs text-muted-foreground">فيرمو ({summary?.transferCount || 0})</p>
+            <p className="text-xs text-muted-foreground">فيرمو ({summary?.transferCount || 0}) {(summary?.transfer_handed_count || 0) > 0 && <span className="text-green-500">✓{summary?.transfer_handed_count}</span>}</p>
             <p className="text-sm font-bold text-orange-500 truncate">{summary?.bank_transfer?.toLocaleString() || 0} د.ج</p>
+            {(summary?.transfer_handed || 0) > 0 && <p className="text-[10px] text-green-500">مسلّم: {summary?.transfer_handed?.toLocaleString()} د.ج</p>}
           </CardContent>
         </Card>
         <Card className="border-amber-600/30 bg-amber-600/5">
@@ -414,7 +420,10 @@ const ManagerTreasury = () => {
       {(() => {
         const cashPhysical = (summary?.cash_invoice1 || 0) + (summary?.cash_invoice2 || 0);
         const nonCash = (summary?.check || 0) + (summary?.bank_receipt || 0) + (summary?.bank_transfer || 0);
-        const physicalRemaining = cashPhysical - (summary?.handedOver || 0);
+        const nonCashHanded = (summary?.check_handed || 0) + (summary?.receipt_handed || 0) + (summary?.transfer_handed || 0);
+        const cashHandedOver = (summary?.handedOver || 0) - nonCashHanded;
+        const nonCashPending = nonCash - nonCashHanded;
+        const physicalRemaining = cashPhysical - cashHandedOver;
         const paperMoney = physicalRemaining - (summary?.coins || 0);
         return (
           <div className="space-y-3">
@@ -456,9 +465,10 @@ const ManagerTreasury = () => {
             {/* القسم 2: غير مستلم مادياً */}
             <Card className="border-blue-500/20">
               <CardContent className="p-3 text-center">
-                <p className="text-[11px] font-medium text-muted-foreground">🏦 غير مستلم مادياً</p>
-                <p className="text-sm font-bold truncate">{nonCash.toLocaleString()} د.ج</p>
-                <p className="text-[10px] text-muted-foreground mt-1">(شيكات + فيرسمو + فيرمو)</p>
+                <p className="text-[11px] font-medium text-muted-foreground">🏦 غير مستلم مادياً (معلّق)</p>
+                <p className="text-sm font-bold truncate">{nonCashPending.toLocaleString()} د.ج</p>
+                <p className="text-[10px] text-muted-foreground mt-1">(شيكات + فيرسمو + فيرمو غير مسلّمة)</p>
+                {nonCashHanded > 0 && <p className="text-[10px] text-green-500 mt-0.5">مسلّم: {nonCashHanded.toLocaleString()} د.ج</p>}
               </CardContent>
             </Card>
           </div>
