@@ -41,6 +41,7 @@ import GeoOperations from "./pages/admin/GeoOperations";
 import WorkerActions from "./pages/admin/WorkerActions";
 import DailyReceipts from "./pages/admin/DailyReceipts";
 import ManagerTreasury from "./pages/admin/ManagerTreasury";
+import WorkerLiability from "./pages/admin/WorkerLiability";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -299,6 +300,12 @@ const AppRoutes = () => {
       <Route path="/manager-treasury" element={
         <ProtectedRoute allowedRoles={['admin', 'branch_admin']}>
           <ManagerTreasury />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/worker-liability" element={
+        <ProtectedRoute allowedRoles={['admin', 'branch_admin']}>
+          <WorkerLiability />
         </ProtectedRoute>
       } />
 

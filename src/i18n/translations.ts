@@ -1359,4 +1359,20 @@ export const translations: Translations = {
   'treasury.info.excluded_desc': { ar: 'العملات المعدنية والمصاريف لا تظهر في الفروقات لأنها بنود تسجيلية يُدخلها المحاسب يدوياً وليس لها مبلغ متوقع نظامياً.', fr: 'Les pièces et dépenses n\'apparaissent pas car ce sont des entrées manuelles sans montant attendu.', en: 'Coins and expenses are excluded as they are manual entries without expected amounts.' },
   'treasury.info.when_balanced': { ar: 'متى تكون المحاسبة سليمة؟', fr: 'Quand la comptabilité est-elle correcte ?', en: 'When is accounting correct?' },
   'treasury.info.when_balanced_desc': { ar: 'عندما تتطابق جميع المبالغ المتوقعة مع المبالغ الفعلية المُسجَّلة (الفرق = 0 لكل بند).', fr: 'Quand tous les montants attendus correspondent aux montants réels (écart = 0).', en: 'When all expected amounts match actual recorded amounts (difference = 0).' },
+
+  // ==================== Worker Liability ====================
+  'liability.title': { ar: 'الذمة المالية', fr: 'Responsabilité financière', en: 'Financial Liability' },
+  'liability.total': { ar: 'إجمالي الذمة', fr: 'Total responsabilité', en: 'Total Liability' },
+  'liability.delivered_cash': { ar: 'كاش الطلبيات المسلمة', fr: 'Espèces des livraisons', en: 'Delivered Orders Cash' },
+  'liability.debt_collections': { ar: 'تحصيلات الديون النقدية', fr: 'Recouvrements en espèces', en: 'Cash Debt Collections' },
+  'liability.expenses': { ar: 'المصاريف المعتمدة', fr: 'Dépenses approuvées', en: 'Approved Expenses' },
+  'liability.accounted': { ar: 'المبالغ المحاسبة', fr: 'Montants comptabilisés', en: 'Accounted Amounts' },
+  'liability.manual_adj': { ar: 'تعديل يدوي', fr: 'Ajustement manuel', en: 'Manual Adjustment' },
+  'liability.manual_adjustment': { ar: 'تعديل يدوي', fr: 'Ajustement manuel', en: 'Manual Adjustment' },
+  'liability.add_amount': { ar: 'إضافة مبلغ', fr: 'Ajouter un montant', en: 'Add Amount' },
+  'liability.subtract_amount': { ar: 'خصم مبلغ', fr: 'Soustraire un montant', en: 'Subtract Amount' },
+  'liability.amount': { ar: 'المبلغ', fr: 'Montant', en: 'Amount' },
+  'liability.reason': { ar: 'السبب', fr: 'Raison', en: 'Reason' },
+  'liability.adjust': { ar: 'تعديل', fr: 'Ajuster', en: 'Adjust' },
+  'liability.adjustment_saved': { ar: 'تم حفظ التعديل', fr: 'Ajustement enregistré', en: 'Adjustment saved' },
 };

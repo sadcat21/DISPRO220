@@ -3335,6 +3335,75 @@ export type Database = {
           },
         ]
       }
+      worker_liability_adjustments: {
+        Row: {
+          adjustment_type: string
+          amount: number
+          branch_id: string | null
+          created_at: string
+          created_by: string
+          id: string
+          reason: string | null
+          worker_id: string
+        }
+        Insert: {
+          adjustment_type?: string
+          amount?: number
+          branch_id?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          reason?: string | null
+          worker_id: string
+        }
+        Update: {
+          adjustment_type?: string
+          amount?: number
+          branch_id?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          reason?: string | null
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "worker_liability_adjustments_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "worker_liability_adjustments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "worker_liability_adjustments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "worker_liability_adjustments_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "worker_liability_adjustments_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       worker_locations: {
         Row: {
           accuracy: number | null
