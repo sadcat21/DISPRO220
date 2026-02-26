@@ -127,7 +127,7 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
 
         const group = groupMap.get(customerId)!;
         group.orders.push(processedOrder);
-        group.total += totalAmount + stampAmount;
+        group.total += totalAmount;
         group.totalStamp += stampAmount;
       });
 
