@@ -101,14 +101,13 @@ const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange, onOrderCreated 
     queryFn: async () => {
       if (!sectorSearch || sectorSearch.length < 2) return [];
       const term = sectorSearch.toLowerCase();
-      let q = supabase.from('customers')
-        .select('id, name, name_fr, store_name, store_name_fr, internal_name, phone, sector_id')
+      const q = supabase.from('customers')
+        .select('id, name, name_fr, store_name, store_name_fr, internal_name, phone, sector_id, branch_id')
         .eq('is_registered', true)
         .eq('status', 'active')
         .or(`name.ilike.%${term}%,name_fr.ilike.%${term}%,store_name.ilike.%${term}%,store_name_fr.ilike.%${term}%,internal_name.ilike.%${term}%`)
         .order('name')
         .limit(20);
-      if (activeBranch?.id) q = q.or(`branch_id.eq.${activeBranch.id},branch_id.is.null`);
       const { data, error } = await q;
       if (error) throw error;
       return data || [];
@@ -126,7 +125,6 @@ const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange, onOrderCreated 
         .eq('is_registered', true)
         .eq('status', 'active')
         .order('name');
-      if (activeBranch?.id) q = q.or(`branch_id.eq.${activeBranch.id},branch_id.is.null`);
       const { data, error } = await q;
       if (error) throw error;
       return data || [];
