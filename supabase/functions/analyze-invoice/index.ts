@@ -5,15 +5,29 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+async function callWithRetry(fn: () => Promise<Response>, maxRetries = 2): Promise<Response> {
+  for (let i = 0; i <= maxRetries; i++) {
+    const resp = await fn();
+    if (resp.status === 429 && i < maxRetries) {
+      const retryAfter = parseInt(resp.headers.get('retry-after') || '5', 10);
+      await resp.text(); // consume body
+      await new Promise(r => setTimeout(r, Math.min(retryAfter, 10) * 1000));
+      continue;
+    }
+    return resp;
+  }
+  throw new Error('Max retries exceeded');
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const GOOGLE_AI_KEY = Deno.env.get('GOOGLE_AI_KEY');
-    if (!GOOGLE_AI_KEY) {
-      throw new Error('GOOGLE_AI_KEY not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
     }
 
     const { image_base64, payment_method } = await req.json();
@@ -35,41 +49,55 @@ ${payment_method === 'bank_transfer' ? '4. مرجع التحويل (transfer_ref
 
 إذا لم تجد قيمة معينة، اتركها فارغة "".`;
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_AI_KEY}`,
-      {
+    const response = await callWithRetry(() =>
+      fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: prompt },
-              {
-                inline_data: {
-                  mime_type: 'image/jpeg',
-                  data: image_base64
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: prompt },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:image/jpeg;base64,${image_base64}`
+                  }
                 }
-              }
-            ]
-          }],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 1024,
-          }
+              ]
+            }
+          ],
+          temperature: 0.1,
+          max_tokens: 1024,
         })
-      }
+      })
     );
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error('Gemini API error:', response.status, errText);
-      throw new Error(`Gemini API error: ${response.status}`);
+      console.error('AI Gateway error:', response.status, errText);
+
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ success: false, error: 'تم تجاوز حد الطلبات، حاول مرة أخرى لاحقاً' }), {
+          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ success: false, error: 'يرجى إضافة رصيد لحساب Lovable AI' }), {
+          status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      throw new Error(`AI Gateway error: ${response.status}`);
     }
 
     const data = await response.json();
-    const textContent = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const textContent = data.choices?.[0]?.message?.content || '';
 
-    // Extract JSON from response
     const jsonMatch = textContent.match(/\{[\s\S]*?\}/);
     if (jsonMatch) {
       const extracted = JSON.parse(jsonMatch[0]);
@@ -84,9 +112,9 @@ ${payment_method === 'bank_transfer' ? '4. مرجع التحويل (transfer_ref
 
   } catch (error) {
     console.error('analyze-invoice error:', error);
-    return new Response(JSON.stringify({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    return new Response(JSON.stringify({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
