@@ -8,7 +8,7 @@ import { useNavigation, NavItem } from '@/hooks/useNavigation';
 import { useNavbarPreferences } from '@/hooks/useNavbarPreferences';
 import { toast } from 'sonner';
 
-const MAX_TABS = 5;
+const MAX_TABS = 8;
 
 const NavbarCustomization: React.FC = () => {
   const { t } = useLanguage();

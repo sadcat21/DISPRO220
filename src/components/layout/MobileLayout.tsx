@@ -201,7 +201,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-secondary border-t border-border safe-bottom z-50">
-        <div className="flex items-center justify-around py-2">
+        <div className="flex items-center justify-around py-1.5">
           {mainNavItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
@@ -209,14 +209,14 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  'flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors',
+                  'flex items-center justify-center w-9 h-9 rounded-lg transition-colors',
                   isActive
                     ? 'text-primary-foreground bg-primary'
                     : 'text-secondary-foreground hover:text-primary'
                 )}
+                title={item.label}
               >
                 <item.icon className="w-5 h-5" />
-                <span className="text-xs font-medium">{item.label}</span>
               </Link>
             );
           })}
@@ -227,14 +227,14 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
               <DropdownMenuTrigger asChild>
                 <button
                   className={cn(
-                    'flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors',
+                    'flex items-center justify-center w-9 h-9 rounded-lg transition-colors',
                     isMoreActive
                       ? 'text-primary-foreground bg-primary'
                       : 'text-secondary-foreground hover:text-primary'
                   )}
+                  title={t('nav.more')}
                 >
                   <MoreHorizontal className="w-5 h-5" />
-                  <span className="text-xs font-medium">{t('nav.more')}</span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" side="top" className="w-48 mb-2">
