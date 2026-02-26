@@ -14,7 +14,7 @@ import {
   CheckCircle, Clock, Truck, XCircle, UserCheck, Receipt, ReceiptText, Printer, Search, Gift, Eye, Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { X } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getLocalizedName } from '@/utils/sectorName';
@@ -571,15 +571,14 @@ const OrdersContent: React.FC = () => {
               </Button>
             )}
             {!isPrintHidden && (
-              <Button variant="outline" size="sm" onClick={() => setShowPrintDialog(true)} disabled={!orders || orders.length === 0}>
-                <Printer className="w-4 h-4 ml-2" />
-                {t('common.print')}
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setShowPrintDialog(true)} disabled={!orders || orders.length === 0}>
+                <Printer className="w-4 h-4" />
               </Button>
             )}
             {!isCreateOrderHidden && (
-              <Button size="sm" onClick={() => setShowActionDialog(true)}>
-                <ShoppingCart className="w-4 h-4 ml-2" />
-                {t('orders.new')}
+              <Button size="icon" className="h-8 w-8 relative" onClick={() => setShowActionDialog(true)}>
+                <ShoppingCart className="w-4 h-4" />
+                <Plus className="w-2.5 h-2.5 absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground rounded-full" />
               </Button>
             )}
           </div>
