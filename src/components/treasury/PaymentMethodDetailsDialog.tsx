@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { Banknote, CreditCard, Receipt, ArrowUpRight, Coins } from 'lucide-react';
+import { Banknote, CreditCard, Receipt, ArrowUpRight, Coins, AlertCircle } from 'lucide-react';
 
 type PaymentCategory = 'cash_invoice1' | 'cash_invoice2' | 'check' | 'bank_receipt' | 'bank_transfer';
 
@@ -51,6 +51,7 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
   const config = categoryConfig[category];
   const Icon = config.icon;
   const isCashInvoice1 = category === 'cash_invoice1';
+  const isCashInvoice2 = category === 'cash_invoice2';
   const { data: stampTiers } = useActiveStampTiers();
 
   const { data: customerGroups, isLoading } = useQuery({
@@ -86,7 +87,6 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
       const { data, error } = await query;
       if (error) throw error;
 
-      // Group by customer
       const groupMap = new Map<string, CustomerGroup>();
 
       (data || []).forEach((o: any) => {
@@ -95,23 +95,34 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
         const totalAmount = Number(o.total_amount || 0);
         const itemsSubtotal = (o.order_items || []).reduce((s: number, i: any) => s + Number(i.total_price || 0), 0);
 
-        // Match hook logic: account for partial/debt payments
-        let paidAmount = totalAmount;
+        // Calculate debt amount
         let debtAmount = 0;
         const isDebt = o.payment_status === 'debt';
         if (o.payment_status === 'partial') {
-          paidAmount = Number(o.partial_amount || 0);
-          debtAmount = totalAmount - paidAmount;
+          debtAmount = totalAmount - Number(o.partial_amount || 0);
         } else if (isDebt) {
-          paidAmount = 0;
           debtAmount = totalAmount;
         }
 
-        // Calculate stamp using tiers for cash_invoice1
+        // For cash_invoice1: use full total_amount (not paidAmount) because debts are borrowed from invoice2
+        // For other categories: use paidAmount
+        let displayAmount = totalAmount;
+        if (!isCashInvoice1) {
+          if (o.payment_status === 'partial') {
+            displayAmount = Number(o.partial_amount || 0);
+          } else if (isDebt) {
+            displayAmount = 0;
+          }
+        }
+
+        // Skip zero-amount orders for non-invoice1 categories
+        if (!isCashInvoice1 && displayAmount <= 0) return;
+
+        // Calculate stamp for cash_invoice1
         let stampAmount = 0;
         let stampPercentage = 0;
-        if (isCashInvoice1 && stampTiers?.length && paidAmount > 0) {
-          const baseAmount = itemsSubtotal > 0 ? itemsSubtotal : paidAmount;
+        if (isCashInvoice1 && stampTiers?.length && totalAmount > 0) {
+          const baseAmount = itemsSubtotal > 0 ? itemsSubtotal : totalAmount;
           stampAmount = calculateStampAmount(baseAmount, stampTiers);
           const activeTiers = stampTiers.filter(t => t.is_active);
           const matchedTier = activeTiers.find(t => baseAmount >= t.min_amount && (t.max_amount === null || baseAmount <= t.max_amount));
@@ -120,7 +131,7 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
 
         const processedOrder: ProcessedOrder = {
           id: o.id,
-          total_amount: paidAmount > 0 ? paidAmount : totalAmount,
+          total_amount: displayAmount,
           items_subtotal: itemsSubtotal,
           stamp_amount: stampAmount,
           stamp_percentage: stampPercentage,
@@ -143,7 +154,7 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
 
         const group = groupMap.get(customerId)!;
         group.orders.push(processedOrder);
-        group.total += paidAmount;
+        group.total += displayAmount;
         group.totalStamp += stampAmount;
         group.totalDebt += debtAmount;
       });
@@ -152,10 +163,40 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
     },
   });
 
+  // For cash_invoice2: query invoice1 debt amount to show as "borrowed"
+  const { data: invoice1DebtAmount } = useQuery({
+    queryKey: ['invoice1-debt-for-invoice2', activeBranch?.id],
+    enabled: open && isCashInvoice2,
+    queryFn: async () => {
+      let query = supabase
+        .from('orders')
+        .select('total_amount, payment_status, partial_amount')
+        .eq('status', 'delivered')
+        .eq('payment_type', 'with_invoice')
+        .eq('invoice_payment_method', 'cash')
+        .in('payment_status', ['debt', 'partial']);
+
+      if (activeBranch?.id) query = query.eq('branch_id', activeBranch.id);
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      return (data || []).reduce((sum: number, o: any) => {
+        const total = Number(o.total_amount || 0);
+        if (o.payment_status === 'debt') return sum + total;
+        if (o.payment_status === 'partial') return sum + (total - Number(o.partial_amount || 0));
+        return sum;
+      }, 0);
+    },
+  });
+
   const grandTotal = (customerGroups || []).reduce((s, g) => s + g.total, 0);
   const grandStamp = isCashInvoice1 ? (customerGroups || []).reduce((s, g) => s + g.totalStamp, 0) : 0;
   const grandDebt = (customerGroups || []).reduce((s, g) => s + g.totalDebt, 0);
   const totalOrders = (customerGroups || []).reduce((s, g) => s + g.orders.length, 0);
+
+  // For cash_invoice1: الإجمالي = المشتريات + الطابع
+  const invoice1GrandTotal = isCashInvoice1 ? grandTotal + grandStamp : grandTotal;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -168,22 +209,55 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
           </DialogTitle>
         </DialogHeader>
 
+        {/* الإجمالي */}
         <div className="p-3 rounded-lg bg-muted/50 text-center mb-2">
           <p className="text-xs text-muted-foreground">الإجمالي</p>
-          <p className={`text-xl font-bold ${config.colorClass}`}>{grandTotal.toLocaleString()} د.ج</p>
+          <p className={`text-xl font-bold ${config.colorClass}`}>{invoice1GrandTotal.toLocaleString()} د.ج</p>
         </div>
 
-        {isCashInvoice1 && grandStamp > 0 && (
-          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center mb-2">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <Coins className="w-4 h-4 text-amber-600" />
-              <p className="text-xs font-medium text-amber-700">إجمالي الطوابع (ضريبة)</p>
+        {/* For cash_invoice1: show purchases, stamp, debts breakdown */}
+        {isCashInvoice1 && (
+          <>
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              <div className="p-2 rounded-lg bg-green-500/10 border border-green-500/30 text-center">
+                <p className="text-[10px] text-muted-foreground">قيمة المشتريات</p>
+                <p className="text-sm font-bold text-green-600">{grandTotal.toLocaleString()} د.ج</p>
+              </div>
+              {grandStamp > 0 && (
+                <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center">
+                  <div className="flex items-center justify-center gap-1 mb-0.5">
+                    <Coins className="w-3 h-3 text-amber-600" />
+                    <p className="text-[10px] font-medium text-amber-700">قيمة الطابع</p>
+                  </div>
+                  <p className="text-sm font-bold text-amber-600">{grandStamp.toLocaleString()} د.ج</p>
+                </div>
+              )}
             </div>
-            <p className="text-lg font-bold text-amber-600">{grandStamp.toLocaleString()} د.ج</p>
+            {grandDebt > 0 && (
+              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-center mb-2">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <AlertCircle className="w-4 h-4 text-destructive" />
+                  <p className="text-xs font-medium text-destructive">ديون غير محصلة (مستعارة من فاتورة 2)</p>
+                </div>
+                <p className="text-lg font-bold text-destructive">{grandDebt.toLocaleString()} د.ج</p>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* For cash_invoice2: show borrowed amount for invoice1 */}
+        {isCashInvoice2 && (invoice1DebtAmount || 0) > 0 && (
+          <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/30 text-center mb-2">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <AlertCircle className="w-4 h-4 text-orange-600" />
+              <p className="text-xs font-medium text-orange-700">مبلغ مخصوم لصالح فاتورة 1 (ديون كاش)</p>
+            </div>
+            <p className="text-lg font-bold text-orange-600">{(invoice1DebtAmount || 0).toLocaleString()} د.ج</p>
           </div>
         )}
 
-        {grandDebt > 0 && (
+        {/* For non-invoice1 categories: show debt banner if applicable */}
+        {!isCashInvoice1 && !isCashInvoice2 && grandDebt > 0 && (
           <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-center mb-2">
             <p className="text-xs font-medium text-destructive">ديون غير محصلة</p>
             <p className="text-lg font-bold text-destructive">{grandDebt.toLocaleString()} د.ج</p>
@@ -199,7 +273,6 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
             {customerGroups.map((group) => (
               <Card key={group.customer_id}>
                 <CardContent className="p-3">
-                  {/* Customer header */}
                   <div className="flex items-center justify-between mb-2">
                     <div>
                       <p className="font-bold text-sm">{group.customer_name}</p>
@@ -213,14 +286,18 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
                     </div>
                   </div>
 
-                  {/* Individual orders */}
                   {group.orders.length > 1 && (
                     <div className="border-t pt-2 space-y-1.5">
                       {group.orders.map((order) => (
                         <div key={order.id} className="flex items-center justify-between text-xs bg-muted/30 rounded p-2">
-                          <p className="text-muted-foreground">
-                            {format(new Date(order.created_at), 'dd/MM/yyyy HH:mm', { locale: ar })}
-                          </p>
+                          <div>
+                            <p className="text-muted-foreground">
+                              {format(new Date(order.created_at), 'dd/MM/yyyy HH:mm', { locale: ar })}
+                            </p>
+                            {order.debt_amount > 0 && (
+                              <p className="text-[10px] text-destructive">دين: {order.debt_amount.toLocaleString()} د.ج</p>
+                            )}
+                          </div>
                           <div className="text-left">
                             <p className="font-medium">{order.total_amount.toLocaleString()} د.ج</p>
                             {isCashInvoice1 && order.stamp_amount > 0 && (
@@ -234,18 +311,24 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
                     </div>
                   )}
 
-                  {/* Single order date */}
                   {group.orders.length === 1 && (
                     <div className="flex items-center justify-between text-xs">
-                      <p className="text-muted-foreground">
-                        {format(new Date(group.orders[0].created_at), 'dd/MM/yyyy HH:mm', { locale: ar })}
-                      </p>
-                      {isCashInvoice1 && group.orders[0].stamp_amount > 0 && (
-                        <p className="text-amber-600 flex items-center gap-1">
-                          <Coins className="w-3 h-3" />
-                          طابع ({group.orders[0].stamp_percentage}%): {group.orders[0].stamp_amount.toLocaleString()} د.ج
+                      <div>
+                        <p className="text-muted-foreground">
+                          {format(new Date(group.orders[0].created_at), 'dd/MM/yyyy HH:mm', { locale: ar })}
                         </p>
-                      )}
+                        {group.orders[0].debt_amount > 0 && (
+                          <p className="text-[10px] text-destructive">دين: {group.orders[0].debt_amount.toLocaleString()} د.ج</p>
+                        )}
+                      </div>
+                      <div className="text-left">
+                        {isCashInvoice1 && group.orders[0].stamp_amount > 0 && (
+                          <p className="text-amber-600 flex items-center gap-1">
+                            <Coins className="w-3 h-3" />
+                            طابع ({group.orders[0].stamp_percentage}%): {group.orders[0].stamp_amount.toLocaleString()} د.ج
+                          </p>
+                        )}
+                      </div>
                     </div>
                   )}
                 </CardContent>
