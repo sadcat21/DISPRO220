@@ -293,28 +293,49 @@ const ManagerTreasury = () => {
           </CardContent>
         </Card>
       </div>
-      <div className="grid grid-cols-3 gap-2">
-        <Card className="border-primary/30">
-          <CardContent className="p-2 text-center">
-            <p className="text-[10px] text-muted-foreground">المتبقي الكلي</p>
-            <p className="text-xs font-bold text-primary truncate">{summary?.remaining?.toLocaleString() || 0} د.ج</p>
-          </CardContent>
-        </Card>
-        <Card className="border-primary/20">
-          <CardContent className="p-2 text-center">
-            <Banknote className="w-3.5 h-3.5 mx-auto mb-0.5 text-muted-foreground" />
-            <p className="text-[10px] text-muted-foreground">الورقي</p>
-            <p className="text-xs font-bold truncate">{((summary?.remaining || 0) - (summary?.coins || 0)).toLocaleString()} د.ج</p>
-          </CardContent>
-        </Card>
-        <Card className="border-amber-500/30">
-          <CardContent className="p-2 text-center">
-            <Coins className="w-3.5 h-3.5 mx-auto mb-0.5 text-amber-500" />
-            <p className="text-[10px] text-muted-foreground">المعدني</p>
-            <p className="text-xs font-bold text-amber-500 truncate">{(summary?.coins || 0).toLocaleString()} د.ج</p>
-          </CardContent>
-        </Card>
-      </div>
+
+      {/* المتبقي الكلي مع التفصيل */}
+      {(() => {
+        const cashPhysical = (summary?.cash_invoice1 || 0) + (summary?.cash_invoice2 || 0);
+        const nonCash = (summary?.check || 0) + (summary?.bank_receipt || 0) + (summary?.bank_transfer || 0);
+        const physicalRemaining = cashPhysical - (summary?.handedOver || 0);
+        const paperMoney = physicalRemaining - (summary?.coins || 0);
+        return (
+          <Card className="border-primary/30">
+            <CardContent className="p-3 space-y-3">
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">المتبقي الكلي</p>
+                <p className="text-base font-bold text-primary truncate">{summary?.remaining?.toLocaleString() || 0} د.ج</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {/* القسم 1: مستلم مادياً */}
+                <div className="rounded-lg bg-muted/50 p-2 space-y-1.5">
+                  <p className="text-[10px] font-medium text-muted-foreground text-center">💵 مستلم مادياً (كاش)</p>
+                  <p className="text-xs font-bold text-center truncate">{Math.max(physicalRemaining, 0).toLocaleString()} د.ج</p>
+                  <div className="grid grid-cols-2 gap-1">
+                    <div className="text-center">
+                      <Banknote className="w-3 h-3 mx-auto text-muted-foreground" />
+                      <p className="text-[9px] text-muted-foreground">ورقي</p>
+                      <p className="text-[10px] font-bold truncate">{Math.max(paperMoney, 0).toLocaleString()}</p>
+                    </div>
+                    <div className="text-center">
+                      <Coins className="w-3 h-3 mx-auto text-amber-500" />
+                      <p className="text-[9px] text-muted-foreground">معدني</p>
+                      <p className="text-[10px] font-bold text-amber-500 truncate">{(summary?.coins || 0).toLocaleString()}</p>
+                    </div>
+                  </div>
+                </div>
+                {/* القسم 2: غير مستلم مادياً */}
+                <div className="rounded-lg bg-muted/50 p-2 space-y-1.5">
+                  <p className="text-[10px] font-medium text-muted-foreground text-center">🏦 غير مستلم مادياً</p>
+                  <p className="text-xs font-bold text-center truncate">{nonCash.toLocaleString()} د.ج</p>
+                  <p className="text-[9px] text-muted-foreground text-center">(شيكات + فيرسمو + فيرمو)</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Tabs: Entries & Handovers */}
       <Tabs defaultValue="entries" dir="rtl">
