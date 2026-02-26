@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ChevronLeft, Wallet, TrendingUp, TrendingDown, Calculator, PenLine } from 'lucide-react';
+import { Loader2, ChevronLeft, Wallet, TrendingUp, TrendingDown, Calculator, PenLine, Coins } from 'lucide-react';
 import { toast } from 'sonner';
 
 const WorkerLiability: React.FC = () => {
@@ -178,6 +178,7 @@ const WorkerLiabilityDetail: React.FC<{
     { label: t('liability.expenses'), value: -summary.approvedExpenses, icon: TrendingDown, color: 'text-red-600' },
     { label: t('liability.accounted'), value: -summary.accountedAmount, icon: Calculator, color: 'text-blue-600' },
     { label: t('liability.manual_adj'), value: summary.manualAdjustment, icon: PenLine, color: 'text-orange-600' },
+    { label: t('coin_exchange.title'), value: summary.coinExchangeAmount, icon: Coins, color: 'text-cyan-600' },
   ];
 
   return (
