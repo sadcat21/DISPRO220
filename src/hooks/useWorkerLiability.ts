@@ -13,114 +13,91 @@ export interface WorkerLiabilitySummary {
   totalLiability: number;
 }
 
+async function calcWorkerLiability(workerId: string, branchId?: string | null): Promise<WorkerLiabilitySummary | null> {
+  // 1. Worker info
+  const { data: worker } = await supabase.from('workers').select('id, full_name').eq('id', workerId).single();
+  if (!worker) return null;
+
+  // 2. Delivered orders: ALL money collected by the worker
+  let ordersQuery = supabase
+    .from('orders')
+    .select('total_amount, partial_amount, payment_status, payment_type')
+    .eq('assigned_worker_id', workerId)
+    .eq('status', 'delivered');
+  if (branchId) ordersQuery = ordersQuery.eq('branch_id', branchId);
+  const { data: orders = [] } = await ordersQuery;
+
+  let deliveredCash = 0;
+  for (const o of orders) {
+    if (o.payment_status === 'cash' || o.payment_status === 'check') {
+      deliveredCash += Number(o.total_amount || 0);
+    } else if (o.payment_status === 'partial') {
+      deliveredCash += Number(o.partial_amount || 0);
+    }
+    // 'credit'/'pending' = worker didn't collect money
+  }
+
+  // 3. Approved debt collections (all payment methods - worker holds the money/checks)
+  const { data: collections = [] } = await supabase
+    .from('debt_collections')
+    .select('amount_collected')
+    .eq('worker_id', workerId)
+    .eq('status', 'approved');
+  const debtCollectionsCash = collections.reduce((s, c) => s + Number(c.amount_collected || 0), 0);
+
+  // 4. Approved expenses (cash only - worker spent from collected money)
+  let expQuery = supabase.from('expenses').select('amount').eq('worker_id', workerId).eq('status', 'approved').eq('payment_method', 'cash');
+  if (branchId) expQuery = expQuery.eq('branch_id', branchId);
+  const { data: expenses = [] } = await expQuery;
+  const approvedExpenses = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
+
+  // 5. Accounted amounts from completed sessions (actual_amount = what worker handed over)
+  let sessQuery = supabase.from('accounting_sessions').select('id').eq('worker_id', workerId).eq('status', 'completed');
+  if (branchId) sessQuery = sessQuery.eq('branch_id', branchId);
+  const { data: sessions = [] } = await sessQuery;
+
+  let accountedAmount = 0;
+  if (sessions.length > 0) {
+    const { data: items = [] } = await supabase
+      .from('accounting_session_items')
+      .select('actual_amount')
+      .in('session_id', sessions.map(s => s.id));
+    accountedAmount = items.reduce((s, i) => s + Number(i.actual_amount || 0), 0);
+  }
+
+  // 6. Manual adjustments
+  let adjQuery = supabase.from('worker_liability_adjustments').select('amount, adjustment_type').eq('worker_id', workerId);
+  if (branchId) adjQuery = adjQuery.eq('branch_id', branchId);
+  const { data: adjustments = [] } = await adjQuery;
+  const manualAdjustment = adjustments.reduce((s, a) => {
+    return s + (a.adjustment_type === 'add' ? Number(a.amount || 0) : -Number(a.amount || 0));
+  }, 0);
+
+  const totalLiability = deliveredCash + debtCollectionsCash - approvedExpenses - accountedAmount + manualAdjustment;
+
+  return {
+    workerId: worker.id,
+    workerName: worker.full_name,
+    deliveredCash,
+    debtCollectionsCash,
+    approvedExpenses,
+    accountedAmount,
+    manualAdjustment,
+    totalLiability,
+  };
+}
+
 export const useWorkerLiability = (workerId?: string | null) => {
   const { activeBranch } = useAuth();
-
   return useQuery({
     queryKey: ['worker-liability', workerId, activeBranch?.id],
-    queryFn: async (): Promise<WorkerLiabilitySummary | null> => {
-      if (!workerId) return null;
-
-      // 1. Get worker info
-      const { data: worker } = await supabase
-        .from('workers')
-        .select('id, full_name')
-        .eq('id', workerId)
-        .single();
-      if (!worker) return null;
-
-      // 2. Delivered orders with cash payment (without_invoice = cash)
-      let ordersQuery = supabase
-        .from('orders')
-        .select('total_amount, partial_amount, payment_status')
-        .eq('assigned_worker_id', workerId)
-        .eq('status', 'delivered')
-        .eq('payment_type', 'without_invoice');
-      if (activeBranch?.id) ordersQuery = ordersQuery.eq('branch_id', activeBranch.id);
-      const { data: orders = [] } = await ordersQuery;
-
-      let deliveredCash = 0;
-      for (const o of orders) {
-        if (o.payment_status === 'cash') {
-          deliveredCash += Number(o.total_amount || 0);
-        } else if (o.payment_status === 'partial') {
-          deliveredCash += Number(o.partial_amount || 0);
-        }
-        // credit/pending = no cash collected
-      }
-
-      // 3. Debt collections (approved, cash)
-      let collectionsQuery = supabase
-        .from('debt_collections')
-        .select('amount_collected')
-        .eq('worker_id', workerId)
-        .eq('status', 'approved')
-        .eq('payment_method', 'cash');
-      const { data: collections = [] } = await collectionsQuery;
-      const debtCollectionsCash = collections.reduce((s, c) => s + Number(c.amount_collected || 0), 0);
-
-      // 4. Approved expenses
-      let expQuery = supabase
-        .from('expenses')
-        .select('amount')
-        .eq('worker_id', workerId)
-        .eq('status', 'approved')
-        .eq('payment_method', 'cash');
-      if (activeBranch?.id) expQuery = expQuery.eq('branch_id', activeBranch.id);
-      const { data: expenses = [] } = await expQuery;
-      const approvedExpenses = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
-
-      // 5. Accounted amounts (from accounting sessions)
-      let sessQuery = supabase
-        .from('accounting_sessions')
-        .select('id')
-        .eq('worker_id', workerId)
-        .eq('status', 'completed');
-      if (activeBranch?.id) sessQuery = sessQuery.eq('branch_id', activeBranch.id);
-      const { data: sessions = [] } = await sessQuery;
-
-      let accountedAmount = 0;
-      if (sessions.length > 0) {
-        const sessionIds = sessions.map(s => s.id);
-        const { data: items = [] } = await supabase
-          .from('accounting_session_items')
-          .select('actual_amount')
-          .in('session_id', sessionIds);
-        accountedAmount = items.reduce((s, i) => s + Number(i.actual_amount || 0), 0);
-      }
-
-      // 6. Manual adjustments
-      let adjQuery = supabase
-        .from('worker_liability_adjustments')
-        .select('amount, adjustment_type')
-        .eq('worker_id', workerId);
-      if (activeBranch?.id) adjQuery = adjQuery.eq('branch_id', activeBranch.id);
-      const { data: adjustments = [] } = await adjQuery;
-      const manualAdjustment = adjustments.reduce((s, a) => {
-        const amt = Number(a.amount || 0);
-        return s + (a.adjustment_type === 'add' ? amt : -amt);
-      }, 0);
-
-      const totalLiability = deliveredCash + debtCollectionsCash - approvedExpenses - accountedAmount + manualAdjustment;
-
-      return {
-        workerId: worker.id,
-        workerName: worker.full_name,
-        deliveredCash,
-        debtCollectionsCash,
-        approvedExpenses,
-        accountedAmount,
-        manualAdjustment,
-        totalLiability,
-      };
-    },
+    queryFn: () => calcWorkerLiability(workerId!, activeBranch?.id),
     enabled: !!workerId,
   });
 };
 
 export const useAllWorkersLiability = () => {
   const { activeBranch } = useAuth();
-
   return useQuery({
     queryKey: ['all-workers-liability', activeBranch?.id],
     queryFn: async (): Promise<WorkerLiabilitySummary[]> => {
@@ -130,69 +107,9 @@ export const useAllWorkersLiability = () => {
 
       const results: WorkerLiabilitySummary[] = [];
       for (const w of workers) {
-        // Simplified: fetch per worker
-        let ordersQuery = supabase
-          .from('orders')
-          .select('total_amount, partial_amount, payment_status')
-          .eq('assigned_worker_id', w.id)
-          .eq('status', 'delivered')
-          .eq('payment_type', 'without_invoice');
-        if (activeBranch?.id) ordersQuery = ordersQuery.eq('branch_id', activeBranch.id);
-        const { data: orders = [] } = await ordersQuery;
-
-        let deliveredCash = 0;
-        for (const o of orders) {
-          if (o.payment_status === 'cash') deliveredCash += Number(o.total_amount || 0);
-          else if (o.payment_status === 'partial') deliveredCash += Number(o.partial_amount || 0);
-        }
-
-        const { data: collections = [] } = await supabase
-          .from('debt_collections')
-          .select('amount_collected')
-          .eq('worker_id', w.id)
-          .eq('status', 'approved')
-          .eq('payment_method', 'cash');
-        const debtCollectionsCash = collections.reduce((s, c) => s + Number(c.amount_collected || 0), 0);
-
-        let expQuery = supabase.from('expenses').select('amount').eq('worker_id', w.id).eq('status', 'approved').eq('payment_method', 'cash');
-        if (activeBranch?.id) expQuery = expQuery.eq('branch_id', activeBranch.id);
-        const { data: expenses = [] } = await expQuery;
-        const approvedExpenses = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
-
-        let sessQuery = supabase.from('accounting_sessions').select('id').eq('worker_id', w.id).eq('status', 'completed');
-        if (activeBranch?.id) sessQuery = sessQuery.eq('branch_id', activeBranch.id);
-        const { data: sessions = [] } = await sessQuery;
-        let accountedAmount = 0;
-        if (sessions.length > 0) {
-          const { data: items = [] } = await supabase
-            .from('accounting_session_items')
-            .select('actual_amount')
-            .in('session_id', sessions.map(s => s.id));
-          accountedAmount = items.reduce((s, i) => s + Number(i.actual_amount || 0), 0);
-        }
-
-        let adjQuery = supabase.from('worker_liability_adjustments').select('amount, adjustment_type').eq('worker_id', w.id);
-        if (activeBranch?.id) adjQuery = adjQuery.eq('branch_id', activeBranch.id);
-        const { data: adjustments = [] } = await adjQuery;
-        const manualAdjustment = adjustments.reduce((s, a) => {
-          const amt = Number(a.amount || 0);
-          return s + (a.adjustment_type === 'add' ? amt : -amt);
-        }, 0);
-
-        const totalLiability = deliveredCash + debtCollectionsCash - approvedExpenses - accountedAmount + manualAdjustment;
-
-        results.push({
-          workerId: w.id,
-          workerName: w.full_name,
-          deliveredCash,
-          debtCollectionsCash,
-          approvedExpenses,
-          accountedAmount,
-          manualAdjustment,
-          totalLiability,
-        });
+        const r = await calcWorkerLiability(w.id, activeBranch?.id);
+        if (r) results.push(r);
       }
-
       return results.sort((a, b) => b.totalLiability - a.totalLiability);
     },
   });
