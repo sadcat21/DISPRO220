@@ -411,8 +411,14 @@ const QuickOrderDialog: React.FC<Props> = ({ open, onOpenChange, onOrderCreated 
                           }}
                         >
                           <User className="w-4 h-4 ml-2 shrink-0 text-primary" />
-                          <div className="min-w-0">
-                            <span className="text-sm font-medium block truncate">{c.name}</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium truncate">{c.name}</span>
+                              {c.sector_id && (() => {
+                                const sec = sectors.find(s => s.id === c.sector_id);
+                                return sec ? <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 shrink-0">{getLocalizedName(sec, language)}</Badge> : null;
+                              })()}
+                            </div>
                             <div className="flex gap-2 text-[11px] text-muted-foreground">
                               {c.name_fr && <span dir="ltr">{c.name_fr}</span>}
                               {c.store_name && <span>• {c.store_name}</span>}
