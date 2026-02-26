@@ -951,6 +951,7 @@ export const translations: Translations = {
   'stock.empty_truck_confirm': { ar: 'اختر نوع التفريغ ثم حدد الكميات المراد إرجاعها', fr: 'Choisissez le type de vidange puis les quantités', en: 'Choose empty type then select quantities to return' },
   'stock.empty_truck_success': { ar: 'تم تفريغ الشاحنة بنجاح', fr: 'Camion vidé avec succès', en: 'Truck emptied successfully' },
   'stock.empty_truck_nothing': { ar: 'لا توجد منتجات لتفريغها', fr: 'Aucun produit à vider', en: 'No products to empty' },
+  'stock.exclude_product': { ar: 'استثناء المنتج من التفريغ', fr: 'Exclure le produit', en: 'Exclude product' },
   'stock.empty_full': { ar: 'تفريغ كلي', fr: 'Vidange totale', en: 'Full Empty' },
   'stock.empty_excess': { ar: 'تفريغ الفائض', fr: 'Vidange excédent', en: 'Empty Excess' },
   'stock.full_empty_warning': { ar: 'تنبيه: التفريغ الكلي سيشمل المنتجات المحجوزة للطلبيات المعلقة', fr: 'Attention: la vidange totale inclut les produits réservés', en: 'Warning: Full empty includes products reserved for pending orders' },

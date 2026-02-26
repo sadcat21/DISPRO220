@@ -578,7 +578,17 @@ const LoadStock: React.FC = () => {
                 <Card key={item.product_id} className="border">
                   <CardContent className="p-3 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-sm">{item.product_name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-sm">{item.product_name}</span>
+                        <button
+                          type="button"
+                          className="p-0.5 rounded hover:bg-destructive/10 text-destructive/60 hover:text-destructive transition-colors"
+                          title={t('stock.exclude_product')}
+                          onClick={() => setEmptyTruckItems(prev => prev.filter((_, i) => i !== idx))}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <span>{t('stock.in_truck')}: <strong>{item.quantity}</strong></span>
                         <span>{t('stock.orders_need')}: <strong>{item.pendingNeeded}</strong></span>
