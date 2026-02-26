@@ -14,13 +14,13 @@ export type InvoicePaymentMethod = 'receipt' | 'check' | 'cash' | 'transfer';
 
 export const INVOICE_PAYMENT_METHODS: Record<InvoicePaymentMethod, { label: string; description: string; hasStamp: boolean }> = {
   receipt: {
-    label: 'وصل تحويل',
+    label: 'Versement',
     description: 'العميل يحول المبلغ بنفسه ويسلم وصل التحويل',
     hasStamp: false,
   },
   check: {
-    label: 'شيك',
-    description: 'العميل يسلم شيك بقيمة المبلغ',
+    label: 'Chèque',
+    description: 'العميل يسلم Chèque بقيمة المبلغ',
     hasStamp: false,
   },
   cash: {
@@ -29,7 +29,7 @@ export const INVOICE_PAYMENT_METHODS: Record<InvoicePaymentMethod, { label: stri
     hasStamp: true,
   },
   transfer: {
-    label: 'تحويل بنكي',
+    label: 'Virement',
     description: 'العميل يحول من حسابه البنكي إلى حسابنا',
     hasStamp: false,
   },

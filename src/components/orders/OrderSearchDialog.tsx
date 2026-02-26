@@ -47,7 +47,7 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; icon: R
 const PAYMENT_STATUS_CONFIG = {
   pending: { label: 'قيد الانتظار', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: Clock },
   cash: { label: 'كاش', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: Banknote },
-  check: { label: 'شيك', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', icon: FileText },
+  check: { label: 'Chèque', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', icon: FileText },
   credit: { label: 'بالدين', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400', icon: CreditCard },
   partial: { label: 'دفع جزئي', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400', icon: Wallet },
 };
@@ -1013,7 +1013,7 @@ const OrderSearchDialog: React.FC<OrderSearchDialogProps> = ({ open, onOpenChang
                       <SelectContent>
                         <SelectItem value="pending">قيد الانتظار</SelectItem>
                         <SelectItem value="cash">كاش</SelectItem>
-                        <SelectItem value="check">شيك</SelectItem>
+                        <SelectItem value="check">Chèque</SelectItem>
                         <SelectItem value="credit">بالدين</SelectItem>
                         <SelectItem value="partial">دفع جزئي</SelectItem>
                       </SelectContent>

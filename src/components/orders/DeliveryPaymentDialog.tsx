@@ -114,9 +114,9 @@ const DeliveryPaymentDialog: React.FC<DeliveryPaymentDialogProps> = ({
                 {frozenPaymentType === 'with_invoice' && frozenInvoiceMethod && (
                   <Badge variant="outline" className="text-xs">
                     {frozenInvoiceMethod === 'cash' ? 'كاش' : 
-                     frozenInvoiceMethod === 'check' ? 'شيك' :
-                     frozenInvoiceMethod === 'receipt' ? 'وصل تحويل' :
-                     frozenInvoiceMethod === 'transfer' ? 'تحويل بنكي' : frozenInvoiceMethod}
+                     frozenInvoiceMethod === 'check' ? 'Chèque' :
+                     frozenInvoiceMethod === 'receipt' ? 'Versement' :
+                     frozenInvoiceMethod === 'transfer' ? 'Virement' : frozenInvoiceMethod}
                   </Badge>
                 )}
               </div>

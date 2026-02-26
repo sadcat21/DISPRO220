@@ -312,9 +312,9 @@ const SalesDetailsSummary: React.FC<SalesDetailsSummaryProps> = ({ workerId, per
                       <div className="flex flex-wrap gap-1.5">
                         {order.payment_type === 'with_invoice' && order.invoice_payment_method && (
                           <Badge variant="secondary" className="text-[9px]">
-                            {order.invoice_payment_method === 'check' ? 'شيك' :
-                             order.invoice_payment_method === 'transfer' ? 'تحويل بنكي' :
-                             order.invoice_payment_method === 'receipt' ? 'تسبيق' :
+                            {order.invoice_payment_method === 'check' ? 'Chèque' :
+                             order.invoice_payment_method === 'transfer' ? 'Virement' :
+                             order.invoice_payment_method === 'receipt' ? 'Versement' :
                              order.invoice_payment_method === 'cash' ? 'كاش' : order.invoice_payment_method}
                           </Badge>
                         )}

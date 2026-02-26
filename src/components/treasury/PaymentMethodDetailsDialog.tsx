@@ -14,9 +14,9 @@ type PaymentCategory = 'cash_invoice1' | 'cash_invoice2' | 'check' | 'bank_recei
 const categoryConfig: Record<PaymentCategory, { label: string; icon: any; colorClass: string }> = {
   cash_invoice1: { label: 'كاش فاتورة 1', icon: Banknote, colorClass: 'text-green-500' },
   cash_invoice2: { label: 'كاش فاتورة 2', icon: Banknote, colorClass: 'text-emerald-500' },
-  check: { label: 'شيكات', icon: CreditCard, colorClass: 'text-blue-500' },
-  bank_receipt: { label: 'فيرسمو', icon: Receipt, colorClass: 'text-purple-500' },
-  bank_transfer: { label: 'فيرمو', icon: ArrowUpRight, colorClass: 'text-orange-500' },
+  check: { label: 'Chèques', icon: CreditCard, colorClass: 'text-blue-500' },
+  bank_receipt: { label: 'Versement', icon: Receipt, colorClass: 'text-purple-500' },
+  bank_transfer: { label: 'Virement', icon: ArrowUpRight, colorClass: 'text-orange-500' },
 };
 
 interface Props {
