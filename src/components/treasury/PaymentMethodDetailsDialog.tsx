@@ -182,12 +182,6 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
                     </div>
                     <div className="text-left">
                       <p className={`font-bold ${config.colorClass}`}>{group.total.toLocaleString()} د.ج</p>
-                      {isCashInvoice1 && group.totalStamp > 0 && (
-                        <p className="text-[10px] text-amber-600 flex items-center gap-1 justify-end">
-                          <Coins className="w-3 h-3" />
-                          طابع: {group.totalStamp.toLocaleString()} د.ج
-                        </p>
-                      )}
                       {group.orders.length > 1 && (
                         <Badge variant="outline" className="text-[10px] mt-1">{group.orders.length} عمليات</Badge>
                       )}
