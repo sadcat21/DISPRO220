@@ -18,8 +18,8 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
 const paymentMethodLabels: Record<string, { ar: string; icon: any }> = {
-  cash_invoice1: { ar: 'نقدي فاتورة 1', icon: Banknote },
-  cash_invoice2: { ar: 'نقدي فاتورة 2', icon: Coins },
+  cash_invoice1: { ar: 'كاش فاتورة 1', icon: Banknote },
+  cash_invoice2: { ar: 'كاش فاتورة 2', icon: Coins },
   check: { ar: 'شيك', icon: CreditCard },
   bank_receipt: { ar: 'فيرسمو', icon: Receipt },
   bank_transfer: { ar: 'فيرمو', icon: ArrowUpRight },
@@ -188,7 +188,7 @@ const ManagerTreasury = () => {
               <DialogHeader><DialogTitle>تسليم أموال للجهة العليا</DialogTitle></DialogHeader>
               <div className="space-y-4">
                 <div className="p-3 rounded-lg bg-muted/50 space-y-3">
-                  <p className="font-medium text-sm">💵 النقدي</p>
+                  <p className="font-medium text-sm">💵 الكاش</p>
                   <div className="grid grid-cols-2 gap-2">
                     <div><Label className="text-xs">كاش فاتورة 1</Label><Input type="number" placeholder="0" value={handoverForm.cash_invoice1} onChange={e => setHandoverForm(f => ({ ...f, cash_invoice1: e.target.value }))} /></div>
                     <div><Label className="text-xs">كاش فاتورة 2</Label><Input type="number" placeholder="0" value={handoverForm.cash_invoice2} onChange={e => setHandoverForm(f => ({ ...f, cash_invoice2: e.target.value }))} /></div>
@@ -202,7 +202,7 @@ const ManagerTreasury = () => {
                   </div>
                 </div>
                 <div className="p-3 rounded-lg bg-muted/50 space-y-3">
-                  <p className="font-medium text-sm">🧾 فيرسمو (إيداع نقدي بالبنك)</p>
+                  <p className="font-medium text-sm">🧾 فيرسمو (إيداع كاش بالبنك)</p>
                   <p className="text-[10px] text-muted-foreground">العميل يأخذ الكاش ويودعه في حساب الشركة بالبنك</p>
                   <div className="grid grid-cols-2 gap-2">
                     <div><Label className="text-xs">قيمة الفيرسمو</Label><Input type="number" placeholder="0" value={handoverForm.receipts_amount} onChange={e => setHandoverForm(f => ({ ...f, receipts_amount: e.target.value }))} /></div>

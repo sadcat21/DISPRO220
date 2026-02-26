@@ -315,7 +315,7 @@ const SalesDetailsSummary: React.FC<SalesDetailsSummaryProps> = ({ workerId, per
                             {order.invoice_payment_method === 'check' ? 'شيك' :
                              order.invoice_payment_method === 'transfer' ? 'تحويل بنكي' :
                              order.invoice_payment_method === 'receipt' ? 'تسبيق' :
-                             order.invoice_payment_method === 'cash' ? 'نقدي' : order.invoice_payment_method}
+                             order.invoice_payment_method === 'cash' ? 'كاش' : order.invoice_payment_method}
                           </Badge>
                         )}
                         {order.payment_type !== 'with_invoice' && order.price_subtype && (
