@@ -1131,6 +1131,7 @@ export type Database = {
           receipt_count: number | null
           receipts_amount: number
           received_by: string | null
+          stamp_amount: number
           transfer_count: number | null
           transfers_amount: number
         }
@@ -1150,6 +1151,7 @@ export type Database = {
           receipt_count?: number | null
           receipts_amount?: number
           received_by?: string | null
+          stamp_amount?: number
           transfer_count?: number | null
           transfers_amount?: number
         }
@@ -1169,6 +1171,7 @@ export type Database = {
           receipt_count?: number | null
           receipts_amount?: number
           received_by?: string | null
+          stamp_amount?: number
           transfer_count?: number | null
           transfers_amount?: number
         }
