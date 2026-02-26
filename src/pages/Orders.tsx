@@ -554,24 +554,24 @@ const OrdersContent: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold">{t('orders.title')}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold">
+              {t('orders.title')}{contextWorkerId && contextWorkerName && <span className="text-primary"> - {contextWorkerName}</span>}
+            </h2>
+            {contextWorkerId && (
+              <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-primary/20" onClick={() => clearSelectedWorker()}>
+                <X className="w-3 h-3" />
+              </Button>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             {!isSearchHidden && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowSearchDialog(true)}
-              >
+              <Button variant="outline" size="sm" onClick={() => setShowSearchDialog(true)}>
                 <Search className="w-4 h-4" />
               </Button>
             )}
             {!isPrintHidden && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowPrintDialog(true)}
-                disabled={!orders || orders.length === 0}
-              >
+              <Button variant="outline" size="sm" onClick={() => setShowPrintDialog(true)} disabled={!orders || orders.length === 0}>
                 <Printer className="w-4 h-4 ml-2" />
                 {t('common.print')}
               </Button>
@@ -585,22 +585,6 @@ const OrdersContent: React.FC = () => {
           </div>
         </div>
 
-        {contextWorkerId && contextWorkerName && (
-          <div className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-md text-sm animate-in fade-in slide-in-from-top-1">
-            <UserCheck className="w-4 h-4" />
-            <span className="font-medium">
-              {t('nav.orders')}: {contextWorkerName}
-            </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 ml-auto hover:bg-primary/20"
-              onClick={() => clearSelectedWorker()}
-            >
-              <X className="w-3 h-3" />
-            </Button>
-          </div>
-        )}
         {customerIdFilter && (
           <div className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-md text-sm animate-in fade-in slide-in-from-top-1">
             <User className="w-4 h-4" />
