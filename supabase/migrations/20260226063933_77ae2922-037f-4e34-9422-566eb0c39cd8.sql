@@ -1,0 +1,1 @@
+ALTER TABLE public.manager_handovers ADD COLUMN receiver_name text;

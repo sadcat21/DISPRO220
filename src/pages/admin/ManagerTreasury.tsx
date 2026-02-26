@@ -143,7 +143,7 @@ const ManagerTreasury = () => {
     setEditNotes(h.notes || '');
     setEditDeliveryMethod(h.delivery_method || 'direct');
     setEditIntermediaryName(h.intermediary_name || '');
-    setEditReceivedBy(h.received_by || '');
+    setEditReceivedBy(h.receiver_name || h.received_by || '');
     setEditHandover(h.id);
     // Load existing handover items
     const { data: items } = await supabase
@@ -175,7 +175,8 @@ const ManagerTreasury = () => {
           amount: newTotal,
           delivery_method: editDeliveryMethod !== 'direct' ? 'intermediary' : 'direct',
           intermediary_name: editDeliveryMethod !== 'direct' ? editIntermediaryName || null : null,
-          received_by: editReceivedBy || null,
+          received_by: null,
+          receiver_name: editReceivedBy || null,
         })
         .eq('id', editHandover);
       if (error) throw error;
@@ -310,7 +311,8 @@ const ManagerTreasury = () => {
         bank_transfer_reference: null,
         bank_account_id: null,
         receipt_image_url: null,
-        received_by: handoverForm.received_by || null,
+        received_by: null,
+        receiver_name: handoverForm.received_by || null,
       } as any).select('id').single();
 
       if (error) throw error;
@@ -1006,7 +1008,7 @@ const ManagerTreasury = () => {
                         {(h as any).delivery_method === 'direct' ? '🏢 تسليم مباشر' : (h as any).delivery_method === 'bank_transfer' ? '🏦 تحويل بنكي' : '🤝 عبر وسيط'}
                       </Badge>
                     )}
-                    {(h as any).received_by && <Badge variant="secondary" className="text-[10px] h-5">📥 {(h as any).received_by}</Badge>}
+                    {((h as any).receiver_name || (h as any).received_by) && <Badge variant="secondary" className="text-[10px] h-5">📥 {(h as any).receiver_name || (h as any).received_by}</Badge>}
                     {(h as any).intermediary_name && <Badge variant="secondary" className="text-[10px] h-5">🤝 {(h as any).intermediary_name}</Badge>}
                   </div>
                   {h.notes && <p className="text-xs text-muted-foreground">{h.notes}</p>}
@@ -1096,7 +1098,7 @@ const ManagerTreasury = () => {
                   deliveryMethod={(h as any).delivery_method}
                   intermediaryName={(h as any).intermediary_name}
                   bankTransferReference={(h as any).bank_transfer_reference}
-                  receivedBy={(h as any).received_by}
+                  receivedBy={(h as any).receiver_name || (h as any).received_by}
                 />
               </div>
             </DialogContent>
@@ -1149,7 +1151,7 @@ const ManagerTreasury = () => {
                   deliveryMethod={(h as any).delivery_method}
                   intermediaryName={(h as any).intermediary_name}
                   bankTransferReference={(h as any).bank_transfer_reference}
-                  receivedBy={(h as any).received_by}
+                  receivedBy={(h as any).receiver_name || (h as any).received_by}
                 />
               </div>
             </DialogContent>

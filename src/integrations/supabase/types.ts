@@ -1136,6 +1136,7 @@ export type Database = {
           receipt_image_url: string | null
           receipts_amount: number
           received_by: string | null
+          receiver_name: string | null
           stamp_amount: number
           transfer_count: number | null
           transfers_amount: number
@@ -1161,6 +1162,7 @@ export type Database = {
           receipt_image_url?: string | null
           receipts_amount?: number
           received_by?: string | null
+          receiver_name?: string | null
           stamp_amount?: number
           transfer_count?: number | null
           transfers_amount?: number
@@ -1186,6 +1188,7 @@ export type Database = {
           receipt_image_url?: string | null
           receipts_amount?: number
           received_by?: string | null
+          receiver_name?: string | null
           stamp_amount?: number
           transfer_count?: number | null
           transfers_amount?: number
