@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Search, ShoppingCart, Send, ArrowRight, X, MessageCircle, User, FileText, Clock } from 'lucide-react';
+import { Search, ShoppingCart, Send, ArrowRight, X, MessageCircle, User, FileText, Clock, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { getLocalizedName } from '@/utils/sectorName';
 import { format } from 'date-fns';
@@ -31,14 +31,15 @@ type Step = 'customer' | 'products' | 'payment' | 'whatsapp';
 const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   const { language, dir } = useLanguage();
   const { activeBranch } = useAuth();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'manual' | 'worker_requests'>('worker_requests');
+  const [workerSubTab, setWorkerSubTab] = useState<'pending' | 'completed'>('pending');
   const [step, setStep] = useState<Step>('customer');
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [search, setSearch] = useState('');
   const [productSearch, setProductSearch] = useState('');
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod | null>(null);
-  // For sending worker request via whatsapp
   const [selectedWorkerOrder, setSelectedWorkerOrder] = useState<any>(null);
 
   // Fetch worker invoice orders (payment_type = 'with_invoice')
@@ -48,7 +49,7 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
       let q = supabase
         .from('orders')
         .select(`
-          id, customer_id, created_by, status, payment_type, invoice_payment_method, total_amount, created_at, notes,
+          id, customer_id, created_by, status, payment_type, invoice_payment_method, total_amount, created_at, notes, invoice_sent_at,
           customers!orders_customer_id_fkey(id, name, name_fr, store_name),
           workers!orders_created_by_fkey(id, full_name, username),
           order_items(id, product_id, quantity, unit_price, total_price, products!order_items_product_id_fkey(id, name))
@@ -63,6 +64,11 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
     },
     enabled: open && activeTab === 'worker_requests',
   });
+
+  const pendingInvoiceOrders = useMemo(() =>
+    (invoiceOrders || []).filter((o: any) => !o.invoice_sent_at), [invoiceOrders]);
+  const completedInvoiceOrders = useMemo(() =>
+    (invoiceOrders || []).filter((o: any) => !!o.invoice_sent_at), [invoiceOrders]);
 
   // Fetch registered customers with sector info
   const { data: customers } = useQuery({
@@ -155,18 +161,34 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
     return lines.join('\n');
   };
 
-  const sendWhatsApp = (phone: string, message?: string) => {
+  const markOrderAsSent = async (orderId: string) => {
+    const { error } = await supabase
+      .from('orders')
+      .update({ invoice_sent_at: new Date().toISOString() } as any)
+      .eq('id', orderId);
+    if (error) {
+      console.error('Failed to mark invoice as sent:', error);
+    } else {
+      queryClient.invalidateQueries({ queryKey: ['invoice-orders'] });
+    }
+  };
+
+  const sendWhatsApp = async (phone: string, message?: string, orderId?: string) => {
     const msg = message || buildWhatsAppMessage();
     const cleanPhone = phone.replace(/[^0-9+]/g, '');
     const formattedPhone = cleanPhone.startsWith('+') ? cleanPhone.slice(1) : cleanPhone.startsWith('0') ? '213' + cleanPhone.slice(1) : cleanPhone;
     const url = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
-    toast.success('تم فتح واتساب');
-    if (!message) {
+    
+    // Mark as sent if it's a worker order
+    if (orderId) {
+      await markOrderAsSent(orderId);
+      toast.success('تم فتح واتساب وتعليم الطلب كمنجز ✅');
+      setSelectedWorkerOrder(null);
+    } else {
+      toast.success('تم فتح واتساب');
       onOpenChange(false);
       resetState();
-    } else {
-      setSelectedWorkerOrder(null);
     }
   };
 
@@ -185,8 +207,61 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
     onOpenChange(v);
   };
 
-  // Count of pending invoice orders for notification
-  const invoiceOrdersCount = invoiceOrders?.length || 0;
+  const pendingCount = pendingInvoiceOrders.length;
+
+  const renderOrderCard = (order: any, showSentBadge = false) => (
+    <div key={order.id} className="border rounded-lg p-3 space-y-2">
+      <div className="flex items-start justify-between">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold truncate">
+            👤 {order.customers?.name || 'عميل'}
+            {order.customers?.name_fr && <span className="text-muted-foreground text-xs mr-1" dir="ltr">({order.customers.name_fr})</span>}
+          </p>
+          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+            <User className="w-3 h-3" />
+            {order.workers?.full_name || 'عامل'}
+          </p>
+          <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            {format(new Date(order.created_at), 'dd/MM HH:mm')}
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <Badge variant="outline" className="text-[10px] shrink-0">
+            {order.invoice_payment_method || 'فاتورة'}
+          </Badge>
+          {showSentBadge && order.invoice_sent_at && (
+            <Badge variant="secondary" className="text-[10px] gap-0.5">
+              <CheckCircle className="w-3 h-3" /> تم الإرسال
+            </Badge>
+          )}
+        </div>
+      </div>
+      <div className="text-xs bg-muted/30 rounded p-2 space-y-0.5">
+        {(order.order_items || []).map((item: any) => (
+          <div key={item.id} className="flex justify-between">
+            <span className="truncate flex-1">{item.products?.name || '—'}</span>
+            <Badge variant="secondary" className="text-[10px] mr-1">{item.quantity}</Badge>
+          </div>
+        ))}
+      </div>
+      {!showSentBadge && (
+        <Button
+          size="sm"
+          className="w-full gap-1 h-8 text-xs"
+          onClick={() => setSelectedWorkerOrder(order)}
+        >
+          <MessageCircle className="w-3.5 h-3.5" />
+          إرسال عبر واتساب
+        </Button>
+      )}
+      {showSentBadge && order.invoice_sent_at && (
+        <p className="text-[10px] text-muted-foreground text-center">
+          أُرسل في {format(new Date(order.invoice_sent_at), 'dd/MM HH:mm')}
+        </p>
+      )}
+    </div>
+  );
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -194,8 +269,8 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             📄 طلب فاتورة
-            {invoiceOrdersCount > 0 && (
-              <Badge variant="destructive" className="text-xs">{invoiceOrdersCount}</Badge>
+            {pendingCount > 0 && (
+              <Badge variant="destructive" className="text-xs">{pendingCount}</Badge>
             )}
           </DialogTitle>
         </DialogHeader>
@@ -205,8 +280,8 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
             <TabsTrigger value="worker_requests" className="text-xs gap-1">
               <FileText className="w-3.5 h-3.5" />
               طلبات العمال
-              {invoiceOrdersCount > 0 && (
-                <Badge variant="destructive" className="text-[10px] h-4 px-1">{invoiceOrdersCount}</Badge>
+              {pendingCount > 0 && (
+                <Badge variant="destructive" className="text-[10px] h-4 px-1">{pendingCount}</Badge>
               )}
             </TabsTrigger>
             <TabsTrigger value="manual" className="text-xs gap-1">
@@ -218,7 +293,6 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
           {/* Worker Invoice Requests Tab */}
           <TabsContent value="worker_requests">
             {selectedWorkerOrder ? (
-              // WhatsApp contact selection for worker order
               <div className="space-y-3">
                 <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setSelectedWorkerOrder(null)}>
                   <ArrowRight className="w-3 h-3 ml-1" /> رجوع
@@ -236,7 +310,7 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                       key={c.id}
                       variant="outline"
                       className="w-full justify-start gap-2 h-auto py-3"
-                      onClick={() => sendWhatsApp(c.phone || '', buildWorkerOrderWhatsAppMessage(selectedWorkerOrder))}
+                      onClick={() => sendWhatsApp(c.phone || '', buildWorkerOrderWhatsAppMessage(selectedWorkerOrder), selectedWorkerOrder.id)}
                     >
                       <MessageCircle className="w-5 h-5 text-green-600 shrink-0" />
                       <div className="text-start min-w-0">
@@ -253,59 +327,51 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                 </div>
               </div>
             ) : (
-              // List of worker invoice orders
-              <ScrollArea className="h-[55vh]">
-                {loadingOrders ? (
-                  <p className="text-center text-muted-foreground text-sm py-8">جاري التحميل...</p>
-                ) : invoiceOrders && invoiceOrders.length > 0 ? (
-                  <div className="space-y-2">
-                    {invoiceOrders.map((order: any) => (
-                      <div key={order.id} className="border rounded-lg p-3 space-y-2">
-                        <div className="flex items-start justify-between">
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold truncate">
-                              👤 {order.customers?.name || 'عميل'}
-                              {order.customers?.name_fr && <span className="text-muted-foreground text-xs mr-1" dir="ltr">({order.customers.name_fr})</span>}
-                            </p>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                              <User className="w-3 h-3" />
-                              {order.workers?.full_name || 'عامل'}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {format(new Date(order.created_at), 'dd/MM HH:mm')}
-                            </p>
-                          </div>
-                          <Badge variant="outline" className="text-[10px] shrink-0">
-                            {order.invoice_payment_method || 'فاتورة'}
-                          </Badge>
-                        </div>
-                        {/* Products summary */}
-                        <div className="text-xs bg-muted/30 rounded p-2 space-y-0.5">
-                          {(order.order_items || []).map((item: any) => (
-                            <div key={item.id} className="flex justify-between">
-                              <span className="truncate flex-1">{item.products?.name || '—'}</span>
-                              <Badge variant="secondary" className="text-[10px] mr-1">{item.quantity}</Badge>
-                            </div>
-                          ))}
-                        </div>
-                        <Button
-                          size="sm"
-                          className="w-full gap-1 h-8 text-xs"
-                          onClick={() => setSelectedWorkerOrder(order)}
-                        >
-                          <MessageCircle className="w-3.5 h-3.5" />
-                          إرسال عبر واتساب
-                        </Button>
+              <div className="space-y-3">
+                {/* Sub-tabs: pending vs completed */}
+                <div className="flex gap-1 bg-muted/50 rounded-lg p-1">
+                  <Button
+                    size="sm"
+                    variant={workerSubTab === 'pending' ? 'default' : 'ghost'}
+                    className="flex-1 h-8 text-xs gap-1"
+                    onClick={() => setWorkerSubTab('pending')}
+                  >
+                    قيد الانتظار
+                    {pendingCount > 0 && <Badge variant="destructive" className="text-[10px] h-4 px-1">{pendingCount}</Badge>}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={workerSubTab === 'completed' ? 'default' : 'ghost'}
+                    className="flex-1 h-8 text-xs gap-1"
+                    onClick={() => setWorkerSubTab('completed')}
+                  >
+                    <CheckCircle className="w-3 h-3" />
+                    تم الإرسال ({completedInvoiceOrders.length})
+                  </Button>
+                </div>
+
+                <ScrollArea className="h-[50vh]">
+                  {loadingOrders ? (
+                    <p className="text-center text-muted-foreground text-sm py-8">جاري التحميل...</p>
+                  ) : workerSubTab === 'pending' ? (
+                    pendingInvoiceOrders.length > 0 ? (
+                      <div className="space-y-2">
+                        {pendingInvoiceOrders.map((order: any) => renderOrderCard(order, false))}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center text-muted-foreground text-sm py-8">
-                    لا توجد طلبات فواتير حالياً
-                  </p>
-                )}
-              </ScrollArea>
+                    ) : (
+                      <p className="text-center text-muted-foreground text-sm py-8">لا توجد طلبات فواتير معلقة</p>
+                    )
+                  ) : (
+                    completedInvoiceOrders.length > 0 ? (
+                      <div className="space-y-2">
+                        {completedInvoiceOrders.map((order: any) => renderOrderCard(order, true))}
+                      </div>
+                    ) : (
+                      <p className="text-center text-muted-foreground text-sm py-8">لا توجد طلبات منجزة</p>
+                    )
+                  )}
+                </ScrollArea>
+              </div>
             )}
           </TabsContent>
 
@@ -321,7 +387,6 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
               </Button>
             )}
 
-            {/* Step 1: Choose registered customer */}
             {step === 'customer' && (
               <div className="space-y-3">
                 <div className="relative">
@@ -359,7 +424,6 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
               </div>
             )}
 
-            {/* Step 2: Product grid + cart */}
             {step === 'products' && (
               <div className="space-y-3">
                 <div className="p-2 rounded-lg bg-primary/5 border border-primary/20">
@@ -414,7 +478,6 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
               </div>
             )}
 
-            {/* Step 3: Payment method */}
             {step === 'payment' && (
               <div className="space-y-4">
                 <p className="text-sm font-medium">اختر طريقة الدفع:</p>
@@ -438,7 +501,6 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
               </div>
             )}
 
-            {/* Step 4: WhatsApp contact selection */}
             {step === 'whatsapp' && (
               <div className="space-y-3">
                 <div className="p-3 rounded-lg bg-muted/50 text-xs space-y-1">
