@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +20,7 @@ import { toast } from 'sonner';
 const WorkerDebtsPage: React.FC = () => {
   const { t, dir } = useLanguage();
   const { activeBranch } = useAuth();
+  const { workerId: contextWorkerId } = useSelectedWorker();
   const { data: debts, isLoading } = useWorkerDebts();
   const createDebt = useCreateWorkerDebt();
 
@@ -31,7 +33,7 @@ const WorkerDebtsPage: React.FC = () => {
   // Add form
   const [workers, setWorkers] = useState<{ id: string; full_name: string }[]>([]);
   const [loadingWorkers, setLoadingWorkers] = useState(false);
-  const [addWorkerId, setAddWorkerId] = useState('');
+  const [addWorkerId, setAddWorkerId] = useState(contextWorkerId || '');
   const [addAmount, setAddAmount] = useState('');
   const [addType, setAddType] = useState<'advance' | 'deficit'>('advance');
   const [addDesc, setAddDesc] = useState('');

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +30,7 @@ const AccountingSessions: React.FC = () => {
   const { activeBranch, role } = useAuth();
   const [statusFilter, setStatusFilter] = useState('all');
   const [showCreate, setShowCreate] = useState(false);
+  const { workerId: contextWorkerId } = useSelectedWorker();
   const [preselectedWorkerId, setPreselectedWorkerId] = useState('');
   const [selectedSession, setSelectedSession] = useState<AccountingSession | null>(null);
   const [deleteSession2, setDeleteSession2] = useState<AccountingSession | null>(null);
@@ -51,6 +53,14 @@ const AccountingSessions: React.FC = () => {
     };
     fetchWorkers();
   }, [activeBranch?.id]);
+
+  // Auto-open create dialog if coming from WorkerActions
+  useEffect(() => {
+    if (contextWorkerId) {
+      setPreselectedWorkerId(contextWorkerId);
+      setShowCreate(true);
+    }
+  }, [contextWorkerId]);
 
   const handleWorkerClick = (workerId: string) => {
     setPreselectedWorkerId(workerId);

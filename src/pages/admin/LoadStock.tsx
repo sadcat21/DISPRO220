@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -50,7 +51,8 @@ const LoadStock: React.FC = () => {
   const queryClient = useQueryClient();
   const { warehouseStock, workers, products, loadToWorker, isLoading, branchId, refresh } = useWarehouseStock();
 
-  const [selectedWorker, setSelectedWorker] = useState('');
+  const { workerId: contextWorkerId, clearSelectedWorker } = useSelectedWorker();
+  const [selectedWorker, setSelectedWorker] = useState(() => contextWorkerId || '');
   const [items, setItems] = useState<LoadItem[]>([newLoadItem()]);
   const [isSaving, setIsSaving] = useState(false);
   const [isEmptying, setIsEmptying] = useState(false);

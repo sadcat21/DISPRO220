@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
 import { Worker } from '@/types/database';
 import { ACTION_TYPES, ENTITY_TYPES } from '@/types/activityLog';
 import { Card, CardContent } from '@/components/ui/card';
@@ -50,11 +51,12 @@ const ACTION_COLORS: Record<string, string> = {
 const ActivityLogs: React.FC = () => {
   const { activeBranch } = useAuth();
   const { t, language } = useLanguage();
+  const { workerId: contextWorkerId } = useSelectedWorker();
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   
   // Filters
-  const [selectedWorker, setSelectedWorker] = useState<string>('all');
+  const [selectedWorker, setSelectedWorker] = useState<string>(() => contextWorkerId || 'all');
   const [selectedAction, setSelectedAction] = useState<string>('all');
   const [selectedEntity, setSelectedEntity] = useState<string>('all');
   const [startDate, setStartDate] = useState<string>('');

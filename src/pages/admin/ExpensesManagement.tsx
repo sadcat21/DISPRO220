@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
 import { ExpenseWithDetails } from '@/types/expense';
 import ReviewExpenseDialog from '@/components/expenses/ReviewExpenseDialog';
 import ManageCategoriesDialog from '@/components/expenses/ManageCategoriesDialog';
@@ -26,7 +27,8 @@ const STATUS_MAP_KEYS: Record<string, { labelKey: string; variant: 'default' | '
 };
 
 const ExpensesManagement: React.FC = () => {
-  const { data: expenses, isLoading } = useExpenses(null);
+  const { workerId: contextWorkerId, workerName: contextWorkerName } = useSelectedWorker();
+  const { data: expenses, isLoading } = useExpenses(contextWorkerId);
   const { language, t, dir } = useLanguage();
   const [statusFilter, setStatusFilter] = useState<string>('pending');
   const [selectedExpense, setSelectedExpense] = useState<ExpenseWithDetails | null>(null);
@@ -44,7 +46,10 @@ const ExpensesManagement: React.FC = () => {
   return (
     <div className="p-4 space-y-4" dir={dir}>
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">{t('expenses.title')}</h1>
+        <div>
+          <h1 className="text-xl font-bold">{t('expenses.title')}</h1>
+          {contextWorkerName && <p className="text-sm text-muted-foreground">{contextWorkerName}</p>}
+        </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setShowCategories(true)}>
             <Tag className="w-4 h-4 me-1" />

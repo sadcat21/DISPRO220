@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
+import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
 import { ArrowRight, Calculator, Truck, Banknote, Wallet, MapPin, ShoppingCart, Activity, Shield, User } from 'lucide-react';
 import { Worker } from '@/types/database';
 
@@ -22,6 +23,7 @@ const WorkerActions: React.FC = () => {
   const { activeBranch } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const { setSelectedWorker: setContextWorker } = useSelectedWorker();
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
 
   const { data: workers = [] } = useQuery({
@@ -34,17 +36,26 @@ const WorkerActions: React.FC = () => {
     },
   });
 
+  const handleSelectWorker = (worker: Worker) => {
+    setSelectedWorker(worker);
+    setContextWorker(worker.id, worker.full_name);
+  };
+
+  const handleBack = () => {
+    setSelectedWorker(null);
+    setContextWorker(null);
+  };
+
   const handleAction = (action: typeof workerActions[0]) => {
     if (!selectedWorker) return;
-    // Navigate to the action page - some pages can filter by worker
-    navigate(action.path, { state: { workerId: selectedWorker.id, workerName: selectedWorker.full_name } });
+    navigate(action.path);
   };
 
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center gap-2">
         {selectedWorker && (
-          <button onClick={() => setSelectedWorker(null)} className="p-1.5 rounded-lg hover:bg-muted">
+          <button onClick={handleBack} className="p-1.5 rounded-lg hover:bg-muted">
             <ArrowRight className="w-5 h-5" />
           </button>
         )}
@@ -54,13 +65,12 @@ const WorkerActions: React.FC = () => {
       </div>
 
       {!selectedWorker ? (
-        /* Workers Grid */
         <div className="grid grid-cols-3 gap-3">
           {workers.map((worker) => (
             <div
               key={worker.id}
               className="flex flex-col items-center justify-center p-4 gap-2 rounded-xl border border-border bg-card cursor-pointer active:scale-95 transition-all hover:shadow-md"
-              onClick={() => setSelectedWorker(worker)}
+              onClick={() => handleSelectWorker(worker)}
             >
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                 <User className="w-6 h-6 text-primary" />
@@ -71,7 +81,6 @@ const WorkerActions: React.FC = () => {
           ))}
         </div>
       ) : (
-        /* Actions Grid */
         <div className="grid grid-cols-3 gap-3">
           {workerActions.map((action) => (
             <div

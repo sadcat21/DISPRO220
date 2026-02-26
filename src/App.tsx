@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { FontSizeProvider } from "@/contexts/FontSizeContext";
+import { SelectedWorkerProvider } from "@/contexts/SelectedWorkerContext";
 import MobileLayout from "@/components/layout/MobileLayout";
 import LoginForm from "@/components/auth/LoginForm";
 import Index from "./pages/Index";
@@ -313,11 +314,13 @@ const App = () => (
       <FontSizeProvider>
         <TooltipProvider>
           <AuthProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <AppRoutes />
-            </BrowserRouter>
+            <SelectedWorkerProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <AppRoutes />
+              </BrowserRouter>
+            </SelectedWorkerProvider>
           </AuthProvider>
         </TooltipProvider>
       </FontSizeProvider>
