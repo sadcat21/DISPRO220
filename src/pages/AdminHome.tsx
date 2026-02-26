@@ -35,6 +35,7 @@ const pathColors: Record<string, { bg: string; icon: string; border: string }> =
   '/permissions': { bg: 'bg-slate-50', icon: 'text-slate-600', border: 'border-slate-200' },
   '/settings': { bg: 'bg-gray-50', icon: 'text-gray-600', border: 'border-gray-200' },
   '/guide': { bg: 'bg-stone-50', icon: 'text-stone-600', border: 'border-stone-200' },
+  '/shared-invoices': { bg: 'bg-orange-50', icon: 'text-orange-700', border: 'border-orange-200' },
 };
 
 const defaultColor = { bg: 'bg-muted/30', icon: 'text-primary', border: 'border-border' };
