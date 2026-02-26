@@ -379,8 +379,9 @@ const ManagerTreasury = () => {
           <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => setCoinExchangeOpen(true)} title={t('coin_exchange.title')}>
             <ArrowLeftRight className="w-4 h-4" />
           </Button>
-          <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => setInvoiceRequestOpen(true)} title="طلب فاتورة">
+          <Button size="sm" variant="default" className="h-8 gap-1 px-2" onClick={() => setInvoiceRequestOpen(true)} title="طلب فاتورة">
             <Receipt className="w-4 h-4" />
+            <span className="text-xs hidden sm:inline">فاتورة</span>
           </Button>
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>

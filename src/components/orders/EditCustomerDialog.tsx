@@ -257,6 +257,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
   };
 
   const handleLocationChange = useCallback((lat: number, lng: number, addressText?: string) => {
+    console.log('📍 handleLocationChange called:', { lat, lng, addressText });
     setLatitude(lat);
     setLongitude(lng);
     if (addressText) {
@@ -283,7 +284,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
     if (!phones[0]?.trim()) { toast.error('الرجاء إدخال رقم هاتف العميل'); return; }
     if (!storeName.trim()) { toast.error('الرجاء إدخال اسم المحل'); return; }
     if (!sectorId || sectorId === 'none') { toast.error('الرجاء اختيار السكتور'); return; }
-    if (!latitude || !longitude) { toast.error('يرجى تحديد الموقع الجغرافي على الخريطة'); return; }
+    if (latitude === null || latitude === undefined || longitude === null || longitude === undefined) { toast.error('يرجى تحديد الموقع الجغرافي على الخريطة'); return; }
     if (customerTypes.length > 0 && !customerType) { toast.error('يجب تحديد نوع العميل'); return; }
 
     setIsLoading(true);
@@ -663,11 +664,11 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
 
             <Collapsible open={showMap} onOpenChange={setShowMap}>
               <CollapsibleTrigger asChild>
-                <Button type="button" variant="outline" className={`w-full justify-between ${!(latitude && longitude) ? 'border-destructive' : 'border-primary/30'} hover:bg-primary/5`}>
+                <Button type="button" variant="outline" className={`w-full justify-between ${(latitude === null || latitude === undefined) ? 'border-destructive' : 'border-primary/30'} hover:bg-primary/5`}>
                   <span className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-primary" />
                     تحديد الموقع على الخريطة *
-                    {latitude && longitude && <span className="text-xs bg-primary text-primary-foreground px-1.5 py-0.5 rounded">✓</span>}
+                    {latitude !== null && latitude !== undefined && <span className="text-xs bg-primary text-primary-foreground px-1.5 py-0.5 rounded">✓</span>}
                   </span>
                   {showMap ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </Button>
@@ -683,7 +684,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
                 )}
               </CollapsibleContent>
             </Collapsible>
-            {!(latitude && longitude) && <p className="text-xs text-destructive">يجب تحديد الموقع الجغرافي</p>}
+            {(latitude === null || latitude === undefined) && <p className="text-xs text-destructive">يجب تحديد الموقع الجغرافي</p>}
           </div>
 
           {/* --- Section: Finance & Preferences --- */}
