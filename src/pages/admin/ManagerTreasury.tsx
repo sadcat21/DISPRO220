@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTreasurySummary, useManagerTreasury, useManagerHandovers, useCreateHandover, useAddTreasuryEntry } from '@/hooks/useManagerTreasury';
@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PaymentMethodDetailsDialog from '@/components/treasury/PaymentMethodDetailsDialog';
 import StampDetailsDialog from '@/components/treasury/StampDetailsDialog';
 import HandoverItemPickerDialog, { PickedItem } from '@/components/treasury/HandoverItemPickerDialog';
+import HandoverPrintView from '@/components/treasury/HandoverPrintView';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
@@ -14,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Banknote, CreditCard, Receipt, ArrowUpRight, Plus, Send, Coins, TrendingUp, AlertCircle, CheckCircle, AlertTriangle, Info, RefreshCw } from 'lucide-react';
+import { Banknote, CreditCard, Receipt, ArrowUpRight, Plus, Send, Coins, TrendingUp, AlertCircle, CheckCircle, AlertTriangle, Info, RefreshCw, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import InvoiceOCRScanner from '@/components/treasury/InvoiceOCRScanner';
 import { format } from 'date-fns';
@@ -105,6 +106,8 @@ const ManagerTreasury = () => {
   const [pickedTransfers, setPickedTransfers] = useState<PickedItem[]>([]);
   const [pickerType, setPickerType] = useState<'check' | 'receipt' | 'transfer' | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [printHandover, setPrintHandover] = useState<string | null>(null);
+  const printRef = useRef<HTMLDivElement>(null);
 
   const syncOldSessions = async () => {
     setSyncing(true);
@@ -793,9 +796,19 @@ const ManagerTreasury = () => {
                       <Send className="w-4 h-4 text-destructive" />
                       <p className="font-bold">{Number(h.amount).toLocaleString()} {cur}</p>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(h.created_at), 'dd/MM/yyyy', { locale: dateLocale })}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0"
+                        onClick={(e) => { e.stopPropagation(); setPrintHandover(h.id); }}
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                      </Button>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(h.created_at), 'dd/MM/yyyy', { locale: dateLocale })}
+                      </p>
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-1 text-xs">
                     {Number(h.cash_invoice1 ?? 0) > 0 && <p>{t('treasury.cash_f1')}: {Number(h.cash_invoice1).toLocaleString()} {cur}</p>}
@@ -811,6 +824,56 @@ const ManagerTreasury = () => {
           })}
         </TabsContent>
       </Tabs>
+
+      {/* Print Handover Dialog */}
+      {printHandover && (() => {
+        const h = handovers?.find(ho => ho.id === printHandover);
+        if (!h) return null;
+        return (
+          <Dialog open={!!printHandover} onOpenChange={(open) => !open && setPrintHandover(null)}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="ltr">
+              <DialogHeader>
+                <DialogTitle className="flex items-center justify-between">
+                  <span>طباعة التسليم</span>
+                  <Button size="sm" onClick={() => {
+                    const printContent = printRef.current;
+                    if (!printContent) return;
+                    const w = window.open('', '_blank');
+                    if (!w) return;
+                    w.document.write(`<html><head><title>Bordereau</title><style>
+                      body { font-family: Arial, sans-serif; font-size: 12px; margin: 0; padding: 20px; }
+                      table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+                      th, td { border: 1px solid #000; padding: 4px 6px; text-align: left; }
+                      th { background: #f0f0f0; }
+                      .text-right { text-align: right; }
+                      .font-bold { font-weight: bold; }
+                      h1, h2, h3 { margin: 4px 0; }
+                      @media print { body { margin: 0; } }
+                    </style></head><body>${printContent.innerHTML}</body></html>`);
+                    w.document.close();
+                    w.print();
+                  }}>
+                    <Printer className="w-4 h-4 mx-1" /> طباعة
+                  </Button>
+                </DialogTitle>
+              </DialogHeader>
+              <div ref={printRef}>
+                <HandoverPrintView
+                  handoverId={h.id}
+                  handoverDate={h.handover_date}
+                  cashInvoice1={Number(h.cash_invoice1)}
+                  cashInvoice2={Number(h.cash_invoice2)}
+                  checksAmount={Number(h.checks_amount)}
+                  receiptsAmount={Number(h.receipts_amount)}
+                  transfersAmount={Number(h.transfers_amount)}
+                  totalAmount={Number(h.amount)}
+                  branchName={activeBranch?.name}
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
     </div>
   );
 };
