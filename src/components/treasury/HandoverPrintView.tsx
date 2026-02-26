@@ -57,13 +57,13 @@ const HandoverPrintView: React.FC<Props> = ({
         (tEntries || []).forEach(e => { treasuryMap[e.id] = e; });
       }
 
-      // Get order details for dates
+      // Get order details for dates and French customer names
       const orderIds = data.map(d => d.order_id).filter(Boolean);
       let orderMap: Record<string, any> = {};
       if (orderIds.length > 0) {
         const { data: orders } = await supabase
           .from('orders')
-          .select('id, created_at, delivery_date, total_amount')
+          .select('id, created_at, delivery_date, total_amount, customer_id, customers(name_fr, name, store_name_fr, store_name)')
           .in('id', orderIds);
         (orders || []).forEach(o => { orderMap[o.id] = o; });
       }
@@ -71,8 +71,11 @@ const HandoverPrintView: React.FC<Props> = ({
       const enriched: HandoverItem[] = data.map(d => {
         const t = d.treasury_entry_id ? treasuryMap[d.treasury_entry_id] : null;
         const order = d.order_id ? orderMap[d.order_id] : null;
+        const customer = order?.customers;
+        const customerNameFr = customer?.store_name_fr || customer?.name_fr || customer?.store_name || customer?.name || d.customer_name;
         return {
           ...d,
+          customer_name: customerNameFr || d.customer_name,
           invoice_number: t?.invoice_number || undefined,
           invoice_date: t?.invoice_date || (order ? format(new Date(order.delivery_date || order.created_at), 'dd/MM/yyyy') : undefined),
           check_number: t?.check_number || undefined,
