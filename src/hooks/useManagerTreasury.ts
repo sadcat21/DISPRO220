@@ -57,6 +57,10 @@ export interface TreasurySummary {
   total: number;
   handedOver: number;
   remaining: number;
+  totalSales: number;
+  totalDebts: number;
+  collectedDebts: number;
+  uncollectedDebts: number;
 }
 
 export const useManagerTreasury = () => {
@@ -116,6 +120,18 @@ export const useTreasurySummary = () => {
       const { data: coinItems } = await coinQuery;
       const totalCoins = (coinItems || []).reduce((s: number, item: any) => s + Number(item.actual_amount || 0), 0);
 
+      // Get debts
+      let dQuery = supabase.from('customer_debts').select('total_amount, paid_amount, remaining_amount, status');
+      if (activeBranch?.id) dQuery = dQuery.eq('branch_id', activeBranch.id);
+      const { data: debts } = await dQuery;
+
+      const totalDebts = (debts || []).reduce((s: number, d: any) => s + Number(d.total_amount || 0), 0);
+      const collectedDebts = (debts || []).reduce((s: number, d: any) => s + Number(d.paid_amount || 0), 0);
+      const uncollectedDebts = (debts || []).reduce((s: number, d: any) => s + Number(d.remaining_amount || 0), 0);
+
+      // Calculate total sales from all delivered orders
+      const totalSales = (orders || []).reduce((s: number, o: any) => s + Number(o.total_amount || 0), 0);
+
       const summary: TreasurySummary = {
         cash_invoice1: 0, cash_invoice1_count: 0, cash_invoice1_stamp: 0,
         cash_invoice2: 0, cash_invoice2_count: 0,
@@ -124,6 +140,7 @@ export const useTreasurySummary = () => {
         bank_transfer: 0, transferCount: 0,
         coins: totalCoins,
         total: 0, handedOver: 0, remaining: 0,
+        totalSales, totalDebts, collectedDebts, uncollectedDebts,
       };
 
       (orders || []).forEach((o: any) => {
