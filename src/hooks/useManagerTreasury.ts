@@ -39,6 +39,7 @@ export interface HandoverEntry {
   handover_date: string;
   created_at: string;
   receiver?: { id: string; full_name: string };
+  receiver_name?: string | null;
 }
 
 export interface TreasurySummary {
@@ -344,7 +345,8 @@ export const useCreateHandover = () => {
         receipt_count: params.receipt_count || 0,
         transfers_amount: params.transfers_amount || 0,
         transfer_count: params.transfer_count || 0,
-        received_by: params.received_by || null,
+        received_by: null,
+        receiver_name: params.received_by || null,
         notes: params.notes || null,
       });
       if (error) throw error;
