@@ -243,6 +243,7 @@ export const useAddTreasuryEntry = () => {
       amount: number;
       source_type?: string;
       session_id?: string;
+      customer_name?: string;
       invoice_number?: string;
       check_number?: string;
       check_bank?: string;
@@ -258,6 +259,7 @@ export const useAddTreasuryEntry = () => {
         session_id: params.session_id || null,
         payment_method: params.payment_method,
         amount: params.amount,
+        customer_name: params.customer_name || null,
         invoice_number: params.invoice_number || null,
         check_number: params.check_number || null,
         check_bank: params.check_bank || null,

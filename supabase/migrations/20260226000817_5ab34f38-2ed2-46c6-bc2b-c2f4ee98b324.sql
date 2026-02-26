@@ -1,0 +1,1 @@
+ALTER TABLE public.manager_treasury ADD COLUMN customer_name text NULL;
