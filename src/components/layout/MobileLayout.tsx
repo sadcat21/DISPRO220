@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LogOut, MoreHorizontal, Bluetooth, BluetoothOff, Printer } from 'lucide-react';
+import { LogOut, MoreHorizontal, Bluetooth, BluetoothOff, Printer, Receipt } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage, Language } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -20,6 +20,7 @@ import WorkerRequestsPopover from '@/components/tasks/WorkerRequestsPopover';
 // DebtCollectionsPopover moved into SectorCustomersPopover
 import SectorCustomersPopover from '@/components/sectors/SectorCustomersPopover';
 import ReceiptModificationsNotification from '@/components/printing/ReceiptModificationsNotification';
+import InvoiceRequestDialog from '@/components/treasury/InvoiceRequestDialog';
 import { ALGERIAN_WILAYAS } from '@/data/algerianWilayas';
 import { useNavigation } from '@/hooks/useNavigation';
 import { useNavbarPreferences } from '@/hooks/useNavbarPreferences';
@@ -34,6 +35,8 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   const { t, dir, language, setLanguage } = useLanguage();
   const location = useLocation();
   const { isConnected, deviceName, scanAndConnect, disconnect, status: printerStatus } = useBluetoothPrinter();
+  const [invoiceRequestOpen, setInvoiceRequestOpen] = useState(false);
+  const showInvoiceButton = role === 'admin' || role === 'branch_admin';
 
   const LANGUAGES: { code: Language; label: string; flag: string }[] = [
     { code: 'ar', label: 'العربية', flag: '🇩🇿' },
@@ -115,6 +118,16 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
             <ReceiptModificationsNotification />
             <StockAlertsNotification />
             <OffersNotification />
+            
+            {showInvoiceButton && (
+              <button
+                onClick={() => setInvoiceRequestOpen(true)}
+                className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors"
+                title="طلب فاتورة"
+              >
+                <Receipt className="w-4 h-4 text-primary" />
+              </button>
+            )}
             
             {/* More actions dropdown: Language, Branch, Logout */}
             <DropdownMenu>
@@ -266,6 +279,10 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
         open={showBranchSelection}
         onSelectBranch={selectBranch}
       />
+      
+      {showInvoiceButton && (
+        <InvoiceRequestDialog open={invoiceRequestOpen} onOpenChange={setInvoiceRequestOpen} />
+      )}
     </div>
   );
 };

@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNavigation } from '@/hooks/useNavigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useFontSize } from '@/contexts/FontSizeContext';
-import { Calculator, Banknote, ArrowLeft, Navigation, Users } from 'lucide-react';
+import { Calculator, Banknote, ArrowLeft, Navigation, Users, Receipt } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsElementHidden } from '@/hooks/useUIOverrides';
+import InvoiceRequestDialog from '@/components/treasury/InvoiceRequestDialog';
 
 // Color mapping by path for semantic meaning
 const pathColors: Record<string, { bg: string; icon: string; border: string }> = {
@@ -48,12 +49,14 @@ const AdminHome: React.FC = () => {
   const { main, more } = useNavigation();
   const { t } = useLanguage();
   const { gridCols } = useFontSize();
-  const { activeBranch } = useAuth();
+  const { activeBranch, role } = useAuth();
+  const [invoiceRequestOpen, setInvoiceRequestOpen] = useState(false);
 
   const isAccountingHidden = useIsElementHidden('page', '/accounting');
   const isDebtsHidden = useIsElementHidden('page', '/customer-debts');
   const isGeoHidden = useIsElementHidden('page', '/geo-operations');
   const isWorkerActionsHidden = useIsElementHidden('page', '/worker-actions');
+  const showInvoiceButton = role === 'admin' || role === 'branch_admin';
 
   const allItems = [...main, ...more].filter(item => item.path !== '/' && item.path !== '/accounting' && item.path !== '/customer-debts' && item.path !== '/geo-operations' && item.path !== '/worker-actions');
 
@@ -114,7 +117,19 @@ const AdminHome: React.FC = () => {
         )}
       </div>
 
-      {/* Quick Action Bars */}
+      {/* Invoice Request Quick Button */}
+      {showInvoiceButton && (
+        <div
+          className="relative overflow-hidden rounded-xl border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 p-4 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg flex items-center gap-3"
+          onClick={() => setInvoiceRequestOpen(true)}
+        >
+          <Receipt className="w-8 h-8 text-primary" />
+          <div>
+            <p className="font-bold text-sm text-foreground">طلب فاتورة</p>
+            <p className="text-xs text-muted-foreground">إرسال طلب فاتورة عبر واتساب</p>
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3">
         {!isGeoHidden && (
           <div
@@ -153,6 +168,8 @@ const AdminHome: React.FC = () => {
           );
         })}
       </div>
+
+      <InvoiceRequestDialog open={invoiceRequestOpen} onOpenChange={setInvoiceRequestOpen} />
     </div>
   );
 };
