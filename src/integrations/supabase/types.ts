@@ -1117,14 +1117,17 @@ export type Database = {
       manager_handovers: {
         Row: {
           amount: number
+          bank_transfer_reference: string | null
           branch_id: string | null
           cash_invoice1: number
           cash_invoice2: number
           check_count: number | null
           checks_amount: number
           created_at: string
+          delivery_method: string
           handover_date: string
           id: string
+          intermediary_name: string | null
           manager_id: string
           notes: string | null
           payment_method: string
@@ -1137,14 +1140,17 @@ export type Database = {
         }
         Insert: {
           amount?: number
+          bank_transfer_reference?: string | null
           branch_id?: string | null
           cash_invoice1?: number
           cash_invoice2?: number
           check_count?: number | null
           checks_amount?: number
           created_at?: string
+          delivery_method?: string
           handover_date?: string
           id?: string
+          intermediary_name?: string | null
           manager_id: string
           notes?: string | null
           payment_method: string
@@ -1157,14 +1163,17 @@ export type Database = {
         }
         Update: {
           amount?: number
+          bank_transfer_reference?: string | null
           branch_id?: string | null
           cash_invoice1?: number
           cash_invoice2?: number
           check_count?: number | null
           checks_amount?: number
           created_at?: string
+          delivery_method?: string
           handover_date?: string
           id?: string
+          intermediary_name?: string | null
           manager_id?: string
           notes?: string | null
           payment_method?: string
@@ -2895,6 +2904,58 @@ export type Database = {
           },
           {
             foreignKeyName: "tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      treasury_contacts: {
+        Row: {
+          branch_id: string | null
+          contact_type: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          branch_id?: string | null
+          contact_type: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          branch_id?: string | null
+          contact_type?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treasury_contacts_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treasury_contacts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treasury_contacts_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "workers_safe"

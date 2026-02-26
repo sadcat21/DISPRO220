@@ -29,12 +29,17 @@ interface Props {
   totalAmount: number;
   branchName?: string;
   branchWilaya?: string;
+  deliveryMethod?: string;
+  intermediaryName?: string;
+  bankTransferReference?: string;
+  receivedBy?: string;
   onReady?: () => void;
 }
 
 const HandoverPrintView: React.FC<Props> = ({
   handoverId, handoverDate, cashInvoice1, cashInvoice2,
-  checksAmount, receiptsAmount, transfersAmount, totalAmount, branchName, branchWilaya, onReady
+  checksAmount, receiptsAmount, transfersAmount, totalAmount, branchName, branchWilaya,
+  deliveryMethod, intermediaryName, bankTransferReference, receivedBy, onReady
 }) => {
   const [items, setItems] = useState<HandoverItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -268,6 +273,39 @@ const HandoverPrintView: React.FC<Props> = ({
           </div>
         </div>
       </div>
+
+      {/* Delivery Method Info */}
+      {deliveryMethod && (
+        <div className="mt-6 text-sm" style={{ direction: 'ltr', textAlign: 'left' }}>
+          <div className="border-2 border-black p-3">
+            <h3 className="font-bold text-center mb-2 text-base underline" style={{ textAlign: 'center' }}>MODE D'ENVOI</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }}>
+              <span>Mode:</span>
+              <span className="font-bold">
+                {deliveryMethod === 'direct' ? 'Remise directe' : deliveryMethod === 'bank_transfer' ? 'Virement bancaire' : 'Par intermédiaire'}
+              </span>
+            </div>
+            {receivedBy && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }}>
+                <span>Destinataire:</span>
+                <span className="font-bold">{receivedBy}</span>
+              </div>
+            )}
+            {deliveryMethod === 'intermediary' && intermediaryName && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }}>
+                <span>Intermédiaire:</span>
+                <span className="font-bold">{intermediaryName}</span>
+              </div>
+            )}
+            {deliveryMethod === 'bank_transfer' && bankTransferReference && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }}>
+                <span>Réf. virement:</span>
+                <span className="font-bold">{bankTransferReference}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Signature */}
       <div className="mt-10" style={{ textAlign: 'left' }}>

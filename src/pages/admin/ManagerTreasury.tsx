@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Banknote, CreditCard, Receipt, ArrowUpRight, Plus, Send, Coins, TrendingUp, AlertCircle, CheckCircle, AlertTriangle, Info, RefreshCw, Printer, Eye, Pencil, Trash2 } from 'lucide-react';
+import { Banknote, CreditCard, Receipt, ArrowUpRight, Plus, Send, Coins, TrendingUp, AlertCircle, CheckCircle, AlertTriangle, Info, RefreshCw, Printer, Eye, Pencil, Trash2, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import InvoiceOCRScanner from '@/components/treasury/InvoiceOCRScanner';
 import { format } from 'date-fns';
@@ -23,6 +23,9 @@ import { ar, fr, enUS } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
+import TreasurySettingsDialog from '@/components/treasury/TreasurySettingsDialog';
+import { useTreasuryContacts } from '@/hooks/useTreasuryContacts';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const TreasuryCard = ({ icon, label, total, handed, colorClass, borderClass, onClick, currency, showDetails }: {
   icon: React.ReactNode; label: string; total: number; handed: number; colorClass: string; borderClass: string; onClick: () => void; currency: string; showDetails: boolean;
@@ -100,9 +103,11 @@ const ManagerTreasury = () => {
   const [stampOpen, setStampOpen] = useState(false);
   const [detailsCategory, setDetailsCategory] = useState<'cash_invoice1' | 'cash_invoice2' | 'check' | 'bank_receipt' | 'bank_transfer' | null>(null);
   const [addForm, setAddForm] = useState({ payment_method: 'cash_invoice1', amount: '', customer_name: '', invoice_number: '', invoice_date: '', check_number: '', check_bank: '', check_date: '', receipt_number: '', transfer_reference: '', notes: '' });
-  const [handoverForm, setHandoverForm] = useState({ cash_invoice1: '', cash_invoice2: '', notes: '' });
+  const [handoverForm, setHandoverForm] = useState({ cash_invoice1: '', cash_invoice2: '', notes: '', delivery_method: 'direct', intermediary_name: '', bank_transfer_reference: '', received_by: '' });
   const [pickedChecks, setPickedChecks] = useState<PickedItem[]>([]);
   const [pickedReceipts, setPickedReceipts] = useState<PickedItem[]>([]);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const { data: contacts } = useTreasuryContacts();
   const [pickedTransfers, setPickedTransfers] = useState<PickedItem[]>([]);
   const [pickerType, setPickerType] = useState<'check' | 'receipt' | 'transfer' | null>(null);
   const [syncing, setSyncing] = useState(false);
@@ -274,7 +279,11 @@ const ManagerTreasury = () => {
         transfers_amount: transfersAmount,
         transfer_count: pickedTransfers.length,
         notes: handoverForm.notes || null,
-      }).select('id').single();
+        delivery_method: handoverForm.delivery_method,
+        intermediary_name: handoverForm.delivery_method === 'intermediary' ? handoverForm.intermediary_name || null : null,
+        bank_transfer_reference: handoverForm.delivery_method === 'bank_transfer' ? handoverForm.bank_transfer_reference || null : null,
+        received_by: handoverForm.received_by || null,
+      } as any).select('id').single();
 
       if (error) throw error;
 
@@ -289,7 +298,7 @@ const ManagerTreasury = () => {
 
       toast.success(t('treasury.handover_success'));
       setHandoverOpen(false);
-      setHandoverForm({ cash_invoice1: '', cash_invoice2: '', notes: '' });
+      setHandoverForm({ cash_invoice1: '', cash_invoice2: '', notes: '', delivery_method: 'direct', intermediary_name: '', bank_transfer_reference: '', received_by: '' });
       setPickedChecks([]);
       setPickedReceipts([]);
       setPickedTransfers([]);
@@ -309,6 +318,9 @@ const ManagerTreasury = () => {
           <Switch checked={showCardDetails} onCheckedChange={setShowCardDetails} />
         </div>
         <div className="flex gap-2">
+          <Button size="sm" variant="ghost" onClick={() => setSettingsOpen(true)}>
+            <Settings className="w-4 h-4" />
+          </Button>
           <Button size="sm" variant="ghost" onClick={syncOldSessions} disabled={syncing}>
             <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
           </Button>
@@ -420,6 +432,73 @@ const ManagerTreasury = () => {
                     </div>
                   </div>
                 )}
+
+                {/* Delivery Method */}
+                <div className="p-3 rounded-lg bg-muted/50 space-y-3">
+                  <p className="font-medium text-sm">🚚 {t('treasury.delivery_method') || 'طريقة التسليم'}</p>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[
+                      { key: 'direct', label: t('treasury.direct_delivery') || 'تسليم مباشر', icon: '🏢' },
+                      { key: 'bank_transfer', label: t('treasury.bank_transfer_method') || 'تحويل بنكي', icon: '🏦' },
+                      { key: 'intermediary', label: t('treasury.via_intermediary') || 'عبر وسيط', icon: '🤝' },
+                    ].map(m => (
+                      <Button
+                        key={m.key}
+                        type="button"
+                        size="sm"
+                        variant={handoverForm.delivery_method === m.key ? 'default' : 'outline'}
+                        className="gap-1 text-xs h-9"
+                        onClick={() => setHandoverForm(f => ({ ...f, delivery_method: m.key }))}
+                      >
+                        {m.icon} {m.label}
+                      </Button>
+                    ))}
+                  </div>
+
+                  {/* Receiver dropdown */}
+                  <div>
+                    <Label className="text-xs">{t('treasury.receiver') || 'المستلم'}</Label>
+                    <Select value={handoverForm.received_by} onValueChange={v => setHandoverForm(f => ({ ...f, received_by: v }))}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder={t('treasury.select_receiver') || 'اختر المستلم'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(contacts || []).filter((c: any) => c.contact_type === 'receiver').map((c: any) => (
+                          <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Intermediary name - shown when intermediary selected */}
+                  {handoverForm.delivery_method === 'intermediary' && (
+                    <div>
+                      <Label className="text-xs">{t('treasury.intermediary_name') || 'اسم الوسيط'}</Label>
+                      <Select value={handoverForm.intermediary_name} onValueChange={v => setHandoverForm(f => ({ ...f, intermediary_name: v }))}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder={t('treasury.select_intermediary') || 'اختر الوسيط'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(contacts || []).filter((c: any) => c.contact_type === 'intermediary').map((c: any) => (
+                            <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Bank transfer reference - shown when bank transfer selected */}
+                  {handoverForm.delivery_method === 'bank_transfer' && (
+                    <div>
+                      <Label className="text-xs">{t('treasury.transfer_ref') || 'مرجع التحويل'}</Label>
+                      <Input
+                        placeholder={t('treasury.transfer_ref') || 'مرجع التحويل'}
+                        value={handoverForm.bank_transfer_reference}
+                        onChange={e => setHandoverForm(f => ({ ...f, bank_transfer_reference: e.target.value }))}
+                      />
+                    </div>
+                  )}
+                </div>
 
                 <div><Label>{t('treasury.notes')}</Label><Textarea value={handoverForm.notes} onChange={e => setHandoverForm(f => ({ ...f, notes: e.target.value }))} /></div>
                 <Button onClick={handleHandover} disabled={createHandover.isPending} className="w-full">{t('treasury.register_handover')}</Button>
@@ -884,6 +963,15 @@ const ManagerTreasury = () => {
                     {Number(h.receipts_amount ?? 0) > 0 && <p>{t('treasury.versement')}: {Number(h.receipts_amount).toLocaleString()} {cur} ({h.receipt_count ?? 0})</p>}
                     {Number(h.transfers_amount ?? 0) > 0 && <p>{t('treasury.virement')}: {Number(h.transfers_amount).toLocaleString()} {cur} ({(h as any).transfer_count ?? 0})</p>}
                   </div>
+                  <div className="flex flex-wrap gap-1.5 text-[10px]">
+                    {(h as any).delivery_method && (
+                      <Badge variant="outline" className="text-[10px] h-5">
+                        {(h as any).delivery_method === 'direct' ? '🏢 تسليم مباشر' : (h as any).delivery_method === 'bank_transfer' ? '🏦 تحويل بنكي' : '🤝 عبر وسيط'}
+                      </Badge>
+                    )}
+                    {(h as any).received_by && <Badge variant="secondary" className="text-[10px] h-5">📥 {(h as any).received_by}</Badge>}
+                    {(h as any).intermediary_name && <Badge variant="secondary" className="text-[10px] h-5">🤝 {(h as any).intermediary_name}</Badge>}
+                  </div>
                   {h.notes && <p className="text-xs text-muted-foreground">{h.notes}</p>}
                 </CardContent>
               </Card>
@@ -950,6 +1038,10 @@ const ManagerTreasury = () => {
                   totalAmount={Number(h.amount)}
                   branchName={activeBranch?.name}
                   branchWilaya={activeBranch?.wilaya}
+                  deliveryMethod={(h as any).delivery_method}
+                  intermediaryName={(h as any).intermediary_name}
+                  bankTransferReference={(h as any).bank_transfer_reference}
+                  receivedBy={(h as any).received_by}
                 />
               </div>
             </DialogContent>
@@ -979,6 +1071,10 @@ const ManagerTreasury = () => {
                   totalAmount={Number(h.amount)}
                   branchName={activeBranch?.name}
                   branchWilaya={activeBranch?.wilaya}
+                  deliveryMethod={(h as any).delivery_method}
+                  intermediaryName={(h as any).intermediary_name}
+                  bankTransferReference={(h as any).bank_transfer_reference}
+                  receivedBy={(h as any).received_by}
                 />
               </div>
             </DialogContent>
@@ -1080,6 +1176,7 @@ const ManagerTreasury = () => {
           </Dialog>
         );
       })()}
+      <TreasurySettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   );
 };
