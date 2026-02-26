@@ -18,6 +18,7 @@ interface ExtractedData {
   receipt_number?: string;
   transfer_reference?: string;
   raw_text?: string;
+  validation_warnings?: string[];
 }
 
 interface InvoiceOCRScannerProps {
@@ -48,6 +49,12 @@ const InvoiceOCRScanner = ({ onDataExtracted, paymentMethod }: InvoiceOCRScanner
       if (extracted.amount || extracted.invoice_number || extracted.customer_name || extracted.check_number || extracted.invoice_date) {
         onDataExtracted(extracted);
         toast.success('تم استخراج البيانات بالذكاء الاصطناعي');
+        // Show validation warnings for checks
+        if (extracted.validation_warnings && extracted.validation_warnings.length > 0) {
+          extracted.validation_warnings.forEach((warning: string) => {
+            toast.warning(warning, { duration: 8000 });
+          });
+        }
       } else {
         toast.warning('لم يتم العثور على بيانات واضحة، حاول صورة أوضح');
         onDataExtracted({ raw_text: data.raw_text || '' });
