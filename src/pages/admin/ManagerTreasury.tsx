@@ -16,8 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Banknote, CreditCard, Receipt, ArrowUpRight, Plus, Send, Coins, TrendingUp, AlertCircle, CheckCircle, AlertTriangle, Info, RefreshCw, Printer, Eye, Pencil, Trash2, Settings, Download } from 'lucide-react';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import { generatePDF } from '@/utils/generatePDF';
 import { toast } from 'sonner';
 import InvoiceOCRScanner from '@/components/treasury/InvoiceOCRScanner';
 import { format } from 'date-fns';
@@ -1004,6 +1003,22 @@ const ManagerTreasury = () => {
                       <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); setPrintHandover(h.id); }}>
                         <Printer className="w-3.5 h-3.5" />
                       </Button>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={async (e) => {
+                        e.stopPropagation();
+                        setPrintHandover(h.id);
+                        // Wait for render then generate PDF
+                        setTimeout(async () => {
+                          if (printRef.current) {
+                            try {
+                              await generatePDF(printRef.current, `bordereau_${h.handover_date}.pdf`);
+                              toast.success('تم حفظ الملف بنجاح');
+                            } catch { toast.error('فشل في حفظ الملف'); }
+                          }
+                          setPrintHandover(null);
+                        }, 500);
+                      }}>
+                        <Download className="w-3.5 h-3.5" />
+                      </Button>
                       <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={(e) => { e.stopPropagation(); if (confirm(t('common.confirm_delete'))) deleteHandover(h.id); }}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
@@ -1081,20 +1096,11 @@ const ManagerTreasury = () => {
                     <Printer className="w-4 h-4 mx-1" /> طباعة
                   </Button>
                   <Button size="sm" variant="outline" onClick={async () => {
-                    const el = printRef.current;
-                    if (!el) return;
+                    if (!printRef.current) return;
                     try {
-                      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-                      const imgData = canvas.toDataURL('image/png');
-                      const pdf = new jsPDF('p', 'mm', 'a4');
-                      const pdfW = pdf.internal.pageSize.getWidth();
-                      const pdfH = (canvas.height * pdfW) / canvas.width;
-                      pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
-                      pdf.save(`bordereau_${h.handover_date}.pdf`);
+                      await generatePDF(printRef.current, `bordereau_${h.handover_date}.pdf`);
                       toast.success('تم حفظ الملف بنجاح');
-                    } catch {
-                      toast.error('فشل في حفظ الملف');
-                    }
+                    } catch { toast.error('فشل في حفظ الملف'); }
                   }}>
                     <Download className="w-4 h-4 mx-1" /> PDF
                   </Button>
@@ -1131,7 +1137,18 @@ const ManagerTreasury = () => {
           <Dialog open={!!viewHandover} onOpenChange={(open) => !open && setViewHandover(null)}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="ltr">
               <DialogHeader>
-                <DialogTitle>{t('treasury.handover_details')}</DialogTitle>
+                <DialogTitle className="flex items-center justify-between">
+                  <span>{t('treasury.handover_details')}</span>
+                  <Button size="sm" variant="outline" onClick={async () => {
+                    if (!viewRef.current) return;
+                    try {
+                      await generatePDF(viewRef.current, `bordereau_${h.handover_date}.pdf`);
+                      toast.success('تم حفظ الملف بنجاح');
+                    } catch { toast.error('فشل في حفظ الملف'); }
+                  }}>
+                    <Download className="w-4 h-4 mx-1" /> PDF
+                  </Button>
+                </DialogTitle>
               </DialogHeader>
               <div ref={viewRef}>
                 <HandoverPrintView
