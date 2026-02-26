@@ -24,7 +24,7 @@ interface CoinExchangeDialogProps {
 const CoinExchangeDialog = ({ open, onOpenChange, preselectedWorkerId }: CoinExchangeDialogProps) => {
   const { t, dir } = useLanguage();
   const { activeBranch } = useAuth();
-  const [view, setView] = useState<'list' | 'create' | 'details'>('list');
+  const [view, setView] = useState<'list' | 'create' | 'details'>(preselectedWorkerId ? 'create' : 'list');
   const [selectedTask, setSelectedTask] = useState<CoinExchangeTask | null>(null);
   const [workerId, setWorkerId] = useState(preselectedWorkerId || '');
   const [amount, setAmount] = useState('');
@@ -206,17 +206,23 @@ const CoinExchangeDialog = ({ open, onOpenChange, preselectedWorkerId }: CoinExc
 
         {view === 'create' && (
           <div className="space-y-4">
-            <div>
-              <Label>{t('coin_exchange.select_worker')}</Label>
-              <Select value={workerId} onValueChange={setWorkerId}>
-                <SelectTrigger><SelectValue placeholder={t('coin_exchange.select_worker')} /></SelectTrigger>
-                <SelectContent>
-                  {workers.map(w => (
-                    <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {preselectedWorkerId ? (
+              <div className="p-3 bg-muted/50 rounded-lg text-center">
+                <p className="text-sm font-medium">{workers.find(w => w.id === preselectedWorkerId)?.full_name}</p>
+              </div>
+            ) : (
+              <div>
+                <Label>{t('coin_exchange.select_worker')}</Label>
+                <Select value={workerId} onValueChange={setWorkerId}>
+                  <SelectTrigger><SelectValue placeholder={t('coin_exchange.select_worker')} /></SelectTrigger>
+                  <SelectContent>
+                    {workers.map(w => (
+                      <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div>
               <Label>{t('coin_exchange.coin_amount')}</Label>
               <Input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" />
