@@ -131,6 +131,9 @@ const ManagerTreasury = () => {
   const [editNotes, setEditNotes] = useState('');
   const [editSaving, setEditSaving] = useState(false);
   const [editItems, setEditItems] = useState<{checks: PickedItem[], receipts: PickedItem[], transfers: PickedItem[]}>({ checks: [], receipts: [], transfers: [] });
+  const [editDeliveryMethod, setEditDeliveryMethod] = useState('direct');
+  const [editIntermediaryName, setEditIntermediaryName] = useState('');
+  const [editReceivedBy, setEditReceivedBy] = useState('');
   const printRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
 
@@ -138,6 +141,9 @@ const ManagerTreasury = () => {
     setEditCash1(Number(h.cash_invoice1 ?? 0));
     setEditCash2(Number(h.cash_invoice2 ?? 0));
     setEditNotes(h.notes || '');
+    setEditDeliveryMethod(h.delivery_method || 'direct');
+    setEditIntermediaryName(h.intermediary_name || '');
+    setEditReceivedBy(h.received_by || '');
     setEditHandover(h.id);
     // Load existing handover items
     const { data: items } = await supabase
@@ -162,7 +168,15 @@ const ManagerTreasury = () => {
       const newTotal = editCash1 + editCash2 + Number(h.checks_amount ?? 0) + Number(h.receipts_amount ?? 0) + Number(h.transfers_amount ?? 0);
       const { error } = await supabase
         .from('manager_handovers')
-        .update({ cash_invoice1: editCash1, cash_invoice2: editCash2, notes: editNotes || null, amount: newTotal })
+        .update({
+          cash_invoice1: editCash1,
+          cash_invoice2: editCash2,
+          notes: editNotes || null,
+          amount: newTotal,
+          delivery_method: editDeliveryMethod !== 'direct' ? 'intermediary' : 'direct',
+          intermediary_name: editDeliveryMethod !== 'direct' ? editIntermediaryName || null : null,
+          received_by: editReceivedBy || null,
+        })
         .eq('id', editHandover);
       if (error) throw error;
       toast.success(t('common.saved'));
@@ -1225,6 +1239,51 @@ const ManagerTreasury = () => {
                       <span className="text-sm font-medium">{t('treasury.total_handover')}</span>
                       <span className="text-sm font-bold text-primary">{editGrandTotal.toLocaleString()} {cur}</span>
                     </div>
+                  </div>
+                )}
+
+                {/* Delivery Method */}
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">🚚 {t('treasury.delivery_method') || 'طريقة التسليم'}</Label>
+                  <Switch checked={editDeliveryMethod !== 'direct'} onCheckedChange={(checked) => { setEditDeliveryMethod(checked ? 'intermediary' : 'direct'); if (!checked) { setEditIntermediaryName(''); } }} />
+                </div>
+                {editDeliveryMethod !== 'direct' && (
+                  <div className="p-3 rounded-lg bg-muted/50 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs">{t('treasury.via_intermediary') || 'الوسيط'}</Label>
+                        <Select value={editIntermediaryName} onValueChange={v => setEditIntermediaryName(v)}>
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder={t('treasury.select_intermediary') || 'اختر الوسيط'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(contacts || []).filter((c: any) => c.contact_type === 'intermediary').map((c: any) => (
+                              <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">{t('treasury.receiver') || 'المستلم'}</Label>
+                        <Select value={editReceivedBy} onValueChange={v => setEditReceivedBy(v)}>
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder={t('treasury.select_receiver') || 'اختر المستلم'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(contacts || []).filter((c: any) => c.contact_type === 'receiver').map((c: any) => (
+                              <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    {(editIntermediaryName || editReceivedBy) && (
+                      <p className="text-xs text-muted-foreground text-center border-t pt-2 mt-1">
+                        🏢 {t('treasury.branch_manager') || 'مدير الفرع'}
+                        {editIntermediaryName && <> ← 🤝 <span className="font-medium">{editIntermediaryName}</span></>}
+                        {editReceivedBy && <> ← 📥 <span className="font-medium">{editReceivedBy}</span></>}
+                      </p>
+                    )}
                   </div>
                 )}
 
