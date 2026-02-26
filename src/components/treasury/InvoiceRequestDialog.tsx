@@ -32,8 +32,8 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   const { language, dir } = useLanguage();
   const { activeBranch } = useAuth();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'manual' | 'worker_requests'>('worker_requests');
-  const [workerSubTab, setWorkerSubTab] = useState<'pending' | 'completed' | 'received'>('pending');
+  const [activeTab, setActiveTab] = useState<'manual' | 'worker_requests' | 'status'>('worker_requests');
+  const [statusSubTab, setStatusSubTab] = useState<'sent' | 'received'>('sent');
   const [receivingOrderId, setReceivingOrderId] = useState<string | null>(null);
   const [invoiceNumberInput, setInvoiceNumberInput] = useState('');
   const [invoicePrefix, setInvoicePrefix] = useState('F');
@@ -71,7 +71,7 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
       if (error) throw error;
       return data || [];
     },
-    enabled: open && activeTab === 'worker_requests',
+    enabled: open && (activeTab === 'worker_requests' || activeTab === 'status'),
   });
 
   const pendingInvoiceOrders = useMemo(() =>
@@ -400,7 +400,7 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as any); resetState(); }}>
-          <TabsList className="w-full grid grid-cols-2">
+          <TabsList className="w-full grid grid-cols-3">
             <TabsTrigger value="worker_requests" className="text-xs gap-1">
               <FileText className="w-3.5 h-3.5" />
               طلبات العمال
@@ -408,13 +408,17 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                 <Badge variant="destructive" className="text-[10px] h-4 px-1">{pendingCount}</Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="status" className="text-xs gap-1">
+              <CheckCircle className="w-3.5 h-3.5" />
+              حالة الطلبات
+            </TabsTrigger>
             <TabsTrigger value="manual" className="text-xs gap-1">
               <Send className="w-3.5 h-3.5" />
               طلب يدوي
             </TabsTrigger>
           </TabsList>
 
-          {/* Worker Invoice Requests Tab */}
+          {/* Worker Invoice Requests Tab - Only Pending */}
           <TabsContent value="worker_requests">
             {selectedWorkerOrder ? (
               <div className="space-y-3">
@@ -451,68 +455,65 @@ const InvoiceRequestDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                 </div>
               </div>
             ) : (
-              <div className="space-y-3">
-                {/* Sub-tabs: pending vs completed */}
-                <div className="flex gap-1 bg-muted/50 rounded-lg p-1">
-                  <Button
-                    size="sm"
-                    variant={workerSubTab === 'pending' ? 'default' : 'ghost'}
-                    className="flex-1 h-8 text-[10px] gap-1"
-                    onClick={() => setWorkerSubTab('pending')}
-                  >
-                    قيد الانتظار
-                    {pendingCount > 0 && <Badge variant="destructive" className="text-[10px] h-4 px-1">{pendingCount}</Badge>}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={workerSubTab === 'completed' ? 'default' : 'ghost'}
-                    className="flex-1 h-8 text-[10px] gap-1"
-                    onClick={() => setWorkerSubTab('completed')}
-                  >
-                    تم الإرسال ({completedInvoiceOrders.length})
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={workerSubTab === 'received' ? 'default' : 'ghost'}
-                    className="flex-1 h-8 text-[10px] gap-1"
-                    onClick={() => setWorkerSubTab('received')}
-                  >
-                    <PackageCheck className="w-3 h-3" />
-                    تم الاستلام ({receivedInvoiceOrders.length})
-                  </Button>
-                </div>
-
-                <ScrollArea className="h-[50vh]">
-                  {loadingOrders ? (
-                    <p className="text-center text-muted-foreground text-sm py-8">جاري التحميل...</p>
-                  ) : workerSubTab === 'pending' ? (
-                    pendingInvoiceOrders.length > 0 ? (
-                      <div className="space-y-2">
-                        {pendingInvoiceOrders.map((order: any) => renderOrderCard(order, 'pending'))}
-                      </div>
-                    ) : (
-                      <p className="text-center text-muted-foreground text-sm py-8">لا توجد طلبات فواتير معلقة</p>
-                    )
-                  ) : workerSubTab === 'completed' ? (
-                    completedInvoiceOrders.length > 0 ? (
-                      <div className="space-y-2">
-                        {completedInvoiceOrders.map((order: any) => renderOrderCard(order, 'sent'))}
-                      </div>
-                    ) : (
-                      <p className="text-center text-muted-foreground text-sm py-8">لا توجد طلبات منجزة</p>
-                    )
-                  ) : (
-                    receivedInvoiceOrders.length > 0 ? (
-                      <div className="space-y-2">
-                        {receivedInvoiceOrders.map((order: any) => renderOrderCard(order, 'received'))}
-                      </div>
-                    ) : (
-                      <p className="text-center text-muted-foreground text-sm py-8">لا توجد فواتير مستلمة</p>
-                    )
-                  )}
-                </ScrollArea>
-              </div>
+              <ScrollArea className="h-[50vh]">
+                {loadingOrders ? (
+                  <p className="text-center text-muted-foreground text-sm py-8">جاري التحميل...</p>
+                ) : pendingInvoiceOrders.length > 0 ? (
+                  <div className="space-y-2">
+                    {pendingInvoiceOrders.map((order: any) => renderOrderCard(order, 'pending'))}
+                  </div>
+                ) : (
+                  <p className="text-center text-muted-foreground text-sm py-8">لا توجد طلبات فواتير معلقة</p>
+                )}
+              </ScrollArea>
             )}
+          </TabsContent>
+
+          {/* Status Tab - Sent & Received */}
+          <TabsContent value="status">
+            <div className="space-y-3">
+              <div className="flex gap-1 bg-muted/50 rounded-lg p-1">
+                <Button
+                  size="sm"
+                  variant={statusSubTab === 'sent' ? 'default' : 'ghost'}
+                  className="flex-1 h-8 text-[10px] gap-1"
+                  onClick={() => setStatusSubTab('sent')}
+                >
+                  تم الإرسال ({completedInvoiceOrders.length})
+                </Button>
+                <Button
+                  size="sm"
+                  variant={statusSubTab === 'received' ? 'default' : 'ghost'}
+                  className="flex-1 h-8 text-[10px] gap-1"
+                  onClick={() => setStatusSubTab('received')}
+                >
+                  <PackageCheck className="w-3 h-3" />
+                  تم الاستلام ({receivedInvoiceOrders.length})
+                </Button>
+              </div>
+
+              <ScrollArea className="h-[50vh]">
+                {loadingOrders ? (
+                  <p className="text-center text-muted-foreground text-sm py-8">جاري التحميل...</p>
+                ) : statusSubTab === 'sent' ? (
+                  completedInvoiceOrders.length > 0 ? (
+                    <div className="space-y-2">
+                      {completedInvoiceOrders.map((order: any) => renderOrderCard(order, 'sent'))}
+                    </div>
+                  ) : (
+                    <p className="text-center text-muted-foreground text-sm py-8">لا توجد طلبات منجزة</p>
+                  )
+                ) : (
+                  receivedInvoiceOrders.length > 0 ? (
+                    <div className="space-y-2">
+                      {receivedInvoiceOrders.map((order: any) => renderOrderCard(order, 'received'))}
+                    </div>
+                  ) : (
+                    <p className="text-center text-muted-foreground text-sm py-8">لا توجد فواتير مستلمة</p>
+                  )
+                )}
+              </ScrollArea>
+            </div>
           </TabsContent>
 
           {/* Manual Invoice Request Tab */}
