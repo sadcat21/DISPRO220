@@ -15,8 +15,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Banknote, CreditCard, Receipt, ArrowUpRight, Plus, Send, Coins, TrendingUp, AlertCircle, CheckCircle, AlertTriangle, Info, RefreshCw, Printer, Eye, Pencil, Trash2, Settings, Download } from 'lucide-react';
+import { Banknote, CreditCard, Receipt, ArrowUpRight, Plus, Send, Coins, TrendingUp, AlertCircle, CheckCircle, AlertTriangle, Info, RefreshCw, Printer, Eye, Pencil, Trash2, Settings, Download, Image } from 'lucide-react';
 import { generatePDF } from '@/utils/generatePDF';
+import { generateImage } from '@/utils/generateImage';
 import { toast } from 'sonner';
 import InvoiceOCRScanner from '@/components/treasury/InvoiceOCRScanner';
 import { format } from 'date-fns';
@@ -1006,7 +1007,6 @@ const ManagerTreasury = () => {
                       <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={async (e) => {
                         e.stopPropagation();
                         setPrintHandover(h.id);
-                        // Wait for render then generate PDF
                         setTimeout(async () => {
                           if (printRef.current) {
                             try {
@@ -1018,6 +1018,21 @@ const ManagerTreasury = () => {
                         }, 500);
                       }}>
                         <Download className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={async (e) => {
+                        e.stopPropagation();
+                        setPrintHandover(h.id);
+                        setTimeout(async () => {
+                          if (printRef.current) {
+                            try {
+                              await generateImage(printRef.current, `bordereau_${h.handover_date}.png`);
+                              toast.success('تم حفظ الصورة بنجاح');
+                            } catch { toast.error('فشل في حفظ الصورة'); }
+                          }
+                          setPrintHandover(null);
+                        }, 500);
+                      }}>
+                        <Image className="w-3.5 h-3.5" />
                       </Button>
                       <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={(e) => { e.stopPropagation(); if (confirm(t('common.confirm_delete'))) deleteHandover(h.id); }}>
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1104,6 +1119,15 @@ const ManagerTreasury = () => {
                   }}>
                     <Download className="w-4 h-4 mx-1" /> PDF
                   </Button>
+                  <Button size="sm" variant="outline" onClick={async () => {
+                    if (!printRef.current) return;
+                    try {
+                      await generateImage(printRef.current, `bordereau_${h.handover_date}.png`);
+                      toast.success('تم حفظ الصورة بنجاح');
+                    } catch { toast.error('فشل في حفظ الصورة'); }
+                  }}>
+                    <Image className="w-4 h-4 mx-1" /> صورة
+                  </Button>
                 </DialogTitle>
               </DialogHeader>
               <div ref={printRef}>
@@ -1147,6 +1171,15 @@ const ManagerTreasury = () => {
                     } catch { toast.error('فشل في حفظ الملف'); }
                   }}>
                     <Download className="w-4 h-4 mx-1" /> PDF
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={async () => {
+                    if (!viewRef.current) return;
+                    try {
+                      await generateImage(viewRef.current, `bordereau_${h.handover_date}.png`);
+                      toast.success('تم حفظ الصورة بنجاح');
+                    } catch { toast.error('فشل في حفظ الصورة'); }
+                  }}>
+                    <Image className="w-4 h-4 mx-1" /> صورة
                   </Button>
                 </DialogTitle>
               </DialogHeader>
