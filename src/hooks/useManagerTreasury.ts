@@ -62,6 +62,7 @@ export interface TreasurySummary {
   transfer_handed_count: number;
   coins: number;
   coinExchangeOut: number;
+  coinBillsReturned: number;
   total: number;
   handedOver: number;
   remaining: number;
@@ -140,7 +141,9 @@ export const useTreasurySummary = () => {
         .eq('status', 'active');
       if (activeBranch?.id) ceQuery = ceQuery.eq('branch_id', activeBranch.id);
       const { data: coinExchangeTasks } = await ceQuery;
-      const coinExchangeOut = (coinExchangeTasks || []).reduce((s: number, t: any) => s + Number(t.coin_amount || 0) - Number(t.returned_amount || 0), 0);
+      const totalCoinsGiven = (coinExchangeTasks || []).reduce((s: number, t: any) => s + Number(t.coin_amount || 0), 0);
+      const coinBillsReturned = (coinExchangeTasks || []).reduce((s: number, t: any) => s + Number(t.returned_amount || 0), 0);
+      const coinExchangeOut = totalCoinsGiven - coinBillsReturned;
 
       // Get debts
       let dQuery = supabase.from('customer_debts').select('total_amount, paid_amount, remaining_amount, status');
@@ -230,8 +233,9 @@ export const useTreasurySummary = () => {
         receipt_handed: handedReceipts, receipt_handed_count: handedReceiptsCount,
         bank_transfer: 0, transferCount: 0,
         transfer_handed: handedTransfers, transfer_handed_count: handedTransfersCount,
-        coins: totalCoins - coinExchangeOut,
+        coins: totalCoins - totalCoinsGiven,
         coinExchangeOut,
+        coinBillsReturned,
         total: 0, handedOver: 0, remaining: 0,
         totalSales, totalDebts, collectedDebts, uncollectedDebts, debtCashCollected, totalExpenses, totalGiftsValue,
         workerHeldAmount, orderUnpaidAmount,

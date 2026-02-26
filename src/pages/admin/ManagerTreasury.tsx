@@ -709,7 +709,7 @@ const ManagerTreasury = () => {
         const cashHandedOver = (summary?.handedOver || 0) - nonCashHanded;
         const nonCashPending = nonCash - nonCashHanded;
         const physicalRemaining = cashPhysical - cashHandedOver;
-        const paperMoney = physicalRemaining - (summary?.coins || 0);
+        const paperMoney = physicalRemaining - (summary?.coins || 0) + (summary?.coinBillsReturned || 0);
         return (
           <div className="space-y-3">
             <Card className="border-primary/30">
