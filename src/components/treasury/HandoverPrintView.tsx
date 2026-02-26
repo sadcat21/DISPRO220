@@ -111,7 +111,37 @@ const HandoverPrintView: React.FC<Props> = ({
   return (
     <div className="print-handover bg-white text-black p-8 font-sans" style={{ direction: 'ltr', fontSize: '12px', textAlign: 'left', unicodeBidi: 'plaintext' }}>
 
-      <p className="mb-4" data-pdf-section style={{ textAlign: 'left' }}><strong>Date d'envoi:</strong> {dateStr}{wilayaFr ? `  -  Depot ${wilayaFr}` : ''}</p>
+      <p className="mb-2" data-pdf-section style={{ textAlign: 'left' }}><strong>Date d'envoi:</strong> {dateStr}{wilayaFr ? `  -  Depot ${wilayaFr}` : ''}</p>
+
+      {deliveryMethod && (
+        <p className="mb-4" data-pdf-section style={{ textAlign: 'left', margin: '0 0 16px 0', lineHeight: '1.8' }}>
+          <span>Mode: </span>
+          <strong>
+            {deliveryMethod === 'direct' ? 'Remise directe' : deliveryMethod === 'bank_transfer' ? 'Virement bancaire' : 'Par intermédiaire'}
+          </strong>
+          {receivedBy && (
+            <>
+              <span style={{ margin: '0 12px' }}>|</span>
+              <span>Destinataire: </span>
+              <strong>{receivedBy}</strong>
+            </>
+          )}
+          {deliveryMethod === 'intermediary' && intermediaryName && (
+            <>
+              <span style={{ margin: '0 12px' }}>|</span>
+              <span>Intermédiaire: </span>
+              <strong>{intermediaryName}</strong>
+            </>
+          )}
+          {deliveryMethod === 'bank_transfer' && bankTransferReference && (
+            <>
+              <span style={{ margin: '0 12px' }}>|</span>
+              <span>Réf. virement: </span>
+              <strong>{bankTransferReference}</strong>
+            </>
+          )}
+        </p>
+      )}
 
       {/* Checks Table */}
       {checks.length > 0 && (
@@ -274,40 +304,6 @@ const HandoverPrintView: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Delivery Method Info */}
-      {deliveryMethod && (
-        <div className="mt-6 text-sm" data-pdf-section style={{ direction: 'ltr', textAlign: 'left' }}>
-          <div style={{ border: '2px solid black', padding: '12px', direction: 'ltr', textAlign: 'left' }}>
-            <p style={{ margin: 0, lineHeight: '1.8' }}>
-              <span>Mode: </span>
-              <strong>
-                {deliveryMethod === 'direct' ? 'Remise directe' : deliveryMethod === 'bank_transfer' ? 'Virement bancaire' : 'Par intermédiaire'}
-              </strong>
-              {receivedBy && (
-                <>
-                  <span style={{ margin: '0 12px' }}>|</span>
-                  <span>Destinataire: </span>
-                  <strong>{receivedBy}</strong>
-                </>
-              )}
-              {deliveryMethod === 'intermediary' && intermediaryName && (
-                <>
-                  <span style={{ margin: '0 12px' }}>|</span>
-                  <span>Intermédiaire: </span>
-                  <strong>{intermediaryName}</strong>
-                </>
-              )}
-              {deliveryMethod === 'bank_transfer' && bankTransferReference && (
-                <>
-                  <span style={{ margin: '0 12px' }}>|</span>
-                  <span>Réf. virement: </span>
-                  <strong>{bankTransferReference}</strong>
-                </>
-              )}
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Signature */}
       <div className="mt-10" data-pdf-section style={{ textAlign: 'left' }}>
