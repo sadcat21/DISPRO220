@@ -231,41 +231,41 @@ const ManagerTreasury = () => {
           <CardContent className="p-3 text-center">
             <Banknote className="w-5 h-5 mx-auto mb-1 text-green-500" />
             <p className="text-xs text-muted-foreground">كاش فاتورة 1 ({summary?.cash_invoice1_count || 0})</p>
-            <p className="text-lg font-bold text-green-500">{summary?.cash_invoice1?.toLocaleString() || 0} د.ج</p>
+            <p className="text-sm font-bold text-green-500 truncate">{summary?.cash_invoice1?.toLocaleString() || 0} د.ج</p>
           </CardContent>
         </Card>
         <Card className="border-emerald-500/30 bg-emerald-500/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDetailsCategory('cash_invoice2')}>
           <CardContent className="p-3 text-center">
             <Banknote className="w-5 h-5 mx-auto mb-1 text-emerald-500" />
             <p className="text-xs text-muted-foreground">كاش فاتورة 2 ({summary?.cash_invoice2_count || 0})</p>
-            <p className="text-lg font-bold text-emerald-500">{summary?.cash_invoice2?.toLocaleString() || 0} د.ج</p>
+            <p className="text-sm font-bold text-emerald-500 truncate">{summary?.cash_invoice2?.toLocaleString() || 0} د.ج</p>
           </CardContent>
         </Card>
         <Card className="border-blue-500/30 bg-blue-500/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDetailsCategory('check')}>
           <CardContent className="p-3 text-center">
             <CreditCard className="w-5 h-5 mx-auto mb-1 text-blue-500" />
             <p className="text-xs text-muted-foreground">شيكات ({summary?.checkCount || 0})</p>
-            <p className="text-lg font-bold text-blue-500">{summary?.check?.toLocaleString() || 0} د.ج</p>
+            <p className="text-sm font-bold text-blue-500 truncate">{summary?.check?.toLocaleString() || 0} د.ج</p>
           </CardContent>
         </Card>
         <Card className="border-purple-500/30 bg-purple-500/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDetailsCategory('bank_receipt')}>
           <CardContent className="p-3 text-center">
             <Receipt className="w-5 h-5 mx-auto mb-1 text-purple-500" />
             <p className="text-xs text-muted-foreground">فيرسمو ({summary?.receiptCount || 0})</p>
-            <p className="text-lg font-bold text-purple-500">{summary?.bank_receipt?.toLocaleString() || 0} د.ج</p>
+            <p className="text-sm font-bold text-purple-500 truncate">{summary?.bank_receipt?.toLocaleString() || 0} د.ج</p>
           </CardContent>
         </Card>
         <Card className="border-orange-500/30 bg-orange-500/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDetailsCategory('bank_transfer')}>
           <CardContent className="p-3 text-center">
             <ArrowUpRight className="w-5 h-5 mx-auto mb-1 text-orange-500" />
             <p className="text-xs text-muted-foreground">فيرمو ({summary?.transferCount || 0})</p>
-            <p className="text-lg font-bold text-orange-500">{summary?.bank_transfer?.toLocaleString() || 0} د.ج</p>
+            <p className="text-sm font-bold text-orange-500 truncate">{summary?.bank_transfer?.toLocaleString() || 0} د.ج</p>
           </CardContent>
         </Card>
         <Card className="border-amber-600/30 bg-amber-600/5">
           <CardContent className="p-3 text-center">
-            <p className="text-xs text-muted-foreground">إجمالي الطوابع (ضريبة على فاتورة 1)</p>
-            <p className="text-lg font-bold text-amber-600">{(summary?.cash_invoice1_stamp || 0).toLocaleString()} د.ج</p>
+            <p className="text-xs text-muted-foreground leading-tight">إجمالي الطوابع (ضريبة على فاتورة 1)</p>
+            <p className="text-sm font-bold text-amber-600 truncate">{(summary?.cash_invoice1_stamp || 0).toLocaleString()} د.ج</p>
           </CardContent>
         </Card>
       </div>
@@ -283,35 +283,35 @@ const ManagerTreasury = () => {
         <Card>
           <CardContent className="p-3 text-center">
             <p className="text-xs text-muted-foreground">الإجمالي</p>
-            <p className="text-lg font-bold">{summary?.total?.toLocaleString() || 0} د.ج</p>
+            <p className="text-sm font-bold truncate">{summary?.total?.toLocaleString() || 0} د.ج</p>
           </CardContent>
         </Card>
         <Card className="border-destructive/30">
           <CardContent className="p-3 text-center">
             <p className="text-xs text-muted-foreground">المُسلَّم</p>
-            <p className="text-lg font-bold text-destructive">{summary?.handedOver?.toLocaleString() || 0} د.ج</p>
+            <p className="text-sm font-bold text-destructive truncate">{summary?.handedOver?.toLocaleString() || 0} د.ج</p>
           </CardContent>
         </Card>
       </div>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2">
         <Card className="border-primary/30">
-          <CardContent className="p-3 text-center">
-            <p className="text-xs text-muted-foreground">المتبقي الكلي</p>
-            <p className="text-lg font-bold text-primary">{summary?.remaining?.toLocaleString() || 0} د.ج</p>
+          <CardContent className="p-2 text-center">
+            <p className="text-[10px] text-muted-foreground">المتبقي الكلي</p>
+            <p className="text-xs font-bold text-primary truncate">{summary?.remaining?.toLocaleString() || 0} د.ج</p>
           </CardContent>
         </Card>
         <Card className="border-primary/20">
-          <CardContent className="p-3 text-center">
-            <Banknote className="w-4 h-4 mx-auto mb-1 text-muted-foreground" />
-            <p className="text-xs text-muted-foreground">الورقي</p>
-            <p className="text-lg font-bold">{((summary?.remaining || 0) - (summary?.coins || 0)).toLocaleString()} د.ج</p>
+          <CardContent className="p-2 text-center">
+            <Banknote className="w-3.5 h-3.5 mx-auto mb-0.5 text-muted-foreground" />
+            <p className="text-[10px] text-muted-foreground">الورقي</p>
+            <p className="text-xs font-bold truncate">{((summary?.remaining || 0) - (summary?.coins || 0)).toLocaleString()} د.ج</p>
           </CardContent>
         </Card>
         <Card className="border-amber-500/30">
-          <CardContent className="p-3 text-center">
-            <Coins className="w-4 h-4 mx-auto mb-1 text-amber-500" />
-            <p className="text-xs text-muted-foreground">المعدني</p>
-            <p className="text-lg font-bold text-amber-500">{(summary?.coins || 0).toLocaleString()} د.ج</p>
+          <CardContent className="p-2 text-center">
+            <Coins className="w-3.5 h-3.5 mx-auto mb-0.5 text-amber-500" />
+            <p className="text-[10px] text-muted-foreground">المعدني</p>
+            <p className="text-xs font-bold text-amber-500 truncate">{(summary?.coins || 0).toLocaleString()} د.ج</p>
           </CardContent>
         </Card>
       </div>
