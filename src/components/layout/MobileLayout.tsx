@@ -122,10 +122,11 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
             {showInvoiceButton && (
               <button
                 onClick={() => setInvoiceRequestOpen(true)}
-                className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors"
+                className="flex items-center justify-center gap-1 h-8 px-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                 title="طلب فاتورة"
               >
-                <Receipt className="w-4 h-4 text-primary" />
+                <Receipt className="w-4 h-4" />
+                <span className="text-[10px] font-bold">فاتورة</span>
               </button>
             )}
             
