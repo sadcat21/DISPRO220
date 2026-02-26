@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
 import { useAllWorkersLiability, useWorkerLiability, useAddLiabilityAdjustment, WorkerLiabilitySummary } from '@/hooks/useWorkerLiability';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,11 +9,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Minus, ChevronLeft, Wallet, TrendingUp, TrendingDown, Receipt, Calculator, PenLine } from 'lucide-react';
+import { Loader2, ChevronLeft, Wallet, TrendingUp, TrendingDown, Calculator, PenLine } from 'lucide-react';
 import { toast } from 'sonner';
 
 const WorkerLiability: React.FC = () => {
   const { t } = useLanguage();
+  const { workerId: contextWorkerId, workerName: contextWorkerName } = useSelectedWorker();
   const { data: workers = [], isLoading } = useAllWorkersLiability();
   const [selectedWorker, setSelectedWorker] = useState<WorkerLiabilitySummary | null>(null);
   const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
@@ -21,6 +23,23 @@ const WorkerLiability: React.FC = () => {
   const [adjustType, setAdjustType] = useState<'add' | 'subtract'>('add');
   const [adjustReason, setAdjustReason] = useState('');
   const addAdjustment = useAddLiabilityAdjustment();
+
+  // If a worker is pre-selected from WorkerActions context, auto-select them
+  const { data: contextLiability } = useWorkerLiability(contextWorkerId && !selectedWorker ? contextWorkerId : null);
+
+  useEffect(() => {
+    if (contextWorkerId && contextLiability && !selectedWorker) {
+      setSelectedWorker(contextLiability);
+    }
+  }, [contextWorkerId, contextLiability, selectedWorker]);
+
+  // Also update selectedWorker when workers list loads and context is set
+  useEffect(() => {
+    if (contextWorkerId && workers.length > 0 && !selectedWorker) {
+      const found = workers.find(w => w.workerId === contextWorkerId);
+      if (found) setSelectedWorker(found);
+    }
+  }, [contextWorkerId, workers, selectedWorker]);
 
   const handleAdjust = async () => {
     if (!adjustWorker || !adjustAmount) return;
