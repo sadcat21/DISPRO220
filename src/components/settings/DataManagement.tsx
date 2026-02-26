@@ -26,6 +26,7 @@ const DATA_CATEGORIES: DataCategory[] = [
   { id: 'liability', label: 'ذمة العامل', tables: ['worker_liability_adjustments'], description: 'التعديلات اليدوية على ذمم العمال', order: 5.4 },
   { id: 'coin_exchange', label: 'تحويلات العملات النقدية', tables: ['coin_exchange_returns', 'coin_exchange_tasks'], description: 'مهام تحويل العملات المعدنية وإرجاعاتها', order: 5.3 },
   { id: 'offers', label: 'العروض', tables: ['product_offer_tiers', 'product_offers'], description: 'عروض المنتجات', order: 5 },
+  { id: 'invoices', label: 'طلبات الفواتير', tables: ['manual_invoice_requests'], description: 'طلبات الفواتير اليدوية والمرسلة عبر واتساب', order: 4.5 },
   { id: 'logs', label: 'سجل الأحداث', tables: ['activity_logs'], description: 'سجلات النشاط والأحداث', order: 4 },
   { id: 'stock', label: 'حركات المخزون', tables: ['stock_movements', 'worker_stock', 'warehouse_stock'], description: 'جميع حركات وأرصدة المخزون', order: 3 },
   { id: 'customers', label: 'العملاء', tables: ['customer_special_prices', 'customer_accounts', 'customers'], description: 'جميع بيانات العملاء وأسعارهم الخاصة', order: 2 },
