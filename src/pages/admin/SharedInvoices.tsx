@@ -111,7 +111,15 @@ const SharedInvoices: React.FC = () => {
       toast.error('فشل معاينة الملف');
       return;
     }
-    setPreviewUrl(data.signedUrl);
+    try {
+      const response = await fetch(data.signedUrl);
+      const blob = await response.blob();
+      // Revoke previous blob URL if any
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(URL.createObjectURL(blob));
+    } catch {
+      toast.error('فشل تحميل الملف للمعاينة');
+    }
   };
 
   const formatSize = (bytes: number) => {
@@ -217,7 +225,7 @@ const SharedInvoices: React.FC = () => {
 
       {/* Preview Dialog */}
       {previewUrl && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center p-2" onClick={() => setPreviewUrl(null)}>
+        <div className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center p-2" onClick={() => { URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }}>
           <div className="bg-background rounded-lg w-full max-w-2xl flex flex-col" style={{ height: '90vh' }} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-3 border-b shrink-0">
               <span className="text-sm font-medium">معاينة الملف</span>
@@ -226,7 +234,7 @@ const SharedInvoices: React.FC = () => {
                   <Download className="w-4 h-4 me-1" />
                   فتح
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewUrl(null)}>✕</Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }}>✕</Button>
               </div>
             </div>
             <div className="flex-1 min-h-0">
