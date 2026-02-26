@@ -23,9 +23,9 @@ interface Props {
 }
 
 const labels: Record<string, string> = {
-  check: 'شيكات',
-  receipt: 'فيرسمو',
-  transfer: 'فيرمو',
+  check: 'Chèques',
+  receipt: 'Versement',
+  transfer: 'Virement',
 };
 
 const HandoverItemPickerDialog = ({ open, onOpenChange, paymentMethod, onConfirm }: Props) => {
