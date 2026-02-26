@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PaymentMethodDetailsDialog from '@/components/treasury/PaymentMethodDetailsDialog';
 import HandoverItemPickerDialog, { PickedItem } from '@/components/treasury/HandoverItemPickerDialog';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -21,8 +22,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 
-const TreasuryCard = ({ icon, label, total, handed, colorClass, borderClass, onClick, currency }: {
-  icon: React.ReactNode; label: string; total: number; handed: number; colorClass: string; borderClass: string; onClick: () => void; currency: string;
+const TreasuryCard = ({ icon, label, total, handed, colorClass, borderClass, onClick, currency, showDetails }: {
+  icon: React.ReactNode; label: string; total: number; handed: number; colorClass: string; borderClass: string; onClick: () => void; currency: string; showDetails: boolean;
 }) => {
   const { t } = useLanguage();
   const remaining = total - handed;
@@ -31,11 +32,17 @@ const TreasuryCard = ({ icon, label, total, handed, colorClass, borderClass, onC
       <CardContent className="p-3 text-center space-y-1">
         <div className="mx-auto mb-1">{icon}</div>
         <p className="text-xs text-muted-foreground">{label}</p>
-        <p className={`text-sm font-bold text-${colorClass} truncate`}>{total.toLocaleString()} {currency}</p>
-        <div className="flex justify-between text-[10px] px-1">
-          <span className="text-green-600">{t('treasury.handed')}: {handed.toLocaleString()}</span>
-          <span className="text-orange-600">{t('treasury.remaining')}: {remaining.toLocaleString()}</span>
-        </div>
+        {showDetails ? (
+          <>
+            <p className={`text-sm font-bold text-${colorClass} truncate`}>{total.toLocaleString()} {currency}</p>
+            <div className="flex justify-between text-[10px] px-1">
+              <span className="text-green-600">{t('treasury.handed')}: {handed.toLocaleString()}</span>
+              <span className="text-orange-600">{t('treasury.remaining')}: {remaining.toLocaleString()}</span>
+            </div>
+          </>
+        ) : (
+          <p className={`text-sm font-bold text-${colorClass} truncate`}>{remaining.toLocaleString()} {currency}</p>
+        )}
       </CardContent>
     </Card>
   );
@@ -90,6 +97,7 @@ const ManagerTreasury = () => {
 
   const [addOpen, setAddOpen] = useState(false);
   const [handoverOpen, setHandoverOpen] = useState(false);
+  const [showCardDetails, setShowCardDetails] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [detailsCategory, setDetailsCategory] = useState<'cash_invoice1' | 'cash_invoice2' | 'check' | 'bank_receipt' | 'bank_transfer' | null>(null);
   const [addForm, setAddForm] = useState({ payment_method: 'cash_invoice1', amount: '', customer_name: '', invoice_number: '', invoice_date: '', check_number: '', check_bank: '', check_date: '', receipt_number: '', transfer_reference: '', notes: '' });
@@ -182,7 +190,10 @@ const ManagerTreasury = () => {
   return (
     <div className="p-4 space-y-4 pb-24" dir={dir}>
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">{t('treasury.title')}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-bold">{t('treasury.title')}</h1>
+          <Switch checked={showCardDetails} onCheckedChange={setShowCardDetails} />
+        </div>
         <div className="flex gap-2">
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
@@ -325,6 +336,7 @@ const ManagerTreasury = () => {
           borderClass="border-green-500/30 bg-green-500/5"
           onClick={() => setDetailsCategory('cash_invoice1')}
           currency={cur}
+          showDetails={showCardDetails}
         />
         <TreasuryCard
           icon={<Banknote className="w-5 h-5 text-emerald-500" />}
@@ -335,6 +347,7 @@ const ManagerTreasury = () => {
           borderClass="border-emerald-500/30 bg-emerald-500/5"
           onClick={() => setDetailsCategory('cash_invoice2')}
           currency={cur}
+          showDetails={showCardDetails}
         />
         <TreasuryCard
           icon={<CreditCard className="w-5 h-5 text-blue-500" />}
@@ -345,6 +358,7 @@ const ManagerTreasury = () => {
           borderClass="border-blue-500/30 bg-blue-500/5"
           onClick={() => setDetailsCategory('check')}
           currency={cur}
+          showDetails={showCardDetails}
         />
         <TreasuryCard
           icon={<Receipt className="w-5 h-5 text-purple-500" />}
@@ -355,6 +369,7 @@ const ManagerTreasury = () => {
           borderClass="border-purple-500/30 bg-purple-500/5"
           onClick={() => setDetailsCategory('bank_receipt')}
           currency={cur}
+          showDetails={showCardDetails}
         />
         <TreasuryCard
           icon={<ArrowUpRight className="w-5 h-5 text-orange-500" />}
@@ -365,6 +380,7 @@ const ManagerTreasury = () => {
           borderClass="border-orange-500/30 bg-orange-500/5"
           onClick={() => setDetailsCategory('bank_transfer')}
           currency={cur}
+          showDetails={showCardDetails}
         />
         <Card className="border-amber-600/30 bg-amber-600/5">
           <CardContent className="p-3 text-center">
