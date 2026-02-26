@@ -431,6 +431,37 @@
     font-size: 8pt;
     color: #666 !important;
   }
+  /* Handover Print - Portrait A4 */
+  .print-handover {
+    display: block !important;
+    visibility: visible !important;
+    width: 100% !important;
+    font-size: 11pt !important;
+    color: #000 !important;
+    background: white !important;
+    direction: ltr !important;
+    text-align: left !important;
+  }
+
+  .print-handover * {
+    visibility: visible !important;
+    color: #000 !important;
+  }
+
+  .print-handover table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  .print-handover th,
+  .print-handover td {
+    border: 1px solid #000 !important;
+    padding: 4px 6px !important;
+  }
+
+  .print-handover .border-2 {
+    border: 2px solid #000 !important;
+  }
 }
 
 /* Marquee Animation for Offers Ticker */

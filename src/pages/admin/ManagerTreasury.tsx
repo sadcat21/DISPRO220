@@ -908,14 +908,28 @@ const ManagerTreasury = () => {
                     const w = window.open('', '_blank');
                     if (!w) return;
                     w.document.write(`<html><head><title>Bordereau</title><style>
-                      body { font-family: Arial, sans-serif; font-size: 12px; margin: 0; padding: 20px; }
+                      @page { size: A4 portrait; margin: 15mm; }
+                      body { font-family: Arial, sans-serif; font-size: 12px; margin: 0; padding: 20px; direction: ltr; }
                       table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
                       th, td { border: 1px solid #000; padding: 4px 6px; text-align: left; }
                       th { background: #f0f0f0; }
                       .text-right { text-align: right; }
+                      .text-center { text-align: center; }
                       .font-bold { font-weight: bold; }
+                      .underline { text-decoration: underline; }
                       h1, h2, h3 { margin: 4px 0; }
-                      @media print { body { margin: 0; } }
+                      .border-2 { border: 2px solid #000; padding: 12px; margin-bottom: 16px; }
+                      .mb-4 { margin-bottom: 16px; }
+                      .mt-6 { margin-top: 24px; }
+                      .mt-10 { margin-top: 40px; }
+                      .mb-1 { margin-bottom: 4px; }
+                      .mb-2 { margin-bottom: 8px; }
+                      .p-3 { padding: 12px; }
+                      .text-sm { font-size: 12px; }
+                      .text-base { font-size: 14px; }
+                      .text-lg { font-size: 16px; }
+                      .text-xs { font-size: 11px; }
+                      @media print { body { margin: 0; padding: 15px; } }
                     </style></head><body>${printContent.innerHTML}</body></html>`);
                     w.document.close();
                     w.print();
