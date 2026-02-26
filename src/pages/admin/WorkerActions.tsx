@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
-import { ArrowRight, Calculator, Truck, Banknote, Wallet, MapPin, ShoppingCart, Activity, Shield, User, HandCoins, ArrowLeftRight } from 'lucide-react';
+import { ArrowRight, Calculator, Truck, Banknote, Wallet, MapPin, ShoppingCart, Activity, Shield, HardHat, HandCoins, ArrowLeftRight } from 'lucide-react';
 import { useWorkerLiability } from '@/hooks/useWorkerLiability';
 import { Badge } from '@/components/ui/badge';
 import { Worker } from '@/types/database';
@@ -89,7 +89,7 @@ const WorkerActions: React.FC = () => {
               onClick={() => handleSelectWorker(worker)}
             >
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="w-6 h-6 text-primary" />
+                <HardHat className="w-6 h-6 text-primary" />
               </div>
               <span className="text-xs font-medium text-center leading-tight">{worker.full_name}</span>
               <span className="text-[10px] text-muted-foreground">{worker.role === 'worker' ? t('nav.workers') : worker.role}</span>

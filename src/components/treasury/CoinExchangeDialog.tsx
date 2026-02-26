@@ -48,6 +48,33 @@ const CoinExchangeDialog = ({ open, onOpenChange, preselectedWorkerId }: CoinExc
   const createExchange = useCreateCoinExchange();
   const receiveBills = useReceiveBills();
 
+  // Fetch available coins in treasury
+  const { data: availableCoins = 0 } = useQuery({
+    queryKey: ['treasury-available-coins', activeBranch?.id],
+    queryFn: async () => {
+      // Total coins from accounting sessions
+      let coinQuery = supabase
+        .from('accounting_session_items')
+        .select('actual_amount, session_id, accounting_sessions!inner(branch_id)')
+        .eq('item_type', 'coin_amount');
+      if (activeBranch?.id) coinQuery = coinQuery.eq('accounting_sessions.branch_id', activeBranch.id);
+      const { data: coinItems } = await coinQuery;
+      const totalCoins = (coinItems || []).reduce((s: number, item: any) => s + Number(item.actual_amount || 0), 0);
+
+      // Coins already assigned (active tasks)
+      let taskQuery = supabase
+        .from('coin_exchange_tasks')
+        .select('coin_amount, returned_amount')
+        .eq('status', 'active');
+      if (activeBranch?.id) taskQuery = taskQuery.eq('branch_id', activeBranch.id);
+      const { data: activeTasks } = await taskQuery;
+      const assignedCoins = (activeTasks || []).reduce((s: number, t: any) => s + Number(t.coin_amount || 0) - Number(t.returned_amount || 0), 0);
+
+      return totalCoins - assignedCoins;
+    },
+    enabled: open,
+  });
+
   const activeTasks = tasks.filter(t => t.status === 'active');
   const completedTasks = tasks.filter(t => t.status === 'completed');
 
@@ -193,6 +220,16 @@ const CoinExchangeDialog = ({ open, onOpenChange, preselectedWorkerId }: CoinExc
             <div>
               <Label>{t('coin_exchange.coin_amount')}</Label>
               <Input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" />
+              <div className="flex items-center justify-between mt-1.5 text-xs">
+                <span className="text-muted-foreground">
+                  {t('coin_exchange.available_in_treasury')}: <span className={`font-bold ${(availableCoins - Number(amount || 0)) < 0 ? 'text-destructive' : 'text-green-600'}`}>{availableCoins.toLocaleString('ar-DZ')} د.ج</span>
+                </span>
+                {Number(amount) > 0 && (
+                  <span className="text-muted-foreground">
+                    {t('coin_exchange.after_assign')}: <span className={`font-bold ${(availableCoins - Number(amount)) < 0 ? 'text-destructive' : ''}`}>{(availableCoins - Number(amount)).toLocaleString('ar-DZ')} د.ج</span>
+                  </span>
+                )}
+              </div>
             </div>
             <div>
               <Label>{t('common.notes')}</Label>

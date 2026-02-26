@@ -1401,4 +1401,6 @@ export const translations: Translations = {
   'coin_exchange.exceeds_remaining': { ar: 'المبلغ يتجاوز المتبقي', fr: 'Le montant dépasse le restant', en: 'Amount exceeds remaining' },
   'coin_exchange.created_success': { ar: 'تم تسليم العملات المعدنية للعامل', fr: 'Pièces attribuées avec succès', en: 'Coins assigned successfully' },
   'coin_exchange.received_success': { ar: 'تم استلام المبلغ الورقي', fr: 'Billets reçus avec succès', en: 'Bills received successfully' },
+  'coin_exchange.available_in_treasury': { ar: 'المتوفر في الخزينة', fr: 'Disponible en caisse', en: 'Available in treasury' },
+  'coin_exchange.after_assign': { ar: 'بعد التسليم', fr: 'Après attribution', en: 'After assignment' },
 };
