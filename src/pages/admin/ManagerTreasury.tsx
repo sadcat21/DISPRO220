@@ -328,7 +328,7 @@ const ManagerTreasury = () => {
         <TreasuryCard
           icon={<Banknote className="w-5 h-5 text-green-500" />}
           label={`${t('treasury.cash_invoice1')} (${summary?.cash_invoice1_count || 0})`}
-          total={summary?.cash_invoice1 || 0}
+          total={(summary?.cash_invoice1 || 0) + (summary?.cash_invoice1_stamp || 0)}
           handed={(handovers || []).reduce((s, h: any) => s + Number(h.cash_invoice1 || 0), 0)}
           colorClass="green-500"
           borderClass="border-green-500/30 bg-green-500/5"
