@@ -32,16 +32,12 @@ const TreasuryCard = ({ icon, label, total, handed, colorClass, borderClass, onC
       <CardContent className="p-3 text-center space-y-1">
         <div className="mx-auto mb-1">{icon}</div>
         <p className="text-xs text-muted-foreground">{label}</p>
-        {showDetails ? (
-          <>
-            <p className={`text-sm font-bold text-${colorClass} truncate`}>{total.toLocaleString()} {currency}</p>
-            <div className="flex justify-between text-[10px] px-1">
-              <span className="text-green-600">{t('treasury.handed')}: {handed.toLocaleString()}</span>
-              <span className="text-orange-600">{t('treasury.remaining')}: {remaining.toLocaleString()}</span>
-            </div>
-          </>
-        ) : (
-          <p className={`text-sm font-bold text-${colorClass} truncate`}>{remaining.toLocaleString()} {currency}</p>
+        <p className={`text-lg font-bold text-${colorClass} truncate`}>{remaining.toLocaleString()} {currency}</p>
+        {showDetails && (
+          <div className="flex justify-between text-[10px] px-1">
+            <span className="text-muted-foreground">{t('treasury.total')}: {total.toLocaleString()}</span>
+            <span className="text-green-600">{t('treasury.handed')}: {handed.toLocaleString()}</span>
+          </div>
         )}
       </CardContent>
     </Card>
