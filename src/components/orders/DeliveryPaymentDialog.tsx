@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Banknote, CreditCard, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
+import { Banknote, CreditCard, AlertTriangle, CheckCircle, Loader2, DollarSign, Undo2, Wallet } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatNumber } from '@/utils/formatters';
 
@@ -15,11 +15,8 @@ interface DeliveryPaymentDialogProps {
   onOpenChange: (open: boolean) => void;
   orderTotal: number;
   customerName: string;
-  /** Prepaid amount already paid at order creation */
   prepaidAmount?: number;
-  /** Frozen payment type passed at dialog open time */
   frozenPaymentType?: string;
-  /** Frozen invoice method passed at dialog open time */
   frozenInvoiceMethod?: string | null;
   onConfirm: (data: {
     paidAmount: number;
@@ -28,9 +25,10 @@ interface DeliveryPaymentDialogProps {
     notes?: string;
     isFullPayment: boolean;
     isNoPayment?: boolean;
-    /** Echo back frozen values so caller can use them directly */
     confirmedPaymentType?: string;
     confirmedInvoiceMethod?: string | null;
+    overpaymentAction?: 'refund' | 'credit';
+    overpaymentAmount?: number;
   }) => Promise<void>;
 }
 
@@ -50,39 +48,52 @@ const DeliveryPaymentDialog: React.FC<DeliveryPaymentDialogProps> = ({
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [overpaymentAction, setOverpaymentAction] = useState<'refund' | 'credit' | null>(null);
+
+  const paidNum = Number(paidAmount) || 0;
+  const isOverpayment = paymentMode === 'partial' && paidNum > orderTotal;
+  const overpaymentAmount = isOverpayment ? paidNum - orderTotal : 0;
 
   const remainingAmount = useMemo(() => {
     if (paymentMode === 'full') return 0;
     if (paymentMode === 'no_payment') return orderTotal;
-    const paid = Number(paidAmount) || 0;
-    return Math.max(0, orderTotal - paid);
-  }, [paymentMode, paidAmount, orderTotal]);
+    if (isOverpayment) return 0;
+    return Math.max(0, orderTotal - paidNum);
+  }, [paymentMode, paidNum, orderTotal, isOverpayment]);
 
-  const paidAmountExceedsTotal = paymentMode === 'partial' && (Number(paidAmount) || 0) > orderTotal;
+  const canSubmit = useMemo(() => {
+    if (isSubmitting) return false;
+    if (paymentMode === 'partial') {
+      if (!paidAmount || paidNum <= 0) return false;
+      if (isOverpayment && !overpaymentAction) return false;
+    }
+    return true;
+  }, [isSubmitting, paymentMode, paidAmount, paidNum, isOverpayment, overpaymentAction]);
 
   const handleConfirm = async () => {
-    const paid = paymentMode === 'full' ? orderTotal : paymentMode === 'no_payment' ? 0 : (Number(paidAmount) || 0);
+    const paid = paymentMode === 'full' ? orderTotal : paymentMode === 'no_payment' ? 0 : paidNum;
     if (paymentMode === 'partial' && paid <= 0) return;
-    if (paymentMode === 'partial' && paid > orderTotal) {
-      return; // blocked by UI anyway
-    }
+    if (isOverpayment && !overpaymentAction) return;
+    
     setIsSubmitting(true);
     try {
       await onConfirm({
-        paidAmount: paid,
-        remainingAmount: orderTotal - paid,
+        paidAmount: isOverpayment ? orderTotal : paid,
+        remainingAmount: isOverpayment ? 0 : orderTotal - paid,
         paymentMethod,
         notes: notes || undefined,
-        isFullPayment: paymentMode === 'full',
+        isFullPayment: paymentMode === 'full' || isOverpayment,
         isNoPayment: paymentMode === 'no_payment',
         confirmedPaymentType: frozenPaymentType,
         confirmedInvoiceMethod: frozenInvoiceMethod,
+        overpaymentAction: isOverpayment ? overpaymentAction! : undefined,
+        overpaymentAmount: isOverpayment ? overpaymentAmount : undefined,
       });
-      // Reset
       setPaymentMode('full');
       setPaidAmount('');
       setPaymentMethod('cash');
       setNotes('');
+      setOverpaymentAction(null);
     } finally {
       setIsSubmitting(false);
     }
@@ -94,6 +105,7 @@ const DeliveryPaymentDialog: React.FC<DeliveryPaymentDialogProps> = ({
       setPaidAmount('');
       setPaymentMethod('cash');
       setNotes('');
+      setOverpaymentAction(null);
     }
     onOpenChange(isOpen);
   };
@@ -126,7 +138,6 @@ const DeliveryPaymentDialog: React.FC<DeliveryPaymentDialogProps> = ({
                 تم دفع {formatNumber(prepaidAmount, language)} {t('common.currency')} مسبقاً
               </Badge>
             )}
-            {/* Show frozen payment type for verification */}
             {frozenPaymentType && (
               <div className="flex gap-2 flex-wrap">
                 <Badge variant="outline" className="text-xs">
@@ -150,7 +161,7 @@ const DeliveryPaymentDialog: React.FC<DeliveryPaymentDialogProps> = ({
               type="button"
               variant={paymentMode === 'full' ? 'default' : 'outline'}
               className="h-12 text-xs"
-              onClick={() => setPaymentMode('full')}
+              onClick={() => { setPaymentMode('full'); setOverpaymentAction(null); }}
             >
               <CheckCircle className="w-4 h-4 me-1" />
               {t('debts.full_payment')}
@@ -159,7 +170,7 @@ const DeliveryPaymentDialog: React.FC<DeliveryPaymentDialogProps> = ({
               type="button"
               variant={paymentMode === 'partial' ? 'default' : 'outline'}
               className="h-12 text-xs"
-              onClick={() => setPaymentMode('partial')}
+              onClick={() => { setPaymentMode('partial'); setOverpaymentAction(null); }}
             >
               <CreditCard className="w-4 h-4 me-1" />
               {t('debts.partial_payment')}
@@ -168,7 +179,7 @@ const DeliveryPaymentDialog: React.FC<DeliveryPaymentDialogProps> = ({
               type="button"
               variant={paymentMode === 'no_payment' ? 'destructive' : 'outline'}
               className="h-12 text-xs"
-              onClick={() => setPaymentMode('no_payment')}
+              onClick={() => { setPaymentMode('no_payment'); setOverpaymentAction(null); }}
             >
               <AlertTriangle className="w-4 h-4 me-1" />
               بدون دفع
@@ -183,21 +194,55 @@ const DeliveryPaymentDialog: React.FC<DeliveryPaymentDialogProps> = ({
                 <Input
                   type="number"
                   value={paidAmount}
-                  onChange={(e) => setPaidAmount(e.target.value)}
+                  onChange={(e) => { setPaidAmount(e.target.value); setOverpaymentAction(null); }}
                   placeholder="0"
                   min="0"
-                  max={orderTotal}
-                  className={`text-lg font-bold h-12 ${paidAmountExceedsTotal ? 'border-destructive ring-destructive' : ''}`}
+                  className="text-lg font-bold h-12"
                 />
-                {paidAmountExceedsTotal && (
-                  <p className="text-xs text-destructive mt-1 flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3" />
-                    المبلغ المدفوع أكبر من إجمالي الطلبية ({formatNumber(orderTotal, language)} {t('common.currency')})
-                  </p>
-                )}
               </div>
 
-              {remainingAmount > 0 && !paidAmountExceedsTotal && (
+              {/* Overpayment: show options */}
+              {isOverpayment && (
+                <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-emerald-600" />
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">فائض مالي</p>
+                      <p className="text-lg font-bold text-emerald-600">
+                        {formatNumber(overpaymentAmount, language)} {t('common.currency')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={overpaymentAction === 'refund' ? 'default' : 'outline'}
+                      className="text-xs h-10"
+                      onClick={() => setOverpaymentAction('refund')}
+                    >
+                      <Undo2 className="w-3.5 h-3.5 me-1" />
+                      إرجاع الفرق
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={overpaymentAction === 'credit' ? 'default' : 'outline'}
+                      className="text-xs h-10"
+                      onClick={() => setOverpaymentAction('credit')}
+                    >
+                      <Wallet className="w-3.5 h-3.5 me-1" />
+                      وضع في رصيد العميل
+                    </Button>
+                  </div>
+                  {!overpaymentAction && (
+                    <p className="text-xs text-muted-foreground text-center">يرجى اختيار ما سيتم فعله بالفائض</p>
+                  )}
+                </div>
+              )}
+
+              {/* Underpayment: remaining as debt */}
+              {remainingAmount > 0 && !isOverpayment && (
                 <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 flex items-center gap-3">
                   <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
                   <div>
@@ -240,8 +285,7 @@ const DeliveryPaymentDialog: React.FC<DeliveryPaymentDialogProps> = ({
           <Button
             className="w-full h-12 text-base"
             onClick={handleConfirm}
-            disabled={isSubmitting || (paymentMode === 'partial' && (!paidAmount || Number(paidAmount) <= 0)) || paidAmountExceedsTotal}
-
+            disabled={!canSubmit}
           >
             {isSubmitting ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -252,6 +296,8 @@ const DeliveryPaymentDialog: React.FC<DeliveryPaymentDialogProps> = ({
                   ? t('debts.confirm_full_payment')
                   : paymentMode === 'no_payment'
                   ? 'تأكيد بدون دفع (تسجيل دين)'
+                  : isOverpayment
+                  ? `تأكيد الدفع (فائض ${formatNumber(overpaymentAmount, language)})`
                   : t('debts.confirm_and_record_debt')}
               </>
             )}

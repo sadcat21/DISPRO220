@@ -630,6 +630,139 @@ export type Database = {
           },
         ]
       }
+      customer_credits: {
+        Row: {
+          amount: number
+          approved_at: string | null
+          approved_by: string | null
+          branch_id: string | null
+          created_at: string
+          credit_type: string
+          customer_id: string
+          id: string
+          is_used: boolean
+          notes: string | null
+          order_id: string | null
+          product_id: string | null
+          product_quantity: number | null
+          product_reason: string | null
+          rejection_reason: string | null
+          status: string
+          updated_at: string
+          used_at: string | null
+          used_in_order_id: string | null
+          worker_id: string
+        }
+        Insert: {
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          branch_id?: string | null
+          created_at?: string
+          credit_type?: string
+          customer_id: string
+          id?: string
+          is_used?: boolean
+          notes?: string | null
+          order_id?: string | null
+          product_id?: string | null
+          product_quantity?: number | null
+          product_reason?: string | null
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          used_at?: string | null
+          used_in_order_id?: string | null
+          worker_id: string
+        }
+        Update: {
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          branch_id?: string | null
+          created_at?: string
+          credit_type?: string
+          customer_id?: string
+          id?: string
+          is_used?: boolean
+          notes?: string | null
+          order_id?: string | null
+          product_id?: string | null
+          product_quantity?: number | null
+          product_reason?: string | null
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          used_at?: string | null
+          used_in_order_id?: string | null
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_credits_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_credits_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_credits_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_credits_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_credits_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_credits_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_credits_used_in_order_id_fkey"
+            columns: ["used_in_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_credits_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_credits_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_debts: {
         Row: {
           branch_id: string | null

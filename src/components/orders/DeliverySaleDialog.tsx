@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Truck, Plus, Minus, Loader2,
-  XCircle, Package, PlusCircle, Stamp, CheckCircle, PackageX, Gift, AlertTriangle, Copy
+  XCircle, Package, PlusCircle, Stamp, CheckCircle, PackageX, Gift, AlertTriangle, Copy, DollarSign
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -22,6 +22,8 @@ import { OrderWithDetails, OrderItem, Product } from '@/types/database';
 import { useActiveStampTiers, calculateStampAmount } from '@/hooks/useStampTiers';
 import { useCreateDebt } from '@/hooks/useCustomerDebts';
 import { useLogActivity } from '@/hooks/useActivityLogs';
+import { useCreateCustomerCredit, useCustomerCredits, useCustomerCreditSummary, useMarkCreditUsed } from '@/hooks/useCustomerCredits';
+import CustomerCreditBadges from '@/components/orders/CustomerCreditBadges';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
 import { useOrderItems } from '@/hooks/useOrders';
 import DeliveryPaymentDialog from '@/components/orders/DeliveryPaymentDialog';
@@ -52,8 +54,13 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
   const queryClient = useQueryClient();
   const { data: stampTiers } = useActiveStampTiers();
   const createDebt = useCreateDebt();
+  const createCredit = useCreateCustomerCredit();
+  const markCreditUsed = useMarkCreditUsed();
   const logActivity = useLogActivity();
   const { trackVisit } = useTrackVisit();
+  const creditSummary = useCustomerCreditSummary(order.customer_id);
+  const { data: customerCredits } = useCustomerCredits(order.customer_id);
+  const [useCreditBalance, setUseCreditBalance] = useState(false);
 
   const { data: orderItems, isLoading: isLoadingItems } = useOrderItems(open ? order.id : null);
 
@@ -141,6 +148,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
       setInitialized(false);
       setNewProductId('');
       setPartialDeliveryAction('none');
+      setUseCreditBalance(false);
     }
   }, [open]);
 
@@ -220,9 +228,10 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
       if (matchedTier) stampPercentage = matchedTier.percentage;
     }
     const totalAmount = subtotal + stampAmount;
-    const amountAfterPrepaid = Math.max(0, totalAmount - prepaidAmount);
-    return { totalItems, totalGiftBoxes, subtotal, stampAmount, stampPercentage, totalAmount, amountAfterPrepaid };
-  }, [saleItems, order.payment_type, order, stampTiers, shortageProductIds, prepaidAmount]);
+    const creditDeduction = useCreditBalance ? creditSummary.financialTotal : 0;
+    const amountAfterPrepaid = Math.max(0, totalAmount - prepaidAmount - creditDeduction);
+    return { totalItems, totalGiftBoxes, subtotal, stampAmount, stampPercentage, totalAmount, amountAfterPrepaid, creditDeduction };
+  }, [saleItems, order.payment_type, order, stampTiers, shortageProductIds, prepaidAmount, useCreditBalance, creditSummary.financialTotal]);
 
   // Detect partial delivery (items reduced or removed)
   const partialDeliveryDiff = useMemo(() => {
@@ -274,6 +283,8 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
     notes?: string;
     isFullPayment: boolean;
     isNoPayment?: boolean;
+    overpaymentAction?: 'refund' | 'credit';
+    overpaymentAmount?: number;
   }) => {
     setIsSaving(true);
     try {
@@ -381,6 +392,27 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
         toast.success(t('debts.debt_recorded'));
       } else {
         toast.success(t('debts.payment_success'));
+      }
+
+      // Handle overpayment - add to customer credit balance
+      if (paymentData.overpaymentAction === 'credit' && paymentData.overpaymentAmount && paymentData.overpaymentAmount > 0) {
+        await createCredit.mutateAsync({
+          customer_id: order.customer_id,
+          credit_type: 'financial',
+          amount: paymentData.overpaymentAmount,
+          order_id: order.id,
+          worker_id: workerId!,
+          branch_id: order.branch_id || activeBranch?.id,
+          notes: `فائض مالي من الطلبية ${order.id.slice(0, 8)}`,
+        });
+      }
+
+      // Use credit balance if opted
+      if (useCreditBalance && customerCredits && customerCredits.length > 0) {
+        const financialCredits = customerCredits.filter(c => c.credit_type === 'financial' && c.status === 'approved' && !c.is_used);
+        for (const credit of financialCredits) {
+          await markCreditUsed.mutateAsync({ creditId: credit.id, orderId: order.id });
+        }
       }
 
       // Log activity
@@ -528,8 +560,11 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
                   <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
                     {order.customer?.name?.charAt(0) || '?'}
                   </div>
-                  <div>
-                    <p className="font-bold">{order.customer?.name}</p>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <p className="font-bold">{order.customer?.name}</p>
+                      <CustomerCreditBadges customerId={order.customer_id} />
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       {order.customer?.wilaya}
                       {order.customer?.phone && ` • ${order.customer.phone}`}
@@ -746,16 +781,38 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
                         </span>
                       </div>
                       {prepaidAmount > 0 && (
-                        <>
-                          <div className="flex items-center justify-between text-sm text-green-600 dark:text-green-400">
-                            <span>مبلغ مسبق مدفوع:</span>
-                            <span className="font-medium">- {prepaidAmount.toLocaleString()} {t('common.currency')}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-base font-bold text-primary">
-                            <span>المبلغ المتبقي:</span>
-                            <span>{totals.amountAfterPrepaid.toLocaleString('ar-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {t('common.currency')}</span>
-                          </div>
-                        </>
+                        <div className="flex items-center justify-between text-sm text-green-600 dark:text-green-400">
+                          <span>مبلغ مسبق مدفوع:</span>
+                          <span className="font-medium">- {prepaidAmount.toLocaleString()} {t('common.currency')}</span>
+                        </div>
+                      )}
+                      {/* Credit balance usage prompt */}
+                      {creditSummary.hasFinancial && (
+                        <div className="flex items-center justify-between text-sm py-1">
+                          <button
+                            type="button"
+                            className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors ${
+                              useCreditBalance
+                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                            }`}
+                            onClick={() => setUseCreditBalance(!useCreditBalance)}
+                          >
+                            <DollarSign className="w-3.5 h-3.5" />
+                            {useCreditBalance ? 'تم خصم رصيد العميل' : 'خصم رصيد العميل؟'}
+                          </button>
+                          {useCreditBalance && (
+                            <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                              - {creditSummary.financialTotal.toLocaleString()} {t('common.currency')}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {(prepaidAmount > 0 || useCreditBalance) && (
+                        <div className="flex items-center justify-between text-base font-bold text-primary">
+                          <span>المبلغ المتبقي:</span>
+                          <span>{totals.amountAfterPrepaid.toLocaleString('ar-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {t('common.currency')}</span>
+                        </div>
                       )}
                     </>
                   )}
