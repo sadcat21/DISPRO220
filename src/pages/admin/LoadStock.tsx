@@ -654,16 +654,9 @@ const LoadStock: React.FC = () => {
                                   variant="outline"
                                   className="h-6 text-xs px-2 border-destructive/30 text-destructive hover:bg-destructive/10"
                                   onClick={() => {
-                                    // Add gift as a new load item with converted quantity
-                                    const existingGiftIdx = items.findIndex((it, i) => i !== index && it.product_id === item.product_id);
-                                    if (existingGiftIdx >= 0) {
-                                      // Update existing item quantity
-                                      updateItem(existingGiftIdx, 'quantity', items[existingGiftIdx].quantity + giftStockQty);
-                                    } else {
-                                      // Add new item for gift
-                                      setItems(prev => [...prev, { ...newLoadItem(item.product_id, giftStockQty), allocations: [], allocationMode: false }]);
-                                    }
-                                    toast.success(`تم إضافة ${suggestedGifts} ${unitLabel(offer.giftUnit)} هدايا للشحن`);
+                                    // Add gift quantity directly to the current item
+                                    updateItem(index, 'quantity', item.quantity + giftStockQty);
+                                    toast.success(`تم إضافة ${suggestedGifts} ${unitLabel(offer.giftUnit)} هدايا - الكمية أصبحت ${(item.quantity + giftStockQty).toFixed(2)}`);
                                   }}
                                 >
                                   <Plus className="w-3 h-3 ml-0.5" />
