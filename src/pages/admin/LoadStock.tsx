@@ -974,7 +974,7 @@ const LoadStock: React.FC = () => {
                   disabled={isEmptying}
                 >
                   <Search className="w-4 h-4 me-1" />
-                  بدء جلسة تأكيد
+                  بدء جلسة مراجعة
                 </Button>
                 <Button
                   variant="outline"
@@ -1179,8 +1179,8 @@ const LoadStock: React.FC = () => {
                   <CardContent className="p-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <div>
-                        <Badge variant={session.status === 'unloaded' ? 'destructive' : 'secondary'} className={`text-xs ${session.status === 'open' || session.status === 'completed' ? 'bg-green-600 text-white hover:bg-green-700' : ''}`}>
-                          {session.status === 'open' ? 'شحن' : session.status === 'unloaded' ? 'تفريغ' : 'شحن'}
+                      <Badge variant={session.status === 'unloaded' ? 'destructive' : 'secondary'} className={`text-xs ${session.status === 'review' ? 'bg-blue-600 text-white hover:bg-blue-700' : session.status === 'open' || session.status === 'completed' ? 'bg-green-600 text-white hover:bg-green-700' : ''}`}>
+                          {session.status === 'open' ? 'شحن' : session.status === 'unloaded' ? 'تفريغ' : session.status === 'review' ? 'مراجعة' : 'شحن'}
                         </Badge>
                         {session.notes?.includes('فائض') && (
                           <Badge className="bg-amber-500 text-white text-[10px] px-1.5 py-0 ms-1">فائض</Badge>
@@ -1237,7 +1237,7 @@ const LoadStock: React.FC = () => {
               <Package className="w-5 h-5 text-primary" />
               {(() => {
                 const s = sessions.find(s => s.id === viewSessionId);
-                return s?.status === 'unloaded' ? 'تفاصيل جلسة التفريغ' : 'تفاصيل جلسة الشحن';
+                return s?.status === 'unloaded' ? 'تفاصيل جلسة التفريغ' : s?.status === 'review' ? 'تفاصيل جلسة المراجعة' : 'تفاصيل جلسة الشحن';
               })()}
             </DialogTitle>
           </DialogHeader>
@@ -1249,8 +1249,8 @@ const LoadStock: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div className="text-muted-foreground">الحالة:</div>
                   <div>
-                    <Badge variant={session.status === 'unloaded' ? 'destructive' : 'secondary'} className={`text-xs ${session.status !== 'unloaded' ? 'bg-green-600 text-white hover:bg-green-700' : ''}`}>
-                      {isUnload ? 'تفريغ' : 'شحن'}
+                    <Badge variant={session.status === 'unloaded' ? 'destructive' : 'secondary'} className={`text-xs ${session.status === 'review' ? 'bg-blue-600 text-white hover:bg-blue-700' : session.status !== 'unloaded' ? 'bg-green-600 text-white hover:bg-green-700' : ''}`}>
+                      {isUnload ? 'تفريغ' : session.status === 'review' ? 'مراجعة' : 'شحن'}
                     </Badge>
                     {session.notes?.includes('فائض') && (
                       <Badge className="bg-amber-500 text-white text-[10px] px-1.5 py-0 ms-1">فائض</Badge>

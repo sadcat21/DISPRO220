@@ -5,18 +5,19 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
-import { CheckCircle, AlertTriangle, TrendingUp, Package, Loader2 } from 'lucide-react';
+import { CheckCircle, AlertTriangle, TrendingUp, Package, Loader2, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCreateDiscrepancy } from '@/hooks/useStockDiscrepancies';
 import { toast } from 'sonner';
 
-interface VerificationItem {
+interface ReviewItem {
   product_id: string;
   product_name: string;
   system_qty: number;
+  actual_qty: string; // string for input control
   status: 'unverified' | 'match' | 'deficit' | 'surplus';
-  discrepancy_value: number; // positive number for both deficit & surplus
+  difference: number; // positive = surplus, negative = deficit
 }
 
 interface StockVerificationDialogProps {
@@ -31,12 +32,14 @@ const StockVerificationDialog: React.FC<StockVerificationDialogProps> = ({
 }) => {
   const { workerId: currentWorkerId, activeBranch } = useAuth();
   const createDiscrepancy = useCreateDiscrepancy();
-  const [items, setItems] = useState<VerificationItem[]>([]);
+  const [items, setItems] = useState<ReviewItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
 
   useEffect(() => {
     if (!open || !workerId) return;
+    setShowSummary(false);
     const fetchWorkerStock = async () => {
       setIsLoading(true);
       const { data } = await supabase
@@ -49,44 +52,76 @@ const StockVerificationDialog: React.FC<StockVerificationDialogProps> = ({
         product_id: ws.product_id,
         product_name: (ws.product as any)?.name || '',
         system_qty: ws.quantity,
+        actual_qty: '',
         status: 'unverified',
-        discrepancy_value: 0,
+        difference: 0,
       })));
       setIsLoading(false);
     };
     fetchWorkerStock();
   }, [open, workerId]);
 
-  const updateItemStatus = (productId: string, status: 'match' | 'deficit' | 'surplus') => {
-    setItems(prev => prev.map(item =>
-      item.product_id === productId
-        ? { ...item, status, discrepancy_value: status === 'match' ? 0 : item.discrepancy_value }
-        : item
-    ));
+  const updateActualQty = (productId: string, value: string) => {
+    setItems(prev => prev.map(item => {
+      if (item.product_id !== productId) return item;
+      const numVal = parseFloat(value);
+      if (value === '' || isNaN(numVal)) {
+        return { ...item, actual_qty: value, status: 'unverified', difference: 0 };
+      }
+      const diff = numVal - item.system_qty;
+      const status: ReviewItem['status'] = 
+        Math.abs(diff) < 0.001 ? 'match' : diff > 0 ? 'surplus' : 'deficit';
+      return { ...item, actual_qty: value, status, difference: diff };
+    }));
   };
 
-  const updateDiscrepancyValue = (productId: string, value: number) => {
-    setItems(prev => prev.map(item =>
-      item.product_id === productId ? { ...item, discrepancy_value: value } : item
-    ));
+  const getStatusBadge = (item: ReviewItem) => {
+    if (item.status === 'unverified') return null;
+    if (item.status === 'match') return <Badge className="bg-green-600 text-white text-[10px]">مطابق</Badge>;
+    if (item.status === 'surplus') return <Badge className="bg-orange-500 text-white text-[10px]">فائض +{Math.abs(item.difference).toFixed(2)}</Badge>;
+    return <Badge variant="destructive" className="text-[10px]">عجز -{Math.abs(item.difference).toFixed(2)}</Badge>;
+  };
+
+  const discrepancies = items.filter(i => i.status === 'deficit' || i.status === 'surplus');
+  const allVerified = items.length > 0 && items.every(i => i.status !== 'unverified');
+
+  const handleShowSummary = () => {
+    if (!allVerified) {
+      toast.error(`يرجى إدخال الكمية الفعلية لجميع المنتجات (${items.filter(i => i.status === 'unverified').length} متبقي)`);
+      return;
+    }
+    if (discrepancies.length === 0) {
+      // All match - confirm directly
+      handleConfirm();
+      return;
+    }
+    setShowSummary(true);
+  };
+
+  const handleBackToReview = () => {
+    setShowSummary(false);
   };
 
   const handleConfirm = async () => {
-    const unverified = items.filter(i => i.status === 'unverified');
-    if (unverified.length > 0) {
-      toast.error(`يرجى تأكيد حالة جميع المنتجات (${unverified.length} متبقي)`);
-      return;
-    }
-
-    const discrepancies = items.filter(i => i.status !== 'match' && i.discrepancy_value > 0);
-    if (discrepancies.some(d => d.discrepancy_value <= 0)) {
-      toast.error('يرجى إدخال قيمة العجز أو الفائض');
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       const branchId = activeBranch?.id;
+
+      // Save as a loading session with status 'review'
+      const { data: session, error: sessionError } = await supabase
+        .from('loading_sessions')
+        .insert({
+          worker_id: workerId,
+          manager_id: currentWorkerId!,
+          branch_id: branchId || null,
+          status: 'review',
+          notes: discrepancies.length > 0 
+            ? `جلسة مراجعة - ${discrepancies.length} فارق` 
+            : 'جلسة مراجعة - مطابق بالكامل',
+        })
+        .select()
+        .single();
+      if (sessionError) throw sessionError;
 
       // Record each discrepancy
       for (const item of discrepancies) {
@@ -95,16 +130,19 @@ const StockVerificationDialog: React.FC<StockVerificationDialogProps> = ({
           product_id: item.product_id,
           branch_id: branchId || null,
           discrepancy_type: item.status as 'deficit' | 'surplus',
-          quantity: item.discrepancy_value,
-          notes: `جلسة تأكيد مخزون - ${item.status === 'deficit' ? 'عجز' : 'فائض'}: ${item.discrepancy_value}`,
+          quantity: Math.abs(item.difference),
+          source_session_id: session.id,
+          notes: `جلسة مراجعة - ${item.status === 'deficit' ? 'عجز' : 'فائض'}: ${Math.abs(item.difference)}`,
         });
       }
 
-      toast.success(`تم تأكيد المخزون - ${discrepancies.length} فارق مسجل`);
+      toast.success(discrepancies.length > 0 
+        ? `تم تأكيد المراجعة - ${discrepancies.length} فارق مسجل`
+        : 'تم تأكيد المراجعة - جميع المنتجات مطابقة');
       onOpenChange(false);
       onComplete?.();
     } catch (err: any) {
-      toast.error(err.message || 'خطأ في تسجيل التأكيد');
+      toast.error(err.message || 'خطأ في تسجيل المراجعة');
     } finally {
       setIsSubmitting(false);
     }
@@ -112,20 +150,92 @@ const StockVerificationDialog: React.FC<StockVerificationDialogProps> = ({
 
   const verifiedCount = items.filter(i => i.status !== 'unverified').length;
 
+  // Summary view
+  if (showSummary) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-orange-500" />
+              ملخص الفوارق
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              المنتجات التالية بها فروقات - يمكنك التعديل أو العودة للمراجعة
+            </p>
+          </DialogHeader>
+
+          <ScrollArea className="flex-1 max-h-[55vh]">
+            <div className="space-y-3 p-1">
+              {discrepancies.map(item => (
+                <Card key={item.product_id} className={`border ${
+                  item.status === 'deficit' ? 'border-destructive/40 bg-destructive/5' :
+                  'border-orange-300 bg-orange-50/50 dark:bg-orange-900/10'
+                }`}>
+                  <CardContent className="p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-sm">{item.product_name}</span>
+                      {getStatusBadge(item)}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div>
+                        <span className="text-muted-foreground">رصيد النظام:</span>
+                        <div className="font-medium">{item.system_qty}</div>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">الكمية الفعلية:</span>
+                        <Input
+                          type="number"
+                          step={0.01}
+                          value={item.actual_qty}
+                          onChange={e => updateActualQty(item.product_id, e.target.value)}
+                          className="h-7 text-sm mt-0.5"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">الفارق:</span>
+                        <div className={`font-bold ${item.status === 'deficit' ? 'text-destructive' : 'text-orange-600'}`}>
+                          {item.status === 'deficit' ? '-' : '+'}{Math.abs(item.difference).toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </ScrollArea>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={handleBackToReview}>
+              <ArrowLeft className="w-4 h-4 me-1" />
+              العودة للمراجعة
+            </Button>
+            <Button onClick={handleConfirm} disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin me-2" />}
+              <CheckCircle className="w-4 h-4 me-1" />
+              تأكيد المراجعة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // Main review view
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Package className="w-5 h-5 text-primary" />
-            جلسة تأكيد المخزون
+            جلسة مراجعة المخزون
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
-            تحقق من رصيد كل منتج: مطابق، عجز، أو فائض
+            أدخل الكمية الفعلية لكل منتج - سيتم تحديد الحالة تلقائياً
           </p>
           {items.length > 0 && (
             <Badge variant="outline" className="w-fit">
-              {verifiedCount}/{items.length} تم التحقق
+              {verifiedCount}/{items.length} تم المراجعة
             </Badge>
           )}
         </DialogHeader>
@@ -151,59 +261,25 @@ const StockVerificationDialog: React.FC<StockVerificationDialogProps> = ({
                   <CardContent className="p-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-sm">{item.product_name}</span>
-                      <Badge variant="secondary" className="text-xs">
-                        رصيد النظام: {item.system_qty}
-                      </Badge>
-                    </div>
-
-                    {/* Status buttons */}
-                    <div className="grid grid-cols-3 gap-1.5">
-                      <Button
-                        size="sm"
-                        variant={item.status === 'match' ? 'default' : 'outline'}
-                        className={item.status === 'match' ? 'bg-green-600 hover:bg-green-700 text-white' : 'text-green-600 border-green-300'}
-                        onClick={() => updateItemStatus(item.product_id, 'match')}
-                      >
-                        <CheckCircle className="w-3.5 h-3.5 me-1" />
-                        مطابق
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant={item.status === 'deficit' ? 'default' : 'outline'}
-                        className={item.status === 'deficit' ? 'bg-destructive hover:bg-destructive/90 text-white' : 'text-destructive border-destructive/30'}
-                        onClick={() => updateItemStatus(item.product_id, 'deficit')}
-                      >
-                        <AlertTriangle className="w-3.5 h-3.5 me-1" />
-                        عجز
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant={item.status === 'surplus' ? 'default' : 'outline'}
-                        className={item.status === 'surplus' ? 'bg-orange-500 hover:bg-orange-600 text-white' : 'text-orange-600 border-orange-300'}
-                        onClick={() => updateItemStatus(item.product_id, 'surplus')}
-                      >
-                        <TrendingUp className="w-3.5 h-3.5 me-1" />
-                        فائض
-                      </Button>
-                    </div>
-
-                    {/* Discrepancy value input */}
-                    {(item.status === 'deficit' || item.status === 'surplus') && (
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {item.status === 'deficit' ? 'كمية العجز:' : 'كمية الفائض:'}
-                        </span>
-                        <Input
-                          type="number"
-                          min={0}
-                          step={0.01}
-                          value={item.discrepancy_value || ''}
-                          onChange={e => updateDiscrepancyValue(item.product_id, parseFloat(e.target.value) || 0)}
-                          className="h-8 text-sm"
-                          placeholder="أدخل الكمية"
-                        />
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs">
+                          النظام: {item.system_qty}
+                        </Badge>
+                        {getStatusBadge(item)}
                       </div>
-                    )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">الكمية الفعلية:</span>
+                      <Input
+                        type="number"
+                        min={0}
+                        step={0.01}
+                        value={item.actual_qty}
+                        onChange={e => updateActualQty(item.product_id, e.target.value)}
+                        className="h-8 text-sm"
+                        placeholder="أدخل الكمية الموجودة فعلياً"
+                      />
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -216,12 +292,12 @@ const StockVerificationDialog: React.FC<StockVerificationDialogProps> = ({
             إلغاء
           </Button>
           <Button
-            onClick={handleConfirm}
+            onClick={handleShowSummary}
             disabled={isSubmitting || items.length === 0}
           >
             {isSubmitting && <Loader2 className="w-4 h-4 animate-spin me-2" />}
             <CheckCircle className="w-4 h-4 me-1" />
-            تأكيد
+            تأكيد المراجعة
           </Button>
         </DialogFooter>
       </DialogContent>
