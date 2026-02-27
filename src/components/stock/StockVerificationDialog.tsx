@@ -276,9 +276,23 @@ const StockVerificationDialog: React.FC<StockVerificationDialogProps> = ({
                         step={0.01}
                         value={item.actual_qty}
                         onChange={e => updateActualQty(item.product_id, e.target.value)}
-                        className="h-8 text-sm"
+                        className="h-8 text-sm flex-1"
                         placeholder="أدخل الكمية الموجودة فعلياً"
                       />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className={`h-8 text-xs whitespace-nowrap ${
+                          item.status === 'match'
+                            ? 'bg-green-600 text-white border-green-600 hover:bg-green-700 hover:text-white'
+                            : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                        }`}
+                        onClick={() => updateActualQty(item.product_id, String(item.system_qty))}
+                      >
+                        <CheckCircle className="w-3.5 h-3.5 me-1" />
+                        مطابق
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
