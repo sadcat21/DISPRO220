@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -542,83 +543,87 @@ const LoadStock: React.FC = () => {
 
           {/* Worker Stock Summary - Product Cards */}
           {selectedWorker && !suggestionsLoading && suggestions.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                {hasDeficit ? (
-                  <AlertTriangle className="w-4 h-4 text-destructive" />
-                ) : (
-                  <CheckCircle className="w-4 h-4 text-primary" />
-                )}
-                <span className="font-semibold text-sm">
-                  {hasDeficit ? t('stock.needs_loading') : t('stock.stock_sufficient')}
-                </span>
-                {hasDeficit && (
-                  <Badge variant="destructive" className="ms-auto text-xs">
-                    {totalDeficit} {t('stock.boxes')}
-                  </Badge>
-                )}
-              </div>
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" className="w-full flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {hasDeficit ? (
+                      <AlertTriangle className="w-4 h-4 text-destructive" />
+                    ) : (
+                      <CheckCircle className="w-4 h-4 text-primary" />
+                    )}
+                    <span className="font-semibold text-sm">
+                      {hasDeficit ? t('stock.needs_loading') : t('stock.stock_sufficient')}
+                    </span>
+                    {hasDeficit && (
+                      <Badge variant="destructive" className="text-xs">
+                        {totalDeficit} {t('stock.boxes')}
+                      </Badge>
+                    )}
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform" />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <div className="grid gap-2">
+                  {suggestions.map(s => {
+                    const sessionLoad = sessionLoads[s.product_id];
+                    const loadedThisSession = sessionLoad?.loaded || 0;
+                    const giftQty = sessionLoad?.giftQty || 0;
+                    const giftUnit = sessionLoad?.giftUnit || 'piece';
+                    const oldStock = s.current_stock - loadedThisSession;
+                    const totalStock = s.current_stock;
+                    const surplus = Math.max(0, totalStock - s.pending_orders_quantity);
 
-              <div className="grid gap-2">
-                {suggestions.map(s => {
-                  const sessionLoad = sessionLoads[s.product_id];
-                  const loadedThisSession = sessionLoad?.loaded || 0;
-                  const giftQty = sessionLoad?.giftQty || 0;
-                  const giftUnit = sessionLoad?.giftUnit || 'piece';
-                  // Old stock = current - what was loaded this session
-                  const oldStock = s.current_stock - loadedThisSession;
-                  const totalStock = s.current_stock;
-                  const surplus = Math.max(0, totalStock - s.pending_orders_quantity);
-                  const giftLabel = giftUnit === 'piece' ? 'قطعة' : giftUnit === 'box' ? 'صندوق' : 'كغ';
-
-                  return (
-                    <Card key={s.product_id} className="border">
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <Package className="w-4 h-4 text-primary" />
-                            <span className="font-semibold text-sm">{s.product_name}</span>
-                          </div>
-                          {s.suggested_load > 0 ? (
-                            <Badge variant="destructive" className="text-xs">يحتاج +{s.suggested_load}</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs border-primary/30 text-primary">✓ كافي</Badge>
-                          )}
-                        </div>
-                        <div className={`grid ${giftQty > 0 ? 'grid-cols-6' : 'grid-cols-5'} gap-1 text-xs`}>
-                          <div className="bg-muted/50 rounded p-1 text-center">
-                            <div className="text-muted-foreground text-[10px]">سابق</div>
-                            <div className="font-bold">{oldStock}</div>
-                          </div>
-                          <div className="bg-primary/5 rounded p-1 text-center">
-                            <div className="text-muted-foreground text-[10px]">جديد</div>
-                            <div className="font-bold text-primary">{loadedThisSession > 0 ? `+${loadedThisSession}` : '—'}</div>
-                          </div>
-                          <div className="bg-muted/50 rounded p-1 text-center">
-                            <div className="text-muted-foreground text-[10px]">الكلي</div>
-                            <div className="font-bold">{totalStock}</div>
-                          </div>
-                          <div className="bg-muted/50 rounded p-1 text-center">
-                            <div className="text-muted-foreground text-[10px]">طلبات</div>
-                            <div className="font-bold">{s.pending_orders_quantity}</div>
-                          </div>
-                          <div className="bg-muted/50 rounded p-1 text-center">
-                            <div className="text-muted-foreground text-[10px]">فائض</div>
-                            <div className="font-bold">{surplus}</div>
-                          </div>
-                          {giftQty > 0 && (
-                            <div className="bg-destructive/5 rounded p-1 text-center">
-                              <div className="text-muted-foreground text-[10px]">هدايا</div>
-                              <div className="font-bold text-destructive">{giftQty}</div>
+                    return (
+                      <Card key={s.product_id} className="border">
+                        <CardContent className="p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Package className="w-4 h-4 text-primary" />
+                              <span className="font-semibold text-sm">{s.product_name}</span>
                             </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </div>
+                            {s.suggested_load > 0 ? (
+                              <Badge variant="destructive" className="text-xs">يحتاج +{s.suggested_load}</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs border-primary/30 text-primary">✓ كافي</Badge>
+                            )}
+                          </div>
+                          <div className={`grid ${giftQty > 0 ? 'grid-cols-6' : 'grid-cols-5'} gap-1 text-xs`}>
+                            <div className="bg-muted/50 rounded p-1 text-center">
+                              <div className="text-muted-foreground text-[10px]">سابق</div>
+                              <div className="font-bold">{oldStock}</div>
+                            </div>
+                            <div className="bg-primary/5 rounded p-1 text-center">
+                              <div className="text-muted-foreground text-[10px]">جديد</div>
+                              <div className="font-bold text-primary">{loadedThisSession > 0 ? `+${loadedThisSession}` : '—'}</div>
+                            </div>
+                            <div className="bg-muted/50 rounded p-1 text-center">
+                              <div className="text-muted-foreground text-[10px]">الكلي</div>
+                              <div className="font-bold">{totalStock}</div>
+                            </div>
+                            <div className="bg-muted/50 rounded p-1 text-center">
+                              <div className="text-muted-foreground text-[10px]">طلبات</div>
+                              <div className="font-bold">{s.pending_orders_quantity}</div>
+                            </div>
+                            <div className="bg-muted/50 rounded p-1 text-center">
+                              <div className="text-muted-foreground text-[10px]">فائض</div>
+                              <div className="font-bold">{surplus}</div>
+                            </div>
+                            {giftQty > 0 && (
+                              <div className="bg-destructive/5 rounded p-1 text-center">
+                                <div className="text-muted-foreground text-[10px]">هدايا</div>
+                                <div className="font-bold text-destructive">{giftQty}</div>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           )}
 
           {suggestionsLoading && selectedWorker && (
