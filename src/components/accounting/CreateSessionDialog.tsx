@@ -39,6 +39,7 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
   const updateSession = useUpdateFullSession();
   const createWorkerDebt = useCreateWorkerDebt();
   const [registerDeficit, setRegisterDeficit] = useState(false);
+  const [registerDeficitTreasury, setRegisterDeficitTreasury] = useState(false);
   const [registerSurplus, setRegisterSurplus] = useState(false);
   const nowLocal = () => {
     const now = new Date();
@@ -110,6 +111,7 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
         setCoinAmount('');
       }
       setRegisterDeficit(false);
+      setRegisterDeficitTreasury(false);
       setRegisterSurplus(false);
       setIsSubmitting(false);
     }
@@ -183,7 +185,7 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
         toast.success(t('accounting.session_created'));
       }
 
-      // Register deficit as worker debt AND in surplus/deficit treasury
+      // Register deficit as worker debt
       if (registerDeficit && cashDifference < 0) {
         try {
           await createWorkerDebt.mutateAsync({
@@ -193,7 +195,13 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
             session_id: sessionId,
             description: `عجز جلسة محاسبة ${format(new Date(), 'dd/MM/yyyy')}`,
           });
-          // Also record in manager treasury as deficit
+          toast.success('تم تسجيل العجز كدين على العامل');
+        } catch { toast.error('خطأ في تسجيل العجز كدين'); }
+      }
+
+      // Register deficit in surplus/deficit treasury
+      if (registerDeficitTreasury && cashDifference < 0) {
+        try {
           await supabase.from('manager_treasury').insert({
             manager_id: currentWorkerId!,
             branch_id: activeBranch?.id || null,
@@ -203,8 +211,8 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
             amount: Math.abs(cashDifference),
             notes: `عجز جلسة محاسبة - ${workerName || selectedWorkerId}`,
           });
-          toast.success('تم تسجيل العجز كدين على العامل وفي خزينة الفائض والعجز');
-        } catch { toast.error('خطأ في تسجيل العجز'); }
+          toast.success('تم تسجيل العجز في خزينة الفائض والعجز');
+        } catch { toast.error('خطأ في تسجيل العجز في الخزينة'); }
       }
 
       // Register surplus in manager treasury
@@ -413,15 +421,27 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                   )}
 
                    {actualCash !== '' && cashDifference < 0 && (
-                     <div className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-destructive/10">
-                       <Checkbox
-                         id="register-deficit"
-                         checked={registerDeficit}
-                         onCheckedChange={(v) => setRegisterDeficit(!!v)}
-                       />
-                       <label htmlFor="register-deficit" className="text-xs font-medium text-destructive cursor-pointer">
-                         تسجيل العجز كدين على العامل ({fmt(Math.abs(cashDifference))} DA)
-                       </label>
+                     <div className="space-y-2 mt-2">
+                       <div className="flex items-center gap-2 p-2 rounded-lg bg-destructive/10">
+                         <Checkbox
+                           id="register-deficit"
+                           checked={registerDeficit}
+                           onCheckedChange={(v) => setRegisterDeficit(!!v)}
+                         />
+                         <label htmlFor="register-deficit" className="text-xs font-medium text-destructive cursor-pointer">
+                           تسجيل العجز كدين على العامل ({fmt(Math.abs(cashDifference))} DA)
+                         </label>
+                       </div>
+                       <div className="flex items-center gap-2 p-2 rounded-lg bg-orange-100 dark:bg-orange-900/20">
+                         <Checkbox
+                           id="register-deficit-treasury"
+                           checked={registerDeficitTreasury}
+                           onCheckedChange={(v) => setRegisterDeficitTreasury(!!v)}
+                         />
+                         <label htmlFor="register-deficit-treasury" className="text-xs font-medium text-orange-700 dark:text-orange-400 cursor-pointer">
+                           تسجيل العجز في خزينة الفائض والعجز ({fmt(Math.abs(cashDifference))} DA)
+                         </label>
+                       </div>
                      </div>
                    )}
 
