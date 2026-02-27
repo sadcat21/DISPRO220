@@ -1068,7 +1068,7 @@ const LoadStock: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <History className="w-5 h-5 text-primary" />
-              سجل جلسات الشحن
+              سجل جلسات الشحن والتفريغ
             </DialogTitle>
           </DialogHeader>
           {/* Filters */}
@@ -1119,8 +1119,8 @@ const LoadStock: React.FC = () => {
                   <CardContent className="p-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <div>
-                        <Badge variant={session.status === 'open' ? 'default' : session.status === 'unloaded' ? 'destructive' : 'secondary'} className="text-xs">
-                          {session.status === 'open' ? 'مفتوحة' : session.status === 'unloaded' ? 'تفريغ' : 'مكتملة'}
+                        <Badge variant={session.status === 'unloaded' ? 'destructive' : 'secondary'} className={`text-xs ${session.status === 'open' || session.status === 'completed' ? 'bg-green-600 text-white hover:bg-green-700' : ''}`}>
+                          {session.status === 'open' ? 'شحن' : session.status === 'unloaded' ? 'تفريغ' : 'شحن'}
                         </Badge>
                         {session.notes?.includes('فائض') && (
                           <Badge className="bg-amber-500 text-white text-[10px] px-1.5 py-0 ms-1">فائض</Badge>
