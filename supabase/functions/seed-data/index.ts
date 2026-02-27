@@ -127,6 +127,46 @@ serve(async (req) => {
       );
     }
 
+    // Action: sync-delivery-workers - Set default_delivery_worker_id from sector
+    if (action === "sync-delivery-workers") {
+      // Get all sectors with delivery workers
+      const { data: sectorsData, error: sectorsError } = await supabase
+        .from("sectors")
+        .select("id, name, delivery_worker_id")
+        .not("delivery_worker_id", "is", null);
+
+      if (sectorsError) {
+        return new Response(
+          JSON.stringify({ error: sectorsError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      let updatedCount = 0;
+      const results = [];
+      for (const sector of sectorsData || []) {
+        const { data: updated, error: updateError } = await supabase
+          .from("customers")
+          .update({ default_delivery_worker_id: sector.delivery_worker_id })
+          .eq("sector_id", sector.id)
+          .is("default_delivery_worker_id", null)
+          .select("id");
+
+        if (updateError) {
+          results.push({ sector: sector.name, error: updateError.message });
+        } else {
+          const count = updated?.length || 0;
+          updatedCount += count;
+          if (count > 0) results.push({ sector: sector.name, updated: count });
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: `Updated ${updatedCount} customers`, results }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Action: translate-categories
     if (action === "translate-categories") {
       const translations = [
