@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Package, Loader2, Trash2, Box, Pencil, Stamp, Layers, Weight, Scale } from 'lucide-react';
+import { Plus, Package, Loader2, Trash2, Box, Pencil, Stamp, Layers, Weight, Scale, Camera, X, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import StampTiersDialog from '@/components/products/StampTiersDialog';
 import PricingGroupsTab from '@/components/products/PricingGroupsTab';
@@ -39,6 +39,8 @@ const Products: React.FC = () => {
   const [pricingUnit, setPricingUnit] = useState<string>('box');
   const [weightPerBox, setWeightPerBox] = useState<number>(0);
   const [allowUnitSale, setAllowUnitSale] = useState<boolean>(false);
+  const [productImage, setProductImage] = useState<File | null>(null);
+  const [productImagePreview, setProductImagePreview] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -55,6 +57,8 @@ const Products: React.FC = () => {
   const [editPricingUnit, setEditPricingUnit] = useState<string>('box');
   const [editWeightPerBox, setEditWeightPerBox] = useState<number>(0);
   const [editAllowUnitSale, setEditAllowUnitSale] = useState<boolean>(false);
+  const [editProductImage, setEditProductImage] = useState<File | null>(null);
+  const [editProductImagePreview, setEditProductImagePreview] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showStampPriceDialog, setShowStampPriceDialog] = useState(false);
   const [activeTab, setActiveTab] = useState('products');
@@ -64,6 +68,26 @@ const Products: React.FC = () => {
   const [productGroup, setProductGroup] = useState<ProductGroup | null>(null);
   const [pendingPriceUpdates, setPendingPriceUpdates] = useState<Record<string, number>>({});
   const [originalPrices, setOriginalPrices] = useState<Record<string, number>>({});
+  const addImageInputRef = useRef<HTMLInputElement>(null);
+  const editImageInputRef = useRef<HTMLInputElement>(null);
+
+  const uploadProductImage = async (file: File, productId: string): Promise<string | null> => {
+    const ext = file.name.split('.').pop();
+    const filePath = `${productId}.${ext}`;
+    const { error } = await supabase.storage.from('product-images').upload(filePath, file, { upsert: true });
+    if (error) { console.error('Upload error:', error); return null; }
+    const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(filePath);
+    return publicUrl;
+  };
+
+  const handleImageSelect = (file: File | null, setFile: (f: File | null) => void, setPreview: (p: string | null) => void) => {
+    if (!file) { setFile(null); setPreview(null); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('حجم الصورة يجب أن يكون أقل من 5 ميجا'); return; }
+    setFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setPreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     fetchProducts();
@@ -111,7 +135,7 @@ const Products: React.FC = () => {
 
     setIsSaving(true);
     try {
-      const { error } = await supabase.from('products').insert({
+      const { data: insertedProduct, error } = await supabase.from('products').insert({
         name: productName.trim(),
         pieces_per_box: piecesPerBox,
         pricing_unit: pricingUnit,
@@ -123,9 +147,17 @@ const Products: React.FC = () => {
         price_no_invoice: priceNoInvoice,
         allow_unit_sale: allowUnitSale,
         created_by: workerId,
-      });
+      }).select('id').single();
 
       if (error) throw error;
+
+      // Upload image if selected
+      if (productImage && insertedProduct) {
+        const imageUrl = await uploadProductImage(productImage, insertedProduct.id);
+        if (imageUrl) {
+          await supabase.from('products').update({ image_url: imageUrl }).eq('id', insertedProduct.id);
+        }
+      }
 
       toast.success(t('products.added'));
       setShowAddDialog(false);
@@ -139,6 +171,8 @@ const Products: React.FC = () => {
       setPricingUnit('box');
       setWeightPerBox(0);
       setAllowUnitSale(true);
+      setProductImage(null);
+      setProductImagePreview(null);
       fetchProducts();
     } catch (error: any) {
       console.error('Error adding product:', error);
@@ -175,6 +209,8 @@ const Products: React.FC = () => {
     setEditPricingUnit(product.pricing_unit || 'box');
     setEditWeightPerBox(product.weight_per_box || 0);
     setEditAllowUnitSale(product.allow_unit_sale !== false);
+    setEditProductImage(null);
+    setEditProductImagePreview(product.image_url || null);
     setEditPriceSuperGros(product.price_super_gros || 0);
     setEditPriceGros(product.price_gros || 0);
     setEditPriceInvoice(product.price_invoice || 0);
@@ -251,6 +287,12 @@ const Products: React.FC = () => {
 
     setIsUpdating(true);
     try {
+      let imageUrl = editingProduct.image_url;
+      if (editProductImage) {
+        const uploaded = await uploadProductImage(editProductImage, editingProduct.id);
+        if (uploaded) imageUrl = uploaded;
+      }
+
       const { error } = await supabase
         .from('products')
         .update({
@@ -264,6 +306,7 @@ const Products: React.FC = () => {
           price_retail: editPriceRetail,
           price_no_invoice: editPriceNoInvoice,
           allow_unit_sale: editAllowUnitSale,
+          image_url: imageUrl,
         })
         .eq('id', editingProduct.id);
 
@@ -438,6 +481,34 @@ const Products: React.FC = () => {
                   className="text-right"
                   autoFocus
                 />
+              </div>
+
+              {/* Image Upload */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Camera className="w-4 h-4" />
+                  صورة المنتج
+                </Label>
+                <input
+                  ref={addImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleImageSelect(e.target.files?.[0] || null, setProductImage, setProductImagePreview)}
+                />
+                {productImagePreview ? (
+                  <div className="relative w-20 h-20">
+                    <img src={productImagePreview} alt="معاينة" className="w-20 h-20 rounded-lg object-cover border" />
+                    <button type="button" onClick={() => { setProductImage(null); setProductImagePreview(null); }} className="absolute -top-2 -left-2 bg-destructive text-destructive-foreground rounded-full p-0.5">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <Button type="button" variant="outline" size="sm" onClick={() => addImageInputRef.current?.click()} className="gap-2">
+                    <Camera className="w-4 h-4" />
+                    اختر صورة
+                  </Button>
+                )}
               </div>
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
@@ -615,9 +686,13 @@ const Products: React.FC = () => {
               <div className="flex items-center">
                 {/* Product Info */}
                 <div className="flex-1 flex items-center gap-3 p-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <Package className="w-5 h-5 text-primary" />
-                  </div>
+                  {product.image_url ? (
+                    <img src={product.image_url} alt={product.name} className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Package className="w-5 h-5 text-primary" />
+                    </div>
+                  )}
                   <div className="min-w-0 flex-1">
                     <p className="font-bold truncate">{product.name}</p>
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
@@ -706,6 +781,34 @@ const Products: React.FC = () => {
                 className="text-right"
                 autoFocus
               />
+            </div>
+
+            {/* Image Upload */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Camera className="w-4 h-4" />
+                صورة المنتج
+              </Label>
+              <input
+                ref={editImageInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleImageSelect(e.target.files?.[0] || null, setEditProductImage, setEditProductImagePreview)}
+              />
+              {editProductImagePreview ? (
+                <div className="relative w-20 h-20">
+                  <img src={editProductImagePreview} alt="معاينة" className="w-20 h-20 rounded-lg object-cover border" />
+                  <button type="button" onClick={() => { setEditProductImage(null); setEditProductImagePreview(null); }} className="absolute -top-2 -left-2 bg-destructive text-destructive-foreground rounded-full p-0.5">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <Button type="button" variant="outline" size="sm" onClick={() => editImageInputRef.current?.click()} className="gap-2">
+                  <Camera className="w-4 h-4" />
+                  اختر صورة
+                </Button>
+              )}
             </div>
             <div className="space-y-2">
               <Label className="flex items-center gap-2">

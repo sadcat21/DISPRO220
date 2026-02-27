@@ -92,6 +92,7 @@ export interface Product {
   price_retail: number | null;
   price_no_invoice: number | null;
   allow_unit_sale: boolean;
+  image_url: string | null;
 }
 
 export interface OrderItem {

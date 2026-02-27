@@ -2380,6 +2380,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          image_url: string | null
           is_active: boolean
           name: string
           pieces_per_box: number
@@ -2396,6 +2397,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           name: string
           pieces_per_box?: number
@@ -2412,6 +2414,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           name?: string
           pieces_per_box?: number
