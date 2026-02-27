@@ -551,10 +551,18 @@ const MyDeliveries: React.FC = () => {
                 </div>
               ))}
               {selectedOrder?.total_amount && Number(selectedOrder.total_amount) > 0 && (
-                <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg font-bold">
-                  <span>{t('orders.grand_total')}</span>
-                  <span className="text-primary">{Number(selectedOrder.total_amount).toLocaleString()} دج</span>
-                </div>
+                <>
+                  <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg font-bold">
+                    <span>{t('orders.grand_total')}</span>
+                    <span className="text-primary">{Number(selectedOrder.total_amount).toLocaleString()} دج</span>
+                  </div>
+                  {Number(selectedOrder.prepaid_amount || 0) > 0 && (
+                    <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 rounded-lg text-sm">
+                      <span className="text-green-700 dark:text-green-400 font-medium">مبلغ مسبق مدفوع</span>
+                      <span className="text-green-700 dark:text-green-400 font-bold">{Number(selectedOrder.prepaid_amount).toLocaleString()} دج</span>
+                    </div>
+                  )}
+                </>
               )}
               {(!selectedOrderItems || selectedOrderItems.length === 0) && (
                 <p className="text-center text-muted-foreground py-4">{t('orders.no_products')}</p>

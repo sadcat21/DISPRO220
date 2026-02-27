@@ -128,7 +128,8 @@ export const useCreateOrder = () => {
       paymentType = 'with_invoice',
       invoicePaymentMethod,
       assignedWorkerId,
-      totalAmount
+      totalAmount,
+      prepaidAmount
     }: { 
       customerId: string; 
       items: { productId: string; quantity: number; unitPrice?: number; totalPrice?: number; giftQuantity?: number; giftOfferId?: string; itemPaymentType?: string; itemInvoicePaymentMethod?: string | null; itemPriceSubType?: string }[];
@@ -138,6 +139,7 @@ export const useCreateOrder = () => {
       invoicePaymentMethod?: 'receipt' | 'check' | 'cash' | 'transfer' | null;
       assignedWorkerId?: string;
       totalAmount?: number;
+      prepaidAmount?: number;
     }) => {
       const { data: order, error: orderError } = await supabase
         .from('orders')
@@ -152,6 +154,7 @@ export const useCreateOrder = () => {
           status: assignedWorkerId ? 'assigned' : 'pending',
           assigned_worker_id: assignedWorkerId || null,
           total_amount: totalAmount || null,
+          prepaid_amount: prepaidAmount || 0,
         })
         .select()
         .single();

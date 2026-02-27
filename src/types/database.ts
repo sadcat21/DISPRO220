@@ -144,6 +144,7 @@ export interface Order {
   payment_status: PaymentStatus;
   invoice_payment_method: string | null;
   partial_amount: number | null;
+  prepaid_amount: number | null;
   notes: string | null;
   delivery_date: string | null;
   total_amount: number | null;

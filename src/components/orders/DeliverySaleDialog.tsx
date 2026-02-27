@@ -203,6 +203,8 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
   };
 
   // Totals
+  const prepaidAmount = Number(order.prepaid_amount || 0);
+
   const totals = useMemo(() => {
     const activeItems = saleItems.filter(i => !shortageProductIds.has(i.productId));
     const totalItems = activeItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -217,8 +219,10 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
       const matchedTier = activeTiers.find(t => subtotal >= t.min_amount && (t.max_amount === null || subtotal <= t.max_amount));
       if (matchedTier) stampPercentage = matchedTier.percentage;
     }
-    return { totalItems, totalGiftBoxes, subtotal, stampAmount, stampPercentage, totalAmount: subtotal + stampAmount };
-  }, [saleItems, order.payment_type, order, stampTiers, shortageProductIds]);
+    const totalAmount = subtotal + stampAmount;
+    const amountAfterPrepaid = Math.max(0, totalAmount - prepaidAmount);
+    return { totalItems, totalGiftBoxes, subtotal, stampAmount, stampPercentage, totalAmount, amountAfterPrepaid };
+  }, [saleItems, order.payment_type, order, stampTiers, shortageProductIds, prepaidAmount]);
 
   // Detect partial delivery (items reduced or removed)
   const partialDeliveryDiff = useMemo(() => {
@@ -741,6 +745,18 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
                           {totals.totalAmount.toLocaleString('ar-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {t('common.currency')}
                         </span>
                       </div>
+                      {prepaidAmount > 0 && (
+                        <>
+                          <div className="flex items-center justify-between text-sm text-green-600 dark:text-green-400">
+                            <span>مبلغ مسبق مدفوع:</span>
+                            <span className="font-medium">- {prepaidAmount.toLocaleString()} {t('common.currency')}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-base font-bold text-primary">
+                            <span>المبلغ المتبقي:</span>
+                            <span>{totals.amountAfterPrepaid.toLocaleString('ar-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {t('common.currency')}</span>
+                          </div>
+                        </>
+                      )}
                     </>
                   )}
                 </section>
@@ -771,9 +787,9 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
                 <CheckCircle className="w-5 h-5 ms-2" />
               )}
               {t('orders.confirm_delivery') || 'تأكيد التوصيل'}
-              {totals.totalAmount > 0 && (
+              {totals.amountAfterPrepaid > 0 && (
                 <Badge variant="secondary" className="mr-2 bg-white/20">
-                  {totals.totalAmount.toLocaleString()} {t('common.currency')}
+                  {totals.amountAfterPrepaid.toLocaleString()} {t('common.currency')}
                 </Badge>
               )}
             </Button>
@@ -785,8 +801,9 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
       <DeliveryPaymentDialog
         open={showPaymentDialog}
         onOpenChange={setShowPaymentDialog}
-        orderTotal={totals.totalAmount}
+        orderTotal={totals.amountAfterPrepaid}
         customerName={order.customer?.name || ''}
+        prepaidAmount={prepaidAmount}
         onConfirm={handlePaymentConfirm}
       />
 

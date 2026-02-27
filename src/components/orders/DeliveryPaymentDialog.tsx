@@ -15,6 +15,8 @@ interface DeliveryPaymentDialogProps {
   onOpenChange: (open: boolean) => void;
   orderTotal: number;
   customerName: string;
+  /** Prepaid amount already paid at order creation */
+  prepaidAmount?: number;
   /** Frozen payment type passed at dialog open time */
   frozenPaymentType?: string;
   /** Frozen invoice method passed at dialog open time */
@@ -37,6 +39,7 @@ const DeliveryPaymentDialog: React.FC<DeliveryPaymentDialogProps> = ({
   onOpenChange,
   orderTotal,
   customerName,
+  prepaidAmount = 0,
   frozenPaymentType,
   frozenInvoiceMethod,
   onConfirm,
@@ -109,9 +112,20 @@ const DeliveryPaymentDialog: React.FC<DeliveryPaymentDialogProps> = ({
           {/* Customer & Total */}
           <div className="bg-muted/50 rounded-lg p-3 space-y-2">
             <p className="text-sm text-muted-foreground">{customerName}</p>
+            {prepaidAmount > 0 && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">المبلغ المتبقي بعد خصم الدفع المسبق:</span>
+              </div>
+            )}
             <p className="text-2xl font-bold">
               {formatNumber(orderTotal, language)} {t('common.currency')}
             </p>
+            {prepaidAmount > 0 && (
+              <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 text-xs">
+                <CheckCircle className="w-3 h-3 me-1" />
+                تم دفع {formatNumber(prepaidAmount, language)} {t('common.currency')} مسبقاً
+              </Badge>
+            )}
             {/* Show frozen payment type for verification */}
             {frozenPaymentType && (
               <div className="flex gap-2 flex-wrap">

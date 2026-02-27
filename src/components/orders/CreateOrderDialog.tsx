@@ -78,6 +78,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
   const [deliveryDate, setDeliveryDate] = useState('');
   const [paymentType, setPaymentType] = useState<PaymentType>('with_invoice');
   const [priceSubType, setPriceSubType] = useState<PriceSubType>('gros');
+  const [prepaidAmount, setPrepaidAmount] = useState('');
   const [invoicePaymentMethod, setInvoicePaymentMethod] = useState<InvoicePaymentMethod | null>(null);
   const [selectedDeliveryWorker, setSelectedDeliveryWorker] = useState('');
   const [showAssignWorkerDialog, setShowAssignWorkerDialog] = useState(false);
@@ -187,6 +188,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
     setOrderItems([]);
     setNotes('');
     setDeliveryDate('');
+    setPrepaidAmount('');
     setPaymentType('with_invoice');
     setPriceSubType('gros');
     setInvoicePaymentMethod(null);
@@ -389,6 +391,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
         invoicePaymentMethod: paymentType === 'with_invoice' ? invoicePaymentMethod : undefined,
         totalAmount: orderTotals.totalAmount > 0 ? orderTotals.totalAmount : undefined,
         assignedWorkerId: defaultWorkerId,
+        prepaidAmount: Number(prepaidAmount) || 0,
       });
 
       toast.success(t('orders.created_success'));
@@ -790,6 +793,24 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                   value={deliveryDate}
                   onChange={(e) => setDeliveryDate(e.target.value)}
                 />
+              </section>
+
+              {/* Prepaid Amount */}
+              <section className="space-y-2">
+                <Label>مبلغ مسبق ({t('common.optional')})</Label>
+                <Input
+                  type="number"
+                  value={prepaidAmount}
+                  onChange={(e) => setPrepaidAmount(e.target.value)}
+                  placeholder="0"
+                  min="0"
+                  className="h-10"
+                />
+                {Number(prepaidAmount) > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    سيتم خصم {Number(prepaidAmount).toLocaleString()} {t('common.currency')} من المبلغ عند التوصيل
+                  </p>
+                )}
               </section>
 
               {/* Notes */}
