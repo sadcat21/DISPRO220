@@ -532,43 +532,47 @@ const MyDeliveries: React.FC = () => {
               )}
             </div>
 
-            {/* Customer details */}
+            {/* Customer details - compact */}
             {selectedOrder?.customer && (
-              <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Store className="w-4 h-4 text-muted-foreground" />
-                  <p className="font-bold">{selectedOrder.customer.store_name || selectedOrder.customer.name}</p>
+              <div className="bg-muted/50 rounded-lg p-2.5 space-y-1">
+                {/* Store name + sector */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <Store className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  <span className="font-bold text-sm">{selectedOrder.customer.store_name || selectedOrder.customer.name}</span>
                   {customerDebts[selectedOrder.customer_id] && (
-                    <AlertTriangle className="w-4 h-4 text-destructive" />
+                    <AlertTriangle className="w-3.5 h-3.5 text-destructive shrink-0" />
+                  )}
+                  {(selectedOrder.customer as any)?.sector && (
+                    <Badge variant="outline" className="text-[10px] px-1 py-0 gap-0.5">
+                      <Map className="w-2.5 h-2.5" />
+                      {getLocalizedName((selectedOrder.customer as any).sector, language)}
+                      {(selectedOrder.customer as any)?.zone && ` • ${getLocalizedName((selectedOrder.customer as any).zone, language)}`}
+                    </Badge>
                   )}
                 </div>
-                {selectedOrder.customer.store_name && <p className="text-xs text-muted-foreground mr-6">{selectedOrder.customer.name}</p>}
-                {/* Sector & Zone */}
-                {(selectedOrder.customer as any)?.sector && (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Map className="w-3.5 h-3.5" />
-                    <span>{getLocalizedName((selectedOrder.customer as any).sector, language)}</span>
-                    {(selectedOrder.customer as any)?.zone && (
-                      <span>• {getLocalizedName((selectedOrder.customer as any).zone, language)}</span>
+                {/* Customer name + phone */}
+                {selectedOrder.customer.store_name && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mr-5">
+                    <User className="w-3 h-3 shrink-0" />
+                    <span>{selectedOrder.customer.name}</span>
+                    {selectedOrder.customer.phone && (
+                      <a href={`tel:${selectedOrder.customer.phone}`} className="flex items-center gap-1 text-primary ms-auto">
+                        <Phone className="w-3 h-3" />
+                        {selectedOrder.customer.phone}
+                      </a>
                     )}
                   </div>
                 )}
-                {selectedOrder.customer.phone && (
-                  <a href={`tel:${selectedOrder.customer.phone}`} className="flex items-center gap-2 text-primary text-sm">
-                    <Phone className="w-4 h-4" />
+                {!selectedOrder.customer.store_name && selectedOrder.customer.phone && (
+                  <a href={`tel:${selectedOrder.customer.phone}`} className="flex items-center gap-1.5 text-xs text-primary mr-5">
+                    <Phone className="w-3 h-3" />
                     {selectedOrder.customer.phone}
                   </a>
-                )}
-                {selectedOrder.customer.address && (
-                  <p className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <MapPin className="w-4 h-4 shrink-0 mt-0.5" />
-                    {selectedOrder.customer.address}{selectedOrder.customer.wilaya ? ` - ${selectedOrder.customer.wilaya}` : ''}
-                  </p>
                 )}
               </div>
             )}
             
-            {/* Location map at the bottom */}
+            {/* Location map + address at the bottom */}
             {selectedOrder?.customer?.latitude && selectedOrder?.customer?.longitude && (
               <Collapsible defaultOpen>
                 <CollapsibleTrigger asChild>
@@ -580,7 +584,13 @@ const MyDeliveries: React.FC = () => {
                     <ChevronDown className="w-4 h-4" />
                   </Button>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="pt-3">
+                <CollapsibleContent className="pt-3 space-y-2">
+                  {selectedOrder.customer.address && (
+                    <p className="flex items-start gap-2 text-xs text-muted-foreground">
+                      <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                      {selectedOrder.customer.address}{selectedOrder.customer.wilaya ? ` - ${selectedOrder.customer.wilaya}` : ''}
+                    </p>
+                  )}
                   <LazyCustomerLocationView
                     latitude={selectedOrder.customer.latitude}
                     longitude={selectedOrder.customer.longitude}
