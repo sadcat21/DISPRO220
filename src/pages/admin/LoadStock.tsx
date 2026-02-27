@@ -294,8 +294,13 @@ const LoadStock: React.FC = () => {
 
       await loadToWorker(selectedWorker, Object.values(aggregated));
       toast.success(t('stock.loaded_success'));
-      setSelectedWorker('');
+      // Stay on the same worker session - just reset the items
       setItems([newLoadItem()]);
+      setProductOffers({});
+      // Refresh data to show updated stock
+      queryClient.invalidateQueries({ queryKey: ['worker-load-suggestions'] });
+      queryClient.invalidateQueries({ queryKey: ['my-worker-stock'] });
+      queryClient.invalidateQueries({ queryKey: ['worker-truck-stock'] });
     } catch (error: any) {
       console.error('Error loading stock:', error);
       toast.error(error.message || t('common.error'));
