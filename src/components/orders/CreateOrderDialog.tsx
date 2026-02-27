@@ -83,6 +83,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
   const [showAssignWorkerDialog, setShowAssignWorkerDialog] = useState(false);
   const [savedOrderId, setSavedOrderId] = useState('');
   const [savedCustomerBranchId, setSavedCustomerBranchId] = useState<string | null>(null);
+  const [savedDefaultDeliveryWorkerId, setSavedDefaultDeliveryWorkerId] = useState<string | null>(null);
 
   // Search and dialogs
   const [customerDropdownOpen, setCustomerDropdownOpen] = useState(false);
@@ -399,12 +400,11 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
       const branchId = selectedCustomer?.branch_id || activeBranch?.id || null;
       setSavedOrderId(order.id);
       setSavedCustomerBranchId(branchId);
+      setSavedDefaultDeliveryWorkerId(defaultWorkerId || null);
       handleClose(false);
 
-      // Only show assign worker dialog if no default worker was auto-assigned
-      if (!defaultWorkerId) {
-        setShowAssignWorkerDialog(true);
-      }
+      // Always show assign worker dialog (with pre-selection if default exists)
+      setShowAssignWorkerDialog(true);
     } catch (error: any) {
       toast.error(error.message || t('common.error'));
     }
@@ -863,6 +863,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
         onOpenChange={setShowAssignWorkerDialog}
         orderId={savedOrderId}
         customerBranchId={savedCustomerBranchId}
+        defaultDeliveryWorkerId={savedDefaultDeliveryWorkerId}
       />
     </>
   );
