@@ -28,40 +28,75 @@ const MyStock: React.FC = () => {
     enabled: !!workerId,
   });
 
-  // Fetch stock movements to calculate loaded and sold quantities
-  const { data: movements } = useQuery({
-    queryKey: ['my-stock-movements', workerId],
+  // Fetch the last completed accounting session date for this worker
+  const { data: lastAccountingSession } = useQuery({
+    queryKey: ['my-last-accounting', workerId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('stock_movements')
-        .select('product_id, quantity, movement_type')
+      const { data } = await supabase
+        .from('accounting_sessions')
+        .select('completed_at')
         .eq('worker_id', workerId!)
-        .in('movement_type', ['load', 'delivery']);
-
-      if (error) throw error;
-      return data || [];
+        .eq('status', 'completed')
+        .order('completed_at', { ascending: false })
+        .limit(1)
+        .single();
+      return data?.completed_at || null;
     },
     enabled: !!workerId,
   });
 
-  // Fetch gift quantities from delivered orders with offer unit info
-  const { data: giftData } = useQuery({
-    queryKey: ['my-stock-gifts', workerId],
+  const lastAccountingDate = lastAccountingSession || null;
+
+  // Fetch loaded quantities from loading_session_items since last accounting
+  const { data: loadedData } = useQuery({
+    queryKey: ['my-stock-loaded', workerId, lastAccountingDate],
     queryFn: async () => {
-      const { data: orders } = await supabase
+      // Get loading sessions for this worker since last accounting
+      let sessionsQuery = supabase
+        .from('loading_sessions')
+        .select('id')
+        .eq('worker_id', workerId!);
+      
+      if (lastAccountingDate) {
+        sessionsQuery = sessionsQuery.gte('created_at', lastAccountingDate);
+      }
+
+      const { data: sessions } = await sessionsQuery;
+      if (!sessions || sessions.length === 0) return [];
+
+      const sessionIds = sessions.map(s => s.id);
+      const { data: items } = await supabase
+        .from('loading_session_items')
+        .select('product_id, quantity, gift_quantity')
+        .in('session_id', sessionIds);
+
+      return items || [];
+    },
+    enabled: !!workerId,
+  });
+
+  // Fetch sold quantities from delivered orders since last accounting
+  const { data: soldData } = useQuery({
+    queryKey: ['my-stock-sold', workerId, lastAccountingDate],
+    queryFn: async () => {
+      let ordersQuery = supabase
         .from('orders')
         .select('id')
         .eq('assigned_worker_id', workerId!)
         .eq('status', 'delivered');
 
+      if (lastAccountingDate) {
+        ordersQuery = ordersQuery.gte('created_at', lastAccountingDate);
+      }
+
+      const { data: orders } = await ordersQuery;
       if (!orders || orders.length === 0) return [];
 
       const orderIds = orders.map(o => o.id);
       const { data: items } = await supabase
         .from('order_items')
-        .select('product_id, gift_quantity, gift_offer_id')
-        .in('order_id', orderIds)
-        .gt('gift_quantity', 0);
+        .select('product_id, quantity, gift_quantity, gift_offer_id')
+        .in('order_id', orderIds);
 
       if (!items || items.length === 0) return [];
 
@@ -86,28 +121,33 @@ const MyStock: React.FC = () => {
     enabled: !!workerId,
   });
 
-  // Calculate loaded and sold per product
+  // Calculate loaded per product from loading sessions
   const movementStats = useMemo(() => {
     const stats: Record<string, { loaded: number; sold: number }> = {};
-    for (const m of (movements || [])) {
-      if (!stats[m.product_id]) stats[m.product_id] = { loaded: 0, sold: 0 };
-      if (m.movement_type === 'load') stats[m.product_id].loaded += m.quantity;
-      else if (m.movement_type === 'delivery') stats[m.product_id].sold += m.quantity;
+    for (const item of (loadedData || [])) {
+      if (!stats[item.product_id]) stats[item.product_id] = { loaded: 0, sold: 0 };
+      stats[item.product_id].loaded += item.quantity + (item.gift_quantity || 0);
+    }
+    for (const item of (soldData || [])) {
+      if (!stats[item.product_id]) stats[item.product_id] = { loaded: 0, sold: 0 };
+      stats[item.product_id].sold += item.quantity;
     }
     return stats;
-  }, [movements]);
+  }, [loadedData, soldData]);
 
   // Calculate gifts per product
   const giftStats = useMemo(() => {
     const stats: Record<string, { totalGifts: number; unit: string }> = {};
-    for (const item of (giftData || [])) {
-      const pid = item.product_id;
-      const unit = item.gift_unit || 'piece';
-      if (!stats[pid]) stats[pid] = { totalGifts: 0, unit };
-      stats[pid].totalGifts += item.gift_quantity;
+    for (const item of (soldData || [])) {
+      if ((item.gift_quantity || 0) > 0) {
+        const pid = item.product_id;
+        const unit = (item as any).gift_unit || 'piece';
+        if (!stats[pid]) stats[pid] = { totalGifts: 0, unit };
+        stats[pid].totalGifts += item.gift_quantity;
+      }
     }
     return stats;
-  }, [giftData]);
+  }, [soldData]);
 
   if (isLoading) {
     return (
