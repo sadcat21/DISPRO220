@@ -10,7 +10,7 @@ import { Plus, Loader2, Camera, Trash2, ClipboardList, Image as ImageIcon, Packa
 import SimpleProductPickerDialog from '@/components/stock/SimpleProductPickerDialog';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { useWarehouseStock } from '@/hooks/useWarehouseStock';
+import { useWarehouseStock, StockReceiptItem, StockReceipt } from '@/hooks/useWarehouseStock';
 import { formatDate } from '@/utils/formatters';
 
 interface ReceiptItem {
@@ -31,6 +31,28 @@ const StockReceipts: React.FC = () => {
   const [invoicePhoto, setInvoicePhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [productPickerIndex, setProductPickerIndex] = useState<number | null>(null);
+
+  // View receipt details
+  const [viewReceipt, setViewReceipt] = useState<StockReceipt | null>(null);
+  const [viewItems, setViewItems] = useState<StockReceiptItem[]>([]);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+
+  const handleViewReceipt = async (receipt: StockReceipt) => {
+    setViewReceipt(receipt);
+    setIsLoadingDetails(true);
+    try {
+      const { data } = await supabase
+        .from('stock_receipt_items')
+        .select('*, product:products(name, pieces_per_box)')
+        .eq('receipt_id', receipt.id)
+        .order('created_at', { ascending: true });
+      setViewItems((data || []) as unknown as StockReceiptItem[]);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoadingDetails(false);
+    }
+  };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -148,7 +170,7 @@ const StockReceipts: React.FC = () => {
       )}
 
       {receipts.map(receipt => (
-        <Card key={receipt.id}>
+        <Card key={receipt.id} className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => handleViewReceipt(receipt)}>
           <CardContent className="p-3">
             <div className="flex items-center justify-between mb-1">
               <span className="text-sm font-medium">
@@ -161,7 +183,7 @@ const StockReceipts: React.FC = () => {
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>{receipt.total_items} {t('stock.items')}</span>
               {receipt.invoice_photo_url && (
-                <a href={receipt.invoice_photo_url} target="_blank" rel="noopener noreferrer" className="text-primary flex items-center gap-1">
+                <a href={receipt.invoice_photo_url} target="_blank" rel="noopener noreferrer" className="text-primary flex items-center gap-1" onClick={e => e.stopPropagation()}>
                   <ImageIcon className="w-3 h-3" />
                   {t('stock.view_invoice')}
                 </a>
@@ -170,6 +192,70 @@ const StockReceipts: React.FC = () => {
           </CardContent>
         </Card>
       ))}
+
+      {/* View Receipt Details Dialog */}
+      <Dialog open={!!viewReceipt} onOpenChange={(open) => { if (!open) setViewReceipt(null); }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardList className="w-5 h-5 text-primary" />
+              {t('stock.receipt_details')}
+            </DialogTitle>
+          </DialogHeader>
+
+          {viewReceipt && (
+            <div className="space-y-4">
+              <div className="space-y-1 text-sm">
+                {viewReceipt.invoice_number && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t('stock.invoice_number')}</span>
+                    <span className="font-medium">{viewReceipt.invoice_number}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t('common.date')}</span>
+                  <span>{formatDate(viewReceipt.created_at, 'dd/MM/yyyy HH:mm', language)}</span>
+                </div>
+                {viewReceipt.notes && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t('common.notes')}</span>
+                    <span>{viewReceipt.notes}</span>
+                  </div>
+                )}
+                {viewReceipt.invoice_photo_url && (
+                  <a href={viewReceipt.invoice_photo_url} target="_blank" rel="noopener noreferrer" className="text-primary flex items-center gap-1 text-xs">
+                    <ImageIcon className="w-3 h-3" />
+                    {t('stock.view_invoice')}
+                  </a>
+                )}
+              </div>
+
+              <div className="border-t pt-3">
+                <Label className="text-sm font-semibold mb-2 block">{t('stock.add_products')}</Label>
+                {isLoadingDetails ? (
+                  <div className="flex justify-center py-4">
+                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                  </div>
+                ) : viewItems.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">{t('common.no_results')}</p>
+                ) : (
+                  <div className="space-y-2">
+                    {viewItems.map((item: any) => (
+                      <div key={item.id} className="flex items-center justify-between rounded-lg border p-2">
+                        <div className="flex items-center gap-2">
+                          <Package className="w-4 h-4 text-primary" />
+                          <span className="text-sm font-medium">{item.product?.name || item.product_id}</span>
+                        </div>
+                        <span className="text-sm font-bold text-primary">{item.quantity}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Create Receipt Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
