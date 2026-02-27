@@ -520,9 +520,22 @@ const LoadStock: React.FC = () => {
                 {suggestions.map(s => {
                   const sessionLoad = sessionItems.filter(si => si.product_id === s.product_id);
                   const loadedThisSession = sessionLoad.reduce((sum: number, si: any) => sum + (si.quantity || 0), 0);
-                  const giftQty = sessionLoad.reduce((sum: number, si: any) => sum + (si.gift_quantity || 0), 0);
+                  const newGiftQty = sessionLoad.reduce((sum: number, si: any) => sum + (si.gift_quantity || 0), 0);
+                  const newGiftUnit = sessionLoad[0]?.gift_unit || 'piece';
                   const oldStock = s.current_stock - loadedThisSession;
                   const surplus = Math.max(0, s.current_stock - s.pending_orders_quantity);
+                  
+                  // Convert gift qty to boxes.pieces format
+                  const product = products.find(p => p.id === s.product_id);
+                  const piecesPerBox = product?.pieces_per_box || 20;
+                  const newGiftInCustom = newGiftUnit === 'box' ? newGiftQty : totalPiecesToCustom(newGiftQty, piecesPerBox);
+                  
+                  // Previous gifts: gifts already in worker stock from before this session
+                  // We can estimate from oldStock decimal part or use a simpler approach
+                  const oldGiftPieces = Math.round((Math.round(oldStock * 100) / 100 - Math.floor(Math.round(oldStock * 100) / 100)) * 100);
+                  const oldGiftCustom = oldGiftPieces > 0 ? totalPiecesToCustom(oldGiftPieces, piecesPerBox) : 0;
+
+                  const hasGifts = newGiftQty > 0 || oldGiftCustom > 0;
                   return (
                     <Card key={s.product_id} className="border">
                       <CardContent className="p-3">
@@ -537,7 +550,7 @@ const LoadStock: React.FC = () => {
                             <Badge variant="outline" className="text-xs border-primary/30 text-primary">✓ كافي</Badge>
                           )}
                         </div>
-                        <div className={`grid ${giftQty > 0 ? 'grid-cols-6' : 'grid-cols-5'} gap-1 text-xs`}>
+                        <div className={`grid ${hasGifts ? 'grid-cols-7' : 'grid-cols-5'} gap-1 text-xs`}>
                           <div className="bg-muted/50 rounded p-1 text-center">
                             <div className="text-muted-foreground text-[10px]">سابق</div>
                             <div className="font-bold">{fmtQty(oldStock)}</div>
@@ -558,11 +571,17 @@ const LoadStock: React.FC = () => {
                             <div className="text-muted-foreground text-[10px]">فائض</div>
                             <div className="font-bold">{fmtQty(surplus)}</div>
                           </div>
-                          {giftQty > 0 && (
-                            <div className="bg-destructive/5 rounded p-1 text-center">
-                              <div className="text-muted-foreground text-[10px]">هدايا</div>
-                              <div className="font-bold text-destructive">{fmtQty(giftQty)}</div>
-                            </div>
+                          {hasGifts && (
+                            <>
+                              <div className="bg-destructive/5 rounded p-1 text-center">
+                                <div className="text-muted-foreground text-[10px]">هدايا س</div>
+                                <div className="font-bold text-destructive">{oldGiftCustom > 0 ? fmtQty(oldGiftCustom) : '—'}</div>
+                              </div>
+                              <div className="bg-destructive/5 rounded p-1 text-center">
+                                <div className="text-muted-foreground text-[10px]">هدايا ج</div>
+                                <div className="font-bold text-destructive">{newGiftQty > 0 ? fmtQty(newGiftInCustom) : '—'}</div>
+                              </div>
+                            </>
                           )}
                         </div>
                       </CardContent>
