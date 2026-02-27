@@ -994,14 +994,6 @@ const LoadStock: React.FC = () => {
                   سجل الجلسات
                 </Button>
                 <Button
-                  variant="default"
-                  onClick={handleCompleteSession}
-                  disabled={!activeSessionId && !sessions.some(s => s.status === 'open')}
-                >
-                  <CheckCircle className="w-4 h-4 me-1" />
-                  تأكيد الشحنة
-                </Button>
-                <Button
                   variant="outline"
                   className="text-destructive border-destructive/30 hover:bg-destructive/5"
                   onClick={handleEmptyTruckPreview}
