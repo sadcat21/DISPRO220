@@ -634,20 +634,20 @@ const MyDeliveries: React.FC = () => {
           {selectedOrder && (selectedOrder.status === 'assigned' || selectedOrder.status === 'in_progress') && (
             <div className="border-t bg-card p-4 space-y-2 shrink-0">
               <p className="font-bold text-sm">{t('common.status')}:</p>
-              <Select
-                value={selectedOrder.status}
-                onValueChange={(val) => handleUpdateStatus(selectedOrder.id, val as OrderStatus)}
-                disabled={updateStatus.isPending}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="assigned">{t('orders.assigned')}</SelectItem>
-                  <SelectItem value="in_progress">{t('orders.in_progress')}</SelectItem>
-                  <SelectItem value="delivered">{t('orders.delivered')}</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                {(['assigned', 'in_progress', 'delivered'] as const).map((status) => (
+                  <Button
+                    key={status}
+                    variant={selectedOrder.status === status ? 'default' : 'outline'}
+                    size="sm"
+                    className="flex-1"
+                    disabled={updateStatus.isPending || selectedOrder.status === status}
+                    onClick={() => handleUpdateStatus(selectedOrder.id, status as OrderStatus)}
+                  >
+                    {t(`orders.${status}`)}
+                  </Button>
+                ))}
+              </div>
             </div>
           )}
         </DialogContent>
