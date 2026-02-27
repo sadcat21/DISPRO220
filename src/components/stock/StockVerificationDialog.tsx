@@ -83,7 +83,7 @@ const StockVerificationDialog: React.FC<StockVerificationDialogProps> = ({
   };
 
   const discrepancies = items.filter(i => i.status === 'deficit' || i.status === 'surplus');
-  const allVerified = items.length > 0 && items.every(i => i.status !== 'unverified');
+  const allVerified = items.length === 0 || items.every(i => i.status !== 'unverified');
 
   const handleShowSummary = () => {
     if (!allVerified) {
