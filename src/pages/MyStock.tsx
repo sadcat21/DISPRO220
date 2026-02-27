@@ -135,9 +135,23 @@ const MyStock: React.FC = () => {
     return stats;
   }, [loadedData, soldData]);
 
-  // Calculate gifts per product
+  // Calculate gifts per product from both loading sessions and delivered orders
   const giftStats = useMemo(() => {
     const stats: Record<string, { totalGifts: number; unit: string }> = {};
+    
+    // Gifts from loading sessions (loaded as gifts for distribution)
+    for (const item of (loadedData || [])) {
+      if ((item.gift_quantity || 0) > 0) {
+        const pid = item.product_id;
+        const unit = (item as any).gift_unit || 'piece';
+        if (!stats[pid]) stats[pid] = { totalGifts: 0, unit };
+        stats[pid].totalGifts += item.gift_quantity;
+        // Use the unit from loading session
+        stats[pid].unit = unit;
+      }
+    }
+    
+    // Also add gifts from delivered orders (given to customers)
     for (const item of (soldData || [])) {
       if ((item.gift_quantity || 0) > 0) {
         const pid = item.product_id;
@@ -147,7 +161,7 @@ const MyStock: React.FC = () => {
       }
     }
     return stats;
-  }, [soldData]);
+  }, [loadedData, soldData]);
 
   if (isLoading) {
     return (
