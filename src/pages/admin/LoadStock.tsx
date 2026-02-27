@@ -108,41 +108,6 @@ const LoadStock: React.FC = () => {
     deleteSessionItem, sessionItemsQuery, refetch: refetchSessions,
   } = useLoadingSessions(selectedWorker || null);
 
-  // Accumulated gift totals from ALL loading sessions for this worker
-  const [accumulatedGifts, setAccumulatedGifts] = useState<Record<string, { totalPieces: number; unit: string }>>({});
-  useEffect(() => {
-    if (!selectedWorker) { setAccumulatedGifts({}); return; }
-    const fetchGifts = async () => {
-      // First get all session IDs for this worker
-      const { data: workerSessions } = await supabase
-        .from('loading_sessions')
-        .select('id')
-        .eq('worker_id', selectedWorker);
-      if (!workerSessions || workerSessions.length === 0) { setAccumulatedGifts({}); return; }
-      
-      const sessionIds = workerSessions.map(s => s.id);
-      const { data } = await supabase
-        .from('loading_session_items')
-        .select('product_id, gift_quantity, gift_unit')
-        .gt('gift_quantity', 0)
-        .in('session_id', sessionIds);
-      if (data) {
-        const map: Record<string, { totalPieces: number; unit: string }> = {};
-        for (const item of data) {
-          if (!map[item.product_id]) map[item.product_id] = { totalPieces: 0, unit: item.gift_unit || 'piece' };
-          const unit = item.gift_unit || 'piece';
-          if (unit === 'box') {
-            const ppb = products.find(p => p.id === item.product_id)?.pieces_per_box || 20;
-            map[item.product_id].totalPieces += item.gift_quantity * ppb;
-          } else {
-            map[item.product_id].totalPieces += item.gift_quantity;
-          }
-        }
-        setAccumulatedGifts(map);
-      }
-    };
-    fetchGifts();
-  }, [selectedWorker, products, sessions]);
 
   // Product offers cache (with all tiers for dynamic calc)
   const [productOffers, setProductOffers] = useState<Record<string, { offerName: string; giftQty: number; giftUnit: string; minQty: number; minUnit: string; tiers: { minQty: number; maxQty: number | null; giftQty: number; giftUnit: string }[] }>>({});
@@ -578,9 +543,9 @@ const LoadStock: React.FC = () => {
                   const oldStock = totalNewLoaded > 0 ? subtractCustomQty(s.current_stock, totalNewLoaded, piecesPerBox) : s.current_stock;
                   const surplus = Math.max(0, s.current_stock - s.pending_orders_quantity);
                   
-                  // Total gifts from ALL loading sessions (accumulated from DB)
-                  const accGiftPieces = accumulatedGifts[s.product_id]?.totalPieces || 0;
-                  const totalGiftsCustom = accGiftPieces > 0 ? totalPiecesToCustom(accGiftPieces, piecesPerBox) : 0;
+                  // Gifts from current session only
+                  const newGiftInCustom = newGiftUnit === 'box' ? newGiftQty : totalPiecesToCustom(newGiftQty, piecesPerBox);
+                  const totalGiftsCustom = newGiftInCustom;
                   const hasGifts = totalGiftsCustom > 0;
                   return (
                     <Card key={s.product_id} className="border">
