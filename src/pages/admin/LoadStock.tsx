@@ -33,10 +33,15 @@ interface EmptyTruckItem {
 }
 
 const KEEP_REASONS = ['cash_sale', 'offer_gifts', 'reserve', 'other'] as const;
-/** Format quantity: show up to 2 decimal places, strip trailing zeros */
+/** Round number to avoid floating-point errors (uses pieces_per_box precision) */
+const roundQty = (n: number): number => {
+  // Round to 6 decimal places to eliminate JS floating-point noise
+  return Math.round(n * 1000000) / 1000000;
+};
+/** Format quantity for display: up to 2 decimal places, strip trailing zeros */
 const fmtQty = (n: number) => {
-  const rounded = Math.round(n * 100) / 100;
-  return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+  const rounded = roundQty(n);
+  return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(6).replace(/0+$/, '').replace(/\.$/, '');
 };
 
 const LoadStock: React.FC = () => {
@@ -242,8 +247,8 @@ const LoadStock: React.FC = () => {
       // Convert gift to box units if needed
       if (addProductGiftQty > 0) {
         const piecesPerBox = product?.pieces_per_box || 1;
-        const giftBoxes = addProductGiftUnit === 'piece' ? addProductGiftQty / piecesPerBox : addProductGiftQty;
-        totalLoadQty += giftBoxes;
+        const giftBoxes = addProductGiftUnit === 'piece' ? roundQty(addProductGiftQty / piecesPerBox) : addProductGiftQty;
+        totalLoadQty = roundQty(totalLoadQty + giftBoxes);
       }
 
       // Direct stock operations without full reload
@@ -255,7 +260,7 @@ const LoadStock: React.FC = () => {
       // Deduct from warehouse
       await supabase
         .from('warehouse_stock')
-        .update({ quantity: warehouseItem.quantity - totalLoadQty })
+        .update({ quantity: roundQty(warehouseItem.quantity - totalLoadQty) })
         .eq('id', warehouseItem.id);
 
       // Add to worker stock
@@ -269,7 +274,7 @@ const LoadStock: React.FC = () => {
       if (existingWS) {
         await supabase
           .from('worker_stock')
-          .update({ quantity: existingWS.quantity + totalLoadQty })
+          .update({ quantity: roundQty(existingWS.quantity + totalLoadQty) })
           .eq('id', existingWS.id);
       } else {
         await supabase.from('worker_stock').insert({
