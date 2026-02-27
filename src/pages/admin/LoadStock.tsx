@@ -137,10 +137,14 @@ const LoadStock: React.FC = () => {
   } = useLoadingSessions(selectedWorker || null);
 
   // Check if worker has a review session today (mandatory before load/unload)
-  const todayStr = format(new Date(), 'yyyy-MM-dd');
   const hasReviewToday = useMemo(() => {
-    return sessions.some(s => s.status === 'review' && s.created_at.startsWith(todayStr));
-  }, [sessions, todayStr]);
+    const todayLocal = format(new Date(), 'yyyy-MM-dd');
+    return sessions.some(s => {
+      if (s.status !== 'review') return false;
+      const sessionDate = format(new Date(s.created_at), 'yyyy-MM-dd');
+      return sessionDate === todayLocal;
+    });
+  }, [sessions]);
 
 
   // Product offers cache (with all tiers for dynamic calc)
