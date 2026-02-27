@@ -578,9 +578,10 @@ const LoadStock: React.FC = () => {
   };
 
   const handleCompleteSession = async () => {
-    if (!activeSessionId) return;
+    const sessionToComplete = activeSessionId || sessions.find(s => s.status === 'open')?.id;
+    if (!sessionToComplete) { toast.error('لا توجد جلسة شحن مفتوحة'); return; }
     try {
-      await completeSession.mutateAsync(activeSessionId);
+      await completeSession.mutateAsync(sessionToComplete);
       toast.success('تم تأكيد جلسة الشحن بنجاح');
       setActiveSessionId(null);
       setSessionItems([]);
@@ -955,6 +956,15 @@ const LoadStock: React.FC = () => {
                 <Button variant="outline" className="flex-1" onClick={() => setShowSessionHistory(true)}>
                   <History className="w-4 h-4 me-1" />
                   سجل الجلسات
+                </Button>
+                <Button
+                  variant="default"
+                  className="flex-1"
+                  onClick={handleCompleteSession}
+                  disabled={!activeSessionId && !sessions.some(s => s.status === 'open')}
+                >
+                  <CheckCircle className="w-4 h-4 me-1" />
+                  تأكيد الشحنة
                 </Button>
                 <Button
                   variant="outline"

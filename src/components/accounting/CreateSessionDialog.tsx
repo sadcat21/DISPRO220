@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSessionCalculations, SessionCalculations } from '@/hooks/useSessionCalculations';
 import { useCreateSession, useUpdateFullSession, AccountingSession, AccountingSessionItem } from '@/hooks/useAccountingSessions';
 import { useCreateWorkerDebt } from '@/hooks/useWorkerDebts';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -33,12 +34,12 @@ const fmt = (n: number) => n.toLocaleString();
 
 const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenChange, preselectedWorkerId, workerName, editSession }) => {
   const { t, dir } = useLanguage();
-  const { activeBranch } = useAuth();
+  const { activeBranch, workerId: currentWorkerId } = useAuth();
   const createSession = useCreateSession();
   const updateSession = useUpdateFullSession();
   const createWorkerDebt = useCreateWorkerDebt();
-  const [deficitRegistered, setDeficitRegistered] = useState(false);
-  const [surplusRegistered, setSurplusRegistered] = useState(false);
+  const [registerDeficit, setRegisterDeficit] = useState(false);
+  const [registerSurplus, setRegisterSurplus] = useState(false);
   const nowLocal = () => {
     const now = new Date();
     const algeriaOffset = 1 * 60;
@@ -108,8 +109,8 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
         setActualCash('');
         setCoinAmount('');
       }
-      setDeficitRegistered(false);
-      setSurplusRegistered(false);
+      setRegisterDeficit(false);
+      setRegisterSurplus(false);
       setIsSubmitting(false);
     }
   }, [open, editSession, selectedWorkerId]);
@@ -165,6 +166,8 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
         { item_type: 'expenses', expected_amount: calc.expenses, actual_amount: calc.expenses },
       ];
 
+      let sessionId: string | undefined;
+
       if (isEditMode && editSession) {
         await updateSession.mutateAsync({
           session_id: editSession.id,
@@ -173,17 +176,50 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
           notes: sessionNotes || undefined,
           items,
         });
+        sessionId = editSession.id;
         toast.success(t('accounting.session_updated') || 'تم تحديث الجلسة بنجاح');
       } else {
-        await createSession.mutateAsync({
+        const result = await createSession.mutateAsync({
           worker_id: selectedWorkerId,
           period_start: periodStart,
           period_end: periodEnd,
           notes: sessionNotes || undefined,
           items,
         });
+        sessionId = result?.id;
         toast.success(t('accounting.session_created'));
       }
+
+      // Register deficit as worker debt on save
+      if (registerDeficit && cashDifference < 0) {
+        try {
+          await createWorkerDebt.mutateAsync({
+            worker_id: selectedWorkerId,
+            amount: Math.abs(cashDifference),
+            debt_type: 'deficit',
+            session_id: sessionId,
+            description: `عجز جلسة محاسبة ${format(new Date(), 'dd/MM/yyyy')}`,
+          });
+          toast.success('تم تسجيل العجز كدين على العامل');
+        } catch { toast.error('خطأ في تسجيل العجز'); }
+      }
+
+      // Register surplus in manager treasury
+      if (registerSurplus && cashDifference > 0) {
+        try {
+          await supabase.from('manager_treasury').insert({
+            manager_id: currentWorkerId!,
+            branch_id: activeBranch?.id || null,
+            session_id: sessionId || null,
+            source_type: 'accounting_surplus',
+            payment_method: 'cash',
+            amount: cashDifference,
+            notes: `فائض جلسة محاسبة - ${workerName || selectedWorkerId}`,
+          });
+          toast.success('تم تسجيل الفائض في الخزينة');
+        } catch { toast.error('خطأ في تسجيل الفائض'); }
+      }
+
       onOpenChange(false);
     } catch (error: any) {
       toast.error(error.message);
@@ -373,73 +409,30 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                     </div>
                   )}
 
-                  {actualCash !== '' && cashDifference < 0 && !deficitRegistered && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="destructive"
-                      className="w-full text-xs rounded-lg"
-                      onClick={async () => {
-                        try {
-                          await createWorkerDebt.mutateAsync({
-                            worker_id: selectedWorkerId,
-                            amount: Math.abs(cashDifference),
-                            debt_type: 'deficit',
-                            session_id: undefined,
-                            description: `عجز جلسة محاسبة ${format(new Date(), 'dd/MM/yyyy')}`,
-                          });
-                          setDeficitRegistered(true);
-                          toast.success('تم تسجيل العجز كدين على العامل');
-                        } catch {
-                          toast.error('خطأ في تسجيل العجز');
-                        }
-                      }}
-                      disabled={createWorkerDebt.isPending}
-                    >
-                      {createWorkerDebt.isPending ? (
-                        <Loader2 className="w-3 h-3 animate-spin ml-1" />
-                      ) : (
-                        <AlertTriangle className="w-3 h-3 ml-1" />
-                      )}
-                      تسجيل العجز كدين على العامل ({fmt(Math.abs(cashDifference))} DA)
-                    </Button>
-                  )}
-                   {deficitRegistered && (
-                     <p className="text-xs text-center text-green-600 font-medium">✓ تم تسجيل العجز كدين على العامل</p>
+                   {actualCash !== '' && cashDifference < 0 && (
+                     <div className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-destructive/10">
+                       <Checkbox
+                         id="register-deficit"
+                         checked={registerDeficit}
+                         onCheckedChange={(v) => setRegisterDeficit(!!v)}
+                       />
+                       <label htmlFor="register-deficit" className="text-xs font-medium text-destructive cursor-pointer">
+                         تسجيل العجز كدين على العامل ({fmt(Math.abs(cashDifference))} DA)
+                       </label>
+                     </div>
                    )}
 
-                   {actualCash !== '' && cashDifference > 0 && !surplusRegistered && (
-                     <Button
-                       type="button"
-                       size="sm"
-                       className="w-full text-xs rounded-lg bg-green-600 hover:bg-green-700 text-white"
-                       onClick={async () => {
-                         try {
-                           await createWorkerDebt.mutateAsync({
-                             worker_id: selectedWorkerId,
-                             amount: cashDifference,
-                             debt_type: 'surplus' as any,
-                             session_id: undefined,
-                             description: `فائض جلسة محاسبة ${format(new Date(), 'dd/MM/yyyy')}`,
-                           });
-                           setSurplusRegistered(true);
-                           toast.success('تم تسجيل الفائض في حساب العامل');
-                         } catch {
-                           toast.error('خطأ في تسجيل الفائض');
-                         }
-                       }}
-                       disabled={createWorkerDebt.isPending}
-                     >
-                       {createWorkerDebt.isPending ? (
-                         <Loader2 className="w-3 h-3 animate-spin ml-1" />
-                       ) : (
-                         <ArrowUpCircle className="w-3 h-3 ml-1" />
-                       )}
-                       تسجيل الفائض في حساب العامل ({fmt(cashDifference)} DA)
-                     </Button>
-                   )}
-                   {surplusRegistered && (
-                     <p className="text-xs text-center text-green-600 font-medium">✓ تم تسجيل الفائض في حساب العامل</p>
+                   {actualCash !== '' && cashDifference > 0 && (
+                     <div className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-green-100 dark:bg-green-900/20">
+                       <Checkbox
+                         id="register-surplus"
+                         checked={registerSurplus}
+                         onCheckedChange={(v) => setRegisterSurplus(!!v)}
+                       />
+                       <label htmlFor="register-surplus" className="text-xs font-medium text-green-700 dark:text-green-400 cursor-pointer">
+                         تسجيل الفائض في الخزينة ({fmt(cashDifference)} DA)
+                       </label>
+                     </div>
                    )}
                   {/* Coin amount */}
                   <div className="space-y-1.5 border-t pt-3">

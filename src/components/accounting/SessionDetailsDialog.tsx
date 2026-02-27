@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Calendar, User, Receipt, Banknote, ArrowDownCircle, ArrowUpCircle, Wallet, CreditCard, TrendingDown, Coins, AlertTriangle, Pencil, Package, ShoppingBag, Calculator, Gift, Tag } from 'lucide-react';
@@ -9,6 +10,7 @@ import { useSessionItems, AccountingSession, AccountingSessionItem } from '@/hoo
 import { useCreateWorkerDebt } from '@/hooks/useWorkerDebts';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import ProductStockSummary from './ProductStockSummary';
 import SalesDetailsSummary from './SalesDetailsSummary';
 import PromoTrackingSummary from './PromoTrackingSummary';
@@ -225,38 +227,35 @@ const SessionDetailsDialog: React.FC<SessionDetailsDialogProps> = ({ open, onOpe
            {deficitAdded && (
              <p className="text-xs text-center text-green-600 mt-2 font-medium">✓ تم تسجيل العجز كدين على العامل</p>
            )}
-           {/* Surplus Button */}
+           {/* Surplus Button - records in treasury */}
            {cashDiff > 0 && !surplusAdded && (
              <Button
                size="sm"
                className="w-full mt-2 text-xs rounded-lg bg-green-600 hover:bg-green-700 text-white"
                onClick={async () => {
                  try {
-                   await createWorkerDebt.mutateAsync({
-                     worker_id: session.worker_id,
-                     amount: cashDiff,
-                     debt_type: 'surplus' as any,
+                   await supabase.from('manager_treasury').insert({
+                     manager_id: session.manager_id,
+                     branch_id: session.branch_id || null,
                      session_id: session.id,
-                     description: `فائض جلسة محاسبة ${format(new Date(session.session_date), 'dd/MM/yyyy')}`,
+                     source_type: 'accounting_surplus',
+                     payment_method: 'cash',
+                     amount: cashDiff,
+                     notes: `فائض جلسة محاسبة - ${session.worker?.full_name || session.worker_id}`,
                    });
                    setSurplusAdded(true);
-                   toast.success('تم تسجيل الفائض في حساب العامل');
+                   toast.success('تم تسجيل الفائض في الخزينة');
                  } catch {
                    toast.error('خطأ في تسجيل الفائض');
                  }
                }}
-               disabled={createWorkerDebt.isPending}
              >
-               {createWorkerDebt.isPending ? (
-                 <Loader2 className="w-3 h-3 animate-spin ml-1" />
-               ) : (
-                 <ArrowUpCircle className="w-3 h-3 ml-1" />
-               )}
-               تسجيل الفائض في حساب العامل ({fmt(cashDiff)} DA)
+               <ArrowUpCircle className="w-3 h-3 ml-1" />
+               تسجيل الفائض في الخزينة ({fmt(cashDiff)} DA)
              </Button>
            )}
            {surplusAdded && (
-             <p className="text-xs text-center text-green-600 mt-2 font-medium">✓ تم تسجيل الفائض في حساب العامل</p>
+             <p className="text-xs text-center text-green-600 mt-2 font-medium">✓ تم تسجيل الفائض في الخزينة</p>
            )}
          </div>
 
