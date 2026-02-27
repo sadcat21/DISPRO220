@@ -352,6 +352,11 @@ const LoadStock: React.FC = () => {
   // Start new session
   const handleStartSession = async () => {
     if (!selectedWorker) { toast.error(t('stock.select_worker')); return; }
+    if (!hasReviewToday) {
+      toast.error('يجب إجراء جلسة مراجعة أولاً قبل بدء الشحن');
+      setShowVerificationDialog(true);
+      return;
+    }
     try {
       const result = await createSession.mutateAsync({ workerId: selectedWorker });
       setActiveSessionId(result.id);
