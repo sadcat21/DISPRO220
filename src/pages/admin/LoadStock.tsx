@@ -8,8 +8,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Loader2, Trash2, Truck, AlertTriangle, Package, CheckCircle, PackageX, User, ChevronDown, Gift, Save, History, X } from 'lucide-react';
+import { Plus, Loader2, Trash2, Truck, AlertTriangle, Package, CheckCircle, PackageX, User, ChevronDown, Gift, Save, History, X, CalendarIcon, Search } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import WorkerPickerDialog from '@/components/stock/WorkerPickerDialog';
 import ProductPickerDialog from '@/components/stock/ProductPickerDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
@@ -89,6 +94,10 @@ const LoadStock: React.FC = () => {
   const [viewSessionId, setViewSessionId] = useState<string | null>(null);
   const [viewSessionItems, setViewSessionItems] = useState<any[]>([]);
   const [isLoadingViewItems, setIsLoadingViewItems] = useState(false);
+  // Session history filters
+  const [historyDateFilter, setHistoryDateFilter] = useState<Date | undefined>(undefined);
+  const [historyProductFilter, setHistoryProductFilter] = useState<string>('');
+  const [sessionProductMap, setSessionProductMap] = useState<Record<string, string[]>>({});
   const [showAddProductDialog, setShowAddProductDialog] = useState(false);
   const [emptyTruckItems, setEmptyTruckItems] = useState<EmptyTruckItem[]>([]);
   const [isEmptying, setIsEmptying] = useState(false);
@@ -173,6 +182,55 @@ const LoadStock: React.FC = () => {
       setIsLoadingViewItems(false);
     }
   };
+
+  // Fetch product IDs per session when history opens
+  useEffect(() => {
+    if (!showSessionHistory || sessions.length === 0) return;
+    const fetchSessionProducts = async () => {
+      const sessionIds = sessions.map(s => s.id);
+      const { data } = await supabase
+        .from('loading_session_items')
+        .select('session_id, product_id')
+        .in('session_id', sessionIds);
+      if (data) {
+        const map: Record<string, string[]> = {};
+        data.forEach(item => {
+          if (!map[item.session_id]) map[item.session_id] = [];
+          if (!map[item.session_id].includes(item.product_id)) {
+            map[item.session_id].push(item.product_id);
+          }
+        });
+        setSessionProductMap(map);
+      }
+    };
+    fetchSessionProducts();
+  }, [showSessionHistory, sessions]);
+
+  // Filtered sessions for history
+  const filteredSessions = useMemo(() => {
+    let result = sessions;
+    if (historyDateFilter) {
+      const filterDateStr = format(historyDateFilter, 'yyyy-MM-dd');
+      result = result.filter(s => s.created_at.startsWith(filterDateStr));
+    }
+    if (historyProductFilter) {
+      result = result.filter(s => {
+        const productIds = sessionProductMap[s.id] || [];
+        return productIds.includes(historyProductFilter);
+      });
+    }
+    return result;
+  }, [sessions, historyDateFilter, historyProductFilter, sessionProductMap]);
+
+  // Get unique products from all sessions for filter dropdown
+  const sessionProductOptions = useMemo(() => {
+    const productIds = new Set<string>();
+    Object.values(sessionProductMap).forEach(ids => ids.forEach(id => productIds.add(id)));
+    return Array.from(productIds).map(id => {
+      const p = products.find(pr => pr.id === id);
+      return { id, name: p?.name || id };
+    }).sort((a, b) => a.name.localeCompare(b.name));
+  }, [sessionProductMap, products]);
 
   // Reset on worker change
   useEffect(() => {
@@ -947,11 +1005,46 @@ const LoadStock: React.FC = () => {
               سجل جلسات الشحن
             </DialogTitle>
           </DialogHeader>
-          <ScrollArea className="max-h-[60vh]">
+          {/* Filters */}
+          <div className="flex gap-2 flex-wrap">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className={cn("h-8 text-xs gap-1", historyDateFilter && "border-primary text-primary")}>
+                  <CalendarIcon className="w-3.5 h-3.5" />
+                  {historyDateFilter ? format(historyDateFilter, 'yyyy-MM-dd') : 'تاريخ'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={historyDateFilter}
+                  onSelect={setHistoryDateFilter}
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+            <Select value={historyProductFilter || 'all'} onValueChange={(v) => setHistoryProductFilter(v === 'all' ? '' : v)}>
+              <SelectTrigger className="h-8 text-xs w-[160px]">
+                <SelectValue placeholder="منتج" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">الكل</SelectItem>
+                {sessionProductOptions.map(p => (
+                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {(historyDateFilter || historyProductFilter) && (
+              <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setHistoryDateFilter(undefined); setHistoryProductFilter(''); }}>
+                <X className="w-3.5 h-3.5" />
+              </Button>
+            )}
+          </div>
+          <ScrollArea className="max-h-[55vh]">
             <div className="space-y-2">
-              {sessions.length === 0 ? (
+              {filteredSessions.length === 0 ? (
                 <p className="text-center text-muted-foreground py-6 text-sm">لا توجد جلسات سابقة</p>
-              ) : sessions.map(session => (
+              ) : filteredSessions.map(session => (
                 <Card 
                   key={session.id} 
                   className={`border cursor-pointer hover:bg-accent/50 transition-colors ${session.status === 'open' ? 'border-primary/30' : ''}`}
