@@ -521,11 +521,11 @@ const MyDeliveries: React.FC = () => {
 
       {/* Order Details Dialog */}
       <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-        <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto" dir="rtl">
-          <DialogHeader>
+        <DialogContent className="max-w-sm max-h-[90vh] flex flex-col p-0" dir="rtl">
+          <DialogHeader className="p-6 pb-0">
             <DialogTitle>{t('orders.details')}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-y-auto flex-1 p-6 pt-4">
             {/* Products first */}
             <div className="space-y-2">
               <p className="font-bold">{t('nav.products')}:</p>
@@ -603,7 +603,7 @@ const MyDeliveries: React.FC = () => {
             
             {/* Location map + address at the bottom */}
             {selectedOrder?.customer?.latitude && selectedOrder?.customer?.longitude && (
-              <Collapsible defaultOpen>
+              <Collapsible>
                 <CollapsibleTrigger asChild>
                   <Button type="button" variant="outline" className="w-full justify-between border-primary/30 hover:bg-primary/5">
                     <span className="flex items-center gap-2">
@@ -630,26 +630,26 @@ const MyDeliveries: React.FC = () => {
               </Collapsible>
             )}
 
-            {selectedOrder && (selectedOrder.status === 'assigned' || selectedOrder.status === 'in_progress') && (
-              <div className="space-y-2">
-                <p className="font-bold">{t('common.status')}:</p>
-                <Select
-                  value={selectedOrder.status}
-                  onValueChange={(val) => handleUpdateStatus(selectedOrder.id, val as OrderStatus)}
-                  disabled={updateStatus.isPending}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="assigned">{t('orders.assigned')}</SelectItem>
-                    <SelectItem value="in_progress">{t('orders.in_progress')}</SelectItem>
-                    <SelectItem value="delivered">{t('orders.delivered')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
           </div>
+          {selectedOrder && (selectedOrder.status === 'assigned' || selectedOrder.status === 'in_progress') && (
+            <div className="border-t bg-card p-4 space-y-2 shrink-0">
+              <p className="font-bold text-sm">{t('common.status')}:</p>
+              <Select
+                value={selectedOrder.status}
+                onValueChange={(val) => handleUpdateStatus(selectedOrder.id, val as OrderStatus)}
+                disabled={updateStatus.isPending}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="assigned">{t('orders.assigned')}</SelectItem>
+                  <SelectItem value="in_progress">{t('orders.in_progress')}</SelectItem>
+                  <SelectItem value="delivered">{t('orders.delivered')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
       
