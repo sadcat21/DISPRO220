@@ -7,7 +7,7 @@ export interface WorkerDebt {
   worker_id: string;
   branch_id: string | null;
   amount: number;
-  debt_type: 'advance' | 'deficit';
+  debt_type: 'advance' | 'deficit' | 'surplus';
   session_id: string | null;
   description: string | null;
   status: 'active' | 'paid' | 'partially_paid';
@@ -80,7 +80,7 @@ export const useCreateWorkerDebt = () => {
     mutationFn: async (params: {
       worker_id: string;
       amount: number;
-      debt_type: 'advance' | 'deficit';
+      debt_type: 'advance' | 'deficit' | 'surplus';
       session_id?: string;
       description?: string;
     }) => {

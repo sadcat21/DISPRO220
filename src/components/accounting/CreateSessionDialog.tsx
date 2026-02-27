@@ -38,6 +38,7 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
   const updateSession = useUpdateFullSession();
   const createWorkerDebt = useCreateWorkerDebt();
   const [deficitRegistered, setDeficitRegistered] = useState(false);
+  const [surplusRegistered, setSurplusRegistered] = useState(false);
   const nowLocal = () => {
     const now = new Date();
     const algeriaOffset = 1 * 60;
@@ -108,6 +109,7 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
         setCoinAmount('');
       }
       setDeficitRegistered(false);
+      setSurplusRegistered(false);
       setIsSubmitting(false);
     }
   }, [open, editSession, selectedWorkerId]);
@@ -402,10 +404,43 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                       تسجيل العجز كدين على العامل ({fmt(Math.abs(cashDifference))} DA)
                     </Button>
                   )}
-                  {deficitRegistered && (
-                    <p className="text-xs text-center text-green-600 font-medium">✓ تم تسجيل العجز كدين على العامل</p>
-                  )}
+                   {deficitRegistered && (
+                     <p className="text-xs text-center text-green-600 font-medium">✓ تم تسجيل العجز كدين على العامل</p>
+                   )}
 
+                   {actualCash !== '' && cashDifference > 0 && !surplusRegistered && (
+                     <Button
+                       type="button"
+                       size="sm"
+                       className="w-full text-xs rounded-lg bg-green-600 hover:bg-green-700 text-white"
+                       onClick={async () => {
+                         try {
+                           await createWorkerDebt.mutateAsync({
+                             worker_id: selectedWorkerId,
+                             amount: cashDifference,
+                             debt_type: 'surplus' as any,
+                             session_id: undefined,
+                             description: `فائض جلسة محاسبة ${format(new Date(), 'dd/MM/yyyy')}`,
+                           });
+                           setSurplusRegistered(true);
+                           toast.success('تم تسجيل الفائض في حساب العامل');
+                         } catch {
+                           toast.error('خطأ في تسجيل الفائض');
+                         }
+                       }}
+                       disabled={createWorkerDebt.isPending}
+                     >
+                       {createWorkerDebt.isPending ? (
+                         <Loader2 className="w-3 h-3 animate-spin ml-1" />
+                       ) : (
+                         <ArrowUpCircle className="w-3 h-3 ml-1" />
+                       )}
+                       تسجيل الفائض في حساب العامل ({fmt(cashDifference)} DA)
+                     </Button>
+                   )}
+                   {surplusRegistered && (
+                     <p className="text-xs text-center text-green-600 font-medium">✓ تم تسجيل الفائض في حساب العامل</p>
+                   )}
                   {/* Coin amount */}
                   <div className="space-y-1.5 border-t pt-3">
                     <div className="flex items-center gap-2">

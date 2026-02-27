@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Calendar, User, Receipt, Banknote, ArrowDownCircle, Wallet, CreditCard, TrendingDown, ArrowUpCircle, Coins, AlertTriangle, Pencil, Package, ShoppingBag, Calculator, Gift, Tag } from 'lucide-react';
+import { Loader2, Calendar, User, Receipt, Banknote, ArrowDownCircle, ArrowUpCircle, Wallet, CreditCard, TrendingDown, Coins, AlertTriangle, Pencil, Package, ShoppingBag, Calculator, Gift, Tag } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useSessionItems, AccountingSession, AccountingSessionItem } from '@/hooks/useAccountingSessions';
 import { useCreateWorkerDebt } from '@/hooks/useWorkerDebts';
@@ -43,6 +43,7 @@ const SessionDetailsDialog: React.FC<SessionDetailsDialogProps> = ({ open, onOpe
   const { data: items, isLoading } = useSessionItems(session.id);
   const createWorkerDebt = useCreateWorkerDebt();
   const [deficitAdded, setDeficitAdded] = useState(false);
+  const [surplusAdded, setSurplusAdded] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   
   // Fetch live calculations for promo tracking
@@ -221,12 +222,45 @@ const SessionDetailsDialog: React.FC<SessionDetailsDialogProps> = ({ open, onOpe
               تسجيل العجز كدين على العامل ({fmt(Math.abs(cashDiff))} DA)
             </Button>
           )}
-          {deficitAdded && (
-            <p className="text-xs text-center text-green-600 mt-2 font-medium">✓ تم تسجيل العجز كدين على العامل</p>
-          )}
-        </div>
+           {deficitAdded && (
+             <p className="text-xs text-center text-green-600 mt-2 font-medium">✓ تم تسجيل العجز كدين على العامل</p>
+           )}
+           {/* Surplus Button */}
+           {cashDiff > 0 && !surplusAdded && (
+             <Button
+               size="sm"
+               className="w-full mt-2 text-xs rounded-lg bg-green-600 hover:bg-green-700 text-white"
+               onClick={async () => {
+                 try {
+                   await createWorkerDebt.mutateAsync({
+                     worker_id: session.worker_id,
+                     amount: cashDiff,
+                     debt_type: 'surplus' as any,
+                     session_id: session.id,
+                     description: `فائض جلسة محاسبة ${format(new Date(session.session_date), 'dd/MM/yyyy')}`,
+                   });
+                   setSurplusAdded(true);
+                   toast.success('تم تسجيل الفائض في حساب العامل');
+                 } catch {
+                   toast.error('خطأ في تسجيل الفائض');
+                 }
+               }}
+               disabled={createWorkerDebt.isPending}
+             >
+               {createWorkerDebt.isPending ? (
+                 <Loader2 className="w-3 h-3 animate-spin ml-1" />
+               ) : (
+                 <ArrowUpCircle className="w-3 h-3 ml-1" />
+               )}
+               تسجيل الفائض في حساب العامل ({fmt(cashDiff)} DA)
+             </Button>
+           )}
+           {surplusAdded && (
+             <p className="text-xs text-center text-green-600 mt-2 font-medium">✓ تم تسجيل الفائض في حساب العامل</p>
+           )}
+         </div>
 
-        {/* Coin Amount */}
+         {/* Coin Amount */}
         <div className="border-2 rounded-xl p-3.5 flex items-center gap-3">
           <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center">
             <Coins className="w-4 h-4 text-muted-foreground" />
