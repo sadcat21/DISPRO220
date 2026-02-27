@@ -14,6 +14,7 @@ import { useLogActivity } from '@/hooks/useActivityLogs';
 import { useQueryClient } from '@tanstack/react-query';
 import { OrderWithDetails, OrderItem, Product } from '@/types/database';
 import DeliveryWorkerSelect from './DeliveryWorkerSelect';
+import PostDeliveryConfirmDialog from './PostDeliveryConfirmDialog';
 
 interface ModifyOrderDialogProps {
   open: boolean;
@@ -44,6 +45,7 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
   const [newProductId, setNewProductId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [assignedWorkerId, setAssignedWorkerId] = useState(order.assigned_worker_id || '');
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const canChangeWorker = role === 'admin' || role === 'branch_admin' || order.created_by === workerId;
 
@@ -118,9 +120,35 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
   const hasChanges = items.some(i => i.new_quantity !== i.original_quantity) ||
     items.some(i => !i.id && i.new_quantity > 0) || workerChanged;
 
+  const originalTotal = orderItems.reduce((sum, item) => sum + (item.quantity * Number(item.unit_price || 0)), 0);
   const orderTotal = items.reduce((sum, item) => sum + (item.new_quantity * item.unit_price), 0);
 
-  const handleSave = async () => {
+  const productChanges = items
+    .filter(i => i.new_quantity !== i.original_quantity)
+    .map(i => ({
+      product_name: i.product_name,
+      original_quantity: i.original_quantity,
+      new_quantity: i.new_quantity,
+      unit_price: i.unit_price,
+      difference: i.new_quantity - i.original_quantity,
+    }));
+
+  const handleSaveClick = () => {
+    if (!hasChanges || !workerId) return;
+    // For delivered orders with product changes, show confirmation dialog
+    if (order.status === 'delivered' && productChanges.length > 0) {
+      setShowConfirmDialog(true);
+      return;
+    }
+    handleSave();
+  };
+
+  const handlePostDeliveryConfirm = async (paymentType: 'full' | 'partial' | 'no_payment', paidAmount?: number) => {
+    setShowConfirmDialog(false);
+    await handleSave(paymentType, paidAmount);
+  };
+
+  const handleSave = async (paymentType?: 'full' | 'partial' | 'no_payment', paidAmount?: number) => {
     if (!hasChanges || !workerId) return;
     setIsSubmitting(true);
 
@@ -193,15 +221,46 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
           .eq('id', order.id);
       }
 
+      // Handle post-delivery payment difference
+      const totalDiff = orderTotal - originalTotal;
+      if (order.status === 'delivered' && totalDiff > 0 && paymentType) {
+        if (paymentType === 'no_payment') {
+          // Register as debt
+          await supabase.from('customer_debts').insert({
+            customer_id: order.customer_id,
+            order_id: order.id,
+            worker_id: workerId,
+            branch_id: order.branch_id,
+            total_amount: totalDiff,
+            paid_amount: 0,
+            status: 'active',
+            notes: 'فارق تعديل طلبية بعد التوصيل',
+          });
+        } else if (paymentType === 'partial' && paidAmount && paidAmount < totalDiff) {
+          const debtAmount = totalDiff - paidAmount;
+          await supabase.from('customer_debts').insert({
+            customer_id: order.customer_id,
+            order_id: order.id,
+            worker_id: workerId,
+            branch_id: order.branch_id,
+            total_amount: debtAmount,
+            paid_amount: 0,
+            status: 'active',
+            notes: 'فارق تعديل طلبية بعد التوصيل (دفع جزئي)',
+          });
+        }
+      }
+
       // Log activity
       await logActivity.mutateAsync({
         actionType: 'update',
         entityType: 'order',
         entityId: order.id,
         details: {
-          نوع_التعديل: 'تعديل أثناء التوصيل',
+          نوع_التعديل: order.status === 'delivered' ? 'تعديل بعد التوصيل' : 'تعديل أثناء التوصيل',
           العميل: order.customer?.name,
           التغييرات: changes,
+          ...(paymentType && { طريقة_دفع_الفارق: paymentType, المبلغ_المدفوع: paidAmount }),
         },
       });
 
@@ -327,7 +386,7 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
           )}
           <Button
             className="w-full"
-            onClick={handleSave}
+            onClick={handleSaveClick}
             disabled={!hasChanges || isSubmitting}
           >
             {isSubmitting ? (
@@ -341,6 +400,17 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
           </Button>
         </div>
       </DialogContent>
+
+      {/* Post-delivery confirmation dialog */}
+      <PostDeliveryConfirmDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        changes={productChanges}
+        originalTotal={originalTotal}
+        newTotal={orderTotal}
+        onConfirm={handlePostDeliveryConfirm}
+        isSubmitting={isSubmitting}
+      />
     </Dialog>
   );
 };
