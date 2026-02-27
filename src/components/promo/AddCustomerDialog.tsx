@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserPlus, Loader2, MapPin, ChevronDown, ChevronUp, Store, Building2, Warehouse, CreditCard, User, UserCircle, Shield, Languages, Plus, Trash2, Type, BookOpen, X } from 'lucide-react';
+import DeliveryWorkerSelect from '@/components/orders/DeliveryWorkerSelect';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { Customer } from '@/types/database';
@@ -82,6 +83,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
   const [trustNotes, setTrustNotes] = useState('');
   const [defaultPaymentType, setDefaultPaymentType] = useState<string>('without_invoice'); // default: فاتورة 2
   const [defaultPriceSubtype, setDefaultPriceSubtype] = useState<string>('retail'); // default: تجزئة
+  const [defaultDeliveryWorkerId, setDefaultDeliveryWorkerId] = useState('');
   const effectiveBranchId = activeBranch ? activeBranch.id : null;
 
   // Fetch zones when sector changes
@@ -168,6 +170,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
       setTrustNotes('');
       setDefaultPaymentType('without_invoice');
       setDefaultPriceSubtype('retail');
+      setDefaultDeliveryWorkerId('');
       setGpsGranted(false);
       setGpsLoading(true);
       // Auto-capture GPS with fallback strategy
@@ -332,6 +335,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
         trust_notes: trustNotes.trim() || null,
         default_payment_type: defaultPaymentType,
         default_price_subtype: defaultPriceSubtype,
+        default_delivery_worker_id: defaultDeliveryWorkerId || null,
         customer_type: customerType || null,
       };
 
@@ -778,6 +782,13 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
                   </div>
                 </div>
               )}
+
+              {/* Default Delivery Worker */}
+              <DeliveryWorkerSelect
+                customerBranchId={effectiveBranchId}
+                value={defaultDeliveryWorkerId}
+                onChange={setDefaultDeliveryWorkerId}
+              />
             </div>
           </div>
 
