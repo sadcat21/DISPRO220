@@ -610,7 +610,7 @@ const LoadStock: React.FC = () => {
                       {item.gift_quantity > 0 && (
                         <>
                           <span>|</span>
-                          <span className="text-destructive">هدايا: <strong>{fmtQty(item.gift_quantity)}</strong></span>
+                          <span className="text-destructive">هدايا: <strong>{fmtQty(item.gift_quantity)} {item.gift_unit === 'box' ? 'صندوق' : 'قطعة'}</strong></span>
                         </>
                       )}
                     </div>
@@ -687,11 +687,13 @@ const LoadStock: React.FC = () => {
                 </Button>
                 <Button
                   variant="outline"
-                  className="text-destructive border-destructive/30 hover:bg-destructive/5"
-                  onClick={handleEmptyTruckPreview}
-                  disabled={isEmptying}
+                  className="flex-1 text-destructive border-destructive/30 hover:bg-destructive/5"
+                  onClick={() => handleDeleteSession(activeSessionId!)}
+                  disabled={deleteSession.isPending}
                 >
-                  <PackageX className="w-4 h-4" />
+                  {deleteSession.isPending && <Loader2 className="w-4 h-4 animate-spin me-2" />}
+                  <X className="w-4 h-4 me-1" />
+                  إلغاء الجلسة
                 </Button>
               </div>
             </>
