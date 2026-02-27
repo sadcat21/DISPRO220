@@ -132,6 +132,31 @@ const EmptyTruckDialog: React.FC<EmptyTruckDialogProps> = ({ workerId, open, onO
     setIsEmptying(true);
 
     try {
+      // Validate: returnQty must not exceed truck quantity
+      for (const item of emptyTruckItems) {
+        if (item.returnQty > item.quantity) {
+          toast.error(`${item.product_name}: لا يمكن تفريغ كمية أكبر من الموجود في الشاحنة (${item.quantity})`);
+          setIsEmptying(false);
+          return;
+        }
+      }
+
+      // Create an unloading session in loading_sessions
+      const { data: unloadSession, error: sessionError } = await supabase
+        .from('loading_sessions')
+        .insert({
+          worker_id: workerId,
+          manager_id: currentWorkerId,
+          branch_id: branchId,
+          status: 'unloaded',
+          notes: `تفريغ الشاحنة - ${emptyMode === 'full' ? 'تفريغ كلي' : 'تفريغ الفائض'}`,
+          completed_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (sessionError) throw sessionError;
+
       // Fetch current warehouse stock
       const { data: warehouseStock } = await supabase
         .from('warehouse_stock')
@@ -140,6 +165,15 @@ const EmptyTruckDialog: React.FC<EmptyTruckDialogProps> = ({ workerId, open, onO
 
       for (const item of emptyTruckItems) {
         if (item.returnQty <= 0) continue;
+
+        // Save unloading session item
+        await supabase.from('loading_session_items').insert({
+          session_id: unloadSession.id,
+          product_id: item.product_id,
+          quantity: item.returnQty,
+          gift_quantity: 0,
+          notes: item.keepAllocations.filter(a => a.quantity > 0).map(a => `${a.quantity} ${t(`stock.reason_${a.reason}`)}`).join(', ') || null,
+        });
 
         await supabase
           .from('worker_stock')
@@ -186,6 +220,7 @@ const EmptyTruckDialog: React.FC<EmptyTruckDialogProps> = ({ workerId, open, onO
       queryClient.invalidateQueries({ queryKey: ['worker-truck-stock'] });
       queryClient.invalidateQueries({ queryKey: ['warehouse-stock'] });
       queryClient.invalidateQueries({ queryKey: ['sold-products-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['loading-sessions'] });
       toast.success(t('stock.empty_truck_success'));
       onOpenChange(false);
     } catch (error: any) {
@@ -277,11 +312,11 @@ const EmptyTruckDialog: React.FC<EmptyTruckDialogProps> = ({ workerId, open, onO
                               <Input
                                 type="number"
                                 min={0}
-                                max={maxReturn}
+                                max={item.quantity}
                                 value={item.returnQty}
                                 onFocus={e => e.target.select()}
                                 onChange={e => {
-                                  const val = Math.min(Math.max(0, parseInt(e.target.value) || 0), maxReturn);
+                                  const val = Math.min(Math.max(0, parseInt(e.target.value) || 0), item.quantity);
                                   setEmptyTruckItems(prev => prev.map((it, i) => i === idx ? { ...it, returnQty: val, keepAllocations: [] } : it));
                                 }}
                                 className="text-center h-8"
