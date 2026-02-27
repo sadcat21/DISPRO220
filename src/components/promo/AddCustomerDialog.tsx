@@ -103,7 +103,12 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
     setAddingZone(false);
     if (!sectorId) { setZones([]); return; }
     fetchZones(sectorId);
-  }, [sectorId, fetchZones]);
+    // Auto-suggest delivery worker from sector
+    const sector = sectors.find(s => s.id === sectorId);
+    if (sector?.delivery_worker_id) {
+      setDefaultDeliveryWorkerId(sector.delivery_worker_id);
+    }
+  }, [sectorId, fetchZones, sectors]);
 
   const handleAddZone = async () => {
     if (!newZoneName.trim() || !sectorId) return;
@@ -676,6 +681,15 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
               </div>
             )}
 
+            {/* Default Delivery Worker - under sector/zone */}
+            {sectorId && (
+              <DeliveryWorkerSelect
+                customerBranchId={effectiveBranchId}
+                value={defaultDeliveryWorkerId}
+                onChange={setDefaultDeliveryWorkerId}
+              />
+            )}
+
             <div className="space-y-2">
               <Label>{t('customers.wilaya')}</Label>
               <Select value={wilaya} onValueChange={setWilaya}>
@@ -782,13 +796,6 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
                   </div>
                 </div>
               )}
-
-              {/* Default Delivery Worker */}
-              <DeliveryWorkerSelect
-                customerBranchId={effectiveBranchId}
-                value={defaultDeliveryWorkerId}
-                onChange={setDefaultDeliveryWorkerId}
-              />
             </div>
           </div>
 

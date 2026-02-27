@@ -111,7 +111,14 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
     setAddingZone(false);
     if (!sectorId) { setZones([]); return; }
     fetchZones(sectorId);
-  }, [sectorId, fetchZones]);
+    // Auto-suggest delivery worker from sector (only if not already set by customer data)
+    if (!customer) {
+      const sector = sectors.find(s => s.id === sectorId);
+      if (sector?.delivery_worker_id) {
+        setDefaultDeliveryWorkerId(sector.delivery_worker_id);
+      }
+    }
+  }, [sectorId, fetchZones, sectors]);
 
   const handleAddZone = async () => {
     if (!newZoneName.trim() || !sectorId) return;
@@ -630,6 +637,15 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
               </div>
             )}
 
+            {/* Default Delivery Worker - under sector/zone */}
+            {sectorId && (
+              <DeliveryWorkerSelect
+                customerBranchId={customer?.branch_id || null}
+                value={defaultDeliveryWorkerId}
+                onChange={setDefaultDeliveryWorkerId}
+              />
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="edit-wilaya">الولاية</Label>
               <Select value={wilaya} onValueChange={setWilaya}>
@@ -751,13 +767,6 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
                 </div>
               )}
             </div>
-
-            {/* Default Delivery Worker */}
-            <DeliveryWorkerSelect
-              customerBranchId={customer?.branch_id || null}
-              value={defaultDeliveryWorkerId}
-              onChange={setDefaultDeliveryWorkerId}
-            />
           </div>
 
           <div className="sticky bottom-0 z-20 bg-background border-t pt-3 pb-1 -mx-6 px-6">
