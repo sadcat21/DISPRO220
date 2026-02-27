@@ -61,10 +61,10 @@ export interface SessionCalculations {
   promoTracking: PromoTrackingItem[];
 }
 
-export const useSessionCalculations = (params: SessionCalcParams | null) => {
+export const useSessionCalculations = (params: SessionCalcParams | null, options?: { refetchInterval?: number | false }) => {
   return useQuery({
     queryKey: ['session-calculations', params],
-    refetchInterval: 600000, // 10 minutes
+    refetchInterval: options?.refetchInterval ?? false,
     queryFn: async (): Promise<SessionCalculations> => {
       if (!params) return getEmptyCalculations();
 

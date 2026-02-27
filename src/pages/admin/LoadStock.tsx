@@ -1129,7 +1129,7 @@ const LoadStock: React.FC = () => {
                           <Badge className="bg-amber-500 text-white text-[10px] px-1.5 py-0 ms-1">فائض</Badge>
                         )}
                         <span className="text-xs text-muted-foreground ms-2">
-                          {new Date(session.created_at).toLocaleDateString('ar-DZ')}
+                          {new Date(session.created_at).toLocaleDateString('ar-DZ')} {new Date(session.created_at).toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
                       <div className="flex gap-1">

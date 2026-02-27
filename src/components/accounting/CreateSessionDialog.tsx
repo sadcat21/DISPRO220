@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
 import { Loader2, Calculator, Receipt, Banknote, CreditCard, ArrowDownCircle, ArrowUpCircle, Wallet, TrendingDown, Coins, AlertTriangle, Package, ShoppingBag, RefreshCw, Gift, Tag } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -48,6 +49,7 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
   const [sessionNotes, setSessionNotes] = useState('');
   const [actualCash, setActualCash] = useState('');
   const [coinAmount, setCoinAmount] = useState('');
+  const [autoRefresh, setAutoRefresh] = useState(false);
 
   const isEditMode = !!editSession;
   const selectedWorkerId = editSession?.worker_id || preselectedWorkerId || '';
@@ -121,7 +123,7 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
     ? { workerId: selectedWorkerId, branchId: activeBranch?.id, periodStart, periodEnd }
     : null;
 
-  const { data: calc, isLoading: calcLoading } = useSessionCalculations(calcParams);
+  const { data: calc, isLoading: calcLoading } = useSessionCalculations(calcParams, { refetchInterval: autoRefresh ? 600000 : false });
 
   useEffect(() => {
     if (calc && !isEditMode) {
@@ -226,6 +228,10 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                   </div>
                   <Input type="datetime-local" value={periodEnd} onChange={e => setPeriodEnd(e.target.value)} className="text-xs rounded-lg" />
                 </div>
+              </div>
+              <div className="flex items-center justify-between bg-muted/40 rounded-lg px-3 py-2">
+                <Label className="text-xs font-medium text-muted-foreground">تحديث تلقائي للبيانات</Label>
+                <Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} />
               </div>
             </div>
 
