@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { format } from 'date-fns';
-import { ArrowUpCircle, ArrowDownCircle, Package, Banknote, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowUpCircle, ArrowDownCircle, Package, Banknote, TrendingUp, TrendingDown, Users } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -22,6 +22,22 @@ const SurplusDeficitTreasury: React.FC = () => {
         .from('manager_treasury')
         .select('*')
         .in('source_type', ['accounting_surplus', 'accounting_deficit'])
+        .order('created_at', { ascending: false });
+      if (activeBranch?.id) query = query.eq('branch_id', activeBranch.id);
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Fetch customer surplus entries
+  const { data: customerSurplusEntries = [] } = useQuery({
+    queryKey: ['surplus-deficit-customer', activeBranch?.id],
+    queryFn: async () => {
+      let query = supabase
+        .from('manager_treasury')
+        .select('*')
+        .eq('source_type', 'customer_surplus')
         .order('created_at', { ascending: false });
       if (activeBranch?.id) query = query.eq('branch_id', activeBranch.id);
       const { data, error } = await query;
@@ -51,6 +67,8 @@ const SurplusDeficitTreasury: React.FC = () => {
   const totalCashDeficit = cashEntries
     .filter((e: any) => e.source_type === 'accounting_deficit')
     .reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
+  const totalCustomerSurplus = customerSurplusEntries
+    .reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
 
   const totalStockSurplus = stockEntries
     .filter((e: any) => e.discrepancy_type === 'surplus')
@@ -70,8 +88,8 @@ const SurplusDeficitTreasury: React.FC = () => {
             <TrendingUp className="w-5 h-5 text-green-600" />
             <span className="text-xs font-bold text-green-800 dark:text-green-300">إجمالي الفائض</span>
           </div>
-          <p className="text-lg font-bold text-green-700 dark:text-green-400">{fmt(totalCashSurplus + totalStockSurplus)} DA</p>
-          <p className="text-[10px] text-green-600 dark:text-green-500">خزينة: {fmt(totalCashSurplus)} • مخزون: {fmt(totalStockSurplus)}</p>
+          <p className="text-lg font-bold text-green-700 dark:text-green-400">{fmt(totalCashSurplus + totalStockSurplus + totalCustomerSurplus)} DA</p>
+          <p className="text-[10px] text-green-600 dark:text-green-500">خزينة: {fmt(totalCashSurplus)} • عملاء: {fmt(totalCustomerSurplus)} • مخزون: {fmt(totalStockSurplus)}</p>
         </div>
         <div className="rounded-xl border-2 border-red-300 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 p-3">
           <div className="flex items-center gap-2 mb-1">
@@ -88,6 +106,10 @@ const SurplusDeficitTreasury: React.FC = () => {
           <TabsTrigger value="cash" className="flex-1 gap-1.5">
             <Banknote className="w-4 h-4" />
             الخزينة
+          </TabsTrigger>
+          <TabsTrigger value="customers" className="flex-1 gap-1.5">
+            <Users className="w-4 h-4" />
+            فائض العملاء
           </TabsTrigger>
           <TabsTrigger value="stock" className="flex-1 gap-1.5">
             <Package className="w-4 h-4" />
@@ -120,6 +142,35 @@ const SurplusDeficitTreasury: React.FC = () => {
                   </div>
                 );
               })}
+            </div>
+          </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="customers">
+          <ScrollArea className="max-h-[60vh]">
+            <div className="space-y-2 mt-2">
+              {customerSurplusEntries.length === 0 && (
+                <p className="text-center text-muted-foreground text-sm py-8">لا توجد فوائض عملاء مسجلة</p>
+              )}
+              {customerSurplusEntries.map((entry: any) => (
+                <div key={entry.id} className="rounded-xl border border-blue-200 bg-blue-50/50 dark:bg-blue-900/10 p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ArrowUpCircle className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm font-bold text-blue-700 dark:text-blue-400">
+                        فائض عميل {fmt(Number(entry.amount))} DA
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">
+                      {format(new Date(entry.created_at), 'dd/MM/yyyy HH:mm')}
+                    </span>
+                  </div>
+                  {entry.customer_name && (
+                    <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mt-1">{entry.customer_name}</p>
+                  )}
+                  {entry.notes && <p className="text-xs text-muted-foreground mt-0.5">{entry.notes}</p>}
+                </div>
+              ))}
             </div>
           </ScrollArea>
         </TabsContent>

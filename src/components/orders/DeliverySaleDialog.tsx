@@ -394,7 +394,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
         toast.success(t('debts.payment_success'));
       }
 
-      // Handle overpayment - add to customer credit balance
+      // Handle overpayment - add to customer credit balance + record in surplus treasury
       if (paymentData.overpaymentAction === 'credit' && paymentData.overpaymentAmount && paymentData.overpaymentAmount > 0) {
         await createCredit.mutateAsync({
           customer_id: order.customer_id,
@@ -404,6 +404,16 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
           worker_id: workerId!,
           branch_id: order.branch_id || activeBranch?.id,
           notes: `فائض مالي من الطلبية ${order.id.slice(0, 8)}`,
+        });
+        // Also record in surplus/deficit treasury
+        await supabase.from('manager_treasury').insert({
+          manager_id: workerId!,
+          branch_id: order.branch_id || activeBranch?.id || null,
+          source_type: 'customer_surplus',
+          payment_method: 'cash',
+          amount: paymentData.overpaymentAmount,
+          customer_name: order.customer?.name || '',
+          notes: `فائض مالي من عميل - طلبية ${order.id.slice(0, 8)}`,
         });
       }
 
