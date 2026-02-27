@@ -148,15 +148,15 @@ const CustomerPickerDialog: React.FC<CustomerPickerDialogProps> = ({
     return result;
   }, [filteredCustomers, sectorMap]);
 
-  // When autoExpand changes, sync openGroups
+  // When autoExpand changes, sync openGroups (only react to autoExpand toggle, not groupedCustomers changes)
   useEffect(() => {
     if (autoExpand) {
       const allKeys = groupedCustomers.map(g => g.sectorId || 'no-sector');
       setOpenGroups(new Set(allKeys));
-    } else {
-      setOpenGroups(new Set());
     }
-  }, [autoExpand, groupedCustomers]);
+    // Only clear when autoExpand is explicitly turned off (not on every groupedCustomers change)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoExpand]);
 
   const getSectorName = (sectorId: string | null | undefined) => {
     if (!sectorId) return '';
