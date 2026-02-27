@@ -633,8 +633,11 @@ const LoadStock: React.FC = () => {
                         const giftDisplay = offer.giftUnit === 'piece' 
                           ? `${giftBoxes}.${String(giftPieces).padStart(2, '0')}`
                           : `${suggestedGifts}`;
-                        // Calculate the decimal quantity for stock (e.g., 4 pieces / 20 = 0.04 boxes)  
-                        const giftStockQty = offer.giftUnit === 'piece' ? suggestedGifts / piecesPerBox : suggestedGifts;
+                        // Calculate using boxes.pieces format (e.g., 8 pieces with 20/box = 0.08, 25 pieces = 1.05)
+                        // The decimal part represents pieces directly (padded to 2 digits), NOT a division
+                        const giftStockQty = offer.giftUnit === 'piece' 
+                          ? giftBoxes + (giftPieces / 100) 
+                          : suggestedGifts;
                         return (
                           <div className="space-y-1">
                             <div className="flex items-center gap-2 text-xs bg-destructive/5 border border-destructive/20 rounded-md p-1.5">
