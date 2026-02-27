@@ -10,6 +10,7 @@ import AddPromoDialog from '@/components/promo/AddPromoDialog';
 import DirectSaleDialog from '@/components/warehouse/DirectSaleDialog';
 import CustomerActionDialog from '@/components/orders/CustomerActionDialog';
 import CreateOrderDialog from '@/components/orders/CreateOrderDialog';
+import CustomerPickerDialog from '@/components/orders/CustomerPickerDialog';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
 import { Customer } from '@/types/database';
 import { toast } from 'sonner';
@@ -30,6 +31,7 @@ const WorkerHome: React.FC = () => {
   const [showPromoDialog, setShowPromoDialog] = useState(false);
   const [showDirectSaleDialog, setShowDirectSaleDialog] = useState(false);
   const [showCreateOrderDialog, setShowCreateOrderDialog] = useState(false);
+  const [showCustomerPickerForOrder, setShowCustomerPickerForOrder] = useState(false);
   const [showActionDialog, setShowActionDialog] = useState(false);
   const [selectedCustomerForAction, setSelectedCustomerForAction] = useState<Customer | null>(null);
 
@@ -62,6 +64,20 @@ const WorkerHome: React.FC = () => {
       return data;
     },
     enabled: !!workerId,
+  });
+
+  const { data: allCustomers = [], isLoading: customersLoading } = useQuery({
+    queryKey: ['customers-for-order-picker'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('status', 'active')
+        .order('name');
+      if (error) throw error;
+      return data as Customer[];
+    },
+    enabled: showCustomerPickerForOrder,
   });
 
   // Check permissions
@@ -200,7 +216,7 @@ const WorkerHome: React.FC = () => {
           }
           if (hasOrdersAccess && !isOrdersPageHidden && !isCreateOrderHidden) {
             quickActions.push({ key: 'orders', icon: <ShoppingCart className="w-6 h-6" />, label: t('orders.manage'), onClick: () => navigate('/orders') });
-            quickActions.push({ key: 'create-order', icon: <ShoppingCart className="w-6 h-6" />, label: t('orders.create_new'), onClick: () => setShowCreateOrderDialog(true) });
+            quickActions.push({ key: 'create-order', icon: <ShoppingCart className="w-6 h-6" />, label: t('orders.create_new'), onClick: () => setShowCustomerPickerForOrder(true) });
           }
           if (hasOrdersAccess && !hasDeliveryAccess && !isMyPromosPageHidden) {
             quickActions.push({ key: 'promos', icon: <Gift className="w-6 h-6" />, label: t('promos.add_new'), onClick: () => navigate('/my-promos') });
@@ -289,6 +305,17 @@ const WorkerHome: React.FC = () => {
         }}
         directAction="sale"
         allowedActions={['sale']}
+      />
+      <CustomerPickerDialog
+        open={showCustomerPickerForOrder}
+        onOpenChange={setShowCustomerPickerForOrder}
+        customers={allCustomers}
+        isLoading={customersLoading}
+        onSelect={(customer) => {
+          setSelectedCustomerForAction(customer);
+          setShowCustomerPickerForOrder(false);
+          setShowCreateOrderDialog(true);
+        }}
       />
     </div>
   );
