@@ -531,10 +531,15 @@ const LoadStock: React.FC = () => {
                   const oldStock = totalNewLoaded > 0 ? subtractCustomQty(s.current_stock, totalNewLoaded, piecesPerBox) : s.current_stock;
                   const surplus = Math.max(0, s.current_stock - s.pending_orders_quantity);
                   
-                  // Convert gift qty to boxes.pieces format for display
+                  // Total gifts = previous (decimal part of oldStock) + new gifts, all in custom format
                   const newGiftInCustom = newGiftUnit === 'box' ? newGiftQty : totalPiecesToCustom(newGiftQty, piecesPerBox);
-
-                  const hasGifts = newGiftQty > 0;
+                  // Extract previous gift pieces from oldStock decimal
+                  const oldStockRounded = Math.round(oldStock * 100) / 100;
+                  const oldGiftPieces = Math.round((oldStockRounded - Math.floor(oldStockRounded)) * 100);
+                  const oldGiftInCustom = oldGiftPieces > 0 ? totalPiecesToCustom(oldGiftPieces, piecesPerBox) : 0;
+                  // Total gifts = old + new
+                  const totalGiftsCustom = newGiftQty > 0 ? addCustomQty(oldGiftInCustom, newGiftInCustom, piecesPerBox) : oldGiftInCustom;
+                  const hasGifts = totalGiftsCustom > 0;
                   return (
                     <Card key={s.product_id} className="border">
                       <CardContent className="p-3">
@@ -573,7 +578,7 @@ const LoadStock: React.FC = () => {
                           {hasGifts && (
                             <div className="bg-destructive/5 rounded p-1 text-center">
                               <div className="text-muted-foreground text-[10px]">هدايا</div>
-                              <div className="font-bold text-destructive">{fmtQty(newGiftInCustom)}</div>
+                              <div className="font-bold text-destructive">{fmtQty(totalGiftsCustom)}</div>
                             </div>
                           )}
                         </div>
