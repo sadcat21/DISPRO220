@@ -313,7 +313,7 @@ const StockVerificationDialog: React.FC<StockVerificationDialogProps> = ({
           </Button>
           <Button
             onClick={handleShowSummary}
-            disabled={isSubmitting || items.length === 0}
+            disabled={isSubmitting}
           >
             {isSubmitting && <Loader2 className="w-4 h-4 animate-spin me-2" />}
             <CheckCircle className="w-4 h-4 me-1" />
