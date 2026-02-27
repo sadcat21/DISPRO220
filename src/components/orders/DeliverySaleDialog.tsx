@@ -10,8 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Truck, Plus, Minus, Loader2,
-  XCircle, Package, PlusCircle, Stamp, CheckCircle, PackageX, Gift
+  XCircle, Package, PlusCircle, Stamp, CheckCircle, PackageX, Gift, AlertTriangle, Copy
 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -98,6 +99,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [newProductId, setNewProductId] = useState('');
   const [initialized, setInitialized] = useState(false);
+  const [partialDeliveryAction, setPartialDeliveryAction] = useState<'none' | 'create_order' | 'deliver_only'>('none');
 
   // Fetch products for adding
   useEffect(() => {
@@ -138,6 +140,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
       setNotes('');
       setInitialized(false);
       setNewProductId('');
+      setPartialDeliveryAction('none');
     }
   }, [open]);
 
@@ -217,6 +220,26 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
     return { totalItems, totalGiftBoxes, subtotal, stampAmount, stampPercentage, totalAmount: subtotal + stampAmount };
   }, [saleItems, order.payment_type, order, stampTiers, shortageProductIds]);
 
+  // Detect partial delivery (items reduced or removed)
+  const partialDeliveryDiff = useMemo(() => {
+    const diffs: { productId: string; productName: string; originalQty: number; newQty: number; diffQty: number; unitPrice: number }[] = [];
+    for (const item of saleItems) {
+      if (item.originalItemId && item.originalQuantity > 0 && item.quantity < item.originalQuantity) {
+        diffs.push({
+          productId: item.productId,
+          productName: item.productName,
+          originalQty: item.originalQuantity,
+          newQty: item.quantity,
+          diffQty: item.originalQuantity - item.quantity,
+          unitPrice: item.unitPrice,
+        });
+      }
+    }
+    return diffs;
+  }, [saleItems]);
+
+  const hasPartialDelivery = partialDeliveryDiff.length > 0;
+
   // Validate and show payment dialog
   const handleProceedToPayment = () => {
     const activeItems = saleItems.filter(i => i.quantity > 0 && !shortageProductIds.has(i.productId));
@@ -231,6 +254,11 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
         toast.error(`${item.productName}: ${t('stock.available')} ${available}`);
         return;
       }
+    }
+    // If partial delivery and no action chosen
+    if (hasPartialDelivery && partialDeliveryAction === 'none') {
+      toast.error('يرجى اختيار إجراء التوصيل الجزئي أولاً');
+      return;
     }
     setShowPaymentDialog(true);
   };
@@ -365,6 +393,43 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
       });
 
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+
+      // Create new order for remaining quantities if partial delivery with create_order action
+      if (partialDeliveryAction === 'create_order' && partialDeliveryDiff.length > 0) {
+        try {
+          const { data: newOrder, error: newOrderError } = await supabase
+            .from('orders')
+            .insert({
+              customer_id: order.customer_id,
+              created_by: workerId!,
+              assigned_worker_id: order.assigned_worker_id,
+              branch_id: order.branch_id,
+              status: order.assigned_worker_id ? 'assigned' : 'pending',
+              payment_type: order.payment_type,
+              invoice_payment_method: order.invoice_payment_method,
+              notes: `طلبية فارق - توصيل جزئي من الطلبية ${order.id.slice(0, 8)}`,
+            })
+            .select()
+            .single();
+
+          if (!newOrderError && newOrder) {
+            const newItems = partialDeliveryDiff.map(diff => ({
+              order_id: newOrder.id,
+              product_id: diff.productId,
+              quantity: diff.diffQty,
+              unit_price: diff.unitPrice,
+              total_price: diff.diffQty * diff.unitPrice,
+            }));
+            await supabase.from('order_items').insert(newItems);
+            const newTotal = newItems.reduce((s, i) => s + i.total_price, 0);
+            await supabase.from('orders').update({ total_amount: newTotal }).eq('id', newOrder.id);
+            toast.success(`تم إنشاء طلبية جديدة بالفارق (${partialDeliveryDiff.map(d => `${d.diffQty} ${d.productName}`).join(', ')})`);
+          }
+        } catch (err) {
+          console.error('Error creating partial delivery order:', err);
+          toast.error('فشل إنشاء طلبية الفارق');
+        }
+      }
 
       // Track delivery visit GPS
       trackVisit({ customerId: order.customer_id, operationType: 'delivery', operationId: order.id });
@@ -592,6 +657,48 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
                       <PlusCircle className="w-4 h-4" />
                     </Button>
                   </div>
+                </section>
+              )}
+
+              {/* Partial Delivery Alert */}
+              {hasPartialDelivery && (
+                <section className="space-y-3">
+                  <Alert className="border-amber-300 bg-amber-50 dark:bg-amber-950/20">
+                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    <AlertDescription className="text-sm">
+                      <p className="font-semibold mb-2">توصيل جزئي - منتجات ناقصة:</p>
+                      <ul className="space-y-1 mb-3">
+                        {partialDeliveryDiff.map(diff => (
+                          <li key={diff.productId} className="flex justify-between text-xs">
+                            <span>{diff.productName}</span>
+                            <span className="font-mono">{diff.originalQty} → {diff.newQty} (ناقص: {diff.diffQty})</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={partialDeliveryAction === 'create_order' ? 'default' : 'outline'}
+                          className="text-xs h-9"
+                          onClick={() => setPartialDeliveryAction('create_order')}
+                        >
+                          <Copy className="w-3 h-3 me-1" />
+                          إنشاء طلبية بالفارق
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={partialDeliveryAction === 'deliver_only' ? 'default' : 'outline'}
+                          className="text-xs h-9"
+                          onClick={() => setPartialDeliveryAction('deliver_only')}
+                        >
+                          <Package className="w-3 h-3 me-1" />
+                          توصيل المتوفر فقط
+                        </Button>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
                 </section>
               )}
 
