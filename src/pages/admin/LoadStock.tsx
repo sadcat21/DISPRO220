@@ -617,17 +617,15 @@ const LoadStock: React.FC = () => {
         const product = products.find(p => p.id === ws.product_id);
         const piecesPerBox = product?.pieces_per_box || 20;
         const pending = pendingQty[ws.product_id] || 0;
-        const maxReturn = pending > 0 ? subtractCustomQty(ws.quantity, pending, piecesPerBox) : ws.quantity;
         return {
           id: ws.id, product_id: ws.product_id,
           product_name: (ws.product as any)?.name || ws.product_id,
           quantity: ws.quantity, pendingNeeded: pending,
-          returnQty: Math.max(0, maxReturn),
+          returnQty: ws.quantity, // Default to full quantity, user can adjust
           piecesPerBox,
           keepAllocations: [] as { reason: string; quantity: number }[], allocationMode: false,
         };
-      })
-      .filter(ws => ws.returnQty > 0);
+      });
     if (itemsToReturn.length === 0) { toast.error(t('stock.empty_truck_nothing')); return; }
     setEmptyTruckItems(itemsToReturn);
     setShowEmptyDialog(true);
@@ -638,8 +636,42 @@ const LoadStock: React.FC = () => {
     setIsEmptying(true);
     setShowEmptyDialog(false);
     try {
+      // Validate: returnQty must not exceed truck quantity
+      for (const item of emptyTruckItems) {
+        if (item.returnQty > item.quantity) {
+          toast.error(`${item.product_name}: لا يمكن تفريغ كمية أكبر من الموجود في الشاحنة (${item.quantity})`);
+          setIsEmptying(false);
+          return;
+        }
+      }
+
+      // Create an unloading session record
+      const { data: unloadSession, error: sessionError } = await supabase
+        .from('loading_sessions')
+        .insert({
+          worker_id: selectedWorker!,
+          manager_id: currentWorkerId!,
+          branch_id: branchId,
+          status: 'unloaded',
+          notes: 'تفريغ الشاحنة',
+          completed_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (sessionError) throw sessionError;
+
       for (const item of emptyTruckItems) {
         if (item.returnQty <= 0) continue;
+
+        // Save unloading session item
+        await supabase.from('loading_session_items').insert({
+          session_id: unloadSession.id,
+          product_id: item.product_id,
+          quantity: item.returnQty,
+          gift_quantity: 0,
+        });
+
         const ppb = item.piecesPerBox;
         const remainingQty = subtractCustomQty(item.quantity, item.returnQty, ppb);
         await supabase.from('worker_stock').update({ quantity: Math.max(0, remainingQty) }).eq('id', item.id);
@@ -663,6 +695,7 @@ const LoadStock: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['my-worker-stock'] });
       queryClient.invalidateQueries({ queryKey: ['worker-truck-stock'] });
       queryClient.invalidateQueries({ queryKey: ['worker-load-suggestions', selectedWorker] });
+      queryClient.invalidateQueries({ queryKey: ['loading-sessions'] });
       toast.success(t('stock.empty_truck_success'));
     } catch (error: any) { toast.error(error.message); }
     finally { setIsEmptying(false); }
