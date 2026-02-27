@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useNavigation } from '@/hooks/useNavigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useFontSize } from '@/contexts/FontSizeContext';
-import { Calculator, Banknote, ArrowLeft, Navigation, Users, Receipt } from 'lucide-react';
+import { Calculator, Banknote, ArrowLeft, Navigation, Users, Receipt, ShoppingCart } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsElementHidden } from '@/hooks/useUIOverrides';
 import InvoiceRequestDialog from '@/components/treasury/InvoiceRequestDialog';
+import CreateOrderDialog from '@/components/orders/CreateOrderDialog';
 
 // Color mapping by path for semantic meaning
 const pathColors: Record<string, { bg: string; icon: string; border: string }> = {
@@ -52,6 +53,7 @@ const AdminHome: React.FC = () => {
   const { gridCols } = useFontSize();
   const { activeBranch, role } = useAuth();
   const [invoiceRequestOpen, setInvoiceRequestOpen] = useState(false);
+  const [showCreateOrder, setShowCreateOrder] = useState(false);
 
   const isAccountingHidden = useIsElementHidden('page', '/accounting');
   const isDebtsHidden = useIsElementHidden('page', '/customer-debts');
@@ -118,6 +120,17 @@ const AdminHome: React.FC = () => {
         )}
       </div>
 
+      {/* Quick Create Order Button */}
+      <div
+        className="relative overflow-hidden rounded-xl border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-blue-100 p-4 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg flex items-center gap-3"
+        onClick={() => setShowCreateOrder(true)}
+      >
+        <ShoppingCart className="w-8 h-8 text-blue-600" />
+        <div>
+          <p className="font-bold text-sm text-blue-900">{t('orders.create_order')}</p>
+          <p className="text-xs text-blue-700">{t('orders.create_order')}</p>
+        </div>
+      </div>
       {/* Invoice Request Quick Button */}
       {showInvoiceButton && (
         <div
@@ -171,6 +184,7 @@ const AdminHome: React.FC = () => {
       </div>
 
       <InvoiceRequestDialog open={invoiceRequestOpen} onOpenChange={setInvoiceRequestOpen} />
+      <CreateOrderDialog open={showCreateOrder} onOpenChange={setShowCreateOrder} />
     </div>
   );
 };

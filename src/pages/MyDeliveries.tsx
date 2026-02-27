@@ -33,11 +33,13 @@ import { getLocalizedName } from '@/utils/sectorName';
 import { supabase } from '@/integrations/supabase/client';
 
 type TabStatus = 'all' | OrderStatus;
+type DeliveryType = 'orders' | 'direct_sales';
 
 const MyDeliveries: React.FC = () => {
   const { t, language, loadPrintSettingsFromDB } = useLanguage();
   
   const [activeTab, setActiveTab] = useState<TabStatus>('all');
+  const [deliveryType, setDeliveryType] = useState<DeliveryType>('orders');
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [showSearchDialog, setShowSearchDialog] = useState(false);
@@ -184,20 +186,33 @@ const MyDeliveries: React.FC = () => {
 
   const selectedOrder = orders?.find(o => o.id === selectedOrderId);
 
-  // Count per status
+  // Helper to check if an order is a direct sale
+  const isDirectSale = (order: OrderWithDetails) => 
+    order.notes?.includes('بيع مباشر') || false;
+
+  // Filter by delivery type first
+  const typeFilteredOrders = orders?.filter(o => 
+    deliveryType === 'direct_sales' ? isDirectSale(o) : !isDirectSale(o)
+  );
+
+  // Count per status (based on type-filtered orders)
   const statusCounts: Record<string, number> = {
-    all: orders?.length || 0,
-    assigned: orders?.filter(o => o.status === 'assigned').length || 0,
-    in_progress: orders?.filter(o => o.status === 'in_progress').length || 0,
-    delivered: orders?.filter(o => o.status === 'delivered').length || 0,
-    cancelled: orders?.filter(o => o.status === 'cancelled').length || 0,
-    pending: orders?.filter(o => o.status === 'pending').length || 0,
+    all: typeFilteredOrders?.length || 0,
+    assigned: typeFilteredOrders?.filter(o => o.status === 'assigned').length || 0,
+    in_progress: typeFilteredOrders?.filter(o => o.status === 'in_progress').length || 0,
+    delivered: typeFilteredOrders?.filter(o => o.status === 'delivered').length || 0,
+    cancelled: typeFilteredOrders?.filter(o => o.status === 'cancelled').length || 0,
+    pending: typeFilteredOrders?.filter(o => o.status === 'pending').length || 0,
   };
+
+  // Type-level counts
+  const orderTypeCount = orders?.filter(o => !isDirectSale(o)).length || 0;
+  const directSaleCount = orders?.filter(o => isDirectSale(o)).length || 0;
 
   // Filtered orders
   const filteredOrders = activeTab === 'all' 
-    ? orders 
-    : orders?.filter(o => o.status === activeTab);
+    ? typeFilteredOrders 
+    : typeFilteredOrders?.filter(o => o.status === activeTab);
 
   // Tab definitions
   const tabs: { value: TabStatus; label: string; icon: React.ElementType; color: string }[] = [
@@ -457,6 +472,20 @@ const MyDeliveries: React.FC = () => {
           </Button>
         )}
       </div>
+
+      {/* Delivery Type Tabs (Orders vs Direct Sales) */}
+      <Tabs value={deliveryType} onValueChange={(v) => { setDeliveryType(v as DeliveryType); setActiveTab('all'); }} dir="rtl">
+        <TabsList className="w-full h-10 p-1 bg-muted/60">
+          <TabsTrigger value="orders" className="flex-1 gap-1.5 data-[state=active]:shadow-sm">
+            <Truck className="w-4 h-4" />
+            <span className="text-xs font-bold">{t('deliveries.title')} ({orderTypeCount})</span>
+          </TabsTrigger>
+          <TabsTrigger value="direct_sales" className="flex-1 gap-1.5 data-[state=active]:shadow-sm">
+            <ShoppingCart className="w-4 h-4" />
+            <span className="text-xs font-bold">{t('stock.direct_sale')} ({directSaleCount})</span>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Status Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabStatus)} dir="rtl">
