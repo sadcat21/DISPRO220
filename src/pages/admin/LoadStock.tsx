@@ -71,6 +71,7 @@ const LoadStock: React.FC = () => {
   const [productPickerIndex, setProductPickerIndex] = useState<number | null>(null);
   const [giftSuggestions, setGiftSuggestions] = useState<GiftSuggestion[]>([]);
   const [showGiftDialog, setShowGiftDialog] = useState(false);
+  const [productOffers, setProductOffers] = useState<Record<string, { offerName: string; giftQty: number; giftUnit: string; minQty: number; minUnit: string }>>({});
 
   const { data: stockAlerts = [] } = useStockAlerts();
 
@@ -87,6 +88,8 @@ const LoadStock: React.FC = () => {
       
       if (autoItems.length > 0) {
         setItems(autoItems);
+        // Fetch offers for auto-filled products
+        autoItems.forEach(item => fetchProductOffer(item.product_id));
       } else {
         setItems([newLoadItem()]);
       }
@@ -105,6 +108,46 @@ const LoadStock: React.FC = () => {
 
   const updateItem = (index: number, field: keyof LoadItem, value: string | number) => {
     setItems(prev => prev.map((item, i) => i === index ? { ...item, [field]: value } : item));
+    // Fetch offers when product is selected
+    if (field === 'product_id' && typeof value === 'string' && value) {
+      fetchProductOffer(value);
+    }
+  };
+
+  // Fetch active offer for a specific product
+  const fetchProductOffer = async (productId: string) => {
+    if (productOffers[productId]) return; // Already fetched
+    
+    const { data: offers } = await supabase
+      .from('product_offers')
+      .select('id, name')
+      .eq('product_id', productId)
+      .eq('is_active', true)
+      .limit(1);
+
+    if (!offers || offers.length === 0) return;
+
+    const { data: tiers } = await supabase
+      .from('product_offer_tiers')
+      .select('min_quantity, min_quantity_unit, gift_quantity, gift_quantity_unit, gift_type')
+      .eq('offer_id', offers[0].id)
+      .eq('gift_type', 'same_product')
+      .order('tier_order', { ascending: true })
+      .limit(1);
+
+    if (!tiers || tiers.length === 0) return;
+
+    const tier = tiers[0];
+    setProductOffers(prev => ({
+      ...prev,
+      [productId]: {
+        offerName: offers[0].name,
+        giftQty: tier.gift_quantity,
+        giftUnit: tier.gift_quantity_unit || 'piece',
+        minQty: tier.min_quantity,
+        minUnit: tier.min_quantity_unit || 'piece',
+      }
+    }));
   };
 
   const getAvailableQuantity = (productId: string) => {
@@ -185,7 +228,7 @@ const LoadStock: React.FC = () => {
     await executeLoad(validItems, []);
   };
 
-  const executeLoad = async (validItems: LoadItem[], gifts: GiftSuggestion[]) => {
+  const executeLoad = async (validItems: LoadItem[], _gifts: GiftSuggestion[]) => {
     setIsSaving(true);
     try {
       const loadItems = validItems.map(item => {
@@ -193,20 +236,22 @@ const LoadStock: React.FC = () => {
           .filter(a => a.quantity > 0)
           .map(a => `${a.quantity} ${t(`stock.reason_${a.reason}`)}`)
           .join(', ');
+
+        // Check if there are gift suggestions for this product
+        const giftInfo = _gifts.find(g => g.product_id === item.product_id && g.accepted && g.gift_qty > 0);
+        const giftNote = giftInfo 
+          ? ` | هدايا العرض: ${giftInfo.gift_qty} ${giftInfo.gift_unit === 'piece' ? 'قطعة' : giftInfo.gift_unit === 'box' ? 'صندوق' : 'كغ'}`
+          : '';
+
         const notes = allocDetails
-          ? `شحن من المخزن | تخصيص: ${allocDetails}`
-          : 'شحن من المخزن إلى عامل التوصيل';
+          ? `شحن من المخزن | تخصيص: ${allocDetails}${giftNote}`
+          : `شحن من المخزن إلى عامل التوصيل${giftNote}`;
         return { product_id: item.product_id, quantity: item.quantity, notes };
       });
 
-      // Add accepted gift items as separate load entries (in pieces)
-      for (const gift of gifts.filter(g => g.accepted && g.gift_qty > 0)) {
-        loadItems.push({
-          product_id: gift.product_id,
-          quantity: gift.gift_qty,
-          notes: `شحن هدايا العرض - ${gift.gift_qty} ${gift.gift_unit === 'piece' ? 'قطعة' : gift.gift_unit === 'box' ? 'صندوق' : 'كغ'}`,
-        });
-      }
+      // Note: Gifts are NOT loaded as separate stock entries.
+      // Gift tracking is handled via order_items when sales are made.
+      // The gift suggestion is informational only - reminding admin to include gift pieces physically.
 
       await loadToWorker(selectedWorker, loadItems);
       toast.success(t('stock.loaded_success'));
@@ -523,16 +568,37 @@ const LoadStock: React.FC = () => {
                     )}
                   </div>
                   {item.product_id && (
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span>{t('stock.available')}: {available}</span>
-                      {suggestion && (
-                        <>
-                          <span>|</span>
-                          <span>{t('stock.in_truck')}: {suggestion.current_stock}</span>
-                          <span>|</span>
-                          <span>{t('stock.orders_need')}: {suggestion.pending_orders_quantity}</span>
-                        </>
-                      )}
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span>{t('stock.available')}: {available}</span>
+                        {suggestion && (
+                          <>
+                            <span>|</span>
+                            <span>{t('stock.in_truck')}: {suggestion.current_stock}</span>
+                            <span>|</span>
+                            <span>{t('stock.orders_need')}: {suggestion.pending_orders_quantity}</span>
+                          </>
+                        )}
+                      </div>
+                      {/* Dynamic offer info */}
+                      {productOffers[item.product_id] && (() => {
+                        const offer = productOffers[item.product_id];
+                        const unitLabel = (u: string) => u === 'piece' ? 'قطعة' : u === 'box' ? 'صندوق' : 'كغ';
+                        const suggestedGifts = Math.floor(item.quantity / offer.minQty) * offer.giftQty;
+                        return (
+                          <div className="flex items-center gap-2 text-xs bg-primary/5 border border-primary/20 rounded-md p-1.5">
+                            <Gift className="w-3.5 h-3.5 text-primary shrink-0" />
+                            <span>
+                              عرض: <strong>{offer.giftQty} {unitLabel(offer.giftUnit)}</strong> لكل <strong>{offer.minQty} {unitLabel(offer.minUnit)}</strong>
+                            </span>
+                            {suggestedGifts > 0 && (
+                              <Badge variant="secondary" className="text-xs ms-auto">
+                                هدايا مقترحة: {suggestedGifts} {unitLabel(offer.giftUnit)}
+                              </Badge>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
 
@@ -858,7 +924,7 @@ const LoadStock: React.FC = () => {
               شحن هدايا العروض
             </DialogTitle>
             <DialogDescription>
-              تم اكتشاف عروض نشطة للمنتجات المشحونة. هل تريد إضافة كمية الهدايا؟
+              تذكير: المنتجات المشحونة لها عروض نشطة. تأكد من تضمين الهدايا مع الشحنة. لن يتم خصم الهدايا من المخزون - يتم تتبعها تلقائياً عند البيع.
             </DialogDescription>
           </DialogHeader>
 
