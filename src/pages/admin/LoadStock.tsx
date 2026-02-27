@@ -136,6 +136,12 @@ const LoadStock: React.FC = () => {
     deleteSessionItem, sessionItemsQuery, refetch: refetchSessions,
   } = useLoadingSessions(selectedWorker || null);
 
+  // Check if worker has a review session today (mandatory before load/unload)
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const hasReviewToday = useMemo(() => {
+    return sessions.some(s => s.status === 'review' && s.created_at.startsWith(todayStr));
+  }, [sessions, todayStr]);
+
 
   // Product offers cache (with all tiers for dynamic calc)
   const [productOffers, setProductOffers] = useState<Record<string, { offerName: string; giftQty: number; giftUnit: string; minQty: number; minUnit: string; tiers: { minQty: number; maxQty: number | null; giftQty: number; giftUnit: string }[] }>>({});
