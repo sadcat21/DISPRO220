@@ -136,14 +136,17 @@ const LoadStock: React.FC = () => {
     deleteSessionItem, sessionItemsQuery, refetch: refetchSessions,
   } = useLoadingSessions(selectedWorker || null);
 
-  // Check if worker has a review session today (mandatory before load/unload)
+  // Check if the last session is a review - review must separate load/unload sessions
   const hasReviewToday = useMemo(() => {
-    const todayLocal = format(new Date(), 'yyyy-MM-dd');
-    return sessions.some(s => {
-      if (s.status !== 'review') return false;
-      const sessionDate = format(new Date(s.created_at), 'yyyy-MM-dd');
-      return sessionDate === todayLocal;
-    });
+    if (sessions.length === 0) return true; // No sessions = allow first load
+    // Sessions are ordered by created_at DESC, so first is the latest
+    const lastSession = sessions[0];
+    // If last session is review, allow load/unload
+    if (lastSession.status === 'review') return true;
+    // If last session is open (active loading), allow (it's in progress)
+    if (lastSession.status === 'open') return true;
+    // Last session is loading (completed) or unloaded → require review first
+    return false;
   }, [sessions]);
 
 
