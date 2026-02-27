@@ -56,16 +56,95 @@ const DailyReceipts: React.FC = () => {
     },
   });
 
-  const { data: receipts, isLoading } = useReceipts({
+  const { data: receipts, isLoading: receiptsLoading } = useReceipts({
     date: dateFrom,
     dateTo: dateTo !== dateFrom ? dateTo : undefined,
     workerId: isAdmin ? (filterWorkerId !== 'all' ? filterWorkerId : undefined) : workerId || undefined,
     receiptType: filterType !== 'all' ? filterType : undefined,
   });
 
+  // Also fetch delivered orders that may not have receipts
+  const { data: deliveredOrders, isLoading: ordersLoading } = useQuery({
+    queryKey: ['daily-delivered-orders', dateFrom, dateTo, filterWorkerId, filterType],
+    queryFn: async () => {
+      // Skip if filtering by non-delivery type
+      if (filterType && filterType !== 'all' && filterType !== 'delivery') return [];
+      
+      let query = supabase
+        .from('orders')
+        .select(`
+          id, customer_id, created_by, assigned_worker_id, status, payment_type,
+          payment_status, total_amount, created_at, updated_at, notes,
+          partial_amount, prepaid_amount,
+          customer:customers(id, name, phone, wilaya),
+          assigned_worker:workers!orders_assigned_worker_id_fkey(id, full_name)
+        `)
+        .eq('status', 'delivered')
+        .order('created_at', { ascending: false });
+
+      // Date filter using Algeria timezone
+      query = query.gte('created_at', `${dateFrom}T00:00:00+01:00`);
+      const endDate = dateTo !== dateFrom ? dateTo : dateFrom;
+      query = query.lte('created_at', `${endDate}T23:59:59+01:00`);
+
+      const effectiveWorkerId = isAdmin ? (filterWorkerId !== 'all' ? filterWorkerId : undefined) : workerId || undefined;
+      if (effectiveWorkerId) {
+        query = query.eq('assigned_worker_id', effectiveWorkerId);
+      }
+
+      const { data, error } = await query.limit(500);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const isLoading = receiptsLoading || ordersLoading;
+
+  // Merge: convert delivered orders without receipts into receipt-like objects
+  const mergedReceipts = useMemo(() => {
+    const receiptOrderIds = new Set((receipts || []).map(r => r.order_id).filter(Boolean));
+    
+    // Orders that already have receipts are excluded
+    const ordersWithoutReceipts = (deliveredOrders || [])
+      .filter(o => !receiptOrderIds.has(o.id))
+      .map(o => ({
+        id: `order-${o.id}`,
+        receipt_number: 0,
+        receipt_type: 'delivery' as const,
+        order_id: o.id,
+        debt_id: null,
+        customer_id: o.customer_id,
+        customer_name: (o as any).customer?.name || 'غير معروف',
+        customer_phone: (o as any).customer?.phone || null,
+        worker_id: o.assigned_worker_id || o.created_by,
+        worker_name: (o as any).assigned_worker?.full_name || '',
+        worker_phone: null,
+        items: [] as ReceiptItem[],
+        total_amount: Number(o.total_amount) || 0,
+        discount_amount: 0,
+        paid_amount: o.payment_status === 'cash' ? (Number(o.total_amount) || 0) : (Number(o.partial_amount) || Number(o.prepaid_amount) || 0),
+        remaining_amount: o.payment_status === 'credit' ? (Number(o.total_amount) || 0) : 
+          o.payment_status === 'partial' ? ((Number(o.total_amount) || 0) - (Number(o.partial_amount) || 0)) : 0,
+        payment_method: o.payment_status || null,
+        print_count: 0,
+        last_printed_at: null,
+        is_modified: false,
+        original_data: null,
+        notes: o.notes,
+        created_at: o.created_at,
+        updated_at: o.updated_at,
+        branch_id: null,
+        _isOrderOnly: true, // flag to distinguish
+      } as ReceiptWithDetails & { _isOrderOnly?: boolean }));
+
+    // Combine and sort by date
+    const all = [...(receipts || []), ...ordersWithoutReceipts];
+    all.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return all;
+  }, [receipts, deliveredOrders]);
+
   const filteredReceipts = useMemo(() => {
-    if (!receipts) return [];
-    let result = receipts;
+    let result = mergedReceipts;
     
     // Filter by customer
     if (filterCustomer && filterCustomer !== 'all') {
@@ -83,7 +162,7 @@ const DailyReceipts: React.FC = () => {
       );
     }
     return result;
-  }, [receipts, searchQuery, filterCustomer]);
+  }, [mergedReceipts, searchQuery, filterCustomer]);
 
   const typeLabels: Record<string, { label: string; icon: React.ElementType; color: string }> = {
     direct_sale: { label: 'بيع مباشر', icon: Receipt, color: 'bg-green-100 text-green-800' },
@@ -244,7 +323,9 @@ const DailyReceipts: React.FC = () => {
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-sm">#{receipt.receipt_number}</span>
+                      <span className="font-bold text-sm">
+                        {receipt.receipt_number ? `#${receipt.receipt_number}` : (receipt as any)._isOrderOnly ? 'طلبية' : '#0'}
+                      </span>
                       <Badge variant="outline" className={`text-[10px] ${typeInfo.color}`}>
                         <TIcon className="w-3 h-3 ml-0.5" />
                         {typeInfo.label}
