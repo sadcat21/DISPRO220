@@ -72,12 +72,19 @@ const LoadStock: React.FC = () => {
   const [giftSuggestions, setGiftSuggestions] = useState<GiftSuggestion[]>([]);
   const [showGiftDialog, setShowGiftDialog] = useState(false);
   const [productOffers, setProductOffers] = useState<Record<string, { offerName: string; giftQty: number; giftUnit: string; minQty: number; minUnit: string }>>({});
+  // Track session loads: product_id -> { quantity loaded, gift info }
+  const [sessionLoads, setSessionLoads] = useState<Record<string, { loaded: number; giftQty: number; giftUnit: string }>>({});
 
   const { data: stockAlerts = [] } = useStockAlerts();
 
   const { data: suggestions = [], isLoading: suggestionsLoading } = useWorkerLoadSuggestions(
     selectedWorker || null
   );
+
+  // Reset session loads when worker changes
+  useEffect(() => {
+    setSessionLoads({});
+  }, [selectedWorker]);
 
   // Auto-fill items from suggestions when worker is selected
   useEffect(() => {
@@ -293,6 +300,27 @@ const LoadStock: React.FC = () => {
       }
 
       await loadToWorker(selectedWorker, Object.values(aggregated));
+      
+      // Track session loads for display
+      setSessionLoads(prev => {
+        const updated = { ...prev };
+        for (const agg of Object.values(aggregated)) {
+          if (!updated[agg.product_id]) {
+            updated[agg.product_id] = { loaded: 0, giftQty: 0, giftUnit: 'piece' };
+          }
+          updated[agg.product_id].loaded += agg.quantity;
+        }
+        // Track gifts separately
+        for (const gift of acceptedGifts) {
+          if (!updated[gift.product_id]) {
+            updated[gift.product_id] = { loaded: 0, giftQty: 0, giftUnit: gift.gift_unit };
+          }
+          updated[gift.product_id].giftQty += gift.gift_qty;
+          updated[gift.product_id].giftUnit = gift.gift_unit;
+        }
+        return updated;
+      });
+      
       toast.success(t('stock.loaded_success'));
       // Stay on the same worker session - just reset the items
       setItems([newLoadItem()]);
@@ -301,6 +329,7 @@ const LoadStock: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['worker-load-suggestions'] });
       queryClient.invalidateQueries({ queryKey: ['my-worker-stock'] });
       queryClient.invalidateQueries({ queryKey: ['worker-truck-stock'] });
+      await refresh();
     } catch (error: any) {
       console.error('Error loading stock:', error);
       toast.error(error.message || t('common.error'));
@@ -511,52 +540,87 @@ const LoadStock: React.FC = () => {
             </Button>
           </div>
 
-          {/* Worker Stock Summary */}
+          {/* Worker Stock Summary - Product Cards */}
           {selectedWorker && !suggestionsLoading && suggestions.length > 0 && (
-            <Card className={hasDeficit ? 'border-destructive/50 bg-destructive/5' : 'border-green-500/50 bg-green-50 dark:bg-green-950/20'}>
-              <CardContent className="p-3 space-y-2">
-                <div className="flex items-center gap-2">
-                  {hasDeficit ? (
-                    <AlertTriangle className="w-4 h-4 text-destructive" />
-                  ) : (
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                  )}
-                  <span className="font-semibold text-sm">
-                    {hasDeficit ? t('stock.needs_loading') : t('stock.stock_sufficient')}
-                  </span>
-                  {hasDeficit && (
-                    <Badge variant="destructive" className="ms-auto text-xs">
-                      {totalDeficit} {t('stock.boxes')}
-                    </Badge>
-                  )}
-                </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                {hasDeficit ? (
+                  <AlertTriangle className="w-4 h-4 text-destructive" />
+                ) : (
+                  <CheckCircle className="w-4 h-4 text-primary" />
+                )}
+                <span className="font-semibold text-sm">
+                  {hasDeficit ? t('stock.needs_loading') : t('stock.stock_sufficient')}
+                </span>
+                {hasDeficit && (
+                  <Badge variant="destructive" className="ms-auto text-xs">
+                    {totalDeficit} {t('stock.boxes')}
+                  </Badge>
+                )}
+              </div>
 
-                <div className="space-y-1">
-                  {suggestions.map(s => (
-                    <div key={s.product_id} className="flex items-center justify-between text-xs">
-                      <span className="font-medium">{s.product_name}</span>
-                      <div className="flex items-center gap-3">
-                        <span className="text-muted-foreground">
-                          {t('stock.in_truck')}: <strong>{s.current_stock}</strong>
-                        </span>
-                        <span className="text-muted-foreground">
-                          {t('stock.orders_need')}: <strong>{s.pending_orders_quantity}</strong>
-                        </span>
-                        {s.suggested_load > 0 ? (
-                          <Badge variant="destructive" className="text-xs">
-                            +{s.suggested_load}
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-xs text-green-600 border-green-300">
-                            ✓
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+              <div className="grid gap-2">
+                {suggestions.map(s => {
+                  const sessionLoad = sessionLoads[s.product_id];
+                  const loadedThisSession = sessionLoad?.loaded || 0;
+                  const giftQty = sessionLoad?.giftQty || 0;
+                  const giftUnit = sessionLoad?.giftUnit || 'piece';
+                  // Old stock = current - what was loaded this session
+                  const oldStock = s.current_stock - loadedThisSession;
+                  const totalStock = s.current_stock;
+                  const surplus = Math.max(0, totalStock - s.pending_orders_quantity);
+                  const giftLabel = giftUnit === 'piece' ? 'قطعة' : giftUnit === 'box' ? 'صندوق' : 'كغ';
+
+                  return (
+                    <Card key={s.product_id} className="border">
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Package className="w-4 h-4 text-primary" />
+                            <span className="font-semibold text-sm">{s.product_name}</span>
+                          </div>
+                          {s.suggested_load > 0 ? (
+                            <Badge variant="destructive" className="text-xs">يحتاج +{s.suggested_load}</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs border-primary/30 text-primary">✓ كافي</Badge>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div className="bg-muted/50 rounded p-1.5 text-center">
+                            <div className="text-muted-foreground">رصيد سابق</div>
+                            <div className="font-bold">{oldStock}</div>
+                          </div>
+                          <div className="bg-primary/5 rounded p-1.5 text-center">
+                            <div className="text-muted-foreground">شحن جديد</div>
+                            <div className="font-bold text-primary">{loadedThisSession > 0 ? `+${loadedThisSession}` : '—'}</div>
+                          </div>
+                          <div className="bg-muted/50 rounded p-1.5 text-center">
+                            <div className="text-muted-foreground">الرصيد الكلي</div>
+                            <div className="font-bold">{totalStock}</div>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-xs mt-1">
+                          <div className="bg-muted/50 rounded p-1.5 text-center">
+                            <div className="text-muted-foreground">طلبات</div>
+                            <div className="font-bold">{s.pending_orders_quantity}</div>
+                          </div>
+                          <div className="bg-muted/50 rounded p-1.5 text-center">
+                            <div className="text-muted-foreground">فائض</div>
+                            <div className="font-bold">{surplus}</div>
+                          </div>
+                          {giftQty > 0 && (
+                            <div className="bg-destructive/5 rounded p-1.5 text-center">
+                              <div className="text-muted-foreground">هدايا</div>
+                              <div className="font-bold text-destructive">{giftQty} {giftLabel}</div>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
           )}
 
           {suggestionsLoading && selectedWorker && (
