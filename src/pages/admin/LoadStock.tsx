@@ -519,15 +519,18 @@ const LoadStock: React.FC = () => {
               <div className="grid gap-2 max-h-[30vh] overflow-y-auto">
                 {suggestions.map(s => {
                   const sessionLoad = sessionItems.filter(si => si.product_id === s.product_id);
-                  const loadedThisSession = sessionLoad.reduce((sum: number, si: any) => sum + (si.quantity || 0), 0);
+                  const loadedBoxes = sessionLoad.reduce((sum: number, si: any) => sum + (si.quantity || 0), 0);
                   const newGiftQty = sessionLoad.reduce((sum: number, si: any) => sum + (si.gift_quantity || 0), 0);
                   const newGiftUnit = sessionLoad[0]?.gift_unit || 'piece';
-                  const oldStock = s.current_stock - loadedThisSession;
+                  const product = products.find(p => p.id === s.product_id);
+                  const piecesPerBox = product?.pieces_per_box || 20;
+                  // Total new = boxes + gifts in custom format
+                  const giftInCustom = newGiftUnit === 'box' ? newGiftQty : totalPiecesToCustom(newGiftQty, piecesPerBox);
+                  const totalNewLoaded = newGiftQty > 0 ? addCustomQty(loadedBoxes, giftInCustom, piecesPerBox) : loadedBoxes;
+                  const oldStock = s.current_stock - totalNewLoaded;
                   const surplus = Math.max(0, s.current_stock - s.pending_orders_quantity);
                   
                   // Convert gift qty to boxes.pieces format
-                  const product = products.find(p => p.id === s.product_id);
-                  const piecesPerBox = product?.pieces_per_box || 20;
                   const newGiftInCustom = newGiftUnit === 'box' ? newGiftQty : totalPiecesToCustom(newGiftQty, piecesPerBox);
                   
                   // Previous gifts: gifts already in worker stock from before this session
@@ -557,7 +560,7 @@ const LoadStock: React.FC = () => {
                           </div>
                           <div className="bg-primary/5 rounded p-1 text-center">
                             <div className="text-muted-foreground text-[10px]">جديد</div>
-                            <div className="font-bold text-primary">{loadedThisSession > 0 ? `+${fmtQty(loadedThisSession)}` : '—'}</div>
+                            <div className="font-bold text-primary">{totalNewLoaded > 0 ? `+${fmtQty(totalNewLoaded)}` : '—'}</div>
                           </div>
                           <div className="bg-muted/50 rounded p-1 text-center">
                             <div className="text-muted-foreground text-[10px]">الكلي</div>
