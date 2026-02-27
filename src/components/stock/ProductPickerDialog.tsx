@@ -64,10 +64,10 @@ const ProductPickerDialog: React.FC<ProductPickerDialogProps> = ({
     ? groups.find(g => g.name === activeGroup)?.products || []
     : filtered;
 
-  /** Format quantity for display */
+  /** Format quantity for display: boxes.pieces format */
   const fmtQty = (n: number): string => {
-    const rounded = Math.round(n * 1000000) / 1000000;
-    return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(6).replace(/0+$/, '').replace(/\.$/, '');
+    const rounded = Math.round(n * 100) / 100;
+    return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
   };
 
   const renderProductButton = (p: ProductOption) => {
