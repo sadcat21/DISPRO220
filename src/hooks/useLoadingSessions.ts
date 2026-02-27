@@ -88,6 +88,9 @@ export const useLoadingSessions = (workerId: string | null) => {
       giftQuantity?: number;
       giftUnit?: string;
       notes?: string;
+      surplusQuantity?: number;
+      isCustomLoad?: boolean;
+      customLoadNote?: string;
     }) => {
       const { data, error } = await supabase
         .from('loading_session_items')
@@ -98,6 +101,9 @@ export const useLoadingSessions = (workerId: string | null) => {
           gift_quantity: params.giftQuantity || 0,
           gift_unit: params.giftUnit || 'piece',
           notes: params.notes || null,
+          surplus_quantity: params.surplusQuantity || 0,
+          is_custom_load: params.isCustomLoad || false,
+          custom_load_note: params.customLoadNote || null,
         })
         .select('*, product:products(name, pieces_per_box)')
         .single();

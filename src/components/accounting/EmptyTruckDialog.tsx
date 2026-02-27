@@ -27,6 +27,7 @@ interface EmptyTruckItem {
   returnQty: number;
   keepAllocations: KeepAllocation[];
   allocationMode: boolean;
+  surplusQty: number;
 }
 
 const KEEP_REASONS = ['cash_sale', 'offer_gifts', 'reserve', 'other'] as const;
@@ -93,6 +94,7 @@ const EmptyTruckDialog: React.FC<EmptyTruckDialogProps> = ({ workerId, open, onO
           returnQty,
           keepAllocations: [] as KeepAllocation[],
           allocationMode: false,
+          surplusQty: 0,
         };
       })
       .filter(ws => ws.returnQty > 0);
@@ -132,14 +134,8 @@ const EmptyTruckDialog: React.FC<EmptyTruckDialogProps> = ({ workerId, open, onO
     setIsEmptying(true);
 
     try {
-      // Validate: returnQty must not exceed truck quantity
-      for (const item of emptyTruckItems) {
-        if (item.returnQty > item.quantity) {
-          toast.error(`${item.product_name}: لا يمكن تفريغ كمية أكبر من الموجود في الشاحنة (${item.quantity})`);
-          setIsEmptying(false);
-          return;
-        }
-      }
+      const hasSurplus = emptyTruckItems.some(item => item.surplusQty > 0);
+      const surplusNotes = hasSurplus ? ' (مع فائض)' : '';
 
       // Create an unloading session in loading_sessions
       const { data: unloadSession, error: sessionError } = await supabase
@@ -149,7 +145,7 @@ const EmptyTruckDialog: React.FC<EmptyTruckDialogProps> = ({ workerId, open, onO
           manager_id: currentWorkerId,
           branch_id: branchId,
           status: 'unloaded',
-          notes: `تفريغ الشاحنة - ${emptyMode === 'full' ? 'تفريغ كلي' : 'تفريغ الفائض'}`,
+          notes: `تفريغ الشاحنة - ${emptyMode === 'full' ? 'تفريغ كلي' : 'تفريغ الفائض'}${surplusNotes}`,
           completed_at: new Date().toISOString(),
         })
         .select()
@@ -164,33 +160,40 @@ const EmptyTruckDialog: React.FC<EmptyTruckDialogProps> = ({ workerId, open, onO
         .eq('branch_id', branchId);
 
       for (const item of emptyTruckItems) {
-        if (item.returnQty <= 0) continue;
+        const totalReturn = item.returnQty + item.surplusQty;
+        if (totalReturn <= 0) continue;
 
-        // Save unloading session item
+        // Save unloading session item with surplus
         await supabase.from('loading_session_items').insert({
           session_id: unloadSession.id,
           product_id: item.product_id,
           quantity: item.returnQty,
           gift_quantity: 0,
-          notes: item.keepAllocations.filter(a => a.quantity > 0).map(a => `${a.quantity} ${t(`stock.reason_${a.reason}`)}`).join(', ') || null,
+          surplus_quantity: item.surplusQty,
+          notes: [
+            item.keepAllocations.filter(a => a.quantity > 0).map(a => `${a.quantity} ${t(`stock.reason_${a.reason}`)}`).join(', '),
+            item.surplusQty > 0 ? `فائض: ${item.surplusQty}` : '',
+          ].filter(Boolean).join(' | ') || null,
         });
 
+        // Deduct returnQty from worker stock (not surplus - surplus was never in worker stock)
         await supabase
           .from('worker_stock')
-          .update({ quantity: item.quantity - item.returnQty })
+          .update({ quantity: Math.max(0, item.quantity - item.returnQty) })
           .eq('id', item.id);
 
+        // Add totalReturn to warehouse
         const existingWarehouse = warehouseStock?.find(s => s.product_id === item.product_id);
         if (existingWarehouse) {
           await supabase
             .from('warehouse_stock')
-            .update({ quantity: existingWarehouse.quantity + item.returnQty })
+            .update({ quantity: existingWarehouse.quantity + totalReturn })
             .eq('id', existingWarehouse.id);
         } else {
           await supabase.from('warehouse_stock').insert({
             branch_id: branchId,
             product_id: item.product_id,
-            quantity: item.returnQty,
+            quantity: totalReturn,
           });
         }
 
@@ -202,16 +205,17 @@ const EmptyTruckDialog: React.FC<EmptyTruckDialogProps> = ({ workerId, open, onO
         const keepNote = totalKeep > 0
           ? ` | متبقي في الشاحنة: ${totalKeep} (${keepDetails})`
           : '';
+        const surplusNote = item.surplusQty > 0 ? ` | فائض: ${item.surplusQty}` : '';
 
         await supabase.from('stock_movements').insert({
           product_id: item.product_id,
           branch_id: branchId,
-          quantity: item.returnQty,
+          quantity: totalReturn,
           movement_type: 'return',
           status: 'approved',
           created_by: currentWorkerId,
           worker_id: workerId,
-          notes: `تفريغ الشاحنة - إرجاع ${item.returnQty} من ${item.product_name}${keepNote}`,
+          notes: `تفريغ الشاحنة - إرجاع ${item.returnQty} من ${item.product_name}${keepNote}${surplusNote}`,
         });
       }
 
@@ -337,7 +341,27 @@ const EmptyTruckDialog: React.FC<EmptyTruckDialogProps> = ({ workerId, open, onO
                                 className="text-center h-8"
                               />
                             </div>
+                            <div className="flex-1">
+                              <Label className="text-xs text-amber-600">فائض</Label>
+                              <Input
+                                type="number"
+                                min={0}
+                                value={item.surplusQty}
+                                onFocus={e => e.target.select()}
+                                onChange={e => {
+                                  const val = Math.max(0, parseInt(e.target.value) || 0);
+                                  setEmptyTruckItems(prev => prev.map((it, i) => i === idx ? { ...it, surplusQty: val } : it));
+                                }}
+                                className="text-center h-8 border-amber-300"
+                              />
+                            </div>
                           </div>
+                          {item.surplusQty > 0 && (
+                            <div className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 rounded px-2 py-1">
+                              <AlertTriangle className="w-3 h-3" />
+                              <span>فائض {item.surplusQty} سيُعاد للمخزن</span>
+                            </div>
+                          )}
                           {derivedKeepQty > 0 && (
                             <div className="space-y-1.5 border-t pt-2">
                               <Label className="text-xs font-medium">{t('stock.keep_reason_details')}</Label>

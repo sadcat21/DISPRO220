@@ -1488,33 +1488,42 @@ export type Database = {
       loading_session_items: {
         Row: {
           created_at: string
+          custom_load_note: string | null
           gift_quantity: number
           gift_unit: string | null
           id: string
+          is_custom_load: boolean
           notes: string | null
           product_id: string
           quantity: number
           session_id: string
+          surplus_quantity: number
         }
         Insert: {
           created_at?: string
+          custom_load_note?: string | null
           gift_quantity?: number
           gift_unit?: string | null
           id?: string
+          is_custom_load?: boolean
           notes?: string | null
           product_id: string
           quantity?: number
           session_id: string
+          surplus_quantity?: number
         }
         Update: {
           created_at?: string
+          custom_load_note?: string | null
           gift_quantity?: number
           gift_unit?: string | null
           id?: string
+          is_custom_load?: boolean
           notes?: string | null
           product_id?: string
           quantity?: number
           session_id?: string
+          surplus_quantity?: number
         }
         Relationships: [
           {

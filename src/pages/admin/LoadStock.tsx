@@ -36,6 +36,7 @@ interface EmptyTruckItem {
   piecesPerBox: number;
   keepAllocations: { reason: string; quantity: number }[];
   allocationMode: boolean;
+  surplusQty: number;
 }
 
 const KEEP_REASONS = ['cash_sale', 'offer_gifts', 'reserve', 'other'] as const;
@@ -108,6 +109,8 @@ const LoadStock: React.FC = () => {
   const [addProductQty, setAddProductQty] = useState(1);
   const [addProductGiftQty, setAddProductGiftQty] = useState(0);
   const [addProductGiftUnit, setAddProductGiftUnit] = useState('piece');
+  const [addProductIsCustomLoad, setAddProductIsCustomLoad] = useState(false);
+  const [addProductCustomLoadNote, setAddProductCustomLoadNote] = useState('');
 
   // Current session state
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -350,6 +353,8 @@ const LoadStock: React.FC = () => {
     setAddProductQty(1);
     setAddProductGiftQty(0);
     setAddProductGiftUnit('piece');
+    setAddProductIsCustomLoad(false);
+    setAddProductCustomLoadNote('');
     setShowProductPicker(true);
   };
 
@@ -452,6 +457,8 @@ const LoadStock: React.FC = () => {
         giftQuantity: addProductGiftQty,
         giftUnit: addProductGiftUnit,
         notes: product?.name || '',
+        isCustomLoad: addProductIsCustomLoad,
+        customLoadNote: addProductIsCustomLoad ? addProductCustomLoadNote : undefined,
       });
 
       // Refresh session items only
@@ -621,9 +628,10 @@ const LoadStock: React.FC = () => {
           id: ws.id, product_id: ws.product_id,
           product_name: (ws.product as any)?.name || ws.product_id,
           quantity: ws.quantity, pendingNeeded: pending,
-          returnQty: ws.quantity, // Default to full quantity, user can adjust
+          returnQty: ws.quantity,
           piecesPerBox,
           keepAllocations: [] as { reason: string; quantity: number }[], allocationMode: false,
+          surplusQty: 0,
         };
       });
     if (itemsToReturn.length === 0) { toast.error(t('stock.empty_truck_nothing')); return; }
@@ -636,14 +644,9 @@ const LoadStock: React.FC = () => {
     setIsEmptying(true);
     setShowEmptyDialog(false);
     try {
-      // Validate: returnQty must not exceed truck quantity
-      for (const item of emptyTruckItems) {
-        if (item.returnQty > item.quantity) {
-          toast.error(`${item.product_name}: لا يمكن تفريغ كمية أكبر من الموجود في الشاحنة (${item.quantity})`);
-          setIsEmptying(false);
-          return;
-        }
-      }
+      // Calculate surplus for each item
+      const hasSurplus = emptyTruckItems.some(item => item.surplusQty > 0);
+      const surplusNotes = hasSurplus ? ' (مع فائض)' : '';
 
       // Create an unloading session record
       const { data: unloadSession, error: sessionError } = await supabase
@@ -653,7 +656,7 @@ const LoadStock: React.FC = () => {
           manager_id: currentWorkerId!,
           branch_id: branchId,
           status: 'unloaded',
-          notes: 'تفريغ الشاحنة',
+          notes: `تفريغ الشاحنة${surplusNotes}`,
           completed_at: new Date().toISOString(),
         })
         .select()
@@ -662,30 +665,38 @@ const LoadStock: React.FC = () => {
       if (sessionError) throw sessionError;
 
       for (const item of emptyTruckItems) {
-        if (item.returnQty <= 0) continue;
+        const totalReturn = item.returnQty + item.surplusQty;
+        if (totalReturn <= 0) continue;
 
-        // Save unloading session item
+        // Save unloading session item with surplus info
         await supabase.from('loading_session_items').insert({
           session_id: unloadSession.id,
           product_id: item.product_id,
           quantity: item.returnQty,
           gift_quantity: 0,
+          surplus_quantity: item.surplusQty,
+          notes: item.surplusQty > 0 ? `فائض: ${fmtQty(item.surplusQty)}` : null,
         });
 
         const ppb = item.piecesPerBox;
+        // Deduct returnQty from worker (can't go below 0)
         const remainingQty = subtractCustomQty(item.quantity, item.returnQty, ppb);
         await supabase.from('worker_stock').update({ quantity: Math.max(0, remainingQty) }).eq('id', item.id);
+        
+        // Add totalReturn (regular + surplus) to warehouse
         const existingWarehouse = warehouseStock.find(s => s.product_id === item.product_id);
         if (existingWarehouse) {
-          const newWhQty = addCustomQty(existingWarehouse.quantity, item.returnQty, ppb);
+          const newWhQty = addCustomQty(existingWarehouse.quantity, totalReturn, ppb);
           await supabase.from('warehouse_stock').update({ quantity: newWhQty }).eq('id', existingWarehouse.id);
         } else {
-          await supabase.from('warehouse_stock').insert({ branch_id: branchId, product_id: item.product_id, quantity: item.returnQty });
+          await supabase.from('warehouse_stock').insert({ branch_id: branchId, product_id: item.product_id, quantity: totalReturn });
         }
+        
+        const surplusNote = item.surplusQty > 0 ? ` | فائض: ${fmtQty(item.surplusQty)}` : '';
         await supabase.from('stock_movements').insert({
-          product_id: item.product_id, branch_id: branchId, quantity: item.returnQty,
+          product_id: item.product_id, branch_id: branchId, quantity: totalReturn,
           movement_type: 'return', status: 'approved', created_by: currentWorkerId,
-          worker_id: selectedWorker, notes: `تفريغ الشاحنة - إرجاع ${item.returnQty} من ${item.product_name}`,
+          worker_id: selectedWorker, notes: `تفريغ الشاحنة - إرجاع ${fmtQty(item.returnQty)} من ${item.product_name}${surplusNote}`,
         });
       }
       setSessionItems([]);
@@ -847,7 +858,7 @@ const LoadStock: React.FC = () => {
                       <Package className="w-4 h-4 text-primary shrink-0" />
                       <span className="font-medium text-sm truncate">{item.product?.name || item.notes || ''}</span>
                     </div>
-                    <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
                       <span>الكمية: <strong>{fmtQty(item.quantity)}</strong></span>
                       {item.gift_quantity > 0 && (
                         <>
@@ -855,7 +866,13 @@ const LoadStock: React.FC = () => {
                           <span className="text-destructive">هدايا: <strong>{fmtQty(item.gift_quantity)} {item.gift_unit === 'box' ? 'صندوق' : 'قطعة'}</strong></span>
                         </>
                       )}
+                      {item.is_custom_load && (
+                        <Badge className="bg-blue-500 text-white text-[10px] px-1.5 py-0">شحن مخصص</Badge>
+                      )}
                     </div>
+                    {item.is_custom_load && item.custom_load_note && (
+                      <div className="text-[10px] text-blue-600 mt-0.5">{item.custom_load_note}</div>
+                    )}
                   </div>
                   <Button
                     size="icon"
@@ -1013,6 +1030,22 @@ const LoadStock: React.FC = () => {
                     </div>
                   </div>
                 )}
+
+                {/* Custom Load Toggle */}
+                <div className="space-y-2 border-t pt-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">شحن مخصص (لعميل محدد)</Label>
+                    <Switch checked={addProductIsCustomLoad} onCheckedChange={setAddProductIsCustomLoad} />
+                  </div>
+                  {addProductIsCustomLoad && (
+                    <Input
+                      placeholder="ملاحظة (اسم العميل أو السبب)"
+                      value={addProductCustomLoadNote}
+                      onChange={e => setAddProductCustomLoadNote(e.target.value)}
+                      className="h-8 text-xs"
+                    />
+                  )}
+                </div>
               </div>
             );
           })()}
@@ -1086,9 +1119,12 @@ const LoadStock: React.FC = () => {
                   <CardContent className="p-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <div>
-                        <Badge variant={session.status === 'open' ? 'default' : 'secondary'} className="text-xs">
-                          {session.status === 'open' ? 'مفتوحة' : 'مكتملة'}
+                        <Badge variant={session.status === 'open' ? 'default' : session.status === 'unloaded' ? 'destructive' : 'secondary'} className="text-xs">
+                          {session.status === 'open' ? 'مفتوحة' : session.status === 'unloaded' ? 'تفريغ' : 'مكتملة'}
                         </Badge>
+                        {session.notes?.includes('فائض') && (
+                          <Badge className="bg-amber-500 text-white text-[10px] px-1.5 py-0 ms-1">فائض</Badge>
+                        )}
                         <span className="text-xs text-muted-foreground ms-2">
                           {new Date(session.created_at).toLocaleDateString('ar-DZ')}
                         </span>
@@ -1149,9 +1185,12 @@ const LoadStock: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div className="text-muted-foreground">الحالة:</div>
                   <div>
-                    <Badge variant={session.status === 'open' ? 'default' : 'secondary'} className="text-xs">
-                      {session.status === 'open' ? 'مفتوحة' : 'مكتملة'}
+                    <Badge variant={session.status === 'open' ? 'default' : session.status === 'unloaded' ? 'destructive' : 'secondary'} className="text-xs">
+                      {session.status === 'open' ? 'مفتوحة' : session.status === 'unloaded' ? 'تفريغ' : 'مكتملة'}
                     </Badge>
+                    {session.notes?.includes('فائض') && (
+                      <Badge className="bg-amber-500 text-white text-[10px] px-1.5 py-0 ms-1">فائض</Badge>
+                    )}
                   </div>
                   <div className="text-muted-foreground">التاريخ:</div>
                   <div className="text-sm">{new Date(session.created_at).toLocaleString('ar-DZ')}</div>
@@ -1202,6 +1241,17 @@ const LoadStock: React.FC = () => {
                                     هدية: {item.gift_quantity} {item.gift_unit === 'box' ? 'صندوق' : 'قطعة'}
                                   </div>
                                 )}
+                                {item.surplus_quantity > 0 && (
+                                  <div className="flex items-center gap-1 text-xs text-amber-600 mt-0.5">
+                                    <AlertTriangle className="w-3 h-3" />
+                                    فائض: {fmtQty(item.surplus_quantity)}
+                                  </div>
+                                )}
+                                {item.is_custom_load && (
+                                  <div className="flex items-center gap-1 text-xs text-blue-600 mt-0.5">
+                                    شحن مخصص{item.custom_load_note ? `: ${item.custom_load_note}` : ''}
+                                  </div>
+                                )}
                               </div>
                               <div className="text-end">
                                 <div className="text-sm font-bold">{fmtQty(totalLoaded)}</div>
@@ -1236,7 +1286,6 @@ const LoadStock: React.FC = () => {
           <div className="max-h-[50vh] overflow-y-auto space-y-3">
             {emptyTruckItems.map((item, idx) => {
               const ppb = item.piecesPerBox;
-              const maxReturn = item.pendingNeeded > 0 ? Math.max(0, subtractCustomQty(item.quantity, item.pendingNeeded, ppb)) : item.quantity;
               return (
                 <Card key={item.product_id} className="border">
                   <CardContent className="p-3 space-y-2">
@@ -1251,17 +1300,36 @@ const LoadStock: React.FC = () => {
                       <div className="flex-1">
                         <Label className="text-xs">{t('stock.return_qty')}</Label>
                         <Input
-                          type="number" min={0} max={maxReturn}
+                          type="number" min={0} max={item.quantity}
                           value={item.returnQty}
                           onFocus={e => e.target.select()}
                           onChange={e => {
-                            const val = parseFloat(e.target.value) || 0;
+                            const val = Math.min(parseFloat(e.target.value) || 0, item.quantity);
                             setEmptyTruckItems(prev => prev.map((it, i) => i === idx ? { ...it, returnQty: val } : it));
                           }}
                           className="text-center h-8"
                         />
                       </div>
+                      <div className="flex-1">
+                        <Label className="text-xs text-amber-600">فائض (كمية زائدة)</Label>
+                        <Input
+                          type="number" min={0}
+                          value={item.surplusQty}
+                          onFocus={e => e.target.select()}
+                          onChange={e => {
+                            const val = Math.max(0, parseFloat(e.target.value) || 0);
+                            setEmptyTruckItems(prev => prev.map((it, i) => i === idx ? { ...it, surplusQty: val } : it));
+                          }}
+                          className="text-center h-8 border-amber-300 focus:border-amber-500"
+                        />
+                      </div>
                     </div>
+                    {item.surplusQty > 0 && (
+                      <div className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 rounded px-2 py-1">
+                        <AlertTriangle className="w-3 h-3" />
+                        <span>سيتم تسجيل {fmtQty(item.surplusQty)} كفائض وإعادتها للمخزن</span>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               );
@@ -1269,7 +1337,12 @@ const LoadStock: React.FC = () => {
           </div>
           <div className="flex items-center justify-between text-sm bg-muted/50 rounded-md p-2">
             <span className="font-medium">{t('stock.total_return')}</span>
-            <Badge variant="destructive">{fmtQty(emptyTruckItems.reduce((s, it) => s + it.returnQty, 0))} {t('stock.boxes')}</Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="destructive">{fmtQty(emptyTruckItems.reduce((s, it) => s + it.returnQty, 0))} {t('stock.boxes')}</Badge>
+              {emptyTruckItems.some(it => it.surplusQty > 0) && (
+                <Badge className="bg-amber-500 text-white">فائض: {fmtQty(emptyTruckItems.reduce((s, it) => s + it.surplusQty, 0))}</Badge>
+              )}
+            </div>
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowEmptyDialog(false)}>{t('common.cancel')}</Button>
