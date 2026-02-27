@@ -33,6 +33,11 @@ interface EmptyTruckItem {
 }
 
 const KEEP_REASONS = ['cash_sale', 'offer_gifts', 'reserve', 'other'] as const;
+/** Format quantity: show up to 2 decimal places, strip trailing zeros */
+const fmtQty = (n: number) => {
+  const rounded = Math.round(n * 100) / 100;
+  return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+};
 
 const LoadStock: React.FC = () => {
   const { t } = useLanguage();
@@ -482,7 +487,7 @@ const LoadStock: React.FC = () => {
                             <span className="font-semibold text-sm">{s.product_name}</span>
                           </div>
                           {s.suggested_load > 0 ? (
-                            <Badge variant="destructive" className="text-xs">يحتاج +{s.suggested_load}</Badge>
+                            <Badge variant="destructive" className="text-xs">يحتاج +{fmtQty(s.suggested_load)}</Badge>
                           ) : (
                             <Badge variant="outline" className="text-xs border-primary/30 text-primary">✓ كافي</Badge>
                           )}
@@ -490,28 +495,28 @@ const LoadStock: React.FC = () => {
                         <div className={`grid ${giftQty > 0 ? 'grid-cols-6' : 'grid-cols-5'} gap-1 text-xs`}>
                           <div className="bg-muted/50 rounded p-1 text-center">
                             <div className="text-muted-foreground text-[10px]">سابق</div>
-                            <div className="font-bold">{oldStock}</div>
+                            <div className="font-bold">{fmtQty(oldStock)}</div>
                           </div>
                           <div className="bg-primary/5 rounded p-1 text-center">
                             <div className="text-muted-foreground text-[10px]">جديد</div>
-                            <div className="font-bold text-primary">{loadedThisSession > 0 ? `+${loadedThisSession}` : '—'}</div>
+                            <div className="font-bold text-primary">{loadedThisSession > 0 ? `+${fmtQty(loadedThisSession)}` : '—'}</div>
                           </div>
                           <div className="bg-muted/50 rounded p-1 text-center">
                             <div className="text-muted-foreground text-[10px]">الكلي</div>
-                            <div className="font-bold">{s.current_stock}</div>
+                            <div className="font-bold">{fmtQty(s.current_stock)}</div>
                           </div>
                           <div className="bg-muted/50 rounded p-1 text-center">
                             <div className="text-muted-foreground text-[10px]">طلبات</div>
-                            <div className="font-bold">{s.pending_orders_quantity}</div>
+                            <div className="font-bold">{fmtQty(s.pending_orders_quantity)}</div>
                           </div>
                           <div className="bg-muted/50 rounded p-1 text-center">
                             <div className="text-muted-foreground text-[10px]">فائض</div>
-                            <div className="font-bold">{surplus}</div>
+                            <div className="font-bold">{fmtQty(surplus)}</div>
                           </div>
                           {giftQty > 0 && (
                             <div className="bg-destructive/5 rounded p-1 text-center">
                               <div className="text-muted-foreground text-[10px]">هدايا</div>
-                              <div className="font-bold text-destructive">{giftQty}</div>
+                              <div className="font-bold text-destructive">{fmtQty(giftQty)}</div>
                             </div>
                           )}
                         </div>
@@ -556,11 +561,11 @@ const LoadStock: React.FC = () => {
                       <span className="font-medium text-sm truncate">{item.product?.name || item.notes || ''}</span>
                     </div>
                     <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                      <span>الكمية: <strong>{item.quantity}</strong></span>
+                      <span>الكمية: <strong>{fmtQty(item.quantity)}</strong></span>
                       {item.gift_quantity > 0 && (
                         <>
                           <span>|</span>
-                          <span className="text-destructive">هدايا: <strong>{item.gift_quantity}</strong></span>
+                          <span className="text-destructive">هدايا: <strong>{fmtQty(item.gift_quantity)}</strong></span>
                         </>
                       )}
                     </div>
@@ -673,13 +678,13 @@ const LoadStock: React.FC = () => {
                 <div className="bg-muted/50 rounded-lg p-3">
                   <div className="font-semibold text-sm text-center">{product?.name}</div>
                   <div className="flex items-center justify-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
-                    <span>المتاح: <strong>{available}</strong></span>
+                    <span>المتاح: <strong>{fmtQty(available)}</strong></span>
                     <span>|</span>
-                    <span>في الشاحنة: <strong>{suggestion?.current_stock || previousStock}</strong></span>
+                    <span>في الشاحنة: <strong>{fmtQty(suggestion?.current_stock || previousStock)}</strong></span>
                     {suggestion && suggestion.suggested_load > 0 && (
                       <>
                         <span>|</span>
-                        <span>يحتاج: <strong className="text-destructive">{suggestion.suggested_load}</strong></span>
+                        <span>يحتاج: <strong className="text-destructive">{fmtQty(suggestion.suggested_load)}</strong></span>
                       </>
                     )}
                   </div>
