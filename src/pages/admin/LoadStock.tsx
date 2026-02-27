@@ -561,7 +561,7 @@ const LoadStock: React.FC = () => {
                           </div>
                           <div className="bg-primary/5 rounded p-1 text-center">
                             <div className="text-muted-foreground text-[10px]">جديد</div>
-                            <div className="font-bold text-primary">{totalNewLoaded > 0 ? `+${fmtQty(totalNewLoaded)}` : '—'}</div>
+                            <div className="font-bold text-primary">{loadedBoxes > 0 ? `+${fmtQty(loadedBoxes)}` : '—'}</div>
                           </div>
                           <div className="bg-muted/50 rounded p-1 text-center">
                             <div className="text-muted-foreground text-[10px]">الكلي</div>
