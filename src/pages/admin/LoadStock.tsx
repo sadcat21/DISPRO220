@@ -86,6 +86,9 @@ const LoadStock: React.FC = () => {
   const [showProductPicker, setShowProductPicker] = useState(false);
   const [showEmptyDialog, setShowEmptyDialog] = useState(false);
   const [showSessionHistory, setShowSessionHistory] = useState(false);
+  const [viewSessionId, setViewSessionId] = useState<string | null>(null);
+  const [viewSessionItems, setViewSessionItems] = useState<any[]>([]);
+  const [isLoadingViewItems, setIsLoadingViewItems] = useState(false);
   const [showAddProductDialog, setShowAddProductDialog] = useState(false);
   const [emptyTruckItems, setEmptyTruckItems] = useState<EmptyTruckItem[]>([]);
   const [isEmptying, setIsEmptying] = useState(false);
@@ -152,6 +155,24 @@ const LoadStock: React.FC = () => {
     }
     return options.sort((a, b) => a.name.localeCompare(b.name));
   }, [warehouseStock, products, productGroupMap]);
+
+  // View session details handler
+  const handleViewSession = async (sessionId: string) => {
+    setViewSessionId(sessionId);
+    setIsLoadingViewItems(true);
+    try {
+      const { data } = await supabase
+        .from('loading_session_items')
+        .select('*, product:products(name, pieces_per_box)')
+        .eq('session_id', sessionId)
+        .order('created_at', { ascending: true });
+      setViewSessionItems(data || []);
+    } catch (err) {
+      console.error('Error loading session items:', err);
+    } finally {
+      setIsLoadingViewItems(false);
+    }
+  };
 
   // Reset on worker change
   useEffect(() => {
@@ -931,7 +952,11 @@ const LoadStock: React.FC = () => {
               {sessions.length === 0 ? (
                 <p className="text-center text-muted-foreground py-6 text-sm">لا توجد جلسات سابقة</p>
               ) : sessions.map(session => (
-                <Card key={session.id} className={`border ${session.status === 'open' ? 'border-primary/30' : ''}`}>
+                <Card 
+                  key={session.id} 
+                  className={`border cursor-pointer hover:bg-accent/50 transition-colors ${session.status === 'open' ? 'border-primary/30' : ''}`}
+                  onClick={() => handleViewSession(session.id)}
+                >
                   <CardContent className="p-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <div>
@@ -948,7 +973,8 @@ const LoadStock: React.FC = () => {
                             size="sm"
                             variant="outline"
                             className="h-7 text-xs"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setActiveSessionId(session.id);
                               setShowSessionHistory(false);
                             }}
@@ -960,7 +986,10 @@ const LoadStock: React.FC = () => {
                           size="icon"
                           variant="ghost"
                           className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                          onClick={() => handleDeleteSession(session.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteSession(session.id);
+                          }}
                           disabled={deleteSession.isPending}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -978,7 +1007,97 @@ const LoadStock: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Empty Truck Dialog */}
+      {/* Session Details View Dialog */}
+      <Dialog open={!!viewSessionId} onOpenChange={(open) => { if (!open) setViewSessionId(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="w-5 h-5 text-primary" />
+              تفاصيل جلسة الشحن
+            </DialogTitle>
+          </DialogHeader>
+          {(() => {
+            const session = sessions.find(s => s.id === viewSessionId);
+            return session ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="text-muted-foreground">الحالة:</div>
+                  <div>
+                    <Badge variant={session.status === 'open' ? 'default' : 'secondary'} className="text-xs">
+                      {session.status === 'open' ? 'مفتوحة' : 'مكتملة'}
+                    </Badge>
+                  </div>
+                  <div className="text-muted-foreground">التاريخ:</div>
+                  <div className="text-sm">{new Date(session.created_at).toLocaleString('ar-DZ')}</div>
+                  <div className="text-muted-foreground">المدير:</div>
+                  <div className="text-sm">{(session.manager as any)?.full_name || '—'}</div>
+                  {session.completed_at && (
+                    <>
+                      <div className="text-muted-foreground">تم الإكمال:</div>
+                      <div className="text-sm">{new Date(session.completed_at).toLocaleString('ar-DZ')}</div>
+                    </>
+                  )}
+                  {session.notes && (
+                    <>
+                      <div className="text-muted-foreground">ملاحظات:</div>
+                      <div className="text-sm">{session.notes}</div>
+                    </>
+                  )}
+                </div>
+                <div className="border-t pt-3">
+                  <h4 className="text-sm font-semibold mb-2 flex items-center gap-1">
+                    <Truck className="w-4 h-4" />
+                    المنتجات المشحونة ({viewSessionItems.length})
+                  </h4>
+                  {isLoadingViewItems ? (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : viewSessionItems.length === 0 ? (
+                    <p className="text-center text-muted-foreground text-xs py-4">لا توجد منتجات في هذه الجلسة</p>
+                  ) : (
+                    <ScrollArea className="max-h-[40vh]">
+                      <div className="space-y-1.5">
+                        {viewSessionItems.map(item => {
+                          const ppb = (item.product as any)?.pieces_per_box || 20;
+                          const giftInCustom = item.gift_unit === 'box' 
+                            ? item.gift_quantity 
+                            : totalPiecesToCustom(item.gift_quantity || 0, ppb);
+                          const totalLoaded = item.gift_quantity > 0 
+                            ? addCustomQty(item.quantity, giftInCustom, ppb)
+                            : item.quantity;
+                          return (
+                            <div key={item.id} className="flex items-center justify-between bg-muted/50 rounded-md px-3 py-2">
+                              <div>
+                                <span className="text-sm font-medium">{(item.product as any)?.name || '—'}</span>
+                                {item.gift_quantity > 0 && (
+                                  <div className="flex items-center gap-1 text-xs text-green-600 mt-0.5">
+                                    <Gift className="w-3 h-3" />
+                                    هدية: {item.gift_quantity} {item.gift_unit === 'box' ? 'صندوق' : 'قطعة'}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-end">
+                                <div className="text-sm font-bold">{fmtQty(totalLoaded)}</div>
+                                {item.gift_quantity > 0 && (
+                                  <div className="text-[10px] text-muted-foreground">
+                                    بضاعة: {fmtQty(item.quantity)}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </div>
+              </div>
+            ) : null;
+          })()}
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={showEmptyDialog} onOpenChange={setShowEmptyDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
