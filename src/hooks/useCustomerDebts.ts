@@ -13,7 +13,7 @@ export const useCustomerDebts = (filters?: {
   useRealtimeSubscription(
     'customer-debts-realtime',
     [{ table: 'customer_debts' }, { table: 'debt_payments' }],
-    [['customer-debts'], ['customer-debt-summary'], ['debt-payments']],
+    [['customer-debts'], ['customer-debt-summary'], ['debt-payments'], ['customer-debts-summary-all']],
   );
 
   return useQuery({

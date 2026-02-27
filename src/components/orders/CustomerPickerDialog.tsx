@@ -12,6 +12,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { getLocalizedName } from '@/utils/sectorName';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
 interface CustomerPickerDialogProps {
@@ -42,9 +43,27 @@ const CustomerPickerDialog: React.FC<CustomerPickerDialogProps> = ({
   onAddNew,
 }) => {
   const { t, dir, language } = useLanguage();
+  const { activeBranch } = useAuth();
   const [search, setSearch] = useState('');
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
   const [autoExpand, setAutoExpand] = useState(false);
+
+  // Self-fetch sectors when not provided via props
+  const { data: fetchedSectors } = useQuery({
+    queryKey: ['sectors-for-picker', activeBranch?.id],
+    queryFn: async () => {
+      let query = supabase.from('sectors').select('*').order('name');
+      if (activeBranch) {
+        query = query.eq('branch_id', activeBranch.id);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data || []) as Sector[];
+    },
+    enabled: open && sectors.length === 0,
+  });
+
+  const effectiveSectors = sectors.length > 0 ? sectors : (fetchedSectors || []);
 
   // Fetch active debts for all customers
   const { data: customerDebtsMap } = useQuery({
@@ -104,9 +123,9 @@ const CustomerPickerDialog: React.FC<CustomerPickerDialogProps> = ({
   // Build sector map for quick lookup
   const sectorMap = useMemo(() => {
     const map = new Map<string, string>();
-    sectors.forEach(s => map.set(s.id, getLocalizedName(s, language)));
+    effectiveSectors.forEach(s => map.set(s.id, getLocalizedName(s, language)));
     return map;
-  }, [sectors, language]);
+  }, [effectiveSectors, language]);
 
   // Group customers by sector
   const groupedCustomers = useMemo((): SectorGroup[] => {
