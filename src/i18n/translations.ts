@@ -36,7 +36,7 @@ export const translations: Translations = {
   'nav.my_promos': { ar: 'عروضي', fr: 'Mes promos', en: 'My Promos' },
   'nav.branches': { ar: 'الفروع', fr: 'Succursales', en: 'Branches' },
   'nav.orders': { ar: 'الطلبيات', fr: 'Commandes', en: 'Orders' },
-  'nav.my_deliveries': { ar: 'طلبياتي', fr: 'Mes livraisons', en: 'My Deliveries' },
+  'nav.my_deliveries': { ar: 'التوصيلات', fr: 'Livraisons', en: 'Deliveries' },
   'nav.permissions': { ar: 'الصلاحيات', fr: 'Permissions', en: 'Permissions' },
   'nav.activity_logs': { ar: 'سجل النشاط', fr: 'Journal d\'activité', en: 'Activity Logs' },
   'nav.nearby_stores': { ar: 'المتاجر القريبة', fr: 'Magasins à proximité', en: 'Nearby Stores' },
@@ -504,10 +504,11 @@ export const translations: Translations = {
   'print.totals': { ar: 'المجاميع', fr: 'Totaux', en: 'Totals' },
 
   // ==================== My Deliveries ====================
-  'deliveries.title': { ar: 'طلبياتي', fr: 'Mes livraisons', en: 'My Deliveries' },
+  'deliveries.title': { ar: 'التوصيلات', fr: 'Livraisons', en: 'Deliveries' },
   'deliveries.manage_deliveries': { ar: 'تتبع وإدارة التوصيلات', fr: 'Suivre et gérer les livraisons', en: 'Track and manage deliveries' },
   'deliveries.assigned': { ar: 'المعينة', fr: 'Assignées', en: 'Assigned' },
-  'deliveries.no_deliveries': { ar: 'لا توجد طلبات معينة لك', fr: 'Aucune commande assignée', en: 'No assigned orders' },
+  'deliveries.no_deliveries': { ar: 'لا توجد توصيلات', fr: 'Aucune livraison', en: 'No deliveries' },
+  'deliveries.tab_all': { ar: 'الكل', fr: 'Tout', en: 'All' },
   'deliveries.start_delivery': { ar: 'بدء التوصيل', fr: 'Commencer la livraison', en: 'Start Delivery' },
   'deliveries.mark_delivered': { ar: 'تم التوصيل', fr: 'Marquer comme livrée', en: 'Mark Delivered' },
   'deliveries.mark_cancelled': { ar: 'إلغاء الطلبية', fr: 'Annuler', en: 'Cancel Order' },

@@ -5,11 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { 
   ShoppingCart, Loader2, Package, User, Calendar, Store,
   CheckCircle, Clock, Truck, XCircle, UserCheck, Phone, MapPin, ChevronDown, ChevronUp, Navigation, Search, Edit2,
-  Receipt, Banknote, Route, Gift, Trash2
+  Receipt, Banknote, Route, Gift, Trash2, ListFilter
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAssignedOrders, useOrderItems, useUpdateOrderStatus, useCancelOrder } from '@/hooks/useOrders';
@@ -29,9 +30,12 @@ import DeliverySaleDialog from '@/components/orders/DeliverySaleDialog';
 import { useLocationBroadcast } from '@/hooks/useWorkerLocation';
 import { useIsElementHidden } from '@/hooks/useUIOverrides';
 
+type TabStatus = 'all' | OrderStatus;
+
 const MyDeliveries: React.FC = () => {
   const { t, language, loadPrintSettingsFromDB } = useLanguage();
   
+  const [activeTab, setActiveTab] = useState<TabStatus>('all');
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [showSearchDialog, setShowSearchDialog] = useState(false);
@@ -77,12 +81,12 @@ const MyDeliveries: React.FC = () => {
     }
   };
 
-  const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; icon: React.ElementType }> = {
-    pending: { label: t('orders.pending'), color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: Clock },
-    assigned: { label: t('orders.assigned'), color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', icon: UserCheck },
-    in_progress: { label: t('orders.in_progress'), color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400', icon: Truck },
-    delivered: { label: t('orders.delivered'), color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: CheckCircle },
-    cancelled: { label: t('orders.cancelled'), color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: XCircle },
+  const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; icon: React.ElementType; tabColor: string }> = {
+    pending: { label: t('orders.pending'), color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: Clock, tabColor: 'text-yellow-600' },
+    assigned: { label: t('orders.assigned'), color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', icon: UserCheck, tabColor: 'text-blue-600' },
+    in_progress: { label: t('orders.in_progress'), color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400', icon: Truck, tabColor: 'text-purple-600' },
+    delivered: { label: t('orders.delivered'), color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: CheckCircle, tabColor: 'text-green-600' },
+    cancelled: { label: t('orders.cancelled'), color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: XCircle, tabColor: 'text-red-600' },
   };
 
   const handleDeliverClick = (order: OrderWithDetails) => {
@@ -160,6 +164,30 @@ const MyDeliveries: React.FC = () => {
 
   const selectedOrder = orders?.find(o => o.id === selectedOrderId);
 
+  // Count per status
+  const statusCounts: Record<string, number> = {
+    all: orders?.length || 0,
+    assigned: orders?.filter(o => o.status === 'assigned').length || 0,
+    in_progress: orders?.filter(o => o.status === 'in_progress').length || 0,
+    delivered: orders?.filter(o => o.status === 'delivered').length || 0,
+    cancelled: orders?.filter(o => o.status === 'cancelled').length || 0,
+    pending: orders?.filter(o => o.status === 'pending').length || 0,
+  };
+
+  // Filtered orders
+  const filteredOrders = activeTab === 'all' 
+    ? orders 
+    : orders?.filter(o => o.status === activeTab);
+
+  // Tab definitions
+  const tabs: { value: TabStatus; label: string; icon: React.ElementType; color: string }[] = [
+    { value: 'all', label: t('deliveries.tab_all'), icon: ListFilter, color: 'text-foreground' },
+    { value: 'assigned', label: t('orders.assigned'), icon: UserCheck, color: 'text-blue-600' },
+    { value: 'in_progress', label: t('orders.in_progress'), icon: Truck, color: 'text-purple-600' },
+    { value: 'delivered', label: t('orders.delivered'), icon: CheckCircle, color: 'text-green-600' },
+    { value: 'cancelled', label: t('orders.cancelled'), icon: XCircle, color: 'text-red-600' },
+  ];
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -168,266 +196,263 @@ const MyDeliveries: React.FC = () => {
     );
   }
 
+  const renderOrderCard = (order: OrderWithDetails) => {
+    const StatusIcon = STATUS_CONFIG[order.status]?.icon || Clock;
+    const isActive = order.status === 'assigned' || order.status === 'in_progress';
+    
+    return (
+      <Card key={order.id} className={`overflow-hidden transition-all ${isActive ? 'border-primary/40 shadow-sm' : 'border-border/60'}`}>
+        <CardContent className="p-0">
+          {/* Status strip at top */}
+          <div className={`h-1 w-full ${
+            order.status === 'assigned' ? 'bg-blue-500' :
+            order.status === 'in_progress' ? 'bg-purple-500' :
+            order.status === 'delivered' ? 'bg-green-500' :
+            order.status === 'cancelled' ? 'bg-red-500' : 'bg-yellow-500'
+          }`} />
+          
+          <div className="p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                {/* Customer Info */}
+                <div className="flex items-center gap-2 mb-0.5">
+                  <Store className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <span className="font-bold text-sm truncate">{order.customer?.store_name || order.customer?.name}</span>
+                </div>
+                {order.customer?.store_name && order.customer?.name && (
+                  <p className="text-xs text-muted-foreground mr-6 mb-1">{order.customer.name}</p>
+                )}
+                
+                {order.customer?.phone && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-0.5">
+                    <Phone className="w-3 h-3 shrink-0" />
+                    <a href={`tel:${order.customer.phone}`} className="text-primary">
+                      {order.customer.phone}
+                    </a>
+                  </div>
+                )}
+                
+                {order.customer?.address && (
+                  <div className="flex items-start gap-2 text-xs text-muted-foreground mb-1.5">
+                    <MapPin className="w-3 h-3 shrink-0 mt-0.5" />
+                    <span className="line-clamp-1">{order.customer.address}{order.customer.wilaya ? ` - ${order.customer.wilaya}` : ''}</span>
+                  </div>
+                )}
+                
+                {/* Badges row */}
+                <div className="flex flex-wrap items-center gap-1 mt-2">
+                  <Badge className={`text-[10px] px-1.5 py-0.5 ${STATUS_CONFIG[order.status]?.color}`}>
+                    <StatusIcon className="w-3 h-3 ml-0.5" />
+                    {STATUS_CONFIG[order.status]?.label}
+                  </Badge>
+                  
+                  {order.total_amount && Number(order.total_amount) > 0 && (
+                    <Badge variant="outline" className="font-bold text-[10px] px-1.5 py-0.5 text-primary border-primary/30">
+                      {Number(order.total_amount).toLocaleString()} دج
+                    </Badge>
+                  )}
+
+                  {order.payment_type === 'with_invoice' ? (
+                    <Badge variant="secondary" className="gap-0.5 text-[10px] px-1.5 py-0.5">
+                      <Receipt className="w-3 h-3" />
+                      {t('orders.with_invoice')}
+                    </Badge>
+                  ) : order.payment_type === 'without_invoice' ? (
+                    <Badge variant="secondary" className="gap-0.5 text-[10px] px-1.5 py-0.5">
+                      <Banknote className="w-3 h-3" />
+                      {t('orders.without_invoice')}
+                    </Badge>
+                  ) : null}
+
+                  {order.status === 'delivered' && order.invoice_payment_method && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
+                      {order.invoice_payment_method === 'check' ? t('accounting.method_check') :
+                       order.invoice_payment_method === 'transfer' ? t('accounting.method_transfer') :
+                       order.invoice_payment_method === 'receipt' ? t('accounting.method_receipt') :
+                       order.invoice_payment_method === 'cash' ? t('accounting.method_cash') :
+                       t('accounting.method_espace_cash')}
+                    </Badge>
+                  )}
+
+                  {order.customer?.default_price_subtype && order.payment_type === 'without_invoice' && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
+                      {order.customer.default_price_subtype === 'super_gros' ? t('products.price_super_gros') :
+                       order.customer.default_price_subtype === 'retail' ? t('products.price_retail') :
+                       t('products.price_gros')}
+                    </Badge>
+                  )}
+                </div>
+                
+                {order.delivery_date && (
+                  <div className="flex items-center gap-1.5 mt-1.5 text-xs text-muted-foreground">
+                    <Calendar className="w-3 h-3" />
+                    {format(new Date(order.delivery_date), 'dd MMMM yyyy', { locale: getDateLocale(language) })}
+                  </div>
+                )}
+                
+                {order.notes && (
+                  <p className="text-xs text-muted-foreground mt-1.5 bg-muted/50 p-1.5 rounded line-clamp-2">
+                    {order.notes}
+                  </p>
+                )}
+                
+                <p className="text-[10px] text-muted-foreground mt-1.5">
+                  {t('orders.created_by')}: {order.created_by_worker?.full_name} • {format(new Date(order.created_at), 'dd/MM HH:mm')}
+                </p>
+              </div>
+              
+              {/* Action buttons */}
+              <div className="flex flex-col gap-1.5">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => {
+                    setSelectedOrderId(order.id);
+                    setShowDetailsDialog(true);
+                  }}
+                >
+                  <Package className="w-4 h-4" />
+                </Button>
+                
+                {order.status === 'assigned' && (
+                  <>
+                    {order.customer?.latitude && order.customer?.longitude && (
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="h-8 w-8 text-blue-600 border-blue-300 hover:bg-blue-50"
+                        onClick={() => setNavigationTarget({
+                          lat: order.customer!.latitude!,
+                          lng: order.customer!.longitude!,
+                          name: order.customer!.name,
+                          address: order.customer?.address || undefined,
+                        })}
+                      >
+                        <Route className="w-4 h-4" />
+                      </Button>
+                    )}
+                    {!isModifyHidden && (
+                      <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => setModifyOrder(order)}>
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                    <Button
+                      size="icon"
+                      className="h-8 w-8 bg-primary"
+                      onClick={() => handleUpdateStatus(order.id, 'in_progress')}
+                      disabled={updateStatus.isPending}
+                    >
+                      <Truck className="w-4 h-4" />
+                    </Button>
+                    {!isCancelHidden && (
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        className="h-8 w-8"
+                        onClick={() => handleCancelOrder(order.id)}
+                        disabled={cancelOrder.isPending}
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </>
+                )}
+                
+                {order.status === 'in_progress' && (
+                  <>
+                    {order.customer?.latitude && order.customer?.longitude && (
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="h-8 w-8 text-blue-600 border-blue-300 hover:bg-blue-50"
+                        onClick={() => setNavigationTarget({
+                          lat: order.customer!.latitude!,
+                          lng: order.customer!.longitude!,
+                          name: order.customer!.name,
+                          address: order.customer?.address || undefined,
+                        })}
+                      >
+                        <Route className="w-4 h-4" />
+                      </Button>
+                    )}
+                    {!isModifyHidden && (
+                      <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => setModifyOrder(order)}>
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                    <Button
+                      size="icon"
+                      className="h-8 w-8 bg-green-600 hover:bg-green-700"
+                      onClick={() => handleDeliverClick(order)}
+                      disabled={updateStatus.isPending}
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                    </Button>
+                    {!isCancelHidden && (
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        className="h-8 w-8"
+                        onClick={() => handleCancelWithLocationCheck(order)}
+                        disabled={cancelOrder.isPending || checkingLocation}
+                      >
+                        {checkingLocation ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 space-y-3">
       {/* Order Search Dialog */}
-      <OrderSearchDialog
-        open={showSearchDialog}
-        onOpenChange={setShowSearchDialog}
-      />
+      <OrderSearchDialog open={showSearchDialog} onOpenChange={setShowSearchDialog} />
       
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">{t('deliveries.title')}</h2>
         {!isSearchHidden && (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setShowSearchDialog(true)}
-          >
+          <Button variant="outline" size="sm" onClick={() => setShowSearchDialog(true)}>
             <Search className="w-4 h-4" />
           </Button>
         )}
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-2">
-        <Card className="bg-blue-500/10">
-          <CardContent className="p-3 text-center">
-            <p className="text-xl font-bold">{orders?.filter(o => o.status === 'assigned').length || 0}</p>
-            <p className="text-xs text-muted-foreground">{t('orders.assigned')}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-purple-500/10">
-          <CardContent className="p-3 text-center">
-            <p className="text-xl font-bold">{orders?.filter(o => o.status === 'in_progress').length || 0}</p>
-            <p className="text-xs text-muted-foreground">{t('orders.in_progress')}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-green-500/10">
-          <CardContent className="p-3 text-center">
-            <p className="text-xl font-bold">{orders?.filter(o => o.status === 'delivered').length || 0}</p>
-            <p className="text-xs text-muted-foreground">{t('orders.delivered')}</p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Status Tabs */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabStatus)} dir="rtl">
+        <TabsList className="w-full h-auto p-1 bg-muted/60 flex-wrap">
+          {tabs.map((tab) => {
+            const count = statusCounts[tab.value] || 0;
+            const TabIcon = tab.icon;
+            return (
+              <TabsTrigger 
+                key={tab.value} 
+                value={tab.value}
+                className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 px-1 data-[state=active]:shadow-sm"
+              >
+                <TabIcon className={`w-4 h-4 ${tab.color}`} />
+                <span className="text-xs font-bold">{count}</span>
+              </TabsTrigger>
+            );
+          })}
+        </TabsList>
+      </Tabs>
 
       {/* Orders List */}
-      <div className="space-y-3">
-        {orders?.map((order) => {
-          const StatusIcon = STATUS_CONFIG[order.status]?.icon || Clock;
-          const isActive = order.status === 'assigned' || order.status === 'in_progress';
-          
-          return (
-            <Card key={order.id} className={isActive ? 'border-primary/50' : ''}>
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1">
-                    {/* Customer Info */}
-                    <div className="flex items-center gap-2 mb-1">
-                      <Store className="w-4 h-4 text-muted-foreground" />
-                      <span className="font-bold">{order.customer?.store_name || order.customer?.name}</span>
-                    </div>
-                    {order.customer?.store_name && order.customer?.name && (
-                      <p className="text-xs text-muted-foreground mr-6 mb-2">{order.customer.name}</p>
-                    )}
-                    
-                    {order.customer?.phone && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                        <Phone className="w-3 h-3" />
-                        <a href={`tel:${order.customer.phone}`} className="text-primary">
-                          {order.customer.phone}
-                        </a>
-                      </div>
-                    )}
-                    
-                    {order.customer?.address && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                        <MapPin className="w-3 h-3" />
-                        <span>{order.customer.address}</span>
-                        {order.customer.wilaya && <span>- {order.customer.wilaya}</span>}
-                      </div>
-                    )}
-                    
-                    <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                      <Badge className={STATUS_CONFIG[order.status]?.color}>
-                        <StatusIcon className="w-3 h-3 ml-1" />
-                        {STATUS_CONFIG[order.status]?.label}
-                      </Badge>
-                      
-                      {order.total_amount && Number(order.total_amount) > 0 && (
-                        <Badge variant="outline" className="font-bold text-primary">
-                          {Number(order.total_amount).toLocaleString()} دج
-                        </Badge>
-                      )}
+      <div className="space-y-2.5">
+        {filteredOrders?.map(renderOrderCard)}
 
-                      {/* Invoice type & payment details */}
-                      {order.payment_type === 'with_invoice' ? (
-                        <>
-                          <Badge variant="secondary" className="gap-1 text-xs">
-                            <Receipt className="w-3 h-3" />
-                            {t('orders.with_invoice')}
-                          </Badge>
-                          {order.status === 'delivered' && order.invoice_payment_method && (
-                            <Badge variant="outline" className="text-xs">
-                              {order.invoice_payment_method === 'check' ? t('accounting.method_check') :
-                               order.invoice_payment_method === 'transfer' ? t('accounting.method_transfer') :
-                               order.invoice_payment_method === 'receipt' ? t('accounting.method_receipt') :
-                               order.invoice_payment_method === 'cash' ? t('accounting.method_cash') :
-                               t('accounting.method_espace_cash')}
-                            </Badge>
-                          )}
-                        </>
-                      ) : order.payment_type === 'without_invoice' ? (
-                        <>
-                          <Badge variant="secondary" className="gap-1 text-xs">
-                            <Banknote className="w-3 h-3" />
-                            {t('orders.without_invoice')}
-                          </Badge>
-                          {order.status === 'delivered' && order.customer?.default_price_subtype && (
-                            <Badge variant="outline" className="text-xs">
-                              {order.customer.default_price_subtype === 'super_gros' ? t('products.price_super_gros') :
-                               order.customer.default_price_subtype === 'retail' ? t('products.price_retail') :
-                               t('products.price_gros')}
-                            </Badge>
-                          )}
-                        </>
-                      ) : null}
-                    </div>
-                    
-                    {order.delivery_date && (
-                      <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                        <Calendar className="w-4 h-4" />
-                        {format(new Date(order.delivery_date), 'dd MMMM yyyy', { locale: getDateLocale(language) })}
-                      </div>
-                    )}
-                    
-                    {order.notes && (
-                      <p className="text-sm text-muted-foreground mt-2 bg-muted/50 p-2 rounded">
-                        {order.notes}
-                      </p>
-                    )}
-                    
-                    <p className="text-xs text-muted-foreground mt-2">
-                      {t('orders.created_by')}: {order.created_by_worker?.full_name} • {format(new Date(order.created_at), 'dd/MM HH:mm')}
-                    </p>
-                  </div>
-                  
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedOrderId(order.id);
-                        setShowDetailsDialog(true);
-                      }}
-                    >
-                      <Package className="w-4 h-4" />
-                    </Button>
-                    
-                    {order.status === 'assigned' && (
-                      <>
-                        {order.customer?.latitude && order.customer?.longitude && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-blue-600 border-blue-300 hover:bg-blue-50"
-                            onClick={() => setNavigationTarget({
-                              lat: order.customer!.latitude!,
-                              lng: order.customer!.longitude!,
-                              name: order.customer!.name,
-                              address: order.customer?.address || undefined,
-                            })}
-                          >
-                            <Route className="w-4 h-4" />
-                          </Button>
-                        )}
-                        {!isModifyHidden && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setModifyOrder(order)}
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          onClick={() => handleUpdateStatus(order.id, 'in_progress')}
-                          disabled={updateStatus.isPending}
-                        >
-                          <Truck className="w-4 h-4" />
-                        </Button>
-                        {!isCancelHidden && (
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleCancelOrder(order.id)}
-                            disabled={cancelOrder.isPending}
-                          >
-                            <XCircle className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </>
-                    )}
-                    
-                    {order.status === 'in_progress' && (
-                      <>
-                        {order.customer?.latitude && order.customer?.longitude && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-blue-600 border-blue-300 hover:bg-blue-50"
-                            onClick={() => setNavigationTarget({
-                              lat: order.customer!.latitude!,
-                              lng: order.customer!.longitude!,
-                              name: order.customer!.name,
-                              address: order.customer?.address || undefined,
-                            })}
-                          >
-                            <Route className="w-4 h-4" />
-                          </Button>
-                        )}
-                        {!isModifyHidden && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setModifyOrder(order)}
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          className="bg-green-600 hover:bg-green-700"
-                          onClick={() => handleDeliverClick(order)}
-                          disabled={updateStatus.isPending}
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                        </Button>
-                        {!isCancelHidden && (
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleCancelWithLocationCheck(order)}
-                            disabled={cancelOrder.isPending || checkingLocation}
-                          >
-                            {checkingLocation ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
-                          </Button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-
-        {(!orders || orders.length === 0) && (
+        {(!filteredOrders || filteredOrders.length === 0) && (
           <div className="text-center py-12 text-muted-foreground">
-            <ShoppingCart className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>{t('deliveries.no_deliveries')}</p>
+            <Truck className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p className="text-sm">{t('deliveries.no_deliveries')}</p>
           </div>
         )}
       </div>
@@ -439,7 +464,6 @@ const MyDeliveries: React.FC = () => {
             <DialogTitle>{t('orders.details')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            {/* Customer Details */}
             {selectedOrder?.customer && (
               <div className="bg-muted/50 rounded-lg p-3 space-y-2">
                 <p className="font-bold">{selectedOrder.customer.store_name || selectedOrder.customer.name}</p>
@@ -459,15 +483,10 @@ const MyDeliveries: React.FC = () => {
               </div>
             )}
             
-            {/* Customer Location Map */}
             {selectedOrder?.customer?.latitude && selectedOrder?.customer?.longitude && (
               <Collapsible defaultOpen>
                 <CollapsibleTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full justify-between border-primary/30 hover:bg-primary/5"
-                  >
+                  <Button type="button" variant="outline" className="w-full justify-between border-primary/30 hover:bg-primary/5">
                     <span className="flex items-center gap-2">
                       <Navigation className="w-4 h-4 text-primary" />
                       <span>{t('customers.search_location')}</span>
@@ -486,7 +505,6 @@ const MyDeliveries: React.FC = () => {
               </Collapsible>
             )}
             
-            {/* Items */}
             <div className="space-y-2">
               <p className="font-bold">{t('nav.products')}:</p>
               {selectedOrderItems?.map((item) => (
@@ -521,7 +539,6 @@ const MyDeliveries: React.FC = () => {
               )}
             </div>
 
-            {/* Status Update */}
             {selectedOrder && (selectedOrder.status === 'assigned' || selectedOrder.status === 'in_progress') && (
               <div className="space-y-2">
                 <p className="font-bold">{t('common.status')}:</p>
@@ -544,7 +561,7 @@ const MyDeliveries: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
-      {/* Delivery Sale Dialog */}
+      
       {pendingDeliveryOrder && (
         <DeliverySaleDialog
           open={showDeliverySaleDialog}
@@ -555,14 +572,11 @@ const MyDeliveries: React.FC = () => {
           order={pendingDeliveryOrder}
         />
       )}
-      {/* Modify Order Dialog */}
+      
       {modifyOrder && (
-        <ModifyOrderWithItems
-          order={modifyOrder}
-          onClose={() => setModifyOrder(null)}
-        />
+        <ModifyOrderWithItems order={modifyOrder} onClose={() => setModifyOrder(null)} />
       )}
-      {/* Navigation Map Overlay */}
+      
       {navigationTarget && (
         <LazyNavigationMapView
           destinationLat={navigationTarget.lat}
@@ -572,7 +586,7 @@ const MyDeliveries: React.FC = () => {
           onClose={() => setNavigationTarget(null)}
         />
       )}
-      {/* Confirm Cancel Order */}
+      
       <AlertDialog open={!!confirmCancelOrderId} onOpenChange={() => setConfirmCancelOrderId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
