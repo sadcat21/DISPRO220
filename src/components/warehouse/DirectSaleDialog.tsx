@@ -493,14 +493,44 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
       const { error: itemsErr } = await supabase.from('order_items').insert(orderItemsData);
       if (itemsErr) throw new Error('فشل في حفظ بنود الطلب: ' + itemsErr.message);
 
-      // Deduct from stock & log movements
+      // Deduct from stock & log movements (including gift quantities)
       for (const item of orderItems) {
         const ws = stockItems.find(s => s.product_id === item.productId);
         if (ws) {
-          if (stockSource === 'warehouse') {
-            await supabase.from('warehouse_stock').update({ quantity: ws.quantity - item.quantity }).eq('id', ws.id);
+          // Calculate gift deduction in box.pieces format
+          const giftInPieces = item.giftPieces || item.giftQuantity || 0;
+          let totalDeduction = item.quantity;
+          if (giftInPieces > 0) {
+            const product = allProducts.find(p => p.id === item.productId);
+            const piecesPerBox = product?.pieces_per_box || 20;
+            // Convert gift pieces to box.pieces format
+            const giftBoxes = Math.floor(giftInPieces / piecesPerBox);
+            const giftRemainingPieces = Math.round(giftInPieces % piecesPerBox);
+            const giftInBoxFormat = giftBoxes + giftRemainingPieces / 100;
+            // Convert current stock and sold qty to total pieces, add gift, convert back
+            const stockPieces = (() => {
+              const boxes = Math.floor(Math.round(ws.quantity * 100) / 100);
+              const dec = Math.round((Math.round(ws.quantity * 100) / 100 - boxes) * 100);
+              return boxes * piecesPerBox + dec;
+            })();
+            const soldPieces = (() => {
+              const boxes = Math.floor(Math.round(item.quantity * 100) / 100);
+              const dec = Math.round((Math.round(item.quantity * 100) / 100 - boxes) * 100);
+              return boxes * piecesPerBox + dec;
+            })();
+            const remainingPieces = stockPieces - soldPieces - giftInPieces;
+            const newBoxes = Math.floor(remainingPieces / piecesPerBox);
+            const newRemaining = Math.round(remainingPieces % piecesPerBox);
+            const newQty = newBoxes + newRemaining / 100;
+
+            const stockTable = stockSource === 'warehouse' ? 'warehouse_stock' : 'worker_stock';
+            await supabase.from(stockTable).update({ quantity: newQty }).eq('id', ws.id);
           } else {
-            await supabase.from('worker_stock').update({ quantity: ws.quantity - item.quantity }).eq('id', ws.id);
+            if (stockSource === 'warehouse') {
+              await supabase.from('warehouse_stock').update({ quantity: ws.quantity - item.quantity }).eq('id', ws.id);
+            } else {
+              await supabase.from('worker_stock').update({ quantity: ws.quantity - item.quantity }).eq('id', ws.id);
+            }
           }
         }
         await supabase.from('stock_movements').insert({
