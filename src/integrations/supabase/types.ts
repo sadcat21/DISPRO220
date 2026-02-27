@@ -795,6 +795,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           customer_type: string | null
+          default_delivery_worker_id: string | null
           default_payment_type: string | null
           default_price_subtype: string | null
           id: string
@@ -824,6 +825,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_type?: string | null
+          default_delivery_worker_id?: string | null
           default_payment_type?: string | null
           default_price_subtype?: string | null
           id?: string
@@ -853,6 +855,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_type?: string | null
+          default_delivery_worker_id?: string | null
           default_payment_type?: string | null
           default_price_subtype?: string | null
           id?: string
@@ -894,6 +897,20 @@ export type Database = {
           {
             foreignKeyName: "customers_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_default_delivery_worker_id_fkey"
+            columns: ["default_delivery_worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_default_delivery_worker_id_fkey"
+            columns: ["default_delivery_worker_id"]
             isOneToOne: false
             referencedRelation: "workers_safe"
             referencedColumns: ["id"]

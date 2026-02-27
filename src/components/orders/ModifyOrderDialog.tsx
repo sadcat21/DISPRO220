@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Minus, Loader2, Package, Save, PlusCircle, Trash2 } from 'lucide-react';
+import { Plus, Minus, Loader2, Package, Save, PlusCircle, Trash2, Truck } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLogActivity } from '@/hooks/useActivityLogs';
 import { useQueryClient } from '@tanstack/react-query';
 import { OrderWithDetails, OrderItem, Product } from '@/types/database';
+import DeliveryWorkerSelect from './DeliveryWorkerSelect';
 
 interface ModifyOrderDialogProps {
   open: boolean;
@@ -34,7 +35,7 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
   open, onOpenChange, order, orderItems,
 }) => {
   const { t, dir } = useLanguage();
-  const { workerId } = useAuth();
+  const { workerId, role } = useAuth();
   const logActivity = useLogActivity();
   const queryClient = useQueryClient();
 
@@ -42,6 +43,9 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
   const [products, setProducts] = useState<Product[]>([]);
   const [newProductId, setNewProductId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [assignedWorkerId, setAssignedWorkerId] = useState(order.assigned_worker_id || '');
+
+  const canChangeWorker = role === 'admin' || role === 'branch_admin' || order.created_by === workerId;
 
   // Initialize items from orderItems
   useEffect(() => {
@@ -54,8 +58,9 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
         new_quantity: item.quantity,
         unit_price: Number(item.unit_price || 0),
       })));
+      setAssignedWorkerId(order.assigned_worker_id || '');
     }
-  }, [open, orderItems]);
+  }, [open, orderItems, order.assigned_worker_id]);
 
   // Fetch available products for adding
   useEffect(() => {
@@ -109,8 +114,9 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
     setItems(prev => prev.filter((_, i) => i !== index));
   };
 
+  const workerChanged = assignedWorkerId !== (order.assigned_worker_id || '');
   const hasChanges = items.some(i => i.new_quantity !== i.original_quantity) ||
-    items.some(i => !i.id && i.new_quantity > 0);
+    items.some(i => !i.id && i.new_quantity > 0) || workerChanged;
 
   const orderTotal = items.reduce((sum, item) => sum + (item.new_quantity * item.unit_price), 0);
 
@@ -168,9 +174,22 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
       const newTotal = updatedItems?.reduce((sum, i) =>
         sum + (Number(i.quantity) * Number(i.unit_price || 0)), 0) || 0;
 
-      if (newTotal > 0) {
+      const orderUpdate: Record<string, any> = {};
+      if (newTotal > 0) orderUpdate.total_amount = newTotal;
+
+      // Update assigned worker if changed
+      if (workerChanged) {
+        const newWorker = assignedWorkerId && assignedWorkerId !== 'none' ? assignedWorkerId : null;
+        orderUpdate.assigned_worker_id = newWorker;
+        if (newWorker && order.status === 'pending') {
+          orderUpdate.status = 'assigned';
+        }
+        changes.push({ عملية: 'تغيير عامل التوصيل' });
+      }
+
+      if (Object.keys(orderUpdate).length > 0) {
         await supabase.from('orders')
-          .update({ total_amount: newTotal })
+          .update(orderUpdate)
           .eq('id', order.id);
       }
 
@@ -217,6 +236,17 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
             <div className="bg-muted/50 rounded-lg p-2 text-sm">
               <span className="font-bold">{order.customer?.name}</span>
             </div>
+
+            {/* Assign delivery worker */}
+            {canChangeWorker && (
+              <div className="border rounded-lg p-3 space-y-2 bg-muted/30">
+                <DeliveryWorkerSelect
+                  customerBranchId={order.branch_id || order.customer?.branch_id || null}
+                  value={assignedWorkerId}
+                  onChange={setAssignedWorkerId}
+                />
+              </div>
+            )}
 
             {/* Current items */}
             {items.map((item, index) => {

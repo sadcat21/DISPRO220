@@ -376,6 +376,9 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
     }
 
     try {
+      // Use customer's default delivery worker if set
+      const defaultWorkerId = selectedCustomer?.default_delivery_worker_id || undefined;
+
       const order = await createOrder.mutateAsync({
         customerId: selectedCustomerId,
         items: orderItems,
@@ -384,6 +387,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
         paymentType,
         invoicePaymentMethod: paymentType === 'with_invoice' ? invoicePaymentMethod : undefined,
         totalAmount: orderTotals.totalAmount > 0 ? orderTotals.totalAmount : undefined,
+        assignedWorkerId: defaultWorkerId,
       });
 
       toast.success(t('orders.created_success'));

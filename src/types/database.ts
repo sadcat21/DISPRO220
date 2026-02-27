@@ -49,6 +49,7 @@ export interface Customer {
   sales_rep_name?: string | null;
   sales_rep_phone?: string | null;
   customer_type?: string | null;
+  default_delivery_worker_id?: string | null;
   created_at: string;
   created_by: string | null;
 }

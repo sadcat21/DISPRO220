@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Store, Building2, Warehouse, ChevronDown, ChevronUp, CreditCard, User, Languages, MapPin, UserCircle, Shield, Plus, Trash2, Type, BookOpen, X } from 'lucide-react';
+import { Loader2, Store, Building2, Warehouse, ChevronDown, ChevronUp, CreditCard, User, Languages, MapPin, UserCircle, Shield, Plus, Trash2, Type, BookOpen, X, Truck } from 'lucide-react';
+import DeliveryWorkerSelect from './DeliveryWorkerSelect';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { Customer } from '@/types/database';
@@ -82,6 +83,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
   const [defaultPriceSubtype, setDefaultPriceSubtype] = useState<string>('gros');
   const [customerType, setCustomerType] = useState<string>('');
   const [isRegistered, setIsRegistered] = useState(false);
+  const [defaultDeliveryWorkerId, setDefaultDeliveryWorkerId] = useState('');
 
   // Fetch zones when sector changes
   const pendingZoneId = React.useRef<string>('');
@@ -190,6 +192,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
       setDefaultPriceSubtype(customer.default_price_subtype || 'gros');
       setCustomerType(customer.customer_type || '');
       setIsRegistered((customer as any).is_registered || false);
+      setDefaultDeliveryWorkerId((customer as any).default_delivery_worker_id || '');
       setShowMap(!!(customer.latitude && customer.longitude));
 
       if (customer.latitude && customer.longitude && !customer.address) {
@@ -314,6 +317,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
         default_price_subtype: defaultPriceSubtype,
         customer_type: customerType || null,
         is_registered: isRegistered,
+        default_delivery_worker_id: defaultDeliveryWorkerId || null,
       };
       // Workers must go through approval for updates, admins can update directly
       const isManager = role === 'admin' || role === 'branch_admin';
@@ -747,6 +751,13 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
                 </div>
               )}
             </div>
+
+            {/* Default Delivery Worker */}
+            <DeliveryWorkerSelect
+              customerBranchId={customer?.branch_id || null}
+              value={defaultDeliveryWorkerId}
+              onChange={setDefaultDeliveryWorkerId}
+            />
           </div>
 
           <div className="sticky bottom-0 z-20 bg-background border-t pt-3 pb-1 -mx-6 px-6">
