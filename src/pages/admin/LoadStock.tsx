@@ -577,8 +577,11 @@ const LoadStock: React.FC = () => {
           worker_id: selectedWorker, notes: `تفريغ الشاحنة - إرجاع ${item.returnQty} من ${item.product_name}`,
         });
       }
+      setSessionItems([]);
       await refresh();
       queryClient.invalidateQueries({ queryKey: ['my-worker-stock'] });
+      queryClient.invalidateQueries({ queryKey: ['worker-truck-stock'] });
+      queryClient.invalidateQueries({ queryKey: ['worker-load-suggestions'] });
       toast.success(t('stock.empty_truck_success'));
     } catch (error: any) { toast.error(error.message); }
     finally { setIsEmptying(false); }
