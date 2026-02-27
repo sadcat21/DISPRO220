@@ -65,8 +65,11 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
   const [itemPriceSubType, setItemPriceSubType] = useState<PriceSubType>(defaultPriceSubType);
   const [itemInvoicePaymentMethod, setItemInvoicePaymentMethod] = useState<InvoicePaymentMethod | null>(defaultInvoicePaymentMethod);
 
+  // Offer must be applied before confirming (mandatory)
+  const hasUnappliedOffer = !isUnitSale && giftPieces > 0 && !offerApplied;
+
   const handleConfirm = () => {
-    if (product && quantity > 0) {
+    if (product && quantity > 0 && !hasUnappliedOffer) {
       const perItemPricing: PerItemPricing | undefined = showPricingOverride ? {
         paymentType: itemPaymentType,
         invoicePaymentMethod: itemPaymentType === 'with_invoice' ? itemInvoicePaymentMethod : null,
@@ -77,15 +80,9 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
         onConfirm(product.id, quantity, undefined, true, perItemPricing);
       } else {
         const giftBoxes = product.pieces_per_box > 0 ? Math.floor(giftPieces / product.pieces_per_box) : 0;
-        // Auto-include gifts if available (even if user didn't click "Apply Offer")
         const hasGifts = giftPieces > 0 || giftBoxes > 0;
-        if (hasGifts) {
-          // If offer wasn't explicitly applied, auto-apply the quantity adjustment
-          let finalQuantity = quantity;
-          if (!offerApplied && giftBoxes > 0) {
-            finalQuantity = quantity + giftBoxes;
-          }
-          onConfirm(product.id, finalQuantity, { giftQuantity: giftBoxes, giftPieces, offerId: giftOfferId }, false, perItemPricing);
+        if (hasGifts && offerApplied) {
+          onConfirm(product.id, quantity, { giftQuantity: giftBoxes, giftPieces, offerId: giftOfferId }, false, perItemPricing);
         } else {
           onConfirm(product.id, quantity, undefined, false, perItemPricing);
         }
@@ -370,9 +367,9 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={handleConfirm}>
+          <Button onClick={handleConfirm} disabled={hasUnappliedOffer}>
             <Plus className="w-4 h-4 ms-2" />
-            {t('orders.add_to_order')}
+            {hasUnappliedOffer ? (t('offers.must_apply_offer') || 'يجب تفعيل العرض أولاً') : t('orders.add_to_order')}
           </Button>
         </DialogFooter>
       </DialogContent>
