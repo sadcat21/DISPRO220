@@ -55,10 +55,14 @@ const DeliveryPaymentDialog: React.FC<DeliveryPaymentDialogProps> = ({
     return Math.max(0, orderTotal - paid);
   }, [paymentMode, paidAmount, orderTotal]);
 
+  const paidAmountExceedsTotal = paymentMode === 'partial' && (Number(paidAmount) || 0) > orderTotal;
+
   const handleConfirm = async () => {
     const paid = paymentMode === 'full' ? orderTotal : paymentMode === 'no_payment' ? 0 : (Number(paidAmount) || 0);
     if (paymentMode === 'partial' && paid <= 0) return;
-
+    if (paymentMode === 'partial' && paid > orderTotal) {
+      return; // blocked by UI anyway
+    }
     setIsSubmitting(true);
     try {
       await onConfirm({
@@ -169,11 +173,17 @@ const DeliveryPaymentDialog: React.FC<DeliveryPaymentDialogProps> = ({
                   placeholder="0"
                   min="0"
                   max={orderTotal}
-                  className="text-lg font-bold h-12"
+                  className={`text-lg font-bold h-12 ${paidAmountExceedsTotal ? 'border-destructive ring-destructive' : ''}`}
                 />
+                {paidAmountExceedsTotal && (
+                  <p className="text-xs text-destructive mt-1 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    المبلغ المدفوع أكبر من إجمالي الطلبية ({formatNumber(orderTotal, language)} {t('common.currency')})
+                  </p>
+                )}
               </div>
 
-              {remainingAmount > 0 && (
+              {remainingAmount > 0 && !paidAmountExceedsTotal && (
                 <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 flex items-center gap-3">
                   <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
                   <div>
@@ -216,7 +226,7 @@ const DeliveryPaymentDialog: React.FC<DeliveryPaymentDialogProps> = ({
           <Button
             className="w-full h-12 text-base"
             onClick={handleConfirm}
-            disabled={isSubmitting || (paymentMode === 'partial' && (!paidAmount || Number(paidAmount) <= 0))}
+            disabled={isSubmitting || (paymentMode === 'partial' && (!paidAmount || Number(paidAmount) <= 0)) || paidAmountExceedsTotal}
 
           >
             {isSubmitting ? (
