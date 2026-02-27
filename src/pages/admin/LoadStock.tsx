@@ -1577,7 +1577,6 @@ const LoadStock: React.FC = () => {
         workerId={selectedWorker}
         onComplete={async () => {
           await refetchSessions();
-          refresh();
         }}
       />
     </div>
