@@ -1575,9 +1575,9 @@ const LoadStock: React.FC = () => {
         open={showVerificationDialog}
         onOpenChange={setShowVerificationDialog}
         workerId={selectedWorker}
-        onComplete={() => {
+        onComplete={async () => {
+          await refetchSessions();
           refresh();
-          refetchSessions();
         }}
       />
     </div>
