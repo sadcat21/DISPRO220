@@ -592,11 +592,12 @@ const LoadStock: React.FC = () => {
                     <div className="w-24">
                       <Input
                         type="number"
-                        min={1}
+                        min={0.01}
+                        step="any"
                         max={available}
                         value={item.quantity}
                         onFocus={e => e.target.select()}
-                        onChange={e => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                        onChange={e => updateItem(index, 'quantity', parseFloat(e.target.value) || 1)}
                         className="text-center"
                       />
                     </div>
@@ -619,21 +620,56 @@ const LoadStock: React.FC = () => {
                           </>
                         )}
                       </div>
-                      {/* Dynamic offer info */}
+                      {/* Dynamic offer info with add gift button */}
                       {productOffers[item.product_id] && (() => {
                         const offer = productOffers[item.product_id];
                         const unitLabel = (u: string) => u === 'piece' ? 'قطعة' : u === 'box' ? 'صندوق' : 'كغ';
                         const suggestedGifts = Math.floor(item.quantity / offer.minQty) * offer.giftQty;
+                        // Convert gift pieces to boxes.pieces format
+                        const product = products.find(p => p.id === item.product_id);
+                        const piecesPerBox = product?.pieces_per_box || 1;
+                        const giftBoxes = offer.giftUnit === 'piece' ? Math.floor(suggestedGifts / piecesPerBox) : suggestedGifts;
+                        const giftPieces = offer.giftUnit === 'piece' ? suggestedGifts % piecesPerBox : 0;
+                        const giftDisplay = offer.giftUnit === 'piece' 
+                          ? `${giftBoxes}.${String(giftPieces).padStart(2, '0')}`
+                          : `${suggestedGifts}`;
+                        // Calculate the decimal quantity for stock (e.g., 4 pieces / 20 = 0.04 boxes)  
+                        const giftStockQty = offer.giftUnit === 'piece' ? suggestedGifts / piecesPerBox : suggestedGifts;
                         return (
-                          <div className="flex items-center gap-2 text-xs bg-primary/5 border border-primary/20 rounded-md p-1.5">
-                            <Gift className="w-3.5 h-3.5 text-primary shrink-0" />
-                            <span>
-                              عرض: <strong>{offer.giftQty} {unitLabel(offer.giftUnit)}</strong> لكل <strong>{offer.minQty} {unitLabel(offer.minUnit)}</strong>
-                            </span>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-xs bg-destructive/5 border border-destructive/20 rounded-md p-1.5">
+                              <Gift className="w-3.5 h-3.5 text-destructive shrink-0" />
+                              <span>
+                                عرض: <strong>{offer.giftQty} {unitLabel(offer.giftUnit)}</strong> لكل <strong>{offer.minQty} {unitLabel(offer.minUnit)}</strong>
+                              </span>
+                            </div>
                             {suggestedGifts > 0 && (
-                              <Badge variant="secondary" className="text-xs ms-auto">
-                                هدايا مقترحة: {suggestedGifts} {unitLabel(offer.giftUnit)}
-                              </Badge>
+                              <div className="flex items-center justify-between bg-destructive/5 border border-destructive/20 rounded-md p-1.5">
+                                <Badge variant="destructive" className="text-xs">
+                                  هدايا مقترحة: {suggestedGifts} {unitLabel(offer.giftUnit)} ({giftDisplay})
+                                </Badge>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 text-xs px-2 border-destructive/30 text-destructive hover:bg-destructive/10"
+                                  onClick={() => {
+                                    // Add gift as a new load item with converted quantity
+                                    const existingGiftIdx = items.findIndex((it, i) => i !== index && it.product_id === item.product_id);
+                                    if (existingGiftIdx >= 0) {
+                                      // Update existing item quantity
+                                      updateItem(existingGiftIdx, 'quantity', items[existingGiftIdx].quantity + giftStockQty);
+                                    } else {
+                                      // Add new item for gift
+                                      setItems(prev => [...prev, { ...newLoadItem(item.product_id, giftStockQty), allocations: [], allocationMode: false }]);
+                                    }
+                                    toast.success(`تم إضافة ${suggestedGifts} ${unitLabel(offer.giftUnit)} هدايا للشحن`);
+                                  }}
+                                >
+                                  <Plus className="w-3 h-3 ml-0.5" />
+                                  إضافة للشحن
+                                </Button>
+                              </div>
                             )}
                           </div>
                         );
