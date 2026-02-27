@@ -26,6 +26,7 @@ import { useActiveStampTiers, calculateStampAmount } from '@/hooks/useStampTiers
 import { useCreateDebt } from '@/hooks/useCustomerDebts';
 import ProductQuantityDialog from '@/components/orders/ProductQuantityDialog';
 import InvoicePaymentMethodSelect from '@/components/orders/InvoicePaymentMethodSelect';
+import ProductPriceBadge from '@/components/orders/ProductPriceBadge';
 import DeliveryPaymentDialog from '@/components/orders/DeliveryPaymentDialog';
 import StockOverflowDialog from '@/components/warehouse/StockOverflowDialog';
 import { cn } from '@/lib/utils';
@@ -766,11 +767,7 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
                         <Badge variant="outline" className="mr-auto text-[10px] px-1">
                           {available}
                         </Badge>
-                        {price > 0 && (
-                          <Badge variant="outline" className="text-[10px] px-1 text-primary">
-                            {price.toLocaleString()} {t('common.currency')}
-                          </Badge>
-                        )}
+                        <ProductPriceBadge product={product} boxPrice={price} />
                         {inCart && (
                           <Badge variant="default" className="text-[10px] px-1.5">
                             {inCart.quantity}

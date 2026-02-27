@@ -31,6 +31,7 @@ import CustomerDistanceIndicator from './CustomerDistanceIndicator';
 import EditCustomerDialog from './EditCustomerDialog';
 import CustomerRecentOrders from './CustomerRecentOrders';
 import InvoicePaymentMethodSelect from './InvoicePaymentMethodSelect';
+import ProductPriceBadge from './ProductPriceBadge';
 import { cn } from '@/lib/utils';
 
 interface CreateOrderDialogProps {
@@ -623,11 +624,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                               <Gift className="w-3 h-3" />
                             </Badge>
                           )}
-                          {price > 0 && (
-                            <Badge variant="outline" className="text-[10px] px-1 text-primary">
-                              {price.toLocaleString()} {t('common.currency')}
-                            </Badge>
-                          )}
+                          <ProductPriceBadge product={product} boxPrice={price} />
                         </div>
                         {inCart && (
                           <Badge variant="default" className="text-[10px] px-1.5">
