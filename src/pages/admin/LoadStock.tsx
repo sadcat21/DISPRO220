@@ -471,8 +471,14 @@ const LoadStock: React.FC = () => {
 
       const { data } = await sessionItemsQuery(activeSessionId);
       setSessionItems(data || []);
-      await refresh();
-      queryClient.invalidateQueries({ queryKey: ['worker-load-suggestions'] });
+      // Update local warehouse stock without full page reload
+      const { data: updatedWh } = await supabase.from('warehouse_stock').select('*').eq('branch_id', branchId);
+      if (updatedWh) {
+        // Trigger targeted refresh via queryClient only
+        queryClient.invalidateQueries({ queryKey: ['worker-load-suggestions'] });
+        queryClient.invalidateQueries({ queryKey: ['my-worker-stock'] });
+        queryClient.invalidateQueries({ queryKey: ['worker-truck-stock'] });
+      }
       toast.success('تم تعديل الكمية بنجاح');
       setEditingItem(null);
     } catch (err: any) { toast.error(err.message); }
