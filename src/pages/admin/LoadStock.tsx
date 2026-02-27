@@ -101,6 +101,13 @@ const LoadStock: React.FC = () => {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [sessionItems, setSessionItems] = useState<any[]>([]);
 
+  // Edit session item state
+  const [editingItem, setEditingItem] = useState<any | null>(null);
+  const [editQty, setEditQty] = useState(0);
+  const [editGiftQty, setEditGiftQty] = useState(0);
+  const [editGiftUnit, setEditGiftUnit] = useState('piece');
+  const [isEditSaving, setIsEditSaving] = useState(false);
+
   const { data: stockAlerts = [] } = useStockAlerts();
   const { data: suggestions = [], isLoading: suggestionsLoading } = useWorkerLoadSuggestions(selectedWorker || null);
   const {
@@ -383,7 +390,74 @@ const LoadStock: React.FC = () => {
     } catch (err: any) { toast.error(err.message); }
   };
 
-  // Complete session
+  // Open edit dialog for session item
+  const handleEditSessionItem = (item: any) => {
+    setEditingItem(item);
+    setEditQty(item.quantity);
+    setEditGiftQty(item.gift_quantity || 0);
+    setEditGiftUnit(item.gift_unit || 'piece');
+  };
+
+  // Save edited session item
+  const handleSaveEditItem = async () => {
+    if (!editingItem || !activeSessionId || !branchId || !selectedWorker) return;
+    setIsEditSaving(true);
+    try {
+      const product = products.find(p => p.id === editingItem.product_id);
+      const piecesPerBox = product?.pieces_per_box || 20;
+      const oldQty = editingItem.quantity;
+      const oldGiftQty = editingItem.gift_quantity || 0;
+      const oldGiftUnit = editingItem.gift_unit || 'piece';
+      const oldGiftInCustom = oldGiftUnit === 'box' ? oldGiftQty : totalPiecesToCustom(oldGiftQty, piecesPerBox);
+      const oldTotalLoad = oldGiftQty > 0 ? addCustomQty(oldQty, oldGiftInCustom, piecesPerBox) : oldQty;
+
+      const newGiftInCustom = editGiftUnit === 'box' ? editGiftQty : totalPiecesToCustom(editGiftQty, piecesPerBox);
+      const newTotalLoad = editGiftQty > 0 ? addCustomQty(editQty, newGiftInCustom, piecesPerBox) : editQty;
+
+      const diff = customToTotalPieces(newTotalLoad, piecesPerBox) - customToTotalPieces(oldTotalLoad, piecesPerBox);
+
+      if (diff > 0) {
+        // Need more from warehouse
+        const diffCustom = totalPiecesToCustom(Math.abs(diff), piecesPerBox);
+        const warehouseItem = warehouseStock.find(s => s.product_id === editingItem.product_id);
+        if (!warehouseItem || customToTotalPieces(warehouseItem.quantity, piecesPerBox) < Math.abs(diff)) {
+          toast.error('الكمية المتاحة في المخزن غير كافية');
+          setIsEditSaving(false);
+          return;
+        }
+        await supabase.from('warehouse_stock').update({ quantity: subtractCustomQty(warehouseItem.quantity, diffCustom, piecesPerBox) }).eq('id', warehouseItem.id);
+        const { data: ws } = await supabase.from('worker_stock').select('id, quantity').eq('worker_id', selectedWorker).eq('product_id', editingItem.product_id).single();
+        if (ws) await supabase.from('worker_stock').update({ quantity: addCustomQty(ws.quantity, diffCustom, piecesPerBox) }).eq('id', ws.id);
+      } else if (diff < 0) {
+        // Return to warehouse
+        const diffCustom = totalPiecesToCustom(Math.abs(diff), piecesPerBox);
+        const warehouseItem = warehouseStock.find(s => s.product_id === editingItem.product_id);
+        if (warehouseItem) {
+          await supabase.from('warehouse_stock').update({ quantity: addCustomQty(warehouseItem.quantity, diffCustom, piecesPerBox) }).eq('id', warehouseItem.id);
+        } else {
+          await supabase.from('warehouse_stock').insert({ branch_id: branchId, product_id: editingItem.product_id, quantity: diffCustom });
+        }
+        const { data: ws } = await supabase.from('worker_stock').select('id, quantity').eq('worker_id', selectedWorker).eq('product_id', editingItem.product_id).single();
+        if (ws) await supabase.from('worker_stock').update({ quantity: subtractCustomQty(ws.quantity, diffCustom, piecesPerBox) }).eq('id', ws.id);
+      }
+
+      // Update session item
+      await supabase.from('loading_session_items').update({
+        quantity: editQty,
+        gift_quantity: editGiftQty,
+        gift_unit: editGiftUnit,
+      }).eq('id', editingItem.id);
+
+      const { data } = await sessionItemsQuery(activeSessionId);
+      setSessionItems(data || []);
+      await refresh();
+      queryClient.invalidateQueries({ queryKey: ['worker-load-suggestions'] });
+      toast.success('تم تعديل الكمية بنجاح');
+      setEditingItem(null);
+    } catch (err: any) { toast.error(err.message); }
+    finally { setIsEditSaving(false); }
+  };
+
   const handleCompleteSession = async () => {
     if (!activeSessionId) return;
     try {
@@ -622,7 +696,7 @@ const LoadStock: React.FC = () => {
         {activeSessionId && sessionItems.length > 0 ? (
           <div className="space-y-2 pb-4">
             {sessionItems.map((item: any) => (
-              <Card key={item.id} className="border">
+              <Card key={item.id} className="border cursor-pointer hover:border-primary/40 transition-colors" onClick={() => handleEditSessionItem(item)}>
                 <CardContent className="p-3 flex items-center gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -643,7 +717,7 @@ const LoadStock: React.FC = () => {
                     size="icon"
                     variant="ghost"
                     className="shrink-0 text-destructive hover:bg-destructive/10"
-                    onClick={() => handleRemoveSessionItem(item)}
+                    onClick={(e) => { e.stopPropagation(); handleRemoveSessionItem(item); }}
                     disabled={deleteSessionItem.isPending}
                   >
                     <Trash2 className="w-4 h-4" />
@@ -944,6 +1018,54 @@ const LoadStock: React.FC = () => {
         selectedProductIds={sessionItems.map((i: any) => i.product_id)}
         onSelect={handleProductSelected}
       />
+
+      {/* Edit Session Item Dialog */}
+      <Dialog open={!!editingItem} onOpenChange={(open) => { if (!open) setEditingItem(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="w-5 h-5 text-primary" />
+              تعديل الكمية
+            </DialogTitle>
+            <DialogDescription>{editingItem?.product?.name || editingItem?.notes || ''}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>الكمية (صناديق)</Label>
+              <Input
+                type="number" min={1} value={editQty}
+                onFocus={e => e.target.select()}
+                onChange={e => setEditQty(Math.max(1, parseInt(e.target.value) || 1))}
+              />
+            </div>
+            <div>
+              <Label>كمية الهدايا</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="number" min={0} value={editGiftQty} className="flex-1"
+                  onFocus={e => e.target.select()}
+                  onChange={e => setEditGiftQty(Math.max(0, parseInt(e.target.value) || 0))}
+                />
+                <select
+                  className="border rounded px-2 text-sm bg-background"
+                  value={editGiftUnit}
+                  onChange={e => setEditGiftUnit(e.target.value)}
+                >
+                  <option value="piece">قطعة</option>
+                  <option value="box">صندوق</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setEditingItem(null)}>إلغاء</Button>
+            <Button onClick={handleSaveEditItem} disabled={isEditSaving}>
+              {isEditSaving && <Loader2 className="w-4 h-4 animate-spin me-2" />}
+              حفظ التعديل
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
