@@ -1335,6 +1335,123 @@ export type Database = {
           },
         ]
       }
+      loading_session_items: {
+        Row: {
+          created_at: string
+          gift_quantity: number
+          gift_unit: string | null
+          id: string
+          notes: string | null
+          product_id: string
+          quantity: number
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          gift_quantity?: number
+          gift_unit?: string | null
+          id?: string
+          notes?: string | null
+          product_id: string
+          quantity?: number
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          gift_quantity?: number
+          gift_unit?: string | null
+          id?: string
+          notes?: string | null
+          product_id?: string
+          quantity?: number
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loading_session_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loading_session_items_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "loading_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loading_sessions: {
+        Row: {
+          branch_id: string | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          manager_id: string
+          notes: string | null
+          status: string
+          worker_id: string
+        }
+        Insert: {
+          branch_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          manager_id: string
+          notes?: string | null
+          status?: string
+          worker_id: string
+        }
+        Update: {
+          branch_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          manager_id?: string
+          notes?: string | null
+          status?: string
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loading_sessions_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loading_sessions_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loading_sessions_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loading_sessions_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loading_sessions_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       manager_handovers: {
         Row: {
           amount: number
