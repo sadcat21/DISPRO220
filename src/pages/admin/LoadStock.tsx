@@ -112,11 +112,19 @@ const LoadStock: React.FC = () => {
   useEffect(() => {
     if (!selectedWorker) { setAccumulatedGifts({}); return; }
     const fetchGifts = async () => {
+      // First get all session IDs for this worker
+      const { data: workerSessions } = await supabase
+        .from('loading_sessions')
+        .select('id')
+        .eq('worker_id', selectedWorker);
+      if (!workerSessions || workerSessions.length === 0) { setAccumulatedGifts({}); return; }
+      
+      const sessionIds = workerSessions.map(s => s.id);
       const { data } = await supabase
         .from('loading_session_items')
-        .select('product_id, gift_quantity, gift_unit, session:loading_sessions!inner(worker_id)')
+        .select('product_id, gift_quantity, gift_unit')
         .gt('gift_quantity', 0)
-        .eq('loading_sessions.worker_id', selectedWorker);
+        .in('session_id', sessionIds);
       if (data) {
         const map: Record<string, { totalPieces: number; unit: string }> = {};
         for (const item of data) {
