@@ -33,15 +33,44 @@ interface EmptyTruckItem {
 }
 
 const KEEP_REASONS = ['cash_sale', 'offer_gifts', 'reserve', 'other'] as const;
-/** Round number to avoid floating-point errors (uses pieces_per_box precision) */
-const roundQty = (n: number): number => {
-  // Round to 6 decimal places to eliminate JS floating-point noise
-  return Math.round(n * 1000000) / 1000000;
+/**
+ * Custom quantity format: whole part = boxes, decimal part = pieces (padded to 2 digits).
+ * e.g., 982.02 = 982 boxes + 2 pieces, 13.18 = 13 boxes + 18 pieces.
+ * This is NOT a mathematical fraction - it's a notation.
+ */
+
+/** Convert custom format (boxes.pieces) to total pieces */
+const customToTotalPieces = (customQty: number, piecesPerBox: number): number => {
+  const boxes = Math.floor(Math.round(customQty * 100) / 100);
+  const decimalPart = Math.round((Math.round(customQty * 100) / 100 - boxes) * 100);
+  return boxes * piecesPerBox + decimalPart;
 };
-/** Format quantity for display: up to 2 decimal places, strip trailing zeros */
+
+/** Convert total pieces to custom format (boxes.pieces) */
+const totalPiecesToCustom = (totalPieces: number, piecesPerBox: number): number => {
+  const boxes = Math.floor(totalPieces / piecesPerBox);
+  const remainingPieces = Math.round(totalPieces % piecesPerBox);
+  return boxes + remainingPieces / 100;
+};
+
+/** Subtract quantities in custom format via piece conversion */
+const subtractCustomQty = (from: number, amount: number, piecesPerBox: number): number => {
+  const fromPieces = customToTotalPieces(from, piecesPerBox);
+  const amountPieces = customToTotalPieces(amount, piecesPerBox);
+  return totalPiecesToCustom(fromPieces - amountPieces, piecesPerBox);
+};
+
+/** Add quantities in custom format via piece conversion */
+const addCustomQty = (base: number, amount: number, piecesPerBox: number): number => {
+  const basePieces = customToTotalPieces(base, piecesPerBox);
+  const amountPieces = customToTotalPieces(amount, piecesPerBox);
+  return totalPiecesToCustom(basePieces + amountPieces, piecesPerBox);
+};
+
+/** Format quantity for display */
 const fmtQty = (n: number) => {
-  const rounded = roundQty(n);
-  return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(6).replace(/0+$/, '').replace(/\.$/, '');
+  const rounded = Math.round(n * 100) / 100;
+  return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
 };
 
 const LoadStock: React.FC = () => {
@@ -242,28 +271,38 @@ const LoadStock: React.FC = () => {
     setIsSaving(true);
     try {
       const product = products.find(p => p.id === addProductId);
+      const piecesPerBox = product?.pieces_per_box || 20;
       let totalLoadQty = addProductQty;
 
-      // Convert gift to box units if needed
+      // Convert gift pieces to custom format and add
       if (addProductGiftQty > 0) {
-        const piecesPerBox = product?.pieces_per_box || 1;
-        const giftBoxes = addProductGiftUnit === 'piece' ? roundQty(addProductGiftQty / piecesPerBox) : addProductGiftQty;
-        totalLoadQty = roundQty(totalLoadQty + giftBoxes);
+        const giftInCustom = addProductGiftUnit === 'piece' 
+          ? totalPiecesToCustom(addProductGiftQty, piecesPerBox) 
+          : addProductGiftQty;
+        totalLoadQty = addCustomQty(totalLoadQty, giftInCustom, piecesPerBox);
       }
 
       // Direct stock operations without full reload
       const warehouseItem = warehouseStock.find(s => s.product_id === addProductId);
-      if (!warehouseItem || warehouseItem.quantity < totalLoadQty) {
+      if (!warehouseItem) {
+        throw new Error(`الكمية المتاحة من ${product?.name || ''} غير كافية`);
+      }
+      
+      // Compare in total pieces
+      const warehousePieces = customToTotalPieces(warehouseItem.quantity, piecesPerBox);
+      const loadPieces = customToTotalPieces(totalLoadQty, piecesPerBox);
+      if (warehousePieces < loadPieces) {
         throw new Error(`الكمية المتاحة من ${product?.name || ''} غير كافية`);
       }
 
-      // Deduct from warehouse
+      // Deduct from warehouse using piece-based math
+      const newWarehouseQty = subtractCustomQty(warehouseItem.quantity, totalLoadQty, piecesPerBox);
       await supabase
         .from('warehouse_stock')
-        .update({ quantity: roundQty(warehouseItem.quantity - totalLoadQty) })
+        .update({ quantity: newWarehouseQty })
         .eq('id', warehouseItem.id);
 
-      // Add to worker stock
+      // Add to worker stock using piece-based math
       const { data: existingWS } = await supabase
         .from('worker_stock')
         .select('id, quantity')
@@ -272,9 +311,10 @@ const LoadStock: React.FC = () => {
         .maybeSingle();
 
       if (existingWS) {
+        const newWorkerQty = addCustomQty(existingWS.quantity, totalLoadQty, piecesPerBox);
         await supabase
           .from('worker_stock')
-          .update({ quantity: roundQty(existingWS.quantity + totalLoadQty) })
+          .update({ quantity: newWorkerQty })
           .eq('id', existingWS.id);
       } else {
         await supabase.from('worker_stock').insert({
