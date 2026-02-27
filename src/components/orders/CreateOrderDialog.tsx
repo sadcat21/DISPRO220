@@ -401,8 +401,10 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
       setSavedCustomerBranchId(branchId);
       handleClose(false);
 
-      // Show assign worker dialog
-      setShowAssignWorkerDialog(true);
+      // Only show assign worker dialog if no default worker was auto-assigned
+      if (!defaultWorkerId) {
+        setShowAssignWorkerDialog(true);
+      }
     } catch (error: any) {
       toast.error(error.message || t('common.error'));
     }
