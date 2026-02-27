@@ -527,18 +527,14 @@ const LoadStock: React.FC = () => {
                   // Total new = boxes + gifts in custom format
                   const giftInCustom = newGiftUnit === 'box' ? newGiftQty : totalPiecesToCustom(newGiftQty, piecesPerBox);
                   const totalNewLoaded = newGiftQty > 0 ? addCustomQty(loadedBoxes, giftInCustom, piecesPerBox) : loadedBoxes;
-                  const oldStock = s.current_stock - totalNewLoaded;
+                  // Use piece-based math to get old stock
+                  const oldStock = totalNewLoaded > 0 ? subtractCustomQty(s.current_stock, totalNewLoaded, piecesPerBox) : s.current_stock;
                   const surplus = Math.max(0, s.current_stock - s.pending_orders_quantity);
                   
-                  // Convert gift qty to boxes.pieces format
+                  // Convert gift qty to boxes.pieces format for display
                   const newGiftInCustom = newGiftUnit === 'box' ? newGiftQty : totalPiecesToCustom(newGiftQty, piecesPerBox);
-                  
-                  // Previous gifts: gifts already in worker stock from before this session
-                  // We can estimate from oldStock decimal part or use a simpler approach
-                  const oldGiftPieces = Math.round((Math.round(oldStock * 100) / 100 - Math.floor(Math.round(oldStock * 100) / 100)) * 100);
-                  const oldGiftCustom = oldGiftPieces > 0 ? totalPiecesToCustom(oldGiftPieces, piecesPerBox) : 0;
 
-                  const hasGifts = newGiftQty > 0 || oldGiftCustom > 0;
+                  const hasGifts = newGiftQty > 0;
                   return (
                     <Card key={s.product_id} className="border">
                       <CardContent className="p-3">
@@ -553,7 +549,7 @@ const LoadStock: React.FC = () => {
                             <Badge variant="outline" className="text-xs border-primary/30 text-primary">✓ كافي</Badge>
                           )}
                         </div>
-                        <div className={`grid ${hasGifts ? 'grid-cols-7' : 'grid-cols-5'} gap-1 text-xs`}>
+                        <div className={`grid ${hasGifts ? 'grid-cols-6' : 'grid-cols-5'} gap-1 text-xs`}>
                           <div className="bg-muted/50 rounded p-1 text-center">
                             <div className="text-muted-foreground text-[10px]">سابق</div>
                             <div className="font-bold">{fmtQty(oldStock)}</div>
@@ -575,16 +571,10 @@ const LoadStock: React.FC = () => {
                             <div className="font-bold">{fmtQty(surplus)}</div>
                           </div>
                           {hasGifts && (
-                            <>
-                              <div className="bg-destructive/5 rounded p-1 text-center">
-                                <div className="text-muted-foreground text-[10px]">هدايا س</div>
-                                <div className="font-bold text-destructive">{oldGiftCustom > 0 ? fmtQty(oldGiftCustom) : '—'}</div>
-                              </div>
-                              <div className="bg-destructive/5 rounded p-1 text-center">
-                                <div className="text-muted-foreground text-[10px]">هدايا ج</div>
-                                <div className="font-bold text-destructive">{newGiftQty > 0 ? fmtQty(newGiftInCustom) : '—'}</div>
-                              </div>
-                            </>
+                            <div className="bg-destructive/5 rounded p-1 text-center">
+                              <div className="text-muted-foreground text-[10px]">هدايا</div>
+                              <div className="font-bold text-destructive">{fmtQty(newGiftInCustom)}</div>
+                            </div>
                           )}
                         </div>
                       </CardContent>
