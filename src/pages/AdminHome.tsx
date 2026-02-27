@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useNavigation } from '@/hooks/useNavigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useFontSize } from '@/contexts/FontSizeContext';
-import { Calculator, Banknote, ArrowLeft, Navigation, Users, Receipt, ShoppingCart } from 'lucide-react';
+import { Calculator, Banknote, ArrowLeft, Navigation, Users, Receipt, ShoppingCart, Scale } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,6 +37,7 @@ const pathColors: Record<string, { bg: string; icon: string; border: string }> =
   '/settings': { bg: 'bg-gray-50', icon: 'text-gray-600', border: 'border-gray-200' },
   '/guide': { bg: 'bg-stone-50', icon: 'text-stone-600', border: 'border-stone-200' },
   '/shared-invoices': { bg: 'bg-orange-50', icon: 'text-orange-700', border: 'border-orange-200' },
+  '/surplus-deficit': { bg: 'bg-violet-50', icon: 'text-violet-600', border: 'border-violet-200' },
 };
 
 const defaultColor = { bg: 'bg-muted/30', icon: 'text-primary', border: 'border-border' };
@@ -119,6 +120,20 @@ const AdminHome: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Surplus/Deficit Treasury */}
+      {(role === 'admin' || role === 'branch_admin') && (
+        <div
+          className="relative overflow-hidden rounded-xl border-2 border-violet-300 bg-gradient-to-br from-violet-50 to-violet-100 p-4 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg flex items-center gap-3"
+          onClick={() => navigate('/surplus-deficit')}
+        >
+          <Scale className="w-8 h-8 text-violet-600" />
+          <div>
+            <p className="font-bold text-sm text-violet-900">خزينة الفائض والعجز</p>
+            <p className="text-xs text-violet-700">الخزينة والمخزون</p>
+          </div>
+        </div>
+      )}
 
       {/* Quick Create Order Button */}
       <div

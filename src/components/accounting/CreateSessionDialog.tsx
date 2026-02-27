@@ -115,14 +115,7 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
     }
   }, [open, editSession, selectedWorkerId]);
 
-  // Auto-update periodEnd to current time every 30 seconds (only in create mode)
-  useEffect(() => {
-    if (!open || isEditMode) return;
-    const interval = setInterval(() => {
-      setPeriodEnd(nowLocal());
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [open, isEditMode]);
+  // Auto-update periodEnd removed - user controls manually via refresh button
 
   const calcParams = selectedWorkerId && periodStart && periodEnd
     ? { workerId: selectedWorkerId, branchId: activeBranch?.id, periodStart, periodEnd }
@@ -190,7 +183,7 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
         toast.success(t('accounting.session_created'));
       }
 
-      // Register deficit as worker debt on save
+      // Register deficit as worker debt AND in surplus/deficit treasury
       if (registerDeficit && cashDifference < 0) {
         try {
           await createWorkerDebt.mutateAsync({
@@ -200,7 +193,17 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
             session_id: sessionId,
             description: `عجز جلسة محاسبة ${format(new Date(), 'dd/MM/yyyy')}`,
           });
-          toast.success('تم تسجيل العجز كدين على العامل');
+          // Also record in manager treasury as deficit
+          await supabase.from('manager_treasury').insert({
+            manager_id: currentWorkerId!,
+            branch_id: activeBranch?.id || null,
+            session_id: sessionId || null,
+            source_type: 'accounting_deficit',
+            payment_method: 'cash',
+            amount: Math.abs(cashDifference),
+            notes: `عجز جلسة محاسبة - ${workerName || selectedWorkerId}`,
+          });
+          toast.success('تم تسجيل العجز كدين على العامل وفي خزينة الفائض والعجز');
         } catch { toast.error('خطأ في تسجيل العجز'); }
       }
 
