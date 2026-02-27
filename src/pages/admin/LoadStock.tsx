@@ -585,33 +585,31 @@ const LoadStock: React.FC = () => {
                             <Badge variant="outline" className="text-xs border-primary/30 text-primary">✓ كافي</Badge>
                           )}
                         </div>
-                        <div className="grid grid-cols-3 gap-2 text-xs">
-                          <div className="bg-muted/50 rounded p-1.5 text-center">
-                            <div className="text-muted-foreground">رصيد سابق</div>
+                        <div className={`grid ${giftQty > 0 ? 'grid-cols-6' : 'grid-cols-5'} gap-1 text-xs`}>
+                          <div className="bg-muted/50 rounded p-1 text-center">
+                            <div className="text-muted-foreground text-[10px]">سابق</div>
                             <div className="font-bold">{oldStock}</div>
                           </div>
-                          <div className="bg-primary/5 rounded p-1.5 text-center">
-                            <div className="text-muted-foreground">شحن جديد</div>
+                          <div className="bg-primary/5 rounded p-1 text-center">
+                            <div className="text-muted-foreground text-[10px]">جديد</div>
                             <div className="font-bold text-primary">{loadedThisSession > 0 ? `+${loadedThisSession}` : '—'}</div>
                           </div>
-                          <div className="bg-muted/50 rounded p-1.5 text-center">
-                            <div className="text-muted-foreground">الرصيد الكلي</div>
+                          <div className="bg-muted/50 rounded p-1 text-center">
+                            <div className="text-muted-foreground text-[10px]">الكلي</div>
                             <div className="font-bold">{totalStock}</div>
                           </div>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 text-xs mt-1">
-                          <div className="bg-muted/50 rounded p-1.5 text-center">
-                            <div className="text-muted-foreground">طلبات</div>
+                          <div className="bg-muted/50 rounded p-1 text-center">
+                            <div className="text-muted-foreground text-[10px]">طلبات</div>
                             <div className="font-bold">{s.pending_orders_quantity}</div>
                           </div>
-                          <div className="bg-muted/50 rounded p-1.5 text-center">
-                            <div className="text-muted-foreground">فائض</div>
+                          <div className="bg-muted/50 rounded p-1 text-center">
+                            <div className="text-muted-foreground text-[10px]">فائض</div>
                             <div className="font-bold">{surplus}</div>
                           </div>
                           {giftQty > 0 && (
-                            <div className="bg-destructive/5 rounded p-1.5 text-center">
-                              <div className="text-muted-foreground">هدايا</div>
-                              <div className="font-bold text-destructive">{giftQty} {giftLabel}</div>
+                            <div className="bg-destructive/5 rounded p-1 text-center">
+                              <div className="text-muted-foreground text-[10px]">هدايا</div>
+                              <div className="font-bold text-destructive">{giftQty}</div>
                             </div>
                           )}
                         </div>
