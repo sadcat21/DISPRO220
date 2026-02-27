@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Loader2, Camera, Trash2, ClipboardList, Image as ImageIcon } from 'lucide-react';
+import { Plus, Loader2, Camera, Trash2, ClipboardList, Image as ImageIcon, Package } from 'lucide-react';
+import SimpleProductPickerDialog from '@/components/stock/SimpleProductPickerDialog';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useWarehouseStock } from '@/hooks/useWarehouseStock';
@@ -30,6 +30,7 @@ const StockReceipts: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [invoicePhoto, setInvoicePhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [productPickerIndex, setProductPickerIndex] = useState<number | null>(null);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -213,16 +214,16 @@ const StockReceipts: React.FC = () => {
               {items.map((item, index) => (
                 <div key={index} className="flex gap-2 items-end">
                   <div className="flex-1">
-                    <Select value={item.product_id} onValueChange={v => updateItem(index, 'product_id', v)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t('stock.product')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {products.map(p => (
-                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <button
+                      type="button"
+                      className="w-full flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background hover:bg-accent transition-colors"
+                      onClick={() => setProductPickerIndex(index)}
+                    >
+                      <Package className="w-4 h-4 text-muted-foreground shrink-0" />
+                      <span className={item.product_id ? 'text-foreground truncate' : 'text-muted-foreground'}>
+                        {item.product_id ? products.find(p => p.id === item.product_id)?.name || t('stock.product') : t('stock.product')}
+                      </span>
+                    </button>
                   </div>
                   <div className="w-24">
                     <Input
@@ -265,6 +266,18 @@ const StockReceipts: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <SimpleProductPickerDialog
+        open={productPickerIndex !== null}
+        onOpenChange={(open) => { if (!open) setProductPickerIndex(null); }}
+        products={products.map(p => ({ id: p.id, name: p.name }))}
+        selectedProductId={productPickerIndex !== null ? items[productPickerIndex]?.product_id || '' : ''}
+        onSelect={(productId) => {
+          if (productPickerIndex !== null) {
+            updateItem(productPickerIndex, 'product_id', productId);
+          }
+        }}
+      />
     </div>
   );
 };
