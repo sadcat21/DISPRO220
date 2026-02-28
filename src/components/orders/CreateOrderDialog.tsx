@@ -617,13 +617,22 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                         size="sm"
                         onClick={() => handleProductClick(product)}
                         className={cn(
-                          "text-xs h-auto py-2.5 justify-start flex-wrap relative",
+                          "text-xs h-auto py-2 px-2 justify-start flex-wrap relative gap-1.5",
                           (isShortage || isNotInStock) && "border-orange-400/60",
                           hasOffer && !isShortage && !isNotInStock && "border-green-500/50"
                         )}
                       >
-                        <Plus className="w-3.5 h-3.5 ms-1.5 shrink-0" />
-                        <span className="truncate">{product.name}</span>
+                        {product.image_url ? (
+                          <img 
+                            src={product.image_url} 
+                            alt={product.name} 
+                            className="w-8 h-8 rounded object-cover shrink-0"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <Plus className="w-3.5 h-3.5 shrink-0" />
+                        )}
+                        <span className="truncate flex-1 text-start">{product.name}</span>
                         <div className="flex items-center gap-1 mr-auto flex-wrap">
                           {(isShortage || isNotInStock) && (
                             <AlertTriangle className="w-3.5 h-3.5 text-orange-500 shrink-0" />
