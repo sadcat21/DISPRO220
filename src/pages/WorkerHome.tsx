@@ -14,11 +14,12 @@ import CustomerPickerDialog from '@/components/orders/CustomerPickerDialog';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
 import { Customer } from '@/types/database';
 import { toast } from 'sonner';
-import { ShoppingCart, Gift, Loader2, ShoppingBag, Truck, Package, Banknote, Users, Wallet } from 'lucide-react';
+import { ShoppingCart, Gift, Loader2, ShoppingBag, Truck, Package, Banknote, Users, Wallet, ClipboardList } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import WorkerHandoverPreviewDialog from '@/components/accounting/WorkerHandoverPreviewDialog';
 
 const WorkerHome: React.FC = () => {
   const { user, workerId } = useAuth();
@@ -34,6 +35,7 @@ const WorkerHome: React.FC = () => {
   const [showCustomerPickerForOrder, setShowCustomerPickerForOrder] = useState(false);
   const [showActionDialog, setShowActionDialog] = useState(false);
   const [selectedCustomerForAction, setSelectedCustomerForAction] = useState<Customer | null>(null);
+  const [showHandoverPreview, setShowHandoverPreview] = useState(false);
 
   const { trackVisit } = useTrackVisit();
   const isDirectSaleHidden = useIsElementHidden('button', 'home_direct_sale');
@@ -169,10 +171,21 @@ const WorkerHome: React.FC = () => {
     <div className="pb-4">
       {/* Welcome Section */}
       <div className="bg-gradient-to-l from-primary to-primary/80 text-primary-foreground p-6">
-        <h2 className="text-xl font-bold mb-1">{t('common.welcome')} {user?.full_name} 👋</h2>
-        <p className="text-primary-foreground/80 text-sm">
-          {getWelcomeMessage()}
-        </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-xl font-bold mb-1">{t('common.welcome')} {user?.full_name} 👋</h2>
+            <p className="text-primary-foreground/80 text-sm">
+              {getWelcomeMessage()}
+            </p>
+          </div>
+          <button
+            onClick={() => setShowHandoverPreview(true)}
+            className="bg-white/20 hover:bg-white/30 rounded-xl p-2.5 transition-colors shrink-0"
+            title="ملخص التسليم"
+          >
+            <ClipboardList className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* Content based on permissions */}
@@ -316,6 +329,10 @@ const WorkerHome: React.FC = () => {
           setShowCustomerPickerForOrder(false);
           setShowCreateOrderDialog(true);
         }}
+      />
+      <WorkerHandoverPreviewDialog
+        open={showHandoverPreview}
+        onOpenChange={setShowHandoverPreview}
       />
     </div>
   );
