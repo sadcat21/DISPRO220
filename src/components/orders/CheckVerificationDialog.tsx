@@ -207,31 +207,36 @@ const CheckVerificationDialog: React.FC<CheckVerificationDialogProps> = ({
                               </div>
                             )}
 
-                            {item.field_type === 'number' && (
-                              <div className="space-y-1 p-2">
-                                <Label className="text-sm">{item.label}</Label>
-                                <div className="flex items-center gap-2">
-                                  <Input
-                                    type="number"
-                                    placeholder="أدخل المبلغ"
-                                    value={verification[item.id] || ''}
-                                    onChange={(e) => {
-                                      const val = e.target.value;
-                                      setVerification(prev => ({
-                                        ...prev,
-                                        [item.id]: val,
-                                        [`${item.id}_checked`]: val.length > 0,
-                                      }));
-                                    }}
-                                    className="h-8 text-sm flex-1"
-                                    dir="ltr"
-                                  />
-                                  <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                    / {formatNumber(orderTotal, language)} DA
-                                  </span>
+                            {item.field_type === 'number' && (() => {
+                              const isAmountField = item.label.includes('مبلغ') || item.label.includes('المبلغ');
+                              return (
+                                <div className="space-y-1 p-2">
+                                  <Label className="text-sm">{item.label}</Label>
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      type="number"
+                                      placeholder={isAmountField ? 'أدخل المبلغ' : item.label}
+                                      value={verification[item.id] || ''}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setVerification(prev => ({
+                                          ...prev,
+                                          [item.id]: val,
+                                          [`${item.id}_checked`]: val.length > 0,
+                                        }));
+                                      }}
+                                      className="h-8 text-sm flex-1"
+                                      dir="ltr"
+                                    />
+                                    {isAmountField && (
+                                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                        / {formatNumber(orderTotal, language)} DA
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              );
+                            })()}
 
                             {item.field_type === 'text' && (
                               <div className="space-y-1 p-2">
