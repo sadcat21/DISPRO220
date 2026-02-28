@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Trash2, Loader2, AlertTriangle, Database } from 'lucide-react';
+import { Trash2, Loader2, AlertTriangle, Database, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -45,6 +46,13 @@ const DataManagement: React.FC = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deletionProgress, setDeletionProgress] = useState('');
+  const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
+  const PROTECTED_CATEGORIES = ['customers', 'products'];
+  const DELETION_PASSWORD = 'hs0909sm';
+
+  const needsPassword = PROTECTED_CATEGORIES.some(id => selected.has(id));
 
   const toggleCategory = (id: string) => {
     setSelected(prev => {
@@ -118,8 +126,15 @@ const DataManagement: React.FC = () => {
   const handleDelete = async () => {
     if (selected.size === 0) return;
 
+    if (needsPassword && password !== DELETION_PASSWORD) {
+      setPasswordError('كلمة السر غير صحيحة');
+      return;
+    }
+
     setIsDeleting(true);
     setShowConfirm(false);
+    setPassword('');
+    setPasswordError('');
 
     try {
       const categoriesToDelete = DATA_CATEGORIES
@@ -239,36 +254,56 @@ const DataManagement: React.FC = () => {
         </Button>
 
         {/* Confirmation Dialog */}
-        <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <AlertDialog open={showConfirm} onOpenChange={(open) => { setShowConfirm(open); if (!open) { setPassword(''); setPasswordError(''); } }}>
           <AlertDialogContent dir="rtl">
             <AlertDialogHeader>
               <AlertDialogTitle className="text-destructive flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5" />
                 تأكيد حذف البيانات
               </AlertDialogTitle>
-              <AlertDialogDescription className="space-y-2">
-                <p className="font-bold text-destructive">
-                  أنت على وشك حذف البيانات التالية نهائياً:
-                </p>
-                <ul className="list-disc list-inside space-y-1 text-sm">
-                  {DATA_CATEGORIES.filter(c => selected.has(c.id)).map(c => (
-                    <li key={c.id}>{c.label}</li>
-                  ))}
-                </ul>
-                <p className="font-bold mt-3">
-                  هذا الإجراء لا يمكن التراجع عنه! هل أنت متأكد؟
-                </p>
+              <AlertDialogDescription asChild>
+                <div className="space-y-2">
+                  <p className="font-bold text-destructive">
+                    أنت على وشك حذف البيانات التالية نهائياً:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-sm">
+                    {DATA_CATEGORIES.filter(c => selected.has(c.id)).map(c => (
+                      <li key={c.id}>{c.label}</li>
+                    ))}
+                  </ul>
+                  {needsPassword && (
+                    <div className="mt-3 space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <Lock className="w-4 h-4" />
+                        <span>أدخل كلمة السر لتأكيد حذف العملاء/المنتجات:</span>
+                      </div>
+                      <Input
+                        type="password"
+                        placeholder="كلمة السر"
+                        value={password}
+                        onChange={(e) => { setPassword(e.target.value); setPasswordError(''); }}
+                        className={passwordError ? 'border-destructive' : ''}
+                      />
+                      {passwordError && (
+                        <p className="text-xs text-destructive">{passwordError}</p>
+                      )}
+                    </div>
+                  )}
+                  <p className="font-bold mt-3">
+                    هذا الإجراء لا يمكن التراجع عنه! هل أنت متأكد؟
+                  </p>
+                </div>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="gap-2">
               <AlertDialogCancel>إلغاء</AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              <Button
+                variant="destructive"
                 onClick={handleDelete}
               >
                 <Trash2 className="w-4 h-4 ml-2" />
                 نعم، احذف نهائياً
-              </AlertDialogAction>
+              </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
