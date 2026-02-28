@@ -21,23 +21,25 @@ interface CollectedDebtRow {
 
 const fmt = (n: number) => n.toLocaleString();
 
-const DebtCollectionsSummary: React.FC<DebtCollectionsSummaryProps> = ({ workerId, periodStart, periodEnd }) => {
-  // Expand to full-day range to capture all payments on covered dates
-  const toFullDayRange = (v: string, isEnd: boolean) => {
-    // Extract date part
-    let datePart = v;
-    if (v.includes('T')) datePart = v.split('T')[0];
-    if (datePart.length > 10) datePart = datePart.substring(0, 10);
-    return isEnd ? datePart + 'T23:59:59+01:00' : datePart + 'T00:00:00+01:00';
-  };
+// Extract just the date part (YYYY-MM-DD) from any timestamp format
+const extractDate = (v: string): string => {
+  // Handle ISO format with T or space separator
+  const cleaned = v.replace('T', ' ');
+  return cleaned.substring(0, 10);
+};
 
+const DebtCollectionsSummary: React.FC<DebtCollectionsSummaryProps> = ({ workerId, periodStart, periodEnd }) => {
   const { data: rows, isLoading } = useQuery({
     queryKey: ['session-debt-collections-detail', workerId, periodStart, periodEnd],
     queryFn: async () => {
-      const startTz = toFullDayRange(periodStart, false);
-      const endTz = toFullDayRange(periodEnd, true);
+      const startDate = extractDate(periodStart);
+      const endDate = extractDate(periodEnd);
 
-      // Fetch debt payments in this period by this worker
+      // Query debt_payments with expanded full-day range in UTC to cover timezone differences
+      // Start 1 day before and end 1 day after to account for timezone offsets
+      const startTz = startDate + 'T00:00:00+01:00';
+      const endTz = endDate + 'T23:59:59+01:00';
+
       const { data: payments, error } = await supabase
         .from('debt_payments')
         .select('amount, payment_method, debt_id')
@@ -45,18 +47,38 @@ const DebtCollectionsSummary: React.FC<DebtCollectionsSummaryProps> = ({ workerI
         .gte('collected_at', startTz)
         .lte('collected_at', endTz);
 
-      if (error) throw error;
-      if (!payments || payments.length === 0) return [];
+      // Also query debt_collections by collection_date (DATE type - more reliable)
+      const { data: collections } = await supabase
+        .from('debt_collections')
+        .select('amount_collected, payment_method, debt_id, action')
+        .eq('worker_id', workerId)
+        .gte('collection_date', startDate)
+        .lte('collection_date', endDate)
+        .in('action', ['partial_payment', 'full_payment']);
 
-      // Group by debt_id
+      if (error) throw error;
+
+      // Merge both sources, grouping by debt_id
       const debtMap: Record<string, { collected: number; methods: Set<string> }> = {};
-      for (const p of payments) {
+
+      // Add from debt_payments
+      for (const p of (payments || [])) {
         if (!debtMap[p.debt_id]) debtMap[p.debt_id] = { collected: 0, methods: new Set() };
         debtMap[p.debt_id].collected += Number(p.amount || 0);
         debtMap[p.debt_id].methods.add(p.payment_method || 'cash');
       }
 
+      // Add from debt_collections (only if not already covered by debt_payments)
+      for (const c of (collections || [])) {
+        if (!debtMap[c.debt_id]) {
+          debtMap[c.debt_id] = { collected: 0, methods: new Set() };
+          debtMap[c.debt_id].collected += Number(c.amount_collected || 0);
+          if (c.payment_method) debtMap[c.debt_id].methods.add(c.payment_method);
+        }
+      }
+
       const debtIds = Object.keys(debtMap);
+      if (debtIds.length === 0) return [];
 
       // Fetch debt details with customer info
       const { data: debts, error: dErr } = await supabase
@@ -70,7 +92,6 @@ const DebtCollectionsSummary: React.FC<DebtCollectionsSummaryProps> = ({ workerI
         const info = debtMap[d.id];
         const totalDebt = Number(d.total_amount || 0);
         const currentPaid = Number(d.paid_amount || 0);
-        // paid_amount already includes current collections, so paidBefore = currentPaid - collectedNow
         const collectedNow = info?.collected || 0;
         const paidBefore = currentPaid - collectedNow;
         const remainingAfter = Number(d.remaining_amount ?? (totalDebt - currentPaid));
