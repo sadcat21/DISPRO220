@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Banknote, HandCoins, TrendingDown, FileCheck2, Stamp, Coins,
-  Truck, PackageCheck, ClipboardList, Receipt, CreditCard, AlertTriangle
+  Truck, PackageCheck, ClipboardList, Receipt, CreditCard, AlertTriangle, Gift
 } from 'lucide-react';
 import { SessionCalculations } from '@/hooks/useSessionCalculations';
 
@@ -278,6 +278,25 @@ const WorkerHandoverSummary: React.FC<WorkerHandoverSummaryProps> = ({
       label: 'وصولات المصاريف',
       value: String(stats.expenseReceiptsCount),
       color: 'text-rose-400',
+    });
+  }
+
+  // Gifts section
+  const totalGiftPieces = calc.promoTracking.reduce((sum, p) => sum + p.giftQuantity, 0);
+  if (totalGiftPieces > 0) {
+    rows.push({
+      icon: <Gift className="w-3.5 h-3.5 text-pink-500" />,
+      label: 'هدايا مسلّمة',
+      value: `${totalGiftPieces} قطعة`,
+      color: 'text-pink-500',
+      sub: `${fmt(Math.round(calc.giftOfferValue))} DA`,
+    });
+  } else {
+    rows.push({
+      icon: <Gift className="w-3.5 h-3.5 text-muted-foreground" />,
+      label: 'هدايا مسلّمة',
+      value: 'لا يوجد',
+      color: 'text-muted-foreground',
     });
   }
 
