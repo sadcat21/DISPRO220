@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Calendar, User, Receipt, Banknote, ArrowDownCircle, ArrowUpCircle, Wallet, CreditCard, TrendingDown, Coins, AlertTriangle, Pencil, Package, ShoppingBag, Calculator, Gift, Tag } from 'lucide-react';
+import { Loader2, Calendar, User, Receipt, Banknote, ArrowDownCircle, ArrowUpCircle, Wallet, CreditCard, TrendingDown, Coins, AlertTriangle, Pencil, Package, ShoppingBag, Calculator, Gift, Tag, HandCoins } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useSessionItems, AccountingSession, AccountingSessionItem } from '@/hooks/useAccountingSessions';
 import { useCreateWorkerDebt } from '@/hooks/useWorkerDebts';
@@ -15,6 +15,7 @@ import ProductStockSummary from './ProductStockSummary';
 import SalesDetailsSummary from './SalesDetailsSummary';
 import PromoTrackingSummary from './PromoTrackingSummary';
 import CreateSessionDialog from './CreateSessionDialog';
+import DebtCollectionsSummary from './DebtCollectionsSummary';
 import { useSessionCalculations } from '@/hooks/useSessionCalculations';
 
 interface SessionDetailsDialogProps {
@@ -414,6 +415,19 @@ const SessionDetailsDialog: React.FC<SessionDetailsDialogProps> = ({ open, onOpe
               <ProductStockSummary
                 workerId={session.worker_id}
                 branchId={session.branch_id || undefined}
+                periodStart={session.period_start}
+                periodEnd={session.period_end}
+              />
+            </div>
+
+            {/* Debt Collections Detail Section */}
+            <div className="border-2 rounded-xl p-3.5">
+              <SectionHeader
+                icon={<HandCoins className="w-4 h-4 text-orange-600" />}
+                title="تفاصيل الديون المحصلة"
+              />
+              <DebtCollectionsSummary
+                workerId={session.worker_id}
                 periodStart={session.period_start}
                 periodEnd={session.period_end}
               />
