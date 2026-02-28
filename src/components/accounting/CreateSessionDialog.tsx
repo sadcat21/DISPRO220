@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Calculator, Receipt, Banknote, CreditCard, ArrowDownCircle, ArrowUpCircle, Wallet, TrendingDown, Coins, AlertTriangle, Package, ShoppingBag, RefreshCw, Gift, Tag, HandCoins, FileText, ClipboardList } from 'lucide-react';
+import { Loader2, Calculator, Receipt, Banknote, CreditCard, ArrowDownCircle, ArrowUpCircle, Wallet, TrendingDown, Coins, AlertTriangle, Package, ShoppingBag, RefreshCw, Gift, Tag, HandCoins, FileText, ClipboardList, Truck } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSessionCalculations, SessionCalculations } from '@/hooks/useSessionCalculations';
@@ -24,6 +24,7 @@ import DebtCollectionsSummary from './DebtCollectionsSummary';
 import DocumentCollectionsSummary from './DocumentCollectionsSummary';
 import WorkerHandoverSummary from './WorkerHandoverSummary';
 import { usePendingDiscrepancies } from '@/hooks/useStockDiscrepancies';
+import TruckReviewSection from './TruckReviewSection';
 
 interface CreateSessionDialogProps {
   open: boolean;
@@ -621,6 +622,14 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                     receivedDocs={receivedDocs}
                     onReceivedDocsChange={setReceivedDocs}
                   />
+                </div>
+                {/* Truck Review Section */}
+                <div className="border-2 rounded-xl p-3.5">
+                  <SectionDividerWithIcon
+                    icon={<Truck className="w-4 h-4 text-primary" />}
+                    label="تفاصيل مراجعة الشاحنة"
+                  />
+                  <TruckReviewSection workerId={selectedWorkerId} />
                 </div>
                 {pendingDiscrepancies.length > 0 && (
                   <div className="border-2 border-destructive/20 rounded-xl p-3.5">
