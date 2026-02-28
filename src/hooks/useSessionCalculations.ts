@@ -102,6 +102,18 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
         .gte('collected_at', debtStartTz)
         .lte('collected_at', debtEndTz);
 
+      // 2b. Fetch collected pending documents (treated as non-cash collections)
+      const periodStartDate = periodStart.includes('T') ? periodStart.split('T')[0] : periodStart.substring(0, 10);
+      const periodEndDate = periodEnd.includes('T') ? periodEnd.split('T')[0] : periodEnd.substring(0, 10);
+      const { data: collectedDocuments } = await supabase
+        .from('document_collections')
+        .select('status, action, collection_date, order:orders!document_collections_order_id_fkey(total_amount, invoice_payment_method)')
+        .eq('worker_id', workerId)
+        .eq('action', 'collected')
+        .neq('status', 'rejected')
+        .gte('collection_date', periodStartDate)
+        .lte('collection_date', periodEndDate);
+
       // 3. Fetch expenses
       const { data: expenseData } = await supabase
         .from('expenses')
@@ -336,9 +348,22 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
         const method = dp.payment_method || 'cash';
         if (method === 'cash') debtCollections.cash += amount;
         else if (method === 'check') debtCollections.check += amount;
-        else if (method === 'transfer') debtCollections.transfer += amount;
-        else if (method === 'receipt') debtCollections.receipt += amount;
+        else if (method === 'transfer' || method === 'virement') debtCollections.transfer += amount;
+        else if (method === 'receipt' || method === 'versement') debtCollections.receipt += amount;
         else debtCollections.cash += amount;
+      }
+
+      // Add collected pending documents to debt collections breakdown (document debt settled)
+      for (const dc of (collectedDocuments || [])) {
+        const order = (dc as any).order;
+        if (!order) continue;
+        const amount = Number(order.total_amount || 0);
+        const method = String(order.invoice_payment_method || '').toLowerCase();
+
+        debtCollections.total += amount;
+        if (method === 'check') debtCollections.check += amount;
+        else if (method === 'transfer' || method === 'virement') debtCollections.transfer += amount;
+        else if (method === 'receipt' || method === 'versement') debtCollections.receipt += amount;
       }
 
       // Expenses

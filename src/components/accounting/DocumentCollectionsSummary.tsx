@@ -123,21 +123,18 @@ const DocumentCollectionsSummary: React.FC<DocumentCollectionsSummaryProps> = ({
         });
       }
 
-      const pendingOrderIds = new Set(result.map(r => r.orderId));
-
-      // 2) Directly received during delivery (exclude ones already counted as pending collections)
       const { data: deliveryOrders } = await supabase
         .from('orders')
-        .select(`id, total_amount, invoice_payment_method, document_status, document_verification, created_at, customer:customers!orders_customer_id_fkey(name)`)
+        .select(`id, total_amount, invoice_payment_method, document_status, document_verification, updated_at, customer:customers!orders_customer_id_fkey(name)`)
         .eq('assigned_worker_id', workerId)
         .eq('status', 'delivered')
         .in('invoice_payment_method', ['check', 'receipt', 'transfer', 'versement', 'virement'])
         .in('document_status', ['received', 'verified'])
-        .gte('created_at', startTz)
-        .lte('created_at', endTz);
+        .gte('updated_at', startTz)
+        .lte('updated_at', endTz);
 
       for (const o of (deliveryOrders || [])) {
-        if (pendingOrderIds.has(o.id)) continue;
+        
         const docType = o.invoice_payment_method || 'check';
         result.push({
           orderId: o.id,

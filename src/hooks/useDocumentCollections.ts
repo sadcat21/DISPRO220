@@ -206,6 +206,7 @@ export const useCreateDocCollection = () => {
       queryClient.invalidateQueries({ queryKey: ['pending-doc-collections'] });
       queryClient.invalidateQueries({ queryKey: ['pending-documents'] });
       queryClient.invalidateQueries({ queryKey: ['session-document-collections'] });
+      queryClient.invalidateQueries({ queryKey: ['session-calculations'] });
     },
   });
 };
@@ -258,6 +259,7 @@ export const useApproveDocCollection = () => {
       queryClient.invalidateQueries({ queryKey: ['pending-doc-collections'] });
       queryClient.invalidateQueries({ queryKey: ['pending-documents'] });
       queryClient.invalidateQueries({ queryKey: ['session-document-collections'] });
+      queryClient.invalidateQueries({ queryKey: ['session-calculations'] });
     },
   });
 };
