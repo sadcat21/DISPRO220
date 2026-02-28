@@ -33,6 +33,7 @@ import CustomerRecentOrders from './CustomerRecentOrders';
 import InvoicePaymentMethodSelect from './InvoicePaymentMethodSelect';
 import ProductPriceBadge from './ProductPriceBadge';
 import { useCompanyInfo } from '@/hooks/useCompanyInfo';
+import { useProductOffers } from '@/hooks/useProductOffers';
 import { cn } from '@/lib/utils';
 
 interface CreateOrderDialogProps {
@@ -63,6 +64,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
   const { trackVisit } = useTrackVisit();
   const { data: orders } = useMyOrders();
   const { data: stampTiers } = useActiveStampTiers();
+  const { activeOffers } = useProductOffers();
 
   // Data states
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -216,7 +218,8 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
     const existingItem = orderItems.find(item => item.productId === product.id && !item.isUnitSale);
     if (existingItem) {
       setEditingProductMode(true);
-      setEditingInitialQuantity(existingItem.quantity);
+      const existingPaidQuantity = Math.max(1, existingItem.quantity - (existingItem.giftQuantity || 0));
+      setEditingInitialQuantity(existingPaidQuantity);
     } else {
       setEditingProductMode(false);
       setEditingInitialQuantity(1);
@@ -329,17 +332,92 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
     setEditingProductMode(false);
   };
 
-  const handleUpdateQuantity = (productId: string, delta: number) => {
-    setOrderItems(prev =>
-      prev.map(item => {
-        if (item.productId === productId) {
-          const newQuantity = item.quantity + delta;
-          if (newQuantity > 0) {
-            return { ...item, quantity: newQuantity, totalPrice: newQuantity * item.unitPrice };
+  const recalcGiftPieces = useCallback((productId: string, paidQty: number, piecesPerBox: number): number => {
+    const offersForProduct = activeOffers.filter((offer) => offer.product_id === productId);
+    if (offersForProduct.length === 0 || paidQty <= 0) return 0;
+
+    let totalGiftPieces = 0;
+    const safePiecesPerBox = piecesPerBox > 0 ? piecesPerBox : 1;
+
+    for (const offer of offersForProduct) {
+      const tiers = offer.tiers && offer.tiers.length > 0 ? offer.tiers : null;
+
+      if (tiers) {
+        if (offer.condition_type === 'multiplier') {
+          const sortedTiers = [...tiers].sort((a, b) => b.min_quantity - a.min_quantity);
+          let remaining = paidQty;
+
+          for (const tier of sortedTiers) {
+            if (remaining < tier.min_quantity) continue;
+            const timesApplied = Math.floor(remaining / tier.min_quantity);
+            remaining = remaining % tier.min_quantity;
+            const giftUnit = tier.gift_quantity_unit || 'piece';
+            const giftAmount = timesApplied * tier.gift_quantity;
+            totalGiftPieces += giftUnit === 'box' ? giftAmount * safePiecesPerBox : giftAmount;
+          }
+        } else {
+          for (const tier of [...tiers].sort((a, b) => b.min_quantity - a.min_quantity)) {
+            if (paidQty >= tier.min_quantity && (tier.max_quantity === null || paidQty <= tier.max_quantity)) {
+              const giftUnit = tier.gift_quantity_unit || 'piece';
+              totalGiftPieces += giftUnit === 'box' ? tier.gift_quantity * safePiecesPerBox : tier.gift_quantity;
+              break;
+            }
           }
         }
-        return item;
-      }).filter(item => item.quantity > 0)
+      } else {
+        if (paidQty < offer.min_quantity) continue;
+
+        const timesApplied = offer.condition_type === 'multiplier'
+          ? Math.floor(paidQty / offer.min_quantity)
+          : 1;
+
+        const offerGift = offer.gift_quantity || 0;
+        totalGiftPieces += offer.gift_quantity_unit === 'box'
+          ? timesApplied * offerGift * safePiecesPerBox
+          : timesApplied * offerGift;
+      }
+    }
+
+    return totalGiftPieces;
+  }, [activeOffers]);
+
+  const handleUpdateQuantity = (itemIndex: number, delta: number) => {
+    setOrderItems(prev =>
+      prev
+        .map((item, index) => {
+          if (index !== itemIndex) return item;
+
+          const currentPaidQty = item.isUnitSale
+            ? item.quantity
+            : Math.max(0, item.quantity - (item.giftQuantity || 0));
+
+          const newPaidQty = currentPaidQty + delta;
+          if (newPaidQty <= 0) {
+            return { ...item, quantity: 0, totalPrice: 0, giftQuantity: 0, giftPieces: 0 };
+          }
+
+          if (item.isUnitSale) {
+            return {
+              ...item,
+              quantity: newPaidQty,
+              totalPrice: newPaidQty * item.unitPrice,
+            };
+          }
+
+          const product = products.find(p => p.id === item.productId);
+          const piecesPerBox = product?.pieces_per_box || 1;
+          const totalGiftPieces = recalcGiftPieces(item.productId, newPaidQty, piecesPerBox);
+          const giftBoxes = Math.floor(totalGiftPieces / piecesPerBox);
+
+          return {
+            ...item,
+            quantity: newPaidQty + giftBoxes,
+            giftQuantity: giftBoxes || undefined,
+            giftPieces: totalGiftPieces || undefined,
+            totalPrice: newPaidQty * item.unitPrice,
+          };
+        })
+        .filter(item => item.quantity > 0)
     );
   };
 
@@ -789,18 +867,18 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                             variant="outline"
                             size="icon"
                             className="h-7 w-7"
-                            onClick={() => handleUpdateQuantity(item.productId, -1)}
-                          >
-                            <Minus className="w-3 h-3" />
-                          </Button>
-                          <span className="w-8 text-center font-bold text-sm">{item.quantity}</span>
-                          <Button
+                              onClick={() => handleUpdateQuantity(idx, -1)}
+                            >
+                              <Minus className="w-3 h-3" />
+                            </Button>
+                            <span className="w-8 text-center font-bold text-sm">{item.isUnitSale ? item.quantity : Math.max(0, item.quantity - (item.giftQuantity || 0))}</span>
+                            <Button
                             type="button"
                             variant="outline"
                             size="icon"
                             className="h-7 w-7"
-                            onClick={() => handleUpdateQuantity(item.productId, 1)}
-                          >
+                              onClick={() => handleUpdateQuantity(idx, 1)}
+                            >
                             <Plus className="w-3 h-3" />
                           </Button>
                           <Button
