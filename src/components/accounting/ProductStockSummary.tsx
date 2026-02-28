@@ -176,14 +176,18 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
         .eq('session_id', sessionId);
 
       const reviewMap: Record<string, { systemQty: number; actualQty: number; diff: number }> = {};
-      let discrepancyCount = 0;
+      let deficitCount = 0;
+      let surplusCount = 0;
+      let matchCount = 0;
       for (const item of (items || [])) {
         const name = (item as any).product?.name || '';
         const systemQty = Number((item as any).previous_quantity || 0);
         const actualQty = Number((item as any).quantity || 0);
         const diff = actualQty - systemQty;
         reviewMap[name] = { systemQty, actualQty, diff };
-        if (Math.abs(diff) >= 0.001) discrepancyCount++;
+        if (Math.abs(diff) < 0.001) matchCount++;
+        else if (diff > 0) surplusCount++;
+        else deficitCount++;
       }
       return {
         items: reviewMap,
@@ -191,7 +195,9 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
           status: session.status,
           created_at: session.created_at,
           manager_name: session.manager?.full_name || 'مدير النظام',
-          discrepancyCount,
+          deficitCount,
+          surplusCount,
+          matchCount,
           notes: session.notes,
         },
       };
@@ -235,7 +241,15 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
               <span className="text-muted-foreground/40 whitespace-nowrap">|</span>
               <span className="whitespace-nowrap">المراجع: <span className="font-semibold">{reviewData.sessionInfo.manager_name}</span></span>
               <span className="text-muted-foreground/40 whitespace-nowrap">|</span>
-              <span className="font-semibold whitespace-nowrap">{reviewData.sessionInfo.discrepancyCount} فارق</span>
+              {reviewData.sessionInfo.deficitCount > 0 && (
+                <span className="whitespace-nowrap font-semibold text-destructive">عجز ({reviewData.sessionInfo.deficitCount})</span>
+              )}
+              {reviewData.sessionInfo.surplusCount > 0 && (
+                <span className="whitespace-nowrap font-semibold text-orange-600">فائض ({reviewData.sessionInfo.surplusCount})</span>
+              )}
+              {reviewData.sessionInfo.matchCount > 0 && (
+                <span className="whitespace-nowrap font-semibold text-green-600">متوافق ({reviewData.sessionInfo.matchCount})</span>
+              )}
             </div>
           )}
 
