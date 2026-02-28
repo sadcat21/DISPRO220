@@ -604,7 +604,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
               {/* Products */}
               <section className="space-y-3">
                 <Label className="text-base font-semibold">{t('products.title')}</Label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3 p-1">
                   {products.map((product) => {
                     const productCartItems = orderItems.filter(item => item.productId === product.id);
                     const inCart = productCartItems.find(item => !item.isUnitSale) || productCartItems[0];
