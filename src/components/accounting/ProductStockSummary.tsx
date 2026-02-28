@@ -241,15 +241,9 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
               <span className="text-muted-foreground/40 whitespace-nowrap">|</span>
               <span className="whitespace-nowrap">المراجع: <span className="font-semibold">{reviewData.sessionInfo.manager_name}</span></span>
               <span className="text-muted-foreground/40 whitespace-nowrap">|</span>
-              {reviewData.sessionInfo.deficitCount > 0 && (
-                <span className="whitespace-nowrap font-semibold text-destructive">عجز ({reviewData.sessionInfo.deficitCount})</span>
-              )}
-              {reviewData.sessionInfo.surplusCount > 0 && (
-                <span className="whitespace-nowrap font-semibold text-orange-600">فائض ({reviewData.sessionInfo.surplusCount})</span>
-              )}
-              {reviewData.sessionInfo.matchCount > 0 && (
-                <span className="whitespace-nowrap font-semibold text-green-600">متوافق ({reviewData.sessionInfo.matchCount})</span>
-              )}
+              <span className="whitespace-nowrap font-semibold text-destructive">عجز ({reviewData.sessionInfo.deficitCount ?? 0})</span>
+              <span className="whitespace-nowrap font-semibold text-orange-600">فائض ({reviewData.sessionInfo.surplusCount ?? 0})</span>
+              <span className="whitespace-nowrap font-semibold text-green-600">متوافق ({reviewData.sessionInfo.matchCount ?? 0})</span>
             </div>
           )}
 
