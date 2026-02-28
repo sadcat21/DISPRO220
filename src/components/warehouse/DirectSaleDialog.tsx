@@ -27,6 +27,7 @@ import { useCreateDebt } from '@/hooks/useCustomerDebts';
 import ProductQuantityDialog from '@/components/orders/ProductQuantityDialog';
 import InvoicePaymentMethodSelect from '@/components/orders/InvoicePaymentMethodSelect';
 import ProductPriceBadge from '@/components/orders/ProductPriceBadge';
+import { useCompanyInfo } from '@/hooks/useCompanyInfo';
 import DeliveryPaymentDialog from '@/components/orders/DeliveryPaymentDialog';
 import StockOverflowDialog from '@/components/warehouse/StockOverflowDialog';
 import { cn } from '@/lib/utils';
@@ -64,6 +65,7 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
   const { workerId, activeBranch, user } = useAuth();
   const { t, dir } = useLanguage();
   const queryClient = useQueryClient();
+  const { companyInfo } = useCompanyInfo();
   const { data: stampTiers } = useActiveStampTiers();
   const createDebt = useCreateDebt();
   const { trackVisit } = useTrackVisit();
@@ -111,7 +113,7 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
     return stockItems
       .filter(s => s.quantity > 0 && s.product)
       .map(s => s.product!)
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => ((a as any).sort_order || 0) - ((b as any).sort_order || 0) || a.name.localeCompare(b.name));
   }, [stockItems]);
 
   useEffect(() => {
@@ -781,29 +783,99 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
                 <Label className="text-base font-semibold">{t('products.title')}</Label>
                 <div className="grid grid-cols-2 gap-2">
                   {availableProducts.map((product) => {
-                    const inCart = orderItems.find(item => item.productId === product.id);
+                    const productCartItems = orderItems.filter(item => item.productId === product.id);
+                    const inCart = productCartItems.length > 0 ? productCartItems[0] : null;
+                    const totalCartQuantity = productCartItems.reduce((sum, item) => sum + item.quantity, 0);
+                    const totalGiftBoxes = productCartItems.reduce((sum, item) => sum + (item.giftQuantity || 0), 0);
+                    const totalGiftPieces = productCartItems.reduce((sum, item) => sum + (item.giftPieces || 0), 0);
+                    const hasAppliedGift = totalGiftBoxes > 0 || totalGiftPieces > 0;
                     const available = getAvailable(product.id);
                     const price = getProductPrice(product);
                     return (
-                      <Button
+                      <button
                         key={product.id}
-                        variant={inCart ? 'secondary' : 'outline'}
-                        size="sm"
+                        dir="rtl"
                         onClick={() => handleProductClick(product)}
-                        className="text-xs h-auto py-2.5 justify-start flex-wrap"
-                      >
-                        <Plus className="w-3.5 h-3.5 ms-1.5 shrink-0" />
-                        <span className="truncate">{product.name}</span>
-                        <Badge variant="outline" className="mr-auto text-[10px] px-1">
-                          {available}
-                        </Badge>
-                        <ProductPriceBadge product={product} boxPrice={price} />
-                        {inCart && (
-                          <Badge variant="default" className="text-[10px] px-1.5">
-                            {inCart.quantity}
-                          </Badge>
+                        className={cn(
+                          "flex flex-col rounded-2xl overflow-hidden text-center transition-all relative",
+                          "bg-white shadow-lg border-2",
+                          hasAppliedGift
+                            ? 'border-green-500 ring-2 ring-green-400/40'
+                            : inCart ? 'border-primary ring-2 ring-primary/40' : 'border-red-200 hover:border-primary/60 hover:shadow-xl'
                         )}
-                      </Button>
+                      >
+                        {/* اسم المنتج أعلى الصورة */}
+                        <div className={cn(
+                          "px-2 py-2 border-b",
+                          hasAppliedGift
+                            ? 'bg-green-500 border-green-500'
+                            : inCart ? 'bg-primary border-primary' : 'bg-red-50 border-red-100'
+                        )}>
+                          <span className={cn(
+                            "font-bold leading-tight block text-center truncate text-sm",
+                            inCart ? 'text-white' : 'text-red-900'
+                          )}>
+                            {product.name}
+                          </span>
+                          {inCart && (
+                            <span className="text-lg font-extrabold block text-center mt-1 rounded-md px-2 py-0.5 bg-primary text-primary-foreground">
+                              {productCartItems.reduce((sum, item) => sum + (item.totalPrice || 0), 0).toLocaleString()} {t('common.currency')}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* الصورة */}
+                        <div className="flex-1 relative">
+                          {product.image_url ? (
+                            <img 
+                              src={product.image_url} 
+                              alt={product.name} 
+                              className="w-full aspect-square object-cover"
+                              loading="lazy"
+                            />
+                          ) : companyInfo.company_logo ? (
+                            <div className="w-full aspect-square bg-muted flex items-center justify-center">
+                              <img 
+                                src={companyInfo.company_logo} 
+                                alt="logo" 
+                                className="w-3/4 h-3/4 object-contain opacity-40"
+                                loading="lazy"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-full aspect-square bg-red-50 flex items-center justify-center">
+                              <Plus className="w-10 h-10 text-primary/40" />
+                            </div>
+                          )}
+                          {/* شارات أسفل الصورة */}
+                          <div className="absolute bottom-2 start-2 end-2 flex items-center justify-between">
+                            <Badge variant="outline" className="bg-white/90 text-[10px] px-1.5 font-bold">
+                              {available}
+                            </Badge>
+                            {hasAppliedGift && (
+                              <span className="flex items-center gap-1 rounded-full bg-green-500 px-2 py-1 shadow-lg">
+                                <Gift className="w-4 h-4 text-white" />
+                                <span className="text-white text-xs font-bold">{totalGiftBoxes > 0 ? totalGiftBoxes : totalGiftPieces}</span>
+                              </span>
+                            )}
+                            {inCart && (
+                              <Badge variant="default" className="text-sm px-2.5 py-0.5 shadow-lg font-bold">
+                                {totalCartQuantity}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* السعر أسفل الصورة */}
+                        <div className={cn(
+                          "px-2 py-2 border-t",
+                          hasAppliedGift
+                            ? 'bg-green-50 border-green-100'
+                            : 'bg-red-50 border-red-100'
+                        )}>
+                          <ProductPriceBadge product={product} boxPrice={price} totalQuantity={totalCartQuantity} giftBoxes={totalGiftBoxes} giftPieces={totalGiftPieces} />
+                        </div>
+                      </button>
                     );
                   })}
                 </div>
