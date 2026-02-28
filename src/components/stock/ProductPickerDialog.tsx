@@ -10,6 +10,7 @@ interface ProductOption {
   name: string;
   warehouseQty: number;
   groupName?: string;
+  image_url?: string | null;
 }
 
 interface ProductPickerDialogProps {
@@ -90,9 +91,13 @@ const ProductPickerDialog: React.FC<ProductPickerDialogProps> = ({
           }
         }}
       >
-        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isOutOfStock ? 'bg-destructive/10' : isSelected ? 'bg-primary-foreground/20' : 'bg-primary/10'}`}>
-          <Package className={`w-5 h-5 ${isOutOfStock ? 'text-destructive' : isSelected ? 'text-primary-foreground' : 'text-primary'}`} />
-        </div>
+        {p.image_url ? (
+          <img src={p.image_url} alt={p.name} className="w-10 h-10 rounded-full object-cover shrink-0" loading="lazy" />
+        ) : (
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isOutOfStock ? 'bg-destructive/10' : isSelected ? 'bg-primary-foreground/20' : 'bg-primary/10'}`}>
+            <Package className={`w-5 h-5 ${isOutOfStock ? 'text-destructive' : isSelected ? 'text-primary-foreground' : 'text-primary'}`} />
+          </div>
+        )}
         <span className={`font-medium text-xs leading-tight truncate w-full ${isOutOfStock && !isSelected ? 'text-destructive' : ''}`}>{p.name}</span>
         <Badge variant={isOutOfStock ? 'destructive' : isSelected ? 'outline' : 'secondary'} className="text-[10px] px-1.5 py-0">
           {isSelected ? '✓' : fmtQty(p.warehouseQty)}

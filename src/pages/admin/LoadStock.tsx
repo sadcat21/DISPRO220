@@ -172,17 +172,17 @@ const LoadStock: React.FC = () => {
   }, []);
 
   const allProductOptions = useMemo(() => {
-    const options: { id: string; name: string; warehouseQty: number; groupName?: string }[] = [];
+    const options: { id: string; name: string; warehouseQty: number; groupName?: string; image_url?: string | null }[] = [];
     const seenIds = new Set<string>();
     for (const s of warehouseStock) {
       if (s.product) {
-        options.push({ id: s.product_id, name: s.product.name, warehouseQty: s.quantity, groupName: productGroupMap[s.product_id] });
+        options.push({ id: s.product_id, name: s.product.name, warehouseQty: s.quantity, groupName: productGroupMap[s.product_id], image_url: (s.product as any).image_url });
         seenIds.add(s.product_id);
       }
     }
     for (const p of products) {
       if (!seenIds.has(p.id)) {
-        options.push({ id: p.id, name: p.name, warehouseQty: 0, groupName: productGroupMap[p.id] });
+        options.push({ id: p.id, name: p.name, warehouseQty: 0, groupName: productGroupMap[p.id], image_url: (p as any).image_url });
         seenIds.add(p.id);
       }
     }
