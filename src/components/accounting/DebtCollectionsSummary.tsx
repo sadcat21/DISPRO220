@@ -22,17 +22,20 @@ interface CollectedDebtRow {
 const fmt = (n: number) => n.toLocaleString();
 
 const DebtCollectionsSummary: React.FC<DebtCollectionsSummaryProps> = ({ workerId, periodStart, periodEnd }) => {
-  const toTz = (v: string, isEnd: boolean) => {
-    if (v.includes('+') || v.includes('Z')) return v;
-    if (v.includes('T')) return v + ':00+01:00';
-    return isEnd ? v + 'T23:59:59+01:00' : v + 'T00:00:00+01:00';
+  // Expand to full-day range to capture all payments on covered dates
+  const toFullDayRange = (v: string, isEnd: boolean) => {
+    // Extract date part
+    let datePart = v;
+    if (v.includes('T')) datePart = v.split('T')[0];
+    if (datePart.length > 10) datePart = datePart.substring(0, 10);
+    return isEnd ? datePart + 'T23:59:59+01:00' : datePart + 'T00:00:00+01:00';
   };
 
   const { data: rows, isLoading } = useQuery({
     queryKey: ['session-debt-collections-detail', workerId, periodStart, periodEnd],
     queryFn: async () => {
-      const startTz = toTz(periodStart, false);
-      const endTz = toTz(periodEnd, true);
+      const startTz = toFullDayRange(periodStart, false);
+      const endTz = toFullDayRange(periodEnd, true);
 
       // Fetch debt payments in this period by this worker
       const { data: payments, error } = await supabase

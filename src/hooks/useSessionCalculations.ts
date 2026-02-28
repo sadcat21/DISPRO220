@@ -74,8 +74,17 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
         if (v.includes('T')) return v + ':00+01:00';
         return isEnd ? v + 'T23:59:59+01:00' : v + 'T00:00:00+01:00';
       };
+      // For debt payments, use full-day range to capture all payments on covered dates
+      const toFullDayRange = (v: string, isEnd: boolean) => {
+        let datePart = v;
+        if (v.includes('T')) datePart = v.split('T')[0];
+        if (datePart.length > 10) datePart = datePart.substring(0, 10);
+        return isEnd ? datePart + 'T23:59:59+01:00' : datePart + 'T00:00:00+01:00';
+      };
       const periodStartTz = toTimestampTz(periodStart, false);
       const periodEndTz = toTimestampTz(periodEnd, true);
+      const debtStartTz = toFullDayRange(periodStart, false);
+      const debtEndTz = toFullDayRange(periodEnd, true);
 
       // 1. Fetch delivered orders with items
       const { data: orders } = await supabase
@@ -86,13 +95,13 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
         .gte('updated_at', periodStartTz)
         .lte('updated_at', periodEndTz);
 
-      // 2. Fetch debt payments
+      // 2. Fetch debt payments (use full-day range to capture all payments on covered dates)
       const { data: debtPayments } = await supabase
         .from('debt_payments')
         .select('amount, payment_method')
         .eq('worker_id', workerId)
-        .gte('collected_at', periodStartTz)
-        .lte('collected_at', periodEndTz);
+        .gte('collected_at', debtStartTz)
+        .lte('collected_at', debtEndTz);
 
       // 3. Fetch expenses
       const { data: expenseData } = await supabase
