@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, FileCheck2, Truck, Clock, ShieldCheck, ShieldAlert, AlertCircle, ClipboardCheck, Stamp, CheckCircle, XCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import CheckVerificationDialog from '@/components/orders/CheckVerificationDialog';
@@ -21,6 +22,8 @@ interface DocumentCollectionsSummaryProps {
   workerId: string;
   periodStart: string;
   periodEnd: string;
+  receivedDocs?: Record<string, boolean>;
+  onReceivedDocsChange?: (docs: Record<string, boolean>) => void;
 }
 
 interface CollectedDoc {
@@ -119,7 +122,7 @@ const isCollectedDuringDelivery = (order: any) => {
   return false;
 };
 
-const DocumentCollectionsSummary: React.FC<DocumentCollectionsSummaryProps> = ({ workerId, periodStart, periodEnd }) => {
+const DocumentCollectionsSummary: React.FC<DocumentCollectionsSummaryProps> = ({ workerId, periodStart, periodEnd, receivedDocs, onReceivedDocsChange }) => {
   const queryClient = useQueryClient();
   const [verifyDoc, setVerifyDoc] = useState<CollectedDoc | null>(null);
   const { data: docs, isLoading } = useQuery({
@@ -230,12 +233,23 @@ const DocumentCollectionsSummary: React.FC<DocumentCollectionsSummaryProps> = ({
   const renderDocCard = (doc: CollectedDoc) => {
     const v = doc.verification;
     const pct = v.totalFields > 0 ? Math.round((v.verifiedFields! / v.totalFields) * 100) : 0;
+    const docKey = `doc_${doc.orderId}`;
+    const isReceived = receivedDocs ? receivedDocs[docKey] !== false : true;
 
     return (
-      <div key={doc.orderId} className="border rounded-lg p-3 space-y-2">
-        {/* Header: customer + amount */}
+      <div key={doc.orderId} className={`border rounded-lg p-3 space-y-2 ${!isReceived ? 'border-destructive/40 bg-destructive/5' : ''}`}>
+        {/* Header: checkbox + customer + amount */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
+            {onReceivedDocsChange && (
+              <Checkbox
+                checked={isReceived}
+                onCheckedChange={(checked) => {
+                  onReceivedDocsChange({ ...receivedDocs, [docKey]: !!checked });
+                }}
+                className="shrink-0"
+              />
+            )}
             <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
               <FileCheck2 className="w-3.5 h-3.5 text-primary" />
             </div>
@@ -351,9 +365,21 @@ const DocumentCollectionsSummary: React.FC<DocumentCollectionsSummaryProps> = ({
             <span>فواتير مختومة ({stampedInvoices.filter(s => s.received).length}/{stampedInvoices.length})</span>
           </div>
           <div className="border-2 border-violet-200 dark:border-violet-900/40 rounded-xl p-2.5 space-y-2 bg-violet-50/30 dark:bg-violet-900/10">
-            {stampedInvoices.map(inv => (
-              <div key={inv.orderId} className="border rounded-lg p-2.5 flex items-center justify-between gap-2">
+            {stampedInvoices.map(inv => {
+              const stampKey = `stamp_${inv.orderId}`;
+              const isStampReceived = receivedDocs ? receivedDocs[stampKey] !== false : true;
+              return (
+              <div key={inv.orderId} className={`border rounded-lg p-2.5 flex items-center justify-between gap-2 ${!isStampReceived ? 'border-destructive/40 bg-destructive/5' : ''}`}>
                 <div className="flex items-center gap-2 flex-1 min-w-0">
+                  {onReceivedDocsChange && (
+                    <Checkbox
+                      checked={isStampReceived}
+                      onCheckedChange={(checked) => {
+                        onReceivedDocsChange({ ...receivedDocs, [stampKey]: !!checked });
+                      }}
+                      className="shrink-0"
+                    />
+                  )}
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${inv.received ? 'bg-green-100 dark:bg-green-900/30' : 'bg-destructive/10'}`}>
                     {inv.received ? <CheckCircle className="w-3.5 h-3.5 text-green-600" /> : <XCircle className="w-3.5 h-3.5 text-destructive" />}
                   </div>
@@ -374,7 +400,8 @@ const DocumentCollectionsSummary: React.FC<DocumentCollectionsSummaryProps> = ({
                   </p>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         </div>
       )}

@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAccountingSessions, AccountingSession, AccountingSessionItem, useDeleteSession } from '@/hooks/useAccountingSessions';
 import CreateSessionDialog from '@/components/accounting/CreateSessionDialog';
 import SessionDetailsDialog from '@/components/accounting/SessionDetailsDialog';
+import WorkerHandoverPreviewDialog from '@/components/accounting/WorkerHandoverPreviewDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -35,6 +36,7 @@ const AccountingSessions: React.FC = () => {
   const [deleteSession2, setDeleteSession2] = useState<AccountingSession | null>(null);
   const [workers, setWorkers] = useState<{ id: string; full_name: string }[]>([]);
   const [loadingWorkers, setLoadingWorkers] = useState(true);
+  const [previewWorker, setPreviewWorker] = useState<{ id: string; name: string } | null>(null);
   const isAdminOrBranchAdmin = role === 'admin' || role === 'branch_admin';
 
   const { data: sessions, isLoading } = useAccountingSessions({ status: statusFilter });
@@ -66,12 +68,19 @@ const AccountingSessions: React.FC = () => {
   const handleWorkerClick = (workerId: string) => {
     const worker = workers.find(w => w.id === workerId);
     if (!worker) return;
-    // Don't open duplicate session for same worker
-    if (openSessions.some(s => s.workerId === workerId)) {
+    // Show handover preview first
+    setPreviewWorker({ id: workerId, name: worker.full_name });
+  };
+
+  const handleProceedToSession = () => {
+    if (!previewWorker) return;
+    const { id, name } = previewWorker;
+    if (openSessions.some(s => s.workerId === id)) {
       toast(t('accounting.session_already_open') || 'جلسة هذا العامل مفتوحة بالفعل');
       return;
     }
-    setOpenSessions(prev => [...prev, { workerId, workerName: worker.full_name }]);
+    setOpenSessions(prev => [...prev, { workerId: id, workerName: name }]);
+    setPreviewWorker(null);
   };
 
   const handleCloseSession = (workerId: string) => {
@@ -307,6 +316,17 @@ const AccountingSessions: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Worker Handover Preview */}
+      {previewWorker && (
+        <WorkerHandoverPreviewDialog
+          open={!!previewWorker}
+          onOpenChange={(open) => !open && setPreviewWorker(null)}
+          targetWorkerId={previewWorker.id}
+          targetWorkerName={previewWorker.name}
+          onProceedToSession={handleProceedToSession}
+        />
+      )}
     </div>
   );
 };

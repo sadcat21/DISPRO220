@@ -118,7 +118,7 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
       setRegisterSurplus(false);
       setIsSubmitting(false);
       setShowConfirmation(false);
-      setReceivedDocs({ checks: true, versements: true, virements: true, stamped_invoices: true, expense_receipts: true });
+      setReceivedDocs({});
     }
   }, [open, editSession, selectedWorkerId]);
 
@@ -141,13 +141,7 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [receivedDocs, setReceivedDocs] = useState<Record<string, boolean>>({
-    checks: true,
-    versements: true,
-    virements: true,
-    stamped_invoices: true,
-    expense_receipts: true,
-  });
+  const [receivedDocs, setReceivedDocs] = useState<Record<string, boolean>>({});
 
   const handleShowConfirmation = () => {
     if (!selectedWorkerId || !calc) { toast.error('اختر العامل'); return; }
@@ -624,6 +618,8 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                     workerId={selectedWorkerId}
                     periodStart={periodStart}
                     periodEnd={periodEnd}
+                    receivedDocs={receivedDocs}
+                    onReceivedDocsChange={setReceivedDocs}
                   />
                 </div>
                 {pendingDiscrepancies.length > 0 && (
@@ -681,39 +677,12 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
               />
             )}
 
-            {/* Document Receipt Checkboxes */}
-            <div className="mt-3 border rounded-xl p-3 bg-muted/30 space-y-2">
-              <h4 className="text-sm font-bold flex items-center gap-2">
-                <FileText className="w-4 h-4 text-primary" />
-                تأكيد استلام المستندات
-              </h4>
-              <p className="text-[11px] text-muted-foreground">علّم المستندات التي تم استلامها فعلياً. غير المعلّمة ستُسجل كمستندات غير مسلمة في ذمة العامل.</p>
-              {[
-                { key: 'checks', label: 'الشيكات (Chèques)', color: 'text-blue-600' },
-                { key: 'versements', label: 'وصولات الدفع (Versements)', color: 'text-emerald-600' },
-                { key: 'virements', label: 'التحويلات (Virements)', color: 'text-purple-600' },
-                { key: 'stamped_invoices', label: 'الفواتير المختومة', color: 'text-violet-600' },
-                { key: 'expense_receipts', label: 'وصولات المصاريف', color: 'text-rose-600' },
-              ].map(doc => (
-                <label key={doc.key} className="flex items-center gap-2.5 py-1.5 px-2 rounded-lg hover:bg-muted/50 cursor-pointer">
-                  <Checkbox
-                    checked={receivedDocs[doc.key]}
-                    onCheckedChange={(checked) => setReceivedDocs(prev => ({ ...prev, [doc.key]: !!checked }))}
-                  />
-                  <span className={`text-xs font-medium ${doc.color}`}>{doc.label}</span>
-                  {!receivedDocs[doc.key] && (
-                    <span className="text-[10px] text-destructive font-medium ms-auto">غير مستلم</span>
-                  )}
-                </label>
-              ))}
-            </div>
-
-            {/* Warning for unchecked items */}
-            {Object.values(receivedDocs).some(v => !v) && (
+            {/* Warning for unchecked document items */}
+            {Object.entries(receivedDocs).some(([k, v]) => k.startsWith('doc_') && !v || k.startsWith('stamp_') && !v) && (
               <div className="mt-2 p-2.5 rounded-lg bg-destructive/10 border border-destructive/20 flex items-start gap-2">
                 <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
                 <p className="text-xs text-destructive">
-                  المستندات غير المعلمة ستُسجل في ذمة العامل كمستندات غير مسلمة.
+                  بعض المستندات لم يتم تأكيد استلامها. ستُسجل في ذمة العامل كمستندات غير مسلمة.
                 </p>
               </div>
             )}
