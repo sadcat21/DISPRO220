@@ -268,15 +268,15 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
                     </Badge>
                   )}
                   {status === 'deficit' && (
-                    <Badge className="text-[10px] bg-destructive text-destructive-foreground">
-                      <AlertTriangle className="w-2.5 h-2.5 ml-0.5" />
-                      عجز {Math.abs(diff!)}
+                    <Badge className="text-[10px] bg-destructive text-destructive-foreground" dir="rtl">
+                      <AlertTriangle className="w-2.5 h-2.5 me-1" />
+                      عجز ({Math.abs(diff!)})
                     </Badge>
                   )}
                   {status === 'surplus' && (
-                    <Badge className="text-[10px] bg-orange-500 text-white">
-                      <TrendingUp className="w-2.5 h-2.5 ml-0.5" />
-                      فائض {Math.abs(diff!)}
+                    <Badge className="text-[10px] bg-orange-500 text-white" dir="rtl">
+                      <TrendingUp className="w-2.5 h-2.5 me-1" />
+                      فائض ({Math.abs(diff!)})
                     </Badge>
                   )}
                   {status === null && (
