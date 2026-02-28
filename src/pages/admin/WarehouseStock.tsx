@@ -40,22 +40,26 @@ const WarehouseStock: React.FC = () => {
     queryFn: async () => {
       if (!branchId) return { receipts: [], movements: [], discrepancies: [], workerStocks: [] };
 
-      const [receiptsRes, movementsRes, discrepanciesRes, workerStocksRes] = await Promise.all([
-        // Total received per product
-        supabase
-          .from('stock_receipt_items')
-          .select('product_id, quantity, receipt:stock_receipts!inner(branch_id)')
-          .eq('receipt.branch_id', branchId),
-        // Sold quantities (movement_type = 'sale' or orders delivered)
-        supabase
-          .from('stock_movements')
-          .select('product_id, quantity, movement_type')
-          .eq('branch_id', branchId)
-          .in('movement_type', ['sale', 'delivery']),
+      // First get receipt IDs for this branch
+      const { data: branchReceipts } = await supabase
+        .from('stock_receipts')
+        .select('id')
+        .eq('branch_id', branchId);
+      
+      const receiptIds = (branchReceipts || []).map(r => r.id);
+
+      const [receiptsRes, discrepanciesRes, workerStocksRes] = await Promise.all([
+        // Total received per product (filter by receipt IDs)
+        receiptIds.length > 0
+          ? supabase
+              .from('stock_receipt_items')
+              .select('product_id, quantity')
+              .in('receipt_id', receiptIds)
+          : Promise.resolve({ data: [], error: null }),
         // Discrepancies (damaged, surplus, deficit)
         supabase
           .from('stock_discrepancies')
-          .select('product_id, quantity, discrepancy_type, status')
+          .select('product_id, quantity, discrepancy_type')
           .eq('branch_id', branchId),
         // Worker stocks
         supabase
@@ -66,7 +70,6 @@ const WarehouseStock: React.FC = () => {
 
       return {
         receipts: receiptsRes.data || [],
-        movements: movementsRes.data || [],
         discrepancies: discrepanciesRes.data || [],
         workerStocks: workerStocksRes.data || [],
       };
@@ -74,16 +77,22 @@ const WarehouseStock: React.FC = () => {
     enabled: !!branchId,
   });
 
-  // Also fetch sold from order_items for delivered orders
+  // Fetch sold from order_items for delivered orders
   const { data: soldData } = useQuery({
     queryKey: ['warehouse-sold-summary', branchId],
     queryFn: async () => {
       if (!branchId) return [];
+      const { data: deliveredOrders } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('branch_id', branchId)
+        .eq('status', 'delivered');
+      const orderIds = (deliveredOrders || []).map(o => o.id);
+      if (orderIds.length === 0) return [];
       const { data } = await supabase
         .from('order_items')
-        .select('product_id, quantity, order:orders!inner(branch_id, status)')
-        .eq('order.branch_id', branchId)
-        .eq('order.status', 'delivered');
+        .select('product_id, quantity')
+        .in('order_id', orderIds);
       return data || [];
     },
     enabled: !!branchId,
@@ -123,12 +132,7 @@ const WarehouseStock: React.FC = () => {
       }
     }
 
-    // Sold from movements
-    for (const m of summaryData.movements) {
-      if (summaries[m.product_id]) {
-        summaries[m.product_id].sold += Number(m.quantity || 0);
-      }
-    }
+    // Sold from order_items (delivered orders)
 
     // Sold from order_items (delivered)
     for (const oi of (soldData || [])) {
