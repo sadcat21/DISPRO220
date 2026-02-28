@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Loader2, Package, Truck, ShoppingBag, PackageX } from 'lucide-react';
+import { Loader2, Package, Truck, ShoppingBag, PackageX, CheckCircle, AlertTriangle, TrendingUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import EmptyTruckDialog from './EmptyTruckDialog';
@@ -67,14 +67,13 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
     return isEnd ? v + 'T23:59:59+01:00' : v + 'T00:00:00+01:00';
   };
 
-  // Fetch sold products from stock_movements (delivery type) AND orders for totals
+  // Fetch sold products
   const { data: salesData, isLoading: soldLoading } = useQuery({
     queryKey: ['sold-products-summary', workerId, periodStart, periodEnd],
     queryFn: async () => {
       const periodStartTz = toTz(periodStart, false);
       const periodEndTz = toTz(periodEnd, true);
 
-      // Get delivered orders total
       const { data: orders } = await supabase
         .from('orders')
         .select('id, total_amount')
@@ -86,7 +85,6 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
       const ordersTotalSales = orders?.reduce((s, o) => s + Number(o.total_amount || 0), 0) || 0;
       const orderIds = orders?.map(o => o.id) || [];
 
-      // Get delivery movements for this worker in period
       const { data: movements } = await supabase
         .from('stock_movements')
         .select('order_id, quantity, product:products(name, price_gros, price_super_gros, price_invoice, price_retail, pricing_unit, weight_per_box, pieces_per_box)')
@@ -95,7 +93,6 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
         .gte('created_at', periodStartTz)
         .lte('created_at', periodEndTz);
 
-      // Aggregate by product
       const productMap: Record<string, SoldProductRow> = {};
       const trackedOrderIds = new Set<string>();
       for (const item of (movements || [])) {
@@ -108,12 +105,8 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
 
         if (!productMap[name]) {
           productMap[name] = {
-            product_name: name,
-            quantity: 0,
-            unit_price: rawPrice,
-            box_price: boxPrice,
-            total_value: 0,
-            selling_unit: pricingUnit,
+            product_name: name, quantity: 0, unit_price: rawPrice,
+            box_price: boxPrice, total_value: 0, selling_unit: pricingUnit,
           };
         }
         productMap[name].quantity += Number(item.quantity || 0);
@@ -160,6 +153,40 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
     enabled: !!workerId,
   });
 
+  // Fetch latest review session data for this worker
+  const { data: reviewData } = useQuery({
+    queryKey: ['truck-review-for-stock', workerId],
+    queryFn: async () => {
+      const { data: sessions } = await supabase
+        .from('loading_sessions')
+        .select('id, status')
+        .eq('worker_id', workerId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (!sessions || sessions.length === 0 || sessions[0].status !== 'review') {
+        return null;
+      }
+
+      const sessionId = sessions[0].id;
+      const { data: items } = await supabase
+        .from('loading_session_items')
+        .select('product_id, previous_quantity, quantity, product:products(name)')
+        .eq('session_id', sessionId);
+
+      // Build a map: product_name -> { systemQty, actualQty, diff }
+      const reviewMap: Record<string, { systemQty: number; actualQty: number; diff: number }> = {};
+      for (const item of (items || [])) {
+        const name = (item as any).product?.name || '';
+        const systemQty = Number((item as any).previous_quantity || 0);
+        const actualQty = Number((item as any).quantity || 0);
+        reviewMap[name] = { systemQty, actualQty, diff: actualQty - systemQty };
+      }
+      return reviewMap;
+    },
+    enabled: !!workerId,
+  });
+
   const totalTruckValue = truckStock?.reduce((s, r) => s + r.total_value, 0) || 0;
   const totalTruckQty = truckStock?.reduce((s, r) => s + r.quantity, 0) || 0;
   const totalSoldValue = salesData?.ordersTotalSales || 0;
@@ -177,7 +204,7 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Current Truck Stock */}
+      {/* Current Truck Stock with Review Data */}
       {truckStock && truckStock.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center gap-2 mb-2">
@@ -185,30 +212,59 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
             <span className="font-semibold text-sm">{t('accounting.truck_stock')}</span>
           </div>
 
-          <div className="grid grid-cols-5 gap-1 text-xs text-muted-foreground text-center font-medium border-b pb-1">
+          <div className="grid grid-cols-4 gap-1 text-xs text-muted-foreground text-center font-medium border-b pb-1">
             <span className="text-start">{t('stock.product')}</span>
-            <span>{t('stock.quantity')}</span>
-            <span>{t('accounting.unit_price')}</span>
-            <span>{t('accounting.box_price')}</span>
-            <span>{t('accounting.total_value')}</span>
+            <span>كمية النظام</span>
+            <span>الكمية الفعلية</span>
+            <span>المراجعة</span>
           </div>
 
-          {truckStock.map((row) => (
-            <div key={row.product_name} className="grid grid-cols-5 gap-1 text-xs text-center items-center py-1 border-b border-dashed last:border-0">
-              <span className="text-start font-medium text-wrap">{row.product_name}</span>
-              <span className="font-bold">{row.quantity}</span>
-              <span className="text-muted-foreground">{row.raw_unit_price.toLocaleString()}</span>
-              <span>{row.unit_price.toLocaleString()}</span>
-              <span className="font-bold">{row.total_value.toLocaleString()}</span>
-            </div>
-          ))}
+          {truckStock.map((row) => {
+            const review = reviewData?.[row.product_name];
+            const systemQty = review ? review.systemQty : row.quantity;
+            const actualQty = review ? review.actualQty : null;
+            const diff = review ? review.diff : null;
+            const status = diff === null ? null : Math.abs(diff) < 0.001 ? 'match' : diff > 0 ? 'surplus' : 'deficit';
 
-          <div className="grid grid-cols-5 gap-1 text-xs text-center font-bold border-t-2 pt-1 bg-primary/5 rounded p-1.5">
+            return (
+              <div key={row.product_name} className="grid grid-cols-4 gap-1 text-xs text-center items-center py-1.5 border-b border-dashed last:border-0">
+                <span className="text-start font-medium text-wrap">{row.product_name}</span>
+                <span className="font-bold">{systemQty}</span>
+                <span className={`font-bold ${status === 'deficit' ? 'text-destructive' : status === 'surplus' ? 'text-orange-600' : ''}`}>
+                  {actualQty !== null ? actualQty : '-'}
+                </span>
+                <span>
+                  {status === 'match' && (
+                    <Badge className="text-[10px] bg-primary/80 text-primary-foreground">
+                      <CheckCircle className="w-2.5 h-2.5 ml-0.5" />
+                      متوافق
+                    </Badge>
+                  )}
+                  {status === 'deficit' && (
+                    <Badge className="text-[10px] bg-destructive text-destructive-foreground">
+                      <AlertTriangle className="w-2.5 h-2.5 ml-0.5" />
+                      عجز {Math.abs(diff!)}
+                    </Badge>
+                  )}
+                  {status === 'surplus' && (
+                    <Badge className="text-[10px] bg-orange-500 text-white">
+                      <TrendingUp className="w-2.5 h-2.5 ml-0.5" />
+                      فائض {Math.abs(diff!)}
+                    </Badge>
+                  )}
+                  {status === null && (
+                    <span className="text-muted-foreground">-</span>
+                  )}
+                </span>
+              </div>
+            );
+          })}
+
+          <div className="grid grid-cols-4 gap-1 text-xs text-center font-bold border-t-2 pt-1 bg-primary/5 rounded p-1.5">
             <span className="text-start">{t('common.total')}</span>
             <span>{totalTruckQty}</span>
             <span>-</span>
             <span>-</span>
-            <span className="text-primary">{totalTruckValue.toLocaleString()} DA</span>
           </div>
 
           <Button
