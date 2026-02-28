@@ -53,7 +53,7 @@ const MyDeliveries: React.FC = () => {
     lat: number; lng: number; name: string; address?: string;
   } | null>(null);
   
-  const { data: orders, isLoading } = useAssignedOrders();
+  const { data: orders, isLoading, refetch: refetchOrders } = useAssignedOrders();
   const { data: selectedOrderItems } = useOrderItems(selectedOrderId);
   const updateStatus = useUpdateOrderStatus();
   const cancelOrder = useCancelOrder();
@@ -771,6 +771,8 @@ const MyDeliveries: React.FC = () => {
           onOpenChange={(open) => { if (!open) setCheckVerifyOrder(null); }}
           orderTotal={Number(checkVerifyOrder.total_amount || 0)}
           customerName={checkVerifyOrder.customer?.name || ''}
+          initialCheckReceived={(checkVerifyOrder as any).document_verification?.status !== 'not_received'}
+          initialVerification={(checkVerifyOrder as any).document_verification || null}
           onConfirm={async (data) => {
             const verification = data.checkReceived ? {
               type: 'check',
@@ -782,12 +784,13 @@ const MyDeliveries: React.FC = () => {
             await supabase
               .from('orders')
               .update({
-                document_status: data.checkReceived ? 'received' : 'pending',
+                document_status: data.checkReceived ? (data.skippedVerification ? 'pending' : 'received') : 'pending',
                 document_verification: verification as any,
                 check_due_date: data.verification?.due_date || null,
               })
               .eq('id', checkVerifyOrder.id);
 
+            await refetchOrders();
             toast.success('تم تحديث التحقق من الشيك');
             setCheckVerifyOrder(null);
           }}

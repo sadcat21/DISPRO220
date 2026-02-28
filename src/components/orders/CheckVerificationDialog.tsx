@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -27,6 +27,8 @@ interface CheckVerificationDialogProps {
   onOpenChange: (open: boolean) => void;
   orderTotal: number;
   customerName: string;
+  initialCheckReceived?: boolean;
+  initialVerification?: Partial<CheckVerification> | null;
   onConfirm: (data: {
     checkReceived: boolean;
     verification: CheckVerification | null;
@@ -47,7 +49,7 @@ const defaultVerification: CheckVerification = {
 };
 
 const CheckVerificationDialog: React.FC<CheckVerificationDialogProps> = ({
-  open, onOpenChange, orderTotal, customerName, onConfirm,
+  open, onOpenChange, orderTotal, customerName, initialCheckReceived = false, initialVerification = null, onConfirm,
 }) => {
   const { dir, language } = useLanguage();
   const [mode, setMode] = useState<'choose' | 'verify'>('choose');
@@ -58,6 +60,16 @@ const CheckVerificationDialog: React.FC<CheckVerificationDialogProps> = ({
     setMode('choose');
     setVerification({ ...defaultVerification });
   };
+
+  useEffect(() => {
+    if (!open) return;
+
+    setMode(initialCheckReceived ? 'verify' : 'choose');
+    setVerification({
+      ...defaultVerification,
+      ...(initialVerification || {}),
+    });
+  }, [open, initialCheckReceived, initialVerification]);
 
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) handleReset();
@@ -238,9 +250,11 @@ const CheckVerificationDialog: React.FC<CheckVerificationDialogProps> = ({
                 </>
               )}
             </Button>
-            <Button variant="outline" className="w-full" onClick={() => setMode('choose')} disabled={isSubmitting}>
-              رجوع
-            </Button>
+            {!initialCheckReceived && (
+              <Button variant="outline" className="w-full" onClick={() => setMode('choose')} disabled={isSubmitting}>
+                رجوع
+              </Button>
+            )}
           </div>
         )}
       </DialogContent>
