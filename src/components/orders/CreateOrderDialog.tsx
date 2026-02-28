@@ -630,16 +630,16 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                         </div>
 
                         {/* الصورة */}
-                        <div className="p-3 flex-1 flex items-center justify-center">
+                        <div className="flex-1">
                           {product.image_url ? (
                             <img 
                               src={product.image_url} 
                               alt={product.name} 
-                              className="w-full aspect-square object-contain rounded-lg drop-shadow-lg"
+                              className="w-full aspect-square object-cover"
                               loading="lazy"
                             />
                           ) : (
-                            <div className="w-full aspect-square bg-neutral-700/50 rounded-lg flex items-center justify-center">
+                            <div className="w-full aspect-square bg-neutral-700/50 flex items-center justify-center">
                               <Plus className="w-10 h-10 text-amber-400/60" />
                             </div>
                           )}
