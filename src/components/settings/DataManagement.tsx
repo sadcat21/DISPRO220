@@ -35,7 +35,7 @@ const DATA_CATEGORIES: DataCategory[] = [
   { id: 'delivery_routes', label: 'مسارات التوصيل', tables: ['delivery_route_sectors', 'delivery_routes'], description: 'مسارات التوصيل وقطاعاتها', order: 4.2 },
   { id: 'logs', label: 'سجل الأحداث', tables: ['activity_logs'], description: 'سجلات النشاط والأحداث', order: 4 },
   { id: 'stock_receipts', label: 'أوامر الاستلام', tables: ['stock_receipt_items', 'stock_receipts'], description: 'سجل أوامر استلام المخزون وبنودها', order: 3.5 },
-  { id: 'stock', label: 'حركات المخزون', tables: ['stock_movements', 'worker_stock', 'warehouse_stock'], description: 'جميع حركات وأرصدة المخزون', order: 3 },
+  { id: 'stock', label: 'حركات المخزون', tables: ['stock_discrepancies', 'stock_movements', 'worker_stock', 'warehouse_stock'], description: 'جميع حركات وأرصدة المخزون', order: 3 },
   { id: 'customers', label: 'العملاء', tables: ['customer_special_prices', 'customer_accounts', 'customers'], description: 'جميع بيانات العملاء وأسعارهم الخاصة', order: 2 },
   { id: 'products', label: 'المنتجات', tables: ['quantity_price_tiers', 'product_pricing_groups', 'products'], description: 'جميع المنتجات وأسعارها', order: 1 },
   { id: 'workers', label: 'العمال', tables: ['navbar_preferences', 'worker_roles'], description: 'بيانات العمال (ما عدا الحساب الحالي)', order: 0 },
