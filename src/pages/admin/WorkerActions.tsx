@@ -5,11 +5,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
-import { ArrowRight, Calculator, Truck, Banknote, Wallet, MapPin, ShoppingCart, Activity, Shield, HardHat, HandCoins, ArrowLeftRight } from 'lucide-react';
+import { ArrowRight, Calculator, Truck, Banknote, Wallet, MapPin, ShoppingCart, Activity, Shield, HardHat, HandCoins, ArrowLeftRight, ClipboardList } from 'lucide-react';
 import { useWorkerLiability } from '@/hooks/useWorkerLiability';
 import { Badge } from '@/components/ui/badge';
 import { Worker } from '@/types/database';
 import CoinExchangeDialog from '@/components/treasury/CoinExchangeDialog';
+import WorkerHandoverPreviewDialog from '@/components/accounting/WorkerHandoverPreviewDialog';
 
 const workerActions = [
   { key: 'accounting', icon: Calculator, path: '/accounting', labelKey: 'accounting.title', color: 'bg-amber-50 border-amber-200 text-amber-700' },
@@ -22,6 +23,7 @@ const workerActions = [
   { key: 'orders', icon: ShoppingCart, path: '/orders', labelKey: 'nav.orders', color: 'bg-blue-50 border-blue-200 text-blue-700' },
   { key: 'activity', icon: Activity, path: '/activity-logs', labelKey: 'nav.activity_logs', color: 'bg-violet-50 border-violet-200 text-violet-700' },
   { key: 'permissions', icon: Shield, path: '/permissions', labelKey: 'nav.permissions', color: 'bg-slate-50 border-slate-200 text-slate-700' },
+  { key: 'handover_summary', icon: ClipboardList, path: '', labelKey: 'ملخص التسليم', color: 'bg-indigo-50 border-indigo-200 text-indigo-700', isDialog: true },
 ];
 
 const WorkerActions: React.FC = () => {
@@ -32,6 +34,7 @@ const WorkerActions: React.FC = () => {
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
   const { data: liability } = useWorkerLiability(selectedWorker?.id);
   const [coinExchangeOpen, setCoinExchangeOpen] = useState(false);
+  const [handoverOpen, setHandoverOpen] = useState(false);
 
   const { data: workers = [] } = useQuery({
     queryKey: ['workers-for-actions', activeBranch?.id],
@@ -55,8 +58,12 @@ const WorkerActions: React.FC = () => {
 
   const handleAction = (action: typeof workerActions[0]) => {
     if (!selectedWorker) return;
-    if ((action as any).isDialog && action.key === 'coin_exchange') {
-      setCoinExchangeOpen(true);
+    if ((action as any).isDialog) {
+      if (action.key === 'coin_exchange') {
+        setCoinExchangeOpen(true);
+      } else if (action.key === 'handover_summary') {
+        setHandoverOpen(true);
+      }
       return;
     }
     navigate(action.path);
@@ -111,6 +118,12 @@ const WorkerActions: React.FC = () => {
         </div>
       )}
       <CoinExchangeDialog open={coinExchangeOpen} onOpenChange={setCoinExchangeOpen} preselectedWorkerId={selectedWorker?.id} />
+      <WorkerHandoverPreviewDialog
+        open={handoverOpen}
+        onOpenChange={setHandoverOpen}
+        targetWorkerId={selectedWorker?.id}
+        targetWorkerName={selectedWorker?.full_name}
+      />
     </div>
   );
 };
