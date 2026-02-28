@@ -107,8 +107,13 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
   };
 
   const handleQuantityChange = (delta: number) => {
-    if (offerApplied) setOfferApplied(false);
-    setQuantity(Math.max(1, quantity + delta));
+    const nextQuantity = Math.max(1, quantity + delta);
+    if (nextQuantity !== quantity) {
+      setOfferApplied(false);
+      setGiftPieces(0);
+      setGiftOfferId(undefined);
+    }
+    setQuantity(nextQuantity);
   };
 
   const handleGiftCalculated = useCallback((pieces: number, offerId?: string) => {
@@ -140,8 +145,13 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
   };
 
   const handleQuantityInput = (value: string) => {
-    if (offerApplied) setOfferApplied(false);
-    setQuantity(Math.max(1, parseInt(value) || 1));
+    const parsedValue = Math.max(1, parseInt(value) || 1);
+    if (parsedValue !== quantity) {
+      setOfferApplied(false);
+      setGiftPieces(0);
+      setGiftOfferId(undefined);
+    }
+    setQuantity(parsedValue);
   };
 
   if (!product) return null;
