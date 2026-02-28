@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Loader2, Camera, Trash2, ClipboardList, Image as ImageIcon, Package } from 'lucide-react';
+import { Plus, Loader2, Camera, Trash2, ClipboardList, Image as ImageIcon, Package, Settings, Truck, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 import SimpleProductPickerDialog from '@/components/stock/SimpleProductPickerDialog';
+import PalletSettingsDialog from '@/components/stock/PalletSettingsDialog';
+import FactoryDeliveryDialog from '@/components/stock/FactoryDeliveryDialog';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useWarehouseStock, StockReceiptItem, StockReceipt } from '@/hooks/useWarehouseStock';
@@ -18,11 +22,29 @@ interface ReceiptItem {
   quantity: number;
 }
 
+interface FactoryOrder {
+  id: string;
+  order_type: string;
+  status: string;
+  notes: string | null;
+  created_at: string;
+  confirmed_at: string | null;
+}
+
+interface FactoryOrderItem {
+  id: string;
+  product_id: string;
+  product_quantity: number;
+  pallet_quantity: number;
+  product?: { name: string };
+}
+
 const StockReceipts: React.FC = () => {
   const { t, language } = useLanguage();
   const { activeBranch } = useAuth();
-  const { receipts, products, createReceipt, isLoading, branchId } = useWarehouseStock();
+  const { receipts, products, createReceipt, isLoading, branchId, refresh } = useWarehouseStock();
 
+  const [activeTab, setActiveTab] = useState('receiving');
   const [showDialog, setShowDialog] = useState(false);
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [notes, setNotes] = useState('');
@@ -36,6 +58,48 @@ const StockReceipts: React.FC = () => {
   const [viewReceipt, setViewReceipt] = useState<StockReceipt | null>(null);
   const [viewItems, setViewItems] = useState<StockReceiptItem[]>([]);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+
+  // Settings & Delivery dialogs
+  const [showPalletSettings, setShowPalletSettings] = useState(false);
+  const [showDeliveryDialog, setShowDeliveryDialog] = useState(false);
+
+  // Factory sending orders
+  const [sendingOrders, setSendingOrders] = useState<FactoryOrder[]>([]);
+  const [viewSendingOrder, setViewSendingOrder] = useState<FactoryOrder | null>(null);
+  const [sendingItems, setSendingItems] = useState<FactoryOrderItem[]>([]);
+  const [isLoadingSending, setIsLoadingSending] = useState(false);
+
+  const fetchSendingOrders = async () => {
+    if (!branchId) return;
+    const { data } = await supabase
+      .from('factory_orders')
+      .select('*')
+      .eq('branch_id', branchId)
+      .eq('order_type', 'sending')
+      .order('created_at', { ascending: false })
+      .limit(50);
+    setSendingOrders(data || []);
+  };
+
+  useEffect(() => {
+    if (branchId) fetchSendingOrders();
+  }, [branchId]);
+
+  const handleViewSendingOrder = async (order: FactoryOrder) => {
+    setViewSendingOrder(order);
+    setIsLoadingSending(true);
+    try {
+      const { data } = await supabase
+        .from('factory_order_items')
+        .select('*, product:products(name)')
+        .eq('factory_order_id', order.id);
+      setSendingItems((data || []) as unknown as FactoryOrderItem[]);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoadingSending(false);
+    }
+  };
 
   const handleViewReceipt = async (receipt: StockReceipt) => {
     setViewReceipt(receipt);
@@ -145,12 +209,8 @@ const StockReceipts: React.FC = () => {
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold flex items-center gap-2">
           <ClipboardList className="w-5 h-5 text-primary" />
-          {t('stock.receipts')}
+          أوامر الاستلام والتسليم
         </h2>
-        <Button size="sm" onClick={() => setShowDialog(true)} disabled={!branchId}>
-          <Plus className="w-4 h-4 ml-1" />
-          {t('stock.new_receipt')}
-        </Button>
       </div>
 
       {!branchId && (
@@ -161,37 +221,103 @@ const StockReceipts: React.FC = () => {
         </Card>
       )}
 
-      {branchId && receipts.length === 0 && (
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            {t('stock.no_receipts')}
-          </CardContent>
-        </Card>
-      )}
+      {branchId && (
+        <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl">
+          <TabsList className="w-full grid grid-cols-2">
+            <TabsTrigger value="receiving" className="gap-1.5">
+              <ArrowDownToLine className="w-4 h-4" />
+              استلام
+            </TabsTrigger>
+            <TabsTrigger value="sending" className="gap-1.5">
+              <ArrowUpFromLine className="w-4 h-4" />
+              تسليم
+            </TabsTrigger>
+          </TabsList>
 
-      {receipts.map(receipt => (
-        <Card key={receipt.id} className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => handleViewReceipt(receipt)}>
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-medium">
-                {receipt.invoice_number ? `${t('stock.invoice_number')}: ${receipt.invoice_number}` : t('stock.receipt_details')}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {formatDate(receipt.created_at, 'dd/MM/yyyy HH:mm', language)}
-              </span>
+          {/* ===== Receiving Tab ===== */}
+          <TabsContent value="receiving" className="space-y-3 mt-3">
+            <div className="flex items-center gap-2">
+              <Button size="sm" onClick={() => setShowDialog(true)} className="flex-1">
+                <Plus className="w-4 h-4 ml-1" />
+                {t('stock.new_receipt')}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setShowPalletSettings(true)}>
+                <Settings className="w-4 h-4" />
+              </Button>
             </div>
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>{receipt.total_items} {t('stock.items')}</span>
-              {receipt.invoice_photo_url && (
-                <a href={receipt.invoice_photo_url} target="_blank" rel="noopener noreferrer" className="text-primary flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                  <ImageIcon className="w-3 h-3" />
-                  {t('stock.view_invoice')}
-                </a>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+
+            {receipts.length === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  {t('stock.no_receipts')}
+                </CardContent>
+              </Card>
+            ) : (
+              receipts.map(receipt => (
+                <Card key={receipt.id} className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => handleViewReceipt(receipt)}>
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium">
+                        {receipt.invoice_number ? `${t('stock.invoice_number')}: ${receipt.invoice_number}` : t('stock.receipt_details')}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDate(receipt.created_at, 'dd/MM/yyyy HH:mm', language)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{receipt.total_items} {t('stock.items')}</span>
+                      {receipt.invoice_photo_url && (
+                        <a href={receipt.invoice_photo_url} target="_blank" rel="noopener noreferrer" className="text-primary flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                          <ImageIcon className="w-3 h-3" />
+                          {t('stock.view_invoice')}
+                        </a>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </TabsContent>
+
+          {/* ===== Sending Tab ===== */}
+          <TabsContent value="sending" className="space-y-3 mt-3">
+            <Button size="sm" onClick={() => setShowDeliveryDialog(true)} className="w-full" variant="destructive">
+              <Truck className="w-4 h-4 ml-1" />
+              تسليم جديد للمصنع
+            </Button>
+
+            {sendingOrders.length === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  لا توجد عمليات تسليم للمصنع
+                </CardContent>
+              </Card>
+            ) : (
+              sendingOrders.map(order => (
+                <Card key={order.id} className="cursor-pointer hover:border-destructive/50 transition-colors" onClick={() => handleViewSendingOrder(order)}>
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <Truck className="w-4 h-4 text-destructive" />
+                        <span className="text-sm font-medium">تسليم للمصنع</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDate(order.created_at, 'dd/MM/yyyy HH:mm', language)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <Badge variant={order.status === 'confirmed' ? 'default' : 'secondary'} className="text-[10px]">
+                        {order.status === 'confirmed' ? 'مؤكد' : 'معلق'}
+                      </Badge>
+                      {order.notes && <span className="text-muted-foreground truncate">{order.notes}</span>}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </TabsContent>
+        </Tabs>
+      )}
 
       {/* View Receipt Details Dialog */}
       <Dialog open={!!viewReceipt} onOpenChange={(open) => { if (!open) setViewReceipt(null); }}>
@@ -247,6 +373,71 @@ const StockReceipts: React.FC = () => {
                           <span className="text-sm font-medium">{item.product?.name || item.product_id}</span>
                         </div>
                         <span className="text-sm font-bold text-primary">{item.quantity}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* View Sending Order Details */}
+      <Dialog open={!!viewSendingOrder} onOpenChange={(open) => { if (!open) setViewSendingOrder(null); }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Truck className="w-5 h-5 text-destructive" />
+              تفاصيل التسليم للمصنع
+            </DialogTitle>
+          </DialogHeader>
+
+          {viewSendingOrder && (
+            <div className="space-y-4">
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">التاريخ</span>
+                  <span>{formatDate(viewSendingOrder.created_at, 'dd/MM/yyyy HH:mm', language)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">الحالة</span>
+                  <Badge variant={viewSendingOrder.status === 'confirmed' ? 'default' : 'secondary'}>
+                    {viewSendingOrder.status === 'confirmed' ? 'مؤكد' : 'معلق'}
+                  </Badge>
+                </div>
+                {viewSendingOrder.notes && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">ملاحظات</span>
+                    <span>{viewSendingOrder.notes}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t pt-3">
+                <Label className="text-sm font-semibold mb-2 block">المنتجات والباليطات</Label>
+                {isLoadingSending ? (
+                  <div className="flex justify-center py-4">
+                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                  </div>
+                ) : sendingItems.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">لا توجد بنود</p>
+                ) : (
+                  <div className="space-y-2">
+                    {sendingItems.map((item) => (
+                      <div key={item.id} className="rounded-lg border p-2.5 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Package className="w-4 h-4 text-destructive" />
+                          <span className="text-sm font-medium">{item.product?.name || item.product_id}</span>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs">
+                          {item.product_quantity > 0 && (
+                            <span className="text-destructive font-medium">تالف: {item.product_quantity} صندوق</span>
+                          )}
+                          {item.pallet_quantity > 0 && (
+                            <span className="text-amber-600 font-medium">باليطات: {item.pallet_quantity}</span>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -364,6 +555,24 @@ const StockReceipts: React.FC = () => {
           }
         }}
       />
+
+      {branchId && (
+        <>
+          <PalletSettingsDialog
+            open={showPalletSettings}
+            onOpenChange={setShowPalletSettings}
+            branchId={branchId}
+            products={products}
+          />
+          <FactoryDeliveryDialog
+            open={showDeliveryDialog}
+            onOpenChange={setShowDeliveryDialog}
+            branchId={branchId}
+            products={products}
+            onSuccess={() => { fetchSendingOrders(); refresh(); }}
+          />
+        </>
+      )}
     </div>
   );
 };

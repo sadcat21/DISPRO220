@@ -1508,6 +1508,109 @@ export type Database = {
           },
         ]
       }
+      factory_order_items: {
+        Row: {
+          created_at: string
+          factory_order_id: string
+          id: string
+          notes: string | null
+          pallet_quantity: number
+          product_id: string
+          product_quantity: number
+        }
+        Insert: {
+          created_at?: string
+          factory_order_id: string
+          id?: string
+          notes?: string | null
+          pallet_quantity?: number
+          product_id: string
+          product_quantity?: number
+        }
+        Update: {
+          created_at?: string
+          factory_order_id?: string
+          id?: string
+          notes?: string | null
+          pallet_quantity?: number
+          product_id?: string
+          product_quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "factory_order_items_factory_order_id_fkey"
+            columns: ["factory_order_id"]
+            isOneToOne: false
+            referencedRelation: "factory_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factory_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      factory_orders: {
+        Row: {
+          branch_id: string | null
+          confirmed_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          order_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          branch_id?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          order_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          order_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "factory_orders_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factory_orders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factory_orders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       handover_items: {
         Row: {
           amount: number
@@ -2230,6 +2333,65 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pallet_settings: {
+        Row: {
+          boxes_per_pallet: number
+          branch_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          boxes_per_pallet?: number
+          branch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          boxes_per_pallet?: number
+          branch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pallet_settings_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pallet_settings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pallet_settings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pallet_settings_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
@@ -3990,6 +4152,7 @@ export type Database = {
           damaged_quantity: number
           factory_return_quantity: number
           id: string
+          pallet_quantity: number
           product_id: string
           quantity: number
           updated_at: string
@@ -4000,6 +4163,7 @@ export type Database = {
           damaged_quantity?: number
           factory_return_quantity?: number
           id?: string
+          pallet_quantity?: number
           product_id: string
           quantity?: number
           updated_at?: string
@@ -4010,6 +4174,7 @@ export type Database = {
           damaged_quantity?: number
           factory_return_quantity?: number
           id?: string
+          pallet_quantity?: number
           product_id?: string
           quantity?: number
           updated_at?: string
