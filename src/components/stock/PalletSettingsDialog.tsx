@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Package, Plus, Trash2, Loader2, Settings } from 'lucide-react';
+import { Package, Plus, Trash2, Loader2, Settings, Layers } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Product } from '@/types/database';
@@ -13,6 +13,7 @@ interface PalletSetting {
   id?: string;
   product_id: string;
   boxes_per_pallet: number;
+  boxes_per_layer: number;
 }
 
 interface Props {
@@ -20,9 +21,10 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   branchId: string;
   products: Product[];
+  showLayerField?: boolean;
 }
 
-const PalletSettingsDialog: React.FC<Props> = ({ open, onOpenChange, branchId, products }) => {
+const PalletSettingsDialog: React.FC<Props> = ({ open, onOpenChange, branchId, products, showLayerField = false }) => {
   const [settings, setSettings] = useState<PalletSetting[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -45,12 +47,13 @@ const PalletSettingsDialog: React.FC<Props> = ({ open, onOpenChange, branchId, p
       id: d.id,
       product_id: d.product_id,
       boxes_per_pallet: d.boxes_per_pallet,
+      boxes_per_layer: (d as any).boxes_per_layer || 0,
     })));
     setIsLoading(false);
   };
 
   const addSetting = () => {
-    setSettings(prev => [...prev, { product_id: '', boxes_per_pallet: 1 }]);
+    setSettings(prev => [...prev, { product_id: '', boxes_per_pallet: 1, boxes_per_layer: 1 }]);
   };
 
   const removeSetting = async (index: number) => {
@@ -71,15 +74,17 @@ const PalletSettingsDialog: React.FC<Props> = ({ open, onOpenChange, branchId, p
     try {
       for (const setting of settings) {
         if (!setting.product_id || setting.boxes_per_pallet < 1) continue;
+        const payload: any = {
+          boxes_per_pallet: setting.boxes_per_pallet,
+          boxes_per_layer: setting.boxes_per_layer || 0,
+        };
         if (setting.id) {
-          await supabase.from('pallet_settings').update({
-            boxes_per_pallet: setting.boxes_per_pallet,
-          }).eq('id', setting.id);
+          await supabase.from('pallet_settings').update(payload).eq('id', setting.id);
         } else {
           await supabase.from('pallet_settings').insert({
             product_id: setting.product_id,
-            boxes_per_pallet: setting.boxes_per_pallet,
             branch_id: branchId,
+            ...payload,
           });
         }
       }
@@ -113,35 +118,56 @@ const PalletSettingsDialog: React.FC<Props> = ({ open, onOpenChange, branchId, p
         ) : (
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              حدد عدد الصناديق التي تتسعها كل باليت لكل منتج لحساب عدد الباليطات تلقائياً
+              حدد عدد الصناديق التي تتسعها كل باليت {showLayerField ? 'وكل طبقة ' : ''}لكل منتج
             </p>
 
             {settings.map((setting, index) => (
-              <div key={index} className="flex items-center gap-2 border rounded-lg p-2">
-                <button
-                  type="button"
-                  className="flex-1 flex items-center gap-1.5 text-sm border rounded px-2 py-1.5 hover:bg-accent transition-colors"
-                  onClick={() => { setEditingIndex(index); setPickerOpen(true); }}
-                >
-                  <Package className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                  <span className={setting.product_id ? 'text-foreground truncate' : 'text-muted-foreground'}>
-                    {setting.product_id ? getProductName(setting.product_id) : 'اختر منتج'}
-                  </span>
-                </button>
-                <div className="w-20">
-                  <Input
-                    type="number"
-                    min={1}
-                    value={setting.boxes_per_pallet}
-                    onChange={e => updateSetting(index, 'boxes_per_pallet', parseInt(e.target.value) || 1)}
-                    className="text-center text-sm h-8"
-                    placeholder="صندوق"
-                  />
+              <div key={index} className="border rounded-lg p-2 space-y-2">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="flex-1 flex items-center gap-1.5 text-sm border rounded px-2 py-1.5 hover:bg-accent transition-colors"
+                    onClick={() => { setEditingIndex(index); setPickerOpen(true); }}
+                  >
+                    <Package className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <span className={setting.product_id ? 'text-foreground truncate' : 'text-muted-foreground'}>
+                      {setting.product_id ? getProductName(setting.product_id) : 'اختر منتج'}
+                    </span>
+                  </button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => removeSetting(index)}>
+                    <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                  </Button>
                 </div>
-                <span className="text-[10px] text-muted-foreground whitespace-nowrap">صندوق/باليت</span>
-                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => removeSetting(index)}>
-                  <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1">
+                      <Package className="w-3 h-3 text-muted-foreground" />
+                      <span className="text-[10px] text-muted-foreground">صندوق/باليت</span>
+                    </div>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={setting.boxes_per_pallet}
+                      onChange={e => updateSetting(index, 'boxes_per_pallet', parseInt(e.target.value) || 1)}
+                      className="text-center text-sm h-8 mt-0.5"
+                    />
+                  </div>
+                  {showLayerField && (
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1">
+                        <Layers className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-[10px] text-muted-foreground">صندوق/طبقة</span>
+                      </div>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={setting.boxes_per_layer}
+                        onChange={e => updateSetting(index, 'boxes_per_layer', parseInt(e.target.value) || 0)}
+                        className="text-center text-sm h-8 mt-0.5"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
 

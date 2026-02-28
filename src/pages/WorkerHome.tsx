@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import WorkerHandoverPreviewDialog from '@/components/accounting/WorkerHandoverPreviewDialog';
 import TodayCustomersDialog from '@/components/sectors/TodayCustomersDialog';
+import PalletCalculatorDialog from '@/components/stock/PalletCalculatorDialog';
 
 const WorkerHome: React.FC = () => {
   const { user, workerId } = useAuth();
@@ -38,6 +39,7 @@ const WorkerHome: React.FC = () => {
   const [selectedCustomerForAction, setSelectedCustomerForAction] = useState<Customer | null>(null);
   const [showHandoverPreview, setShowHandoverPreview] = useState(false);
   const [showTodayCustomers, setShowTodayCustomers] = useState(false);
+  const [showPalletCalculator, setShowPalletCalculator] = useState(false);
 
   const { trackVisit } = useTrackVisit();
   const isDirectSaleHidden = useIsElementHidden('button', 'home_direct_sale');
@@ -180,13 +182,22 @@ const WorkerHome: React.FC = () => {
               {getWelcomeMessage()}
             </p>
           </div>
-          <button
-            onClick={() => setShowHandoverPreview(true)}
-            className="bg-white/20 hover:bg-white/30 rounded-xl p-2.5 transition-colors shrink-0"
-            title="ملخص التسليم"
-          >
-            <ClipboardList className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setShowPalletCalculator(true)}
+              className="bg-white/20 hover:bg-white/30 rounded-xl p-2.5 transition-colors"
+              title="حاسبة الطبقات"
+            >
+              <Package className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setShowHandoverPreview(true)}
+              className="bg-white/20 hover:bg-white/30 rounded-xl p-2.5 transition-colors"
+              title="ملخص التسليم"
+            >
+              <ClipboardList className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -342,6 +353,10 @@ const WorkerHome: React.FC = () => {
       <TodayCustomersDialog
         open={showTodayCustomers}
         onOpenChange={setShowTodayCustomers}
+      />
+      <PalletCalculatorDialog
+        open={showPalletCalculator}
+        onOpenChange={setShowPalletCalculator}
       />
     </div>
   );

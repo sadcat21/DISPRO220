@@ -2339,6 +2339,7 @@ export type Database = {
       }
       pallet_settings: {
         Row: {
+          boxes_per_layer: number
           boxes_per_pallet: number
           branch_id: string | null
           created_at: string
@@ -2348,6 +2349,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          boxes_per_layer?: number
           boxes_per_pallet?: number
           branch_id?: string | null
           created_at?: string
@@ -2357,6 +2359,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          boxes_per_layer?: number
           boxes_per_pallet?: number
           branch_id?: string | null
           created_at?: string
