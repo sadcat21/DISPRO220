@@ -571,7 +571,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                   <Button
                     type="button"
                     variant={paymentType === 'with_invoice' ? 'default' : 'outline'}
-                    className="h-16 flex flex-col gap-1.5"
+                    className={`h-16 flex flex-col gap-1.5 ${paymentType === 'with_invoice' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'border-blue-300 text-blue-700 hover:bg-blue-50'}`}
                     onClick={() => setPaymentType('with_invoice')}
                   >
                     <Receipt className="w-5 h-5" />
@@ -580,7 +580,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                   <Button
                     type="button"
                     variant={paymentType === 'without_invoice' ? 'default' : 'outline'}
-                    className="h-16 flex flex-col gap-1.5"
+                    className={`h-16 flex flex-col gap-1.5 ${paymentType === 'without_invoice' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'border-emerald-300 text-emerald-700 hover:bg-emerald-50'}`}
                     onClick={() => setPaymentType('without_invoice')}
                   >
                     <ReceiptText className="w-5 h-5" />
