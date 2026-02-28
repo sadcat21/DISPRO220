@@ -267,6 +267,13 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['assigned-orders'] });
       queryClient.invalidateQueries({ queryKey: ['order-items'] });
+      // Refresh worker stock so returned products show in truck
+      queryClient.invalidateQueries({ queryKey: ['my-worker-stock'] });
+      queryClient.invalidateQueries({ queryKey: ['my-stock-sold'] });
+      queryClient.invalidateQueries({ queryKey: ['my-stock-loaded'] });
+      queryClient.invalidateQueries({ queryKey: ['worker-truck-stock'] });
+      queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['customer-debt-summary'] });
 
       toast.success(t('orders.order_modified'));
       onOpenChange(false);
