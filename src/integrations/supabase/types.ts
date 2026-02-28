@@ -1294,6 +1294,87 @@ export type Database = {
           },
         ]
       }
+      document_collections: {
+        Row: {
+          action: string
+          approved_at: string | null
+          approved_by: string | null
+          collection_date: string
+          created_at: string
+          id: string
+          next_due_date: string | null
+          notes: string | null
+          order_id: string
+          rejection_reason: string | null
+          status: string
+          worker_id: string
+        }
+        Insert: {
+          action?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          collection_date?: string
+          created_at?: string
+          id?: string
+          next_due_date?: string | null
+          notes?: string | null
+          order_id: string
+          rejection_reason?: string | null
+          status?: string
+          worker_id: string
+        }
+        Update: {
+          action?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          collection_date?: string
+          created_at?: string
+          id?: string
+          next_due_date?: string | null
+          notes?: string | null
+          order_id?: string
+          rejection_reason?: string | null
+          status?: string
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_collections_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_collections_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_collections_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_collections_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_collections_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expense_categories: {
         Row: {
           created_at: string | null
@@ -2023,6 +2104,9 @@ export type Database = {
           created_by_customer: string | null
           customer_id: string
           delivery_date: string | null
+          doc_collection_days: string[] | null
+          doc_collection_type: string | null
+          doc_due_date: string | null
           document_status: string | null
           document_verification: Json | null
           id: string
@@ -2048,6 +2132,9 @@ export type Database = {
           created_by_customer?: string | null
           customer_id: string
           delivery_date?: string | null
+          doc_collection_days?: string[] | null
+          doc_collection_type?: string | null
+          doc_due_date?: string | null
           document_status?: string | null
           document_verification?: Json | null
           id?: string
@@ -2073,6 +2160,9 @@ export type Database = {
           created_by_customer?: string | null
           customer_id?: string
           delivery_date?: string | null
+          doc_collection_days?: string[] | null
+          doc_collection_type?: string | null
+          doc_due_date?: string | null
           document_status?: string | null
           document_verification?: Json | null
           id?: string

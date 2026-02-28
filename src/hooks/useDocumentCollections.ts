@@ -1,0 +1,261 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRealtimeSubscription } from './useRealtimeSubscription';
+
+export interface PendingDocOrder {
+  id: string;
+  customer_id: string;
+  total_amount: number;
+  document_status: string;
+  invoice_payment_method: string;
+  doc_due_date: string | null;
+  doc_collection_type: string | null;
+  doc_collection_days: string[] | null;
+  created_at: string;
+  assigned_worker_id: string | null;
+  customer?: { id: string; name: string; store_name?: string | null; phone: string | null; latitude: number | null; longitude: number | null };
+}
+
+export interface DocumentCollection {
+  id: string;
+  order_id: string;
+  worker_id: string;
+  collection_date: string;
+  action: 'no_collection' | 'collected';
+  next_due_date: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  approved_by: string | null;
+  approved_at: string | null;
+  rejection_reason: string | null;
+  notes: string | null;
+  created_at: string;
+  worker?: { id: string; full_name: string };
+  order?: {
+    id: string;
+    total_amount: number;
+    invoice_payment_method: string;
+    customer?: { id: string; name: string; store_name?: string | null };
+  };
+}
+
+// Map collection day keys to JS day indices (0=Sun, 6=Sat)
+const DAY_KEY_TO_JS: Record<string, number> = {
+  sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
+  thursday: 4, friday: 5, saturday: 6,
+};
+
+// Fetch pending document orders for collection
+export const usePendingDocOrders = (targetDate?: string) => {
+  const { user, role } = useAuth();
+  const isAdmin = role === 'admin' || role === 'branch_admin';
+  const showAll = targetDate === '__all__';
+
+  useRealtimeSubscription(
+    'document-collections-realtime',
+    [{ table: 'orders' }, { table: 'document_collections' }],
+    [['pending-doc-orders'], ['pending-doc-collections']],
+    !!user?.id
+  );
+
+  return useQuery({
+    queryKey: ['pending-doc-orders', user?.id, targetDate, isAdmin],
+    queryFn: async () => {
+      const dateToFilter = (!targetDate || showAll) ? new Date().toISOString().split('T')[0] : targetDate;
+
+      let query = supabase
+        .from('orders')
+        .select(`
+          id, customer_id, total_amount, document_status, invoice_payment_method,
+          doc_due_date, doc_collection_type, doc_collection_days,
+          created_at, assigned_worker_id,
+          customer:customers!orders_customer_id_fkey(id, name, store_name, phone, latitude, longitude)
+        `)
+        .eq('document_status', 'pending')
+        .eq('status', 'delivered')
+        .in('invoice_payment_method', ['check', 'receipt', 'transfer'])
+        .order('created_at', { ascending: false });
+
+      if (!isAdmin) {
+        query = query.eq('assigned_worker_id', user!.id);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      let filtered: typeof data;
+
+      if (showAll) {
+        filtered = data || [];
+      } else {
+        const targetDayJs = new Date(dateToFilter + 'T00:00:00').getDay();
+
+        filtered = (data || []).filter(d => {
+          const hasSchedule = d.doc_collection_type === 'daily' ||
+            (d.doc_collection_type === 'weekly' && (d.doc_collection_days as string[] | null)?.length);
+
+          // If doc_due_date is set and <= target date, show it
+          if (d.doc_due_date && d.doc_due_date <= dateToFilter) return true;
+
+          if (hasSchedule) {
+            if (d.doc_collection_type === 'daily') return true;
+            if (d.doc_collection_type === 'weekly' && (d.doc_collection_days as string[] | null)?.length) {
+              return (d.doc_collection_days as string[]).some(
+                dayKey => DAY_KEY_TO_JS[dayKey] === targetDayJs
+              );
+            }
+          }
+
+          // If no schedule and no due date, show all (new pending docs)
+          if (!hasSchedule && !d.doc_due_date) return true;
+
+          return false;
+        });
+      }
+
+      // Filter out orders that have a pending document collection
+      const orderIds = filtered.map(d => d.id);
+      if (orderIds.length === 0) return [] as PendingDocOrder[];
+
+      const { data: pendingCollections } = await supabase
+        .from('document_collections')
+        .select('order_id')
+        .in('order_id', orderIds)
+        .eq('status', 'pending');
+
+      const pendingOrderIds = new Set((pendingCollections || []).map(c => c.order_id));
+
+      return filtered.filter(d => !pendingOrderIds.has(d.id)) as unknown as PendingDocOrder[];
+    },
+    enabled: !!user?.id,
+    refetchInterval: 60000,
+  });
+};
+
+// Fetch pending document collections for admin approval
+export const usePendingDocCollections = () => {
+  const { role } = useAuth();
+
+  return useQuery({
+    queryKey: ['pending-doc-collections'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('document_collections')
+        .select(`
+          *,
+          worker:workers!document_collections_worker_id_fkey(id, full_name),
+          order:orders!document_collections_order_id_fkey(
+            id, total_amount, invoice_payment_method,
+            customer:customers!orders_customer_id_fkey(id, name, store_name)
+          )
+        `)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as unknown as DocumentCollection[];
+    },
+    enabled: role === 'admin' || role === 'branch_admin',
+  });
+};
+
+// Create a document collection record
+export const useCreateDocCollection = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      orderId: string;
+      workerId: string;
+      action: 'no_collection' | 'collected';
+      nextDueDate?: string;
+      notes?: string;
+    }) => {
+      const { data, error } = await supabase
+        .from('document_collections')
+        .insert({
+          order_id: params.orderId,
+          worker_id: params.workerId,
+          action: params.action,
+          next_due_date: params.nextDueDate || null,
+          notes: params.notes || null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // If collected, update doc_due_date on order for next visit tracking
+      if (params.action === 'collected') {
+        await supabase
+          .from('orders')
+          .update({ document_status: 'verified' })
+          .eq('id', params.orderId);
+      } else if (params.nextDueDate) {
+        // Update next due date on order
+        await supabase
+          .from('orders')
+          .update({ doc_due_date: params.nextDueDate })
+          .eq('id', params.orderId);
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pending-doc-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-doc-collections'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-documents'] });
+    },
+  });
+};
+
+// Approve or reject a document collection
+export const useApproveDocCollection = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async (params: {
+      collectionId: string;
+      approved: boolean;
+      rejectionReason?: string;
+    }) => {
+      const updateData: Record<string, any> = {
+        status: params.approved ? 'approved' : 'rejected',
+        approved_by: user!.id,
+        approved_at: new Date().toISOString(),
+      };
+      if (!params.approved && params.rejectionReason) {
+        updateData.rejection_reason = params.rejectionReason;
+      }
+
+      const { error } = await supabase
+        .from('document_collections')
+        .update(updateData)
+        .eq('id', params.collectionId);
+
+      if (error) throw error;
+
+      // If rejected and action was 'collected', revert order status
+      if (!params.approved) {
+        const { data: collection } = await supabase
+          .from('document_collections')
+          .select('order_id, action')
+          .eq('id', params.collectionId)
+          .single();
+
+        if (collection && collection.action === 'collected') {
+          await supabase
+            .from('orders')
+            .update({ document_status: 'pending' })
+            .eq('id', collection.order_id);
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pending-doc-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-doc-collections'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-documents'] });
+    },
+  });
+};

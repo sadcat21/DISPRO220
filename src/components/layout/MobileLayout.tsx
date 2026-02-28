@@ -20,6 +20,7 @@ import TasksPopover from '@/components/tasks/TasksPopover';
 import WorkerRequestsPopover from '@/components/tasks/WorkerRequestsPopover';
 // DebtCollectionsPopover moved into SectorCustomersPopover
 import SectorCustomersPopover from '@/components/sectors/SectorCustomersPopover';
+import DocumentCollectionsPopover from '@/components/documents/DocumentCollectionsPopover';
 import ReceiptModificationsNotification from '@/components/printing/ReceiptModificationsNotification';
 import InvoiceRequestDialog from '@/components/treasury/InvoiceRequestDialog';
 import { ALGERIAN_WILAYAS } from '@/data/algerianWilayas';
@@ -139,6 +140,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
             <ReceiptModificationsNotification />
             <StockAlertsNotification />
             <OffersNotification />
+            <DocumentCollectionsPopover />
             
             
             {/* More actions dropdown: Language, Branch, Logout */}
