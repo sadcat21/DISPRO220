@@ -639,8 +639,9 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                             : inCart ? 'bg-primary border-primary' : 'bg-red-50 border-red-100'
                         )}>
                           <span className={cn(
-                            "text-xs font-bold leading-tight block text-right",
-                            inCart ? 'text-white' : 'text-red-900'
+                            "font-bold leading-tight block text-center truncate",
+                            inCart ? 'text-white' : 'text-red-900',
+                            product.name.length > 15 ? 'text-[10px]' : product.name.length > 10 ? 'text-xs' : 'text-sm'
                           )}>
                             {product.name}
                           </span>
