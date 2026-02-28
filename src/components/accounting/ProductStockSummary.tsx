@@ -33,6 +33,13 @@ interface WorkerStockRow {
   raw_unit_price: number;
 }
 
+// Format quantity: max 2 decimal places, trim trailing zeros
+const fmtQty = (v: number): string => {
+  const rounded = Math.round(v * 100) / 100;
+  if (rounded === Math.floor(rounded)) return rounded.toString();
+  return rounded.toFixed(2).replace(/0+$/, '');
+};
+
 // Get raw unit price (the price per pricing unit before box conversion)
 const getRawUnitPrice = (p: any): number => {
   return Number(p?.price_gros || p?.price_super_gros || p?.price_retail || p?.price_invoice || 0);
@@ -358,11 +365,11 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
           {productRows.map((row) => (
             <div key={row.name} className="grid grid-cols-6 gap-1 text-xs text-center items-center py-1.5 border-b border-dashed last:border-0">
               <span className="text-start font-medium text-wrap">{row.name}</span>
-              <span className="font-bold text-green-600">{row.loaded > 0 ? row.loaded : '-'}</span>
-              <span className="font-bold text-blue-600">{row.sold > 0 ? row.sold : '-'}</span>
-              <span className="font-bold">{row.systemQty}</span>
+              <span className="font-bold text-green-600">{row.loaded > 0 ? fmtQty(row.loaded) : '-'}</span>
+              <span className="font-bold text-blue-600">{row.sold > 0 ? fmtQty(row.sold) : '-'}</span>
+              <span className="font-bold">{fmtQty(row.systemQty)}</span>
               <span className={`font-bold ${row.status === 'deficit' ? 'text-destructive' : row.status === 'surplus' ? 'text-orange-600' : ''}`}>
-                {row.actualQty !== null ? row.actualQty : '-'}
+                {row.actualQty !== null ? fmtQty(row.actualQty) : '-'}
               </span>
               <span>
                 {row.status === 'match' && (
@@ -374,13 +381,13 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
                 {row.status === 'deficit' && (
                   <Badge className="text-[10px] bg-destructive text-destructive-foreground" dir="rtl">
                     <AlertTriangle className="w-2.5 h-2.5 me-1" />
-                    عجز ({Math.abs(row.diff!)})
+                    عجز ({fmtQty(Math.abs(row.diff!))})
                   </Badge>
                 )}
                 {row.status === 'surplus' && (
                   <Badge className="text-[10px] bg-orange-500 text-white" dir="rtl">
                     <TrendingUp className="w-2.5 h-2.5 me-1" />
-                    فائض ({Math.abs(row.diff!)})
+                    فائض ({fmtQty(Math.abs(row.diff!))})
                   </Badge>
                 )}
                 {row.status === null && (
@@ -392,9 +399,9 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
 
           <div className="grid grid-cols-6 gap-1 text-xs text-center font-bold border-t-2 pt-1 bg-primary/5 rounded p-1.5">
             <span className="text-start">{t('common.total')}</span>
-            <span className="text-green-600">{productRows.reduce((s, r) => s + r.loaded, 0) || '-'}</span>
-            <span className="text-blue-600">{productRows.reduce((s, r) => s + r.sold, 0) || '-'}</span>
-            <span>{totalTruckQty}</span>
+            <span className="text-green-600">{productRows.reduce((s, r) => s + r.loaded, 0) ? fmtQty(productRows.reduce((s, r) => s + r.loaded, 0)) : '-'}</span>
+            <span className="text-blue-600">{productRows.reduce((s, r) => s + r.sold, 0) ? fmtQty(productRows.reduce((s, r) => s + r.sold, 0)) : '-'}</span>
+            <span>{fmtQty(totalTruckQty)}</span>
             <span>-</span>
             <span>-</span>
           </div>
