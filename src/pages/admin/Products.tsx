@@ -110,6 +110,7 @@ const Products: React.FC = () => {
       const { data, error } = await supabase
         .from('products')
         .select('*')
+        .order('is_active', { ascending: false })
         .order('sort_order', { ascending: true })
         .order('name');
 
