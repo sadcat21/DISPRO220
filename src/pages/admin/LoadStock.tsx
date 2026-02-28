@@ -188,37 +188,86 @@ const LoadStock: React.FC = () => {
     return options.sort((a, b) => a.name.localeCompare(b.name));
   }, [warehouseStock, products, productGroupMap]);
 
+  const buildReviewDiscrepanciesFromItems = (reviewItems: any[]) => {
+    return reviewItems
+      .map((item: any) => {
+        const previous = Number(item.previous_quantity ?? 0);
+        const actual = Number(item.quantity ?? 0);
+        const rawDiff = Number((actual - previous).toFixed(2));
+        const note = String(item.notes || '').trim();
+
+        let discrepancyType: 'deficit' | 'surplus' | null = null;
+        if (note.startsWith('عجز')) discrepancyType = 'deficit';
+        else if (note.startsWith('فائض')) discrepancyType = 'surplus';
+        else if (Math.abs(rawDiff) > 0.001) discrepancyType = rawDiff < 0 ? 'deficit' : 'surplus';
+
+        if (!discrepancyType) return null;
+
+        return {
+          id: `fallback-${item.id}`,
+          product_id: item.product_id,
+          discrepancy_type: discrepancyType,
+          quantity: Math.abs(rawDiff),
+          product: item.product,
+          created_at: item.created_at,
+        };
+      })
+      .filter(Boolean) as any[];
+  };
+
   // View session details handler
   const handleViewSession = async (sessionId: string) => {
     setViewSessionId(sessionId);
     setIsLoadingViewItems(true);
     setViewReviewDiscrepancies([]);
+
     try {
-      const { data } = await supabase
+      const { data: itemsData, error: itemsError } = await supabase
         .from('loading_session_items')
         .select('*, product:products(name, pieces_per_box)')
         .eq('session_id', sessionId)
         .order('created_at', { ascending: true });
-      setViewSessionItems(data || []);
 
-      // For review sessions, also fetch discrepancies
-      // Check from sessions list OR fetch the session status directly
+      if (itemsError) throw itemsError;
+
+      const reviewItems = itemsData || [];
+      setViewSessionItems(reviewItems);
+      const fallbackDiscrepancies = buildReviewDiscrepanciesFromItems(reviewItems);
+
       let sessionStatus = sessions.find(s => s.id === sessionId)?.status;
       if (!sessionStatus) {
         const { data: sessionData } = await supabase
           .from('loading_sessions')
           .select('status')
           .eq('id', sessionId)
-          .single();
+          .maybeSingle();
         sessionStatus = sessionData?.status || undefined;
       }
+
       if (sessionStatus === 'review') {
-        const { data: discData } = await supabase
+        const { data: discData, error: discError } = await supabase
           .from('stock_discrepancies')
           .select('*, product:products(name, pieces_per_box)')
           .eq('source_session_id', sessionId)
           .order('created_at', { ascending: true });
-        setViewReviewDiscrepancies(discData || []);
+
+        if (discError) {
+          console.error('Error loading review discrepancies:', discError);
+        }
+
+        const databaseDiscrepancies = discData || [];
+        if (databaseDiscrepancies.length === 0) {
+          setViewReviewDiscrepancies(fallbackDiscrepancies);
+        } else {
+          const existingProductIds = new Set(databaseDiscrepancies.map((d: any) => d.product_id));
+          const mergedDiscrepancies = [
+            ...databaseDiscrepancies,
+            ...fallbackDiscrepancies.filter((d: any) => !existingProductIds.has(d.product_id)),
+          ];
+          setViewReviewDiscrepancies(mergedDiscrepancies);
+        }
+      } else {
+        setViewReviewDiscrepancies(fallbackDiscrepancies);
       }
     } catch (err) {
       console.error('Error loading session items:', err);
