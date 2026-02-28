@@ -657,6 +657,11 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                                 <Gift className="w-4 h-4 text-white" />
                               </span>
                             ) : <span />}
+                            {(isShortage || isNotInStock) && (
+                              <span className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center shadow-lg">
+                                <AlertTriangle className="w-4 h-4 text-white" />
+                              </span>
+                            )}
                             {inCart ? (
                               <Badge variant="default" className="text-sm px-2.5 py-0.5 shadow-lg font-bold">
                                 {inCart.quantity}
@@ -667,14 +672,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
 
                         {/* السعر أسفل الصورة */}
                         <div className="px-2 py-2 bg-red-50 border-t border-red-100">
-                          <div className="flex items-center justify-between gap-1">
-                            {(isShortage || isNotInStock) && (
-                              <span className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center">
-                                <AlertTriangle className="w-3.5 h-3.5 text-orange-500" />
-                              </span>
-                            )}
-                            <ProductPriceBadge product={product} boxPrice={price} />
-                          </div>
+                          <ProductPriceBadge product={product} boxPrice={price} />
                         </div>
                       </button>
                     );
