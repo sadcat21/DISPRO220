@@ -190,6 +190,17 @@
   @apply bg-primary;
 }
 
+/* Hide scrollbar on mobile while keeping scroll functionality */
+@media (max-width: 768px) {
+  * {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+  }
+  *::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+  }
+}
+
 /* Safe area padding for PWA */
 @supports (padding: env(safe-area-inset-bottom)) {
   .safe-bottom {
