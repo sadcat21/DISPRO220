@@ -147,7 +147,7 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
       const [customersRes, mappingsRes, productsRes, sectorsRes] = await Promise.all([
         customersQuery,
         supabase.from('product_pricing_groups').select('group_id, product_id'),
-        supabase.from('products').select('*').eq('is_active', true),
+        supabase.from('products').select('*').eq('is_active', true).order('sort_order', { ascending: true }).order('name'),
         sectorsQuery,
       ]);
 
