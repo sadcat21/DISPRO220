@@ -197,6 +197,8 @@ const ExchangeSessionDialog: React.FC<ExchangeSessionDialogProps> = ({
         queryClient.invalidateQueries({ queryKey: ['my-worker-stock'] }),
         queryClient.invalidateQueries({ queryKey: ['worker-truck-stock'] }),
         queryClient.invalidateQueries({ queryKey: ['worker-load-suggestions'] }),
+        queryClient.invalidateQueries({ queryKey: ['warehouse-product-summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['warehouse-stock'] }),
       ]);
 
       toast.success(`تم تسجيل استبدال ${validItems.length} منتج تالف بنجاح`);
