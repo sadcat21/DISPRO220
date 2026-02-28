@@ -616,9 +616,9 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                         onClick={() => handleProductClick(product)}
                         className={cn(
                           "flex flex-col rounded-xl border overflow-hidden text-center transition-colors relative",
-                          inCart ? 'bg-secondary border-primary' : 'bg-background border-border hover:bg-accent',
-                          (isShortage || isNotInStock) && "border-orange-400/60",
-                          hasOffer && !isShortage && !isNotInStock && "border-green-500/50"
+                          inCart ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:bg-primary/10 hover:border-primary/40',
+                          (isShortage || isNotInStock) && !inCart && "border-orange-400/60",
+                          hasOffer && !isShortage && !isNotInStock && !inCart && "border-green-500/50"
                         )}
                       >
                         {product.image_url ? (
