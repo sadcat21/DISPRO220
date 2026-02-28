@@ -34,9 +34,9 @@ const ProductPriceBadge: React.FC<ProductPriceBadgeProps> = ({ product, boxPrice
   return (
     <div className="flex items-center justify-between w-full gap-1">
       {unitPrice !== null && unitPrice > 0 ? (
-        <span className="text-[10px] text-muted-foreground font-medium bg-muted px-1.5 py-0.5 rounded">
+        <Badge variant="outline" className="text-xs px-1.5 py-0.5 text-foreground font-bold border-border">
           {unitPrice.toLocaleString()} {t('common.currency')}/{unitLabel}
-        </span>
+        </Badge>
       ) : <span />}
       <Badge variant="outline" className="text-xs px-1.5 py-0.5 text-primary font-bold border-primary/30">
         {boxPrice.toLocaleString()} {t('common.currency')}
