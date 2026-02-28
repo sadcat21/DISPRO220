@@ -31,22 +31,30 @@ const InvoicePaymentMethodSelect: React.FC<InvoicePaymentMethodSelectProps> = ({
   const methods = Object.entries(INVOICE_PAYMENT_METHODS) as [InvoicePaymentMethod, typeof INVOICE_PAYMENT_METHODS[InvoicePaymentMethod]][];
 
   return (
-    <div className="grid grid-cols-2 gap-1.5">
-      {methods.map(([methodKey, method]) => (
-        <Button
-          key={methodKey}
-          type="button"
-          variant={value === methodKey ? 'default' : 'outline'}
-          size="default"
-          className={`h-10 flex items-center gap-1.5 text-sm font-bold transition-opacity ${value === methodKey ? METHOD_COLORS[methodKey].active : METHOD_COLORS[methodKey].inactive} ${value !== null && value !== methodKey ? 'opacity-50' : ''}`}
-          disabled={disabled}
-          onClick={() => onChange(methodKey)}
-        >
-          {METHOD_ICONS[methodKey]}
-          {method.label}
-          {method.hasStamp && <Stamp className="w-3 h-3 text-warning" />}
-        </Button>
-      ))}
+    <div className="space-y-2">
+      <div className="grid grid-cols-2 gap-1.5">
+        {methods.map(([methodKey, method]) => (
+          <Button
+            key={methodKey}
+            type="button"
+            variant={value === methodKey ? 'default' : 'outline'}
+            size="default"
+            className={`h-10 flex items-center gap-1.5 text-sm font-bold transition-opacity ${value === methodKey ? METHOD_COLORS[methodKey].active : METHOD_COLORS[methodKey].inactive} ${value !== null && value !== methodKey ? 'opacity-50' : ''}`}
+            disabled={disabled}
+            onClick={() => onChange(methodKey)}
+          >
+            {METHOD_ICONS[methodKey]}
+            {method.label}
+            {method.hasStamp && <Stamp className="w-3 h-3 text-warning" />}
+          </Button>
+        ))}
+      </div>
+      {value === 'cash' && (
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 rounded-lg p-2.5 flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300">
+          <Stamp className="w-4 h-4 shrink-0" />
+          <span className="font-semibold">تنبيه: سيتم احتساب سعر الطابع الجبائي (Timbre) على هذه الطلبية.</span>
+        </div>
+      )}
     </div>
   );
 };
