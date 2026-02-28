@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Calculator, Receipt, Banknote, CreditCard, ArrowDownCircle, ArrowUpCircle, Wallet, TrendingDown, Coins, AlertTriangle, Package, ShoppingBag, RefreshCw, Gift, Tag } from 'lucide-react';
+import { Loader2, Calculator, Receipt, Banknote, CreditCard, ArrowDownCircle, ArrowUpCircle, Wallet, TrendingDown, Coins, AlertTriangle, Package, ShoppingBag, RefreshCw, Gift, Tag, HandCoins } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSessionCalculations, SessionCalculations } from '@/hooks/useSessionCalculations';
@@ -20,6 +20,7 @@ import ProductStockSummary from './ProductStockSummary';
 import SalesDetailsSummary from './SalesDetailsSummary';
 import PromoTrackingSummary from './PromoTrackingSummary';
 import StockDiscrepancySection from './StockDiscrepancySection';
+import DebtCollectionsSummary from './DebtCollectionsSummary';
 import { usePendingDiscrepancies } from '@/hooks/useStockDiscrepancies';
 
 interface CreateSessionDialogProps {
@@ -572,7 +573,18 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                     />
                   </div>
                 )}
-                {/* Stock Discrepancies */}
+                {/* Debt Collections Detail */}
+                <div className="border-2 rounded-xl p-3.5">
+                  <SectionDividerWithIcon
+                    icon={<HandCoins className="w-4 h-4 text-orange-600" />}
+                    label="تفاصيل الديون المحصلة"
+                  />
+                  <DebtCollectionsSummary
+                    workerId={selectedWorkerId}
+                    periodStart={periodStart}
+                    periodEnd={periodEnd}
+                  />
+                </div>
                 {pendingDiscrepancies.length > 0 && (
                   <div className="border-2 border-destructive/20 rounded-xl p-3.5">
                     <SectionDividerWithIcon
