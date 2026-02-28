@@ -100,7 +100,7 @@ const WarehouseStock: React.FC = () => {
   });
 
   const productSummaries = useMemo((): ProductSummary[] => {
-    if (!products.length || !summaryData) return [];
+    if (!products.length) return [];
 
     const summaries: Record<string, ProductSummary> = {};
 
@@ -121,14 +121,14 @@ const WarehouseStock: React.FC = () => {
     }
 
     // Received
-    for (const r of summaryData.receipts) {
+    for (const r of (summaryData?.receipts || [])) {
       if (summaries[r.product_id]) {
         summaries[r.product_id].received += Number(r.quantity || 0);
       }
     }
 
     // Worker stocks
-    for (const ws of summaryData.workerStocks) {
+    for (const ws of (summaryData?.workerStocks || [])) {
       if (summaries[ws.product_id]) {
         summaries[ws.product_id].workerStock += Number(ws.quantity || 0);
       }
@@ -145,7 +145,7 @@ const WarehouseStock: React.FC = () => {
     }
 
     // Discrepancies
-    for (const d of summaryData.discrepancies) {
+    for (const d of (summaryData?.discrepancies || [])) {
       if (!summaries[d.product_id]) continue;
       const qty = Number(d.quantity || 0);
       if (d.discrepancy_type === 'deficit') {
