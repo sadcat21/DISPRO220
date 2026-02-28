@@ -191,7 +191,8 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
           status: session.status,
           created_at: session.created_at,
           manager_name: session.manager?.full_name || 'مدير النظام',
-          notes: session.notes || `جلسة مراجعة - ${discrepancyCount} فارق`,
+          discrepancyCount,
+          notes: session.notes,
         },
       };
     },
@@ -223,25 +224,14 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
             <span className="font-semibold text-sm">{t('accounting.truck_stock')}</span>
           </div>
 
-          {/* Review Session Info */}
+          {/* Review Session Info - single line */}
           {reviewData?.sessionInfo && (
-            <div className="bg-muted/50 border rounded-lg p-2.5 space-y-1 text-xs">
-              <div className="grid grid-cols-2 gap-1">
-                <span className="text-muted-foreground">الحالة:</span>
-                <Badge className="text-[10px] bg-primary text-primary-foreground w-fit">مراجعة</Badge>
-              </div>
-              <div className="grid grid-cols-2 gap-1">
-                <span className="text-muted-foreground">التاريخ:</span>
-                <span>{new Date(reviewData.sessionInfo.created_at).toLocaleString('ar-DZ')}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-1">
-                <span className="text-muted-foreground">المصدر:</span>
-                <span>{reviewData.sessionInfo.manager_name}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-1">
-                <span className="text-muted-foreground">ملاحظات:</span>
-                <span>{reviewData.sessionInfo.notes}</span>
-              </div>
+            <div className="flex items-center gap-2 flex-wrap text-xs bg-muted/50 border rounded-lg px-3 py-2">
+              <span>{new Date(reviewData.sessionInfo.created_at).toLocaleString('ar-DZ')}</span>
+              <span className="text-muted-foreground/40">|</span>
+              <span>المراجع: <span className="font-semibold">{reviewData.sessionInfo.manager_name}</span></span>
+              <span className="text-muted-foreground/40">|</span>
+              <span className="font-semibold">{reviewData.sessionInfo.discrepancyCount} فارق</span>
             </div>
           )}
 
@@ -300,15 +290,6 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
             <span>-</span>
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowEmptyTruck(true)}
-            className="w-full mt-2 text-destructive border-destructive/30 hover:bg-destructive/5"
-          >
-            <PackageX className="w-4 h-4 ml-2" />
-            {t('stock.empty_truck')}
-          </Button>
         </div>
       )}
 
