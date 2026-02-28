@@ -26,6 +26,8 @@ import { useCreateCustomerCredit, useCustomerCredits, useCustomerCreditSummary, 
 import CustomerCreditBadges from '@/components/orders/CustomerCreditBadges';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
 import { useOrderItems } from '@/hooks/useOrders';
+import { useProductOffers } from '@/hooks/useProductOffers';
+import { INVOICE_PAYMENT_METHODS, InvoicePaymentMethod } from '@/types/stamp';
 import DeliveryPaymentDialog from '@/components/orders/DeliveryPaymentDialog';
 import CheckVerificationDialog from '@/components/orders/CheckVerificationDialog';
 import ReceiptPaymentDialog from '@/components/orders/ReceiptPaymentDialog';
@@ -48,6 +50,8 @@ interface SaleItem {
   originalItemId?: string; // existing order_item id
   originalQuantity: number;
   giftQuantity: number; // gift boxes included in quantity
+  giftOfferId?: string | null;
+  piecesPerBox: number;
 }
 
 const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenChange, order }) => {
@@ -60,6 +64,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
   const markCreditUsed = useMarkCreditUsed();
   const logActivity = useLogActivity();
   const { trackVisit } = useTrackVisit();
+  const { activeOffers } = useProductOffers();
   const creditSummary = useCustomerCreditSummary(order.customer_id);
   const { data: customerCredits } = useCustomerCredits(order.customer_id);
   const [useCreditBalance, setUseCreditBalance] = useState(false);
@@ -123,11 +128,56 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
   }, [open]);
 
   // Initialize sale items from order items
+  // Helper: recalculate gift for a product based on paid quantity and active offers
+  const recalcGift = useCallback((productId: string, paidQty: number, piecesPerBox: number): number => {
+    const offersForProduct = activeOffers.filter(o => o.product_id === productId);
+    if (offersForProduct.length === 0) return 0;
+
+    let totalGiftPieces = 0;
+    for (const offer of offersForProduct) {
+      const tiers = offer.tiers && offer.tiers.length > 0 ? offer.tiers : null;
+      if (tiers) {
+        if (offer.condition_type === 'multiplier') {
+          const sortedTiers = [...tiers].sort((a, b) => b.min_quantity - a.min_quantity);
+          let remaining = paidQty;
+          for (const tier of sortedTiers) {
+            if (remaining < tier.min_quantity) continue;
+            const timesApplied = Math.floor(remaining / tier.min_quantity);
+            remaining = remaining % tier.min_quantity;
+            const giftUnit = tier.gift_quantity_unit || 'piece';
+            const giftAmount = timesApplied * tier.gift_quantity;
+            totalGiftPieces += giftUnit === 'box' ? giftAmount * piecesPerBox : giftAmount;
+          }
+        } else {
+          for (const tier of [...tiers].sort((a, b) => b.min_quantity - a.min_quantity)) {
+            if (paidQty >= tier.min_quantity && (tier.max_quantity === null || paidQty <= tier.max_quantity)) {
+              const giftUnit = tier.gift_quantity_unit || 'piece';
+              totalGiftPieces += giftUnit === 'box' ? tier.gift_quantity * piecesPerBox : tier.gift_quantity;
+              break;
+            }
+          }
+        }
+      } else {
+        if (paidQty < offer.min_quantity) continue;
+        const timesApplied = offer.condition_type === 'multiplier' ? Math.floor(paidQty / offer.min_quantity) : 1;
+        const giftPerThreshold = offer.gift_quantity;
+        if (offer.gift_quantity_unit === 'box') {
+          totalGiftPieces += timesApplied * giftPerThreshold * piecesPerBox;
+        } else {
+          totalGiftPieces += timesApplied * giftPerThreshold;
+        }
+      }
+    }
+    // Convert pieces to boxes (gift is tracked in boxes in saleItems)
+    return piecesPerBox > 0 ? Math.floor(totalGiftPieces / piecesPerBox) : 0;
+  }, [activeOffers]);
+
   useEffect(() => {
     if (open && orderItems && orderItems.length > 0 && !initialized) {
       setSaleItems(orderItems.map(item => {
         const giftQty = Number((item as any).gift_quantity || 0);
         const paidQty = item.quantity - giftQty;
+        const ppb = item.product?.pieces_per_box || 1;
         return {
           productId: item.product_id,
           productName: item.product?.name || '',
@@ -137,6 +187,8 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
           originalItemId: item.id,
           originalQuantity: item.quantity,
           giftQuantity: giftQty,
+          giftOfferId: (item as any).gift_offer_id || null,
+          piecesPerBox: ppb,
         };
       }));
       setNotes(order.notes || '');
@@ -166,11 +218,46 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
     setSaleItems(prev =>
       prev.map(item => {
         if (item.productId !== productId) return item;
-        const newQty = item.quantity + delta;
-        if (newQty <= 0) return { ...item, quantity: 0, totalPrice: 0 };
-        if (newQty > available && delta > 0) return item;
-        const paidQty = Math.max(0, newQty - item.giftQuantity);
-        return { ...item, quantity: newQty, totalPrice: paidQty * item.unitPrice };
+        const currentTotal = item.quantity;
+        const newTotal = currentTotal + delta;
+        if (newTotal <= 0) return { ...item, quantity: 0, totalPrice: 0, giftQuantity: 0 };
+        if (newTotal > available && delta > 0) return item;
+        // Recalculate gift based on new paid quantity
+        // First estimate: paid = newTotal (without gift), then recalc
+        const newGift = recalcGift(item.productId, newTotal, item.piecesPerBox);
+        // The total quantity includes gift, but paid qty = newTotal - newGift
+        // However we need to be careful: if user sets total to X, paid = X - gift(X)
+        // But gift depends on paid qty... iterate once: paid = newTotal, gift = recalc(newTotal)
+        // Then final total = paid + gift, but user controls total directly
+        // Simpler approach: user changes the TOTAL, we recalc gift from (total - gift) iteratively
+        // Actually the simplest: treat the quantity the user sees as TOTAL (paid + gift)
+        // paid = newTotal - newGift, but gift depends on paid... 
+        // Best approach: paid = newTotal (what user intends to pay for), gift recalculated on top
+        // Wait - looking at the original code, quantity = paid + gift combined
+        // So when user reduces from 51 to 50, quantity=50, giftQty should recalc
+        // paid = quantity - giftQty, gift = recalcGift(paid, ...)
+        // This is circular. Let's break it: 
+        // When delta applied, new raw = newTotal. Assume all is paid first.
+        // gift = recalcGift(newTotal, piecesPerBox) -- gift based on total boxes
+        // But actually offers are "buy X get Y free" so gift is based on paid qty
+        // paid = newTotal - gift, but gift depends on paid...
+        // Solution: iterate. Start with paidGuess = newTotal
+        let paidQty = newTotal;
+        let giftQty = 0;
+        // One iteration is enough for most cases
+        giftQty = recalcGift(item.productId, paidQty, item.piecesPerBox);
+        // If gift > 0, the total should be paid + gift, but user set total = newTotal
+        // So paid = newTotal - giftQty
+        paidQty = Math.max(0, newTotal - giftQty);
+        // Recalc gift with actual paid
+        giftQty = recalcGift(item.productId, paidQty, item.piecesPerBox);
+        // Final: total stays as newTotal, gift is recalculated
+        return { 
+          ...item, 
+          quantity: newTotal, 
+          giftQuantity: Math.min(giftQty, newTotal), // gift can't exceed total
+          totalPrice: Math.max(0, newTotal - Math.min(giftQty, newTotal)) * item.unitPrice 
+        };
       }).filter(item => item.quantity > 0 || item.originalItemId)
     );
   };
@@ -210,6 +297,8 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
       totalPrice: price,
       originalQuantity: 0,
       giftQuantity: 0,
+      giftOfferId: null,
+      piecesPerBox: product.pieces_per_box || 1,
     }]);
     setNewProductId('');
   };
@@ -669,6 +758,22 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
                       {order.customer?.phone && `${order.customer?.store_name ? ' • ' : ''}${order.customer.phone}`}
                       {order.customer?.wilaya && ` • ${order.customer.wilaya}`}
                     </p>
+                    {/* Payment info badges */}
+                    <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                      <Badge variant="outline" className="text-[10px] px-1.5 h-4">
+                        {order.payment_type === 'with_invoice' ? 'فاتورة' : 'بدون فاتورة'}
+                      </Badge>
+                      {order.payment_type === 'with_invoice' && order.invoice_payment_method && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 h-4 border-primary/50 text-primary">
+                          {INVOICE_PAYMENT_METHODS[order.invoice_payment_method as InvoicePaymentMethod]?.label || order.invoice_payment_method}
+                        </Badge>
+                      )}
+                      {order.payment_type === 'with_invoice' && orderItems?.[0]?.price_subtype && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 h-4 border-accent-foreground/30">
+                          {orderItems[0].price_subtype === 'super_gros' ? 'Super Gros' : orderItems[0].price_subtype === 'gros' ? 'Gros' : 'Détail'}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <CustomerDistanceIndicator
