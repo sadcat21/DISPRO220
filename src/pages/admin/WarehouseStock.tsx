@@ -261,11 +261,15 @@ const WarehouseStock: React.FC = () => {
                 ];
                 return (
                   <Card key={s.productId} className="overflow-hidden border-border/60 shadow-sm">
-                    {/* Product name header */}
-                    <div className="bg-primary/5 border-b border-border/40 px-3 py-2">
-                      <span className="font-semibold text-sm text-primary truncate block">{s.productName}</span>
+                    {/* Product name + remaining in same row */}
+                    <div className="bg-primary/5 border-b border-border/40 px-3 py-2 flex items-center justify-between gap-2">
+                      <span className="font-semibold text-sm text-primary truncate">{s.productName}</span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-[11px] text-muted-foreground">المتبقي</span>
+                        <span className={`text-base font-extrabold tabular-nums ${s.remaining > 0 ? 'text-primary' : 'text-muted-foreground/50'}`}>{s.remaining}</span>
+                      </div>
                     </div>
-                    <CardContent className="p-3 space-y-2.5">
+                    <CardContent className="p-3">
                       {/* Stats grid */}
                       <div className="grid grid-cols-4 gap-1.5">
                         {stats.map(st => (
@@ -274,11 +278,6 @@ const WarehouseStock: React.FC = () => {
                             <div className={`text-sm font-bold tabular-nums ${st.value > 0 ? st.color : 'text-muted-foreground/40'}`}>{st.value}</div>
                           </div>
                         ))}
-                      </div>
-                      {/* Remaining footer */}
-                      <div className="flex items-center justify-between bg-primary/5 rounded-lg px-3 py-2">
-                        <span className="text-xs font-semibold text-foreground/80">المتبقي في المخزن</span>
-                        <span className={`text-base font-extrabold tabular-nums ${s.remaining > 0 ? 'text-primary' : 'text-muted-foreground/50'}`}>{s.remaining}</span>
                       </div>
                     </CardContent>
                   </Card>
