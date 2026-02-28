@@ -153,6 +153,75 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
     enabled: !!workerId,
   });
 
+  // Fetch loading/unloading data and session counts since last completed accounting session
+  const { data: loadingData } = useQuery({
+    queryKey: ['truck-loading-since-session', workerId, periodStart],
+    queryFn: async () => {
+      const periodStartTz = toTz(periodStart, false);
+
+      // Fetch all loading sessions since period start
+      const { data: sessions } = await supabase
+        .from('loading_sessions')
+        .select('id, status, created_at')
+        .eq('worker_id', workerId)
+        .gte('created_at', periodStartTz)
+        .order('created_at', { ascending: false });
+
+      const allSessions = sessions || [];
+      const loadCount = allSessions.filter(s => s.status === 'completed' || s.status === 'open').length;
+      const unloadCount = allSessions.filter(s => s.status === 'unloaded').length;
+      const reviewCount = allSessions.filter(s => s.status === 'review').length;
+
+      // Fetch all loading session items for these sessions
+      const sessionIds = allSessions.map(s => s.id);
+      if (sessionIds.length === 0) return { loadedMap: {} as Record<string, number>, loadCount: 0, unloadCount: 0, reviewCount: 0 };
+
+      const { data: items } = await supabase
+        .from('loading_session_items')
+        .select('quantity, product:products(name), session_id')
+        .in('session_id', sessionIds);
+
+      // Aggregate loaded quantity per product (net: loading - unloading)
+      const loadedMap: Record<string, number> = {};
+      for (const item of (items || [])) {
+        const name = (item as any).product?.name || '';
+        if (!name) continue;
+        if (!loadedMap[name]) loadedMap[name] = 0;
+        loadedMap[name] += Number(item.quantity || 0);
+      }
+
+      return { loadedMap, loadCount, unloadCount, reviewCount };
+    },
+    enabled: !!workerId && !!periodStart,
+  });
+
+  // Fetch sales per product since last accounting session
+  const { data: salesPerProduct } = useQuery({
+    queryKey: ['sales-per-product-map', workerId, periodStart, periodEnd],
+    queryFn: async () => {
+      const periodStartTz = toTz(periodStart, false);
+      const periodEndTz = toTz(periodEnd, true);
+
+      const { data: movements } = await supabase
+        .from('stock_movements')
+        .select('quantity, product:products(name)')
+        .eq('worker_id', workerId)
+        .eq('movement_type', 'delivery')
+        .gte('created_at', periodStartTz)
+        .lte('created_at', periodEndTz);
+
+      const salesMap: Record<string, number> = {};
+      for (const item of (movements || [])) {
+        const name = (item as any).product?.name || '';
+        if (!name) continue;
+        if (!salesMap[name]) salesMap[name] = 0;
+        salesMap[name] += Number(item.quantity || 0);
+      }
+      return salesMap;
+    },
+    enabled: !!workerId && !!periodStart && !!periodEnd,
+  });
+
   // Fetch latest review session data for this worker
   const { data: reviewData } = useQuery({
     queryKey: ['truck-review-for-stock', workerId],
@@ -220,17 +289,47 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
     );
   }
 
+  // Collect all product names from truck stock, loading, and sales
+  const allProductNames = new Set<string>();
+  truckStock?.forEach(r => allProductNames.add(r.product_name));
+  if (loadingData?.loadedMap) Object.keys(loadingData.loadedMap).forEach(n => allProductNames.add(n));
+  if (salesPerProduct) Object.keys(salesPerProduct).forEach(n => allProductNames.add(n));
+  if (reviewData?.items) Object.keys(reviewData.items).forEach(n => allProductNames.add(n));
+
+  const productRows = Array.from(allProductNames).map(name => {
+    const truckRow = truckStock?.find(r => r.product_name === name);
+    const review = reviewData?.items?.[name];
+    const loaded = loadingData?.loadedMap?.[name] || 0;
+    const sold = salesPerProduct?.[name] || 0;
+    const systemQty = review ? review.systemQty : (truckRow?.quantity || 0);
+    const actualQty = review ? review.actualQty : null;
+    const diff = review ? review.diff : null;
+    const status = diff === null ? null : Math.abs(diff) < 0.001 ? 'match' : diff > 0 ? 'surplus' : 'deficit';
+    return { name, loaded, sold, systemQty, actualQty, diff, status };
+  }).filter(r => r.loaded > 0 || r.sold > 0 || r.systemQty > 0 || r.actualQty !== null);
+
   return (
     <div className="space-y-4">
       {/* Current Truck Stock with Review Data */}
-      {truckStock && truckStock.length > 0 && (
+      {productRows.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center gap-2 mb-2">
             <Truck className="w-4 h-4 text-primary" />
             <span className="font-semibold text-sm">{t('accounting.truck_stock')}</span>
           </div>
 
-          {/* Review Session Info - single line */}
+          {/* Session Counts */}
+          {loadingData && (
+            <div className="flex items-center gap-2 flex-wrap text-xs bg-muted/30 border rounded-lg px-3 py-1.5" dir="rtl">
+              <span className="whitespace-nowrap">شحن: <span className="font-bold text-green-600">{loadingData.loadCount}</span></span>
+              <span className="text-muted-foreground/40">|</span>
+              <span className="whitespace-nowrap">تفريغ: <span className="font-bold text-destructive">{loadingData.unloadCount}</span></span>
+              <span className="text-muted-foreground/40">|</span>
+              <span className="whitespace-nowrap">مراجعة: <span className="font-bold text-primary">{loadingData.reviewCount}</span></span>
+            </div>
+          )}
+
+          {/* Review Session Info */}
           {reviewData?.sessionInfo && (
             <div className="flex items-center gap-2 flex-wrap text-xs bg-muted/50 border rounded-lg px-3 py-2" dir="rtl">
               <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-md bg-background/70 px-2 py-1">
@@ -247,56 +346,54 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
             </div>
           )}
 
-          <div className="grid grid-cols-4 gap-1 text-xs text-muted-foreground text-center font-medium border-b pb-1">
+          <div className="grid grid-cols-6 gap-1 text-xs text-muted-foreground text-center font-medium border-b pb-1">
             <span className="text-start">{t('stock.product')}</span>
+            <span>الشحن</span>
+            <span>المبيعات</span>
             <span>كمية النظام</span>
             <span>الكمية الفعلية</span>
             <span>المراجعة</span>
           </div>
 
-          {truckStock.map((row) => {
-            const review = reviewData?.items?.[row.product_name];
-            const systemQty = review ? review.systemQty : row.quantity;
-            const actualQty = review ? review.actualQty : null;
-            const diff = review ? review.diff : null;
-            const status = diff === null ? null : Math.abs(diff) < 0.001 ? 'match' : diff > 0 ? 'surplus' : 'deficit';
+          {productRows.map((row) => (
+            <div key={row.name} className="grid grid-cols-6 gap-1 text-xs text-center items-center py-1.5 border-b border-dashed last:border-0">
+              <span className="text-start font-medium text-wrap">{row.name}</span>
+              <span className="font-bold text-green-600">{row.loaded > 0 ? row.loaded : '-'}</span>
+              <span className="font-bold text-blue-600">{row.sold > 0 ? row.sold : '-'}</span>
+              <span className="font-bold">{row.systemQty}</span>
+              <span className={`font-bold ${row.status === 'deficit' ? 'text-destructive' : row.status === 'surplus' ? 'text-orange-600' : ''}`}>
+                {row.actualQty !== null ? row.actualQty : '-'}
+              </span>
+              <span>
+                {row.status === 'match' && (
+                  <Badge className="text-[10px] bg-primary/80 text-primary-foreground">
+                    <CheckCircle className="w-2.5 h-2.5 ml-0.5" />
+                    متوافق
+                  </Badge>
+                )}
+                {row.status === 'deficit' && (
+                  <Badge className="text-[10px] bg-destructive text-destructive-foreground" dir="rtl">
+                    <AlertTriangle className="w-2.5 h-2.5 me-1" />
+                    عجز ({Math.abs(row.diff!)})
+                  </Badge>
+                )}
+                {row.status === 'surplus' && (
+                  <Badge className="text-[10px] bg-orange-500 text-white" dir="rtl">
+                    <TrendingUp className="w-2.5 h-2.5 me-1" />
+                    فائض ({Math.abs(row.diff!)})
+                  </Badge>
+                )}
+                {row.status === null && (
+                  <span className="text-muted-foreground">-</span>
+                )}
+              </span>
+            </div>
+          ))}
 
-            return (
-              <div key={row.product_name} className="grid grid-cols-4 gap-1 text-xs text-center items-center py-1.5 border-b border-dashed last:border-0">
-                <span className="text-start font-medium text-wrap">{row.product_name}</span>
-                <span className="font-bold">{systemQty}</span>
-                <span className={`font-bold ${status === 'deficit' ? 'text-destructive' : status === 'surplus' ? 'text-orange-600' : ''}`}>
-                  {actualQty !== null ? actualQty : '-'}
-                </span>
-                <span>
-                  {status === 'match' && (
-                    <Badge className="text-[10px] bg-primary/80 text-primary-foreground">
-                      <CheckCircle className="w-2.5 h-2.5 ml-0.5" />
-                      متوافق
-                    </Badge>
-                  )}
-                  {status === 'deficit' && (
-                    <Badge className="text-[10px] bg-destructive text-destructive-foreground" dir="rtl">
-                      <AlertTriangle className="w-2.5 h-2.5 me-1" />
-                      عجز ({Math.abs(diff!)})
-                    </Badge>
-                  )}
-                  {status === 'surplus' && (
-                    <Badge className="text-[10px] bg-orange-500 text-white" dir="rtl">
-                      <TrendingUp className="w-2.5 h-2.5 me-1" />
-                      فائض ({Math.abs(diff!)})
-                    </Badge>
-                  )}
-                  {status === null && (
-                    <span className="text-muted-foreground">-</span>
-                  )}
-                </span>
-              </div>
-            );
-          })}
-
-          <div className="grid grid-cols-4 gap-1 text-xs text-center font-bold border-t-2 pt-1 bg-primary/5 rounded p-1.5">
+          <div className="grid grid-cols-6 gap-1 text-xs text-center font-bold border-t-2 pt-1 bg-primary/5 rounded p-1.5">
             <span className="text-start">{t('common.total')}</span>
+            <span className="text-green-600">{productRows.reduce((s, r) => s + r.loaded, 0) || '-'}</span>
+            <span className="text-blue-600">{productRows.reduce((s, r) => s + r.sold, 0) || '-'}</span>
             <span>{totalTruckQty}</span>
             <span>-</span>
             <span>-</span>
@@ -305,7 +402,7 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
         </div>
       )}
 
-      {truckStock && truckStock.length === 0 && (
+      {(!productRows || productRows.length === 0) && !truckLoading && (
         <p className="text-center text-muted-foreground py-2 text-xs">
           {t('accounting.no_truck_stock')}
         </p>
