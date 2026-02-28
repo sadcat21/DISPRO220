@@ -226,7 +226,7 @@ const CheckVerificationDialog: React.FC<CheckVerificationDialogProps> = ({
           <div className="p-4 border-t space-y-2">
             <Button
               className="w-full h-12"
-              onClick={() => handleConfirmCheck(false)}
+              onClick={() => handleConfirmCheck(!allChecked)}
               disabled={isSubmitting || (verification.has_due_date && !verification.due_date)}
             >
               {isSubmitting ? (

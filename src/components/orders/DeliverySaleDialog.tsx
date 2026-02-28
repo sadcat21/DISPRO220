@@ -299,7 +299,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
     const remaining = data.checkReceived ? 0 : totals.amountAfterPrepaid;
 
     // Update document status on order
-    const docStatus = data.checkReceived ? 'received' : 'pending';
+    const docStatus = data.checkReceived ? (data.skippedVerification ? 'pending' : 'received') : 'pending';
     const docVerification = data.checkReceived ? {
       type: 'check',
       ...data.verification,
