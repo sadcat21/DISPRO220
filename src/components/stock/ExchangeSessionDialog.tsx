@@ -15,7 +15,7 @@ import { useQueryClient } from '@tanstack/react-query';
 interface ExchangeItem {
   product_id: string;
   product_name: string;
-  damaged_qty: number; // quantity of damaged product (in boxes.pieces format)
+  damaged_pieces: number; // quantity entered in pieces
   pieces_per_box: number;
 }
 
@@ -31,6 +31,23 @@ interface ExchangeSessionDialogProps {
 const fmtQty = (n: number) => {
   const rounded = Math.round(n * 100) / 100;
   return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+};
+
+const customToTotalPieces = (customQty: number, piecesPerBox: number): number => {
+  const rounded = Math.round(customQty * 100) / 100;
+  const boxes = Math.floor(rounded);
+  const pieces = Math.round((rounded - boxes) * 100);
+  return (boxes * piecesPerBox) + pieces;
+};
+
+const totalPiecesToCustom = (totalPieces: number, piecesPerBox: number): number => {
+  const boxes = Math.floor(totalPieces / piecesPerBox);
+  const pieces = totalPieces % piecesPerBox;
+  return boxes + pieces / 100;
+};
+
+const piecesToCustomQty = (pieces: number, piecesPerBox: number): number => {
+  return totalPiecesToCustom(Math.max(0, Math.floor(pieces)), piecesPerBox);
 };
 
 const ExchangeSessionDialog: React.FC<ExchangeSessionDialogProps> = ({
@@ -73,7 +90,7 @@ const ExchangeSessionDialog: React.FC<ExchangeSessionDialogProps> = ({
     setItems(prev => [...prev, {
       product_id: product.id,
       product_name: product.name,
-      damaged_qty: 0,
+      damaged_pieces: 0,
       pieces_per_box: product.pieces_per_box,
     }]);
     setShowProductPicker(false);
@@ -81,14 +98,15 @@ const ExchangeSessionDialog: React.FC<ExchangeSessionDialogProps> = ({
   };
 
   const updateQty = (productId: string, qty: number) => {
-    setItems(prev => prev.map(i => i.product_id === productId ? { ...i, damaged_qty: qty } : i));
+    const safePieces = Number.isFinite(qty) ? Math.max(0, Math.floor(qty)) : 0;
+    setItems(prev => prev.map(i => i.product_id === productId ? { ...i, damaged_pieces: safePieces } : i));
   };
 
   const removeItem = (productId: string) => {
     setItems(prev => prev.filter(i => i.product_id !== productId));
   };
 
-  const validItems = items.filter(i => i.damaged_qty > 0);
+  const validItems = items.filter(i => i.damaged_pieces > 0);
 
   const handleConfirm = async () => {
     if (validItems.length === 0) {
@@ -114,19 +132,21 @@ const ExchangeSessionDialog: React.FC<ExchangeSessionDialogProps> = ({
 
       // 2. For each item: deduct from warehouse, add to damaged, record session item
       for (const item of validItems) {
+        const exchangeQtyCustom = piecesToCustomQty(item.damaged_pieces, item.pieces_per_box);
+
         // Save session item
         await supabase.from('loading_session_items').insert({
           session_id: session.id,
           product_id: item.product_id,
-          quantity: item.damaged_qty,
+          quantity: exchangeQtyCustom,
           gift_quantity: 0,
           gift_unit: 'piece',
           surplus_quantity: 0,
           is_custom_load: false,
-          notes: `استبدال تالف: ${fmtQty(item.damaged_qty)}`,
+          notes: `استبدال تالف: ${fmtQty(exchangeQtyCustom)}`,
         });
 
-        // Deduct from warehouse stock (giving a good product)
+        // Deduct from warehouse stock (good product) and add into damaged stock
         const { data: whStock } = await supabase
           .from('warehouse_stock')
           .select('id, quantity, damaged_quantity')
@@ -135,11 +155,18 @@ const ExchangeSessionDialog: React.FC<ExchangeSessionDialogProps> = ({
           .maybeSingle();
 
         if (whStock) {
-          const newQty = Math.max(0, whStock.quantity - item.damaged_qty);
-          const newDamaged = (whStock.damaged_quantity || 0) + item.damaged_qty;
+          const warehouseQtyPieces = customToTotalPieces(Number(whStock.quantity || 0), item.pieces_per_box);
+          const warehouseDamagedPieces = customToTotalPieces(Number(whStock.damaged_quantity || 0), item.pieces_per_box);
+
+          const newQtyPieces = Math.max(0, warehouseQtyPieces - item.damaged_pieces);
+          const newDamagedPieces = warehouseDamagedPieces + item.damaged_pieces;
+
           await supabase
             .from('warehouse_stock')
-            .update({ quantity: newQty, damaged_quantity: newDamaged })
+            .update({
+              quantity: totalPiecesToCustom(newQtyPieces, item.pieces_per_box),
+              damaged_quantity: totalPiecesToCustom(newDamagedPieces, item.pieces_per_box),
+            })
             .eq('id', whStock.id);
         } else {
           // No warehouse stock exists - create with 0 qty and damaged count
@@ -147,7 +174,7 @@ const ExchangeSessionDialog: React.FC<ExchangeSessionDialogProps> = ({
             branch_id: branchId,
             product_id: item.product_id,
             quantity: 0,
-            damaged_quantity: item.damaged_qty,
+            damaged_quantity: exchangeQtyCustom,
           });
         }
 
@@ -155,7 +182,7 @@ const ExchangeSessionDialog: React.FC<ExchangeSessionDialogProps> = ({
         await supabase.from('stock_movements').insert({
           product_id: item.product_id,
           branch_id: branchId,
-          quantity: item.damaged_qty,
+          quantity: exchangeQtyCustom,
           movement_type: 'exchange',
           status: 'approved',
           created_by: currentWorkerId,
@@ -220,21 +247,21 @@ const ExchangeSessionDialog: React.FC<ExchangeSessionDialogProps> = ({
                     </Button>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Label className="text-xs shrink-0">كمية التالف:</Label>
+                    <Label className="text-xs shrink-0">كمية التالف (بالقطعة):</Label>
                     <Input
                       type="number"
                       min={0}
-                      step="any"
-                      value={item.damaged_qty || ''}
+                      step={1}
+                      value={item.damaged_pieces || ''}
                       onFocus={e => e.target.select()}
-                      onChange={e => updateQty(item.product_id, parseFloat(e.target.value) || 0)}
+                      onChange={e => updateQty(item.product_id, parseInt(e.target.value || '0', 10))}
                       className="h-8 text-center flex-1"
-                      placeholder="مثال: 1 أو 0.01"
+                      placeholder="مثال: 1 أو 20"
                     />
                   </div>
-                  {item.damaged_qty > 0 && (
+                  {item.damaged_pieces > 0 && (
                     <div className="text-xs text-muted-foreground bg-orange-50 dark:bg-orange-900/10 rounded px-2 py-1">
-                      سيتم خصم <strong>{fmtQty(item.damaged_qty)}</strong> من المخزن وإضافتها كتالف
+                      سيتم خصم <strong>{item.damaged_pieces}</strong> قطعة ({fmtQty(piecesToCustomQty(item.damaged_pieces, item.pieces_per_box))}) من المخزن وإضافتها كتالف
                     </div>
                   )}
                 </CardContent>

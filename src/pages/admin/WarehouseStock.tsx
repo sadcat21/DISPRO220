@@ -44,7 +44,7 @@ const WarehouseStock: React.FC = () => {
   const { data: summaryData, isLoading: summaryLoading } = useQuery({
     queryKey: ['warehouse-product-summary', branchId],
     queryFn: async () => {
-      if (!branchId) return { receipts: [], movements: [], discrepancies: [], workerStocks: [] };
+      if (!branchId) return { receipts: [], movements: [], discrepancies: [], workerStocks: [], warehouseDamaged: [] };
 
       // First get receipt IDs for this branch
       const { data: branchReceipts } = await supabase
@@ -54,7 +54,7 @@ const WarehouseStock: React.FC = () => {
       
       const receiptIds = (branchReceipts || []).map(r => r.id);
 
-      const [receiptsRes, discrepanciesRes, workerStocksRes] = await Promise.all([
+      const [receiptsRes, discrepanciesRes, workerStocksRes, warehouseRes] = await Promise.all([
         // Total received per product (filter by receipt IDs)
         receiptIds.length > 0
           ? supabase
@@ -62,7 +62,7 @@ const WarehouseStock: React.FC = () => {
               .select('product_id, quantity')
               .in('receipt_id', receiptIds)
           : Promise.resolve({ data: [], error: null }),
-        // Discrepancies (damaged, surplus, deficit)
+        // Discrepancies (surplus, deficit)
         supabase
           .from('stock_discrepancies')
           .select('product_id, quantity, discrepancy_type')
@@ -72,12 +72,18 @@ const WarehouseStock: React.FC = () => {
           .from('worker_stock')
           .select('product_id, quantity')
           .eq('branch_id', branchId),
+        // Damaged stock tracked directly on warehouse stock rows
+        supabase
+          .from('warehouse_stock')
+          .select('product_id, damaged_quantity')
+          .eq('branch_id', branchId),
       ]);
 
       return {
         receipts: receiptsRes.data || [],
         discrepancies: discrepanciesRes.data || [],
         workerStocks: workerStocksRes.data || [],
+        warehouseDamaged: warehouseRes.data || [],
       };
     },
     enabled: !!branchId,
@@ -167,7 +173,7 @@ const WarehouseStock: React.FC = () => {
       }
     }
 
-    // Discrepancies
+    // Discrepancies (surplus / deficit فقط)
     for (const d of (summaryData?.discrepancies || [])) {
       if (!summaries[d.product_id]) continue;
       const qty = Number(d.quantity || 0);
@@ -175,9 +181,13 @@ const WarehouseStock: React.FC = () => {
         summaries[d.product_id].deficit += qty;
       } else if (d.discrepancy_type === 'surplus') {
         summaries[d.product_id].surplus += qty;
-      } else if (d.discrepancy_type === 'damaged') {
-        summaries[d.product_id].damaged += qty;
       }
+    }
+
+    // Damaged from warehouse stock (current snapshot)
+    for (const ws of (summaryData?.warehouseDamaged || [])) {
+      if (!summaries[ws.product_id]) continue;
+      summaries[ws.product_id].damaged += Number(ws.damaged_quantity || 0);
     }
 
     // Remaining = warehouse stock
