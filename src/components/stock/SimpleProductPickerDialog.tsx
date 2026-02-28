@@ -57,7 +57,7 @@ const SimpleProductPickerDialog: React.FC<SimpleProductPickerDialogProps> = ({
               return (
                 <button
                   key={p.id}
-                  className={`flex flex-col items-center gap-2 rounded-xl border p-4 text-center transition-colors
+                  className={`flex flex-col items-center gap-1.5 rounded-xl border overflow-hidden text-center transition-colors
                     ${isSelected ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent border-border'}
                   `}
                   onClick={() => {
@@ -67,13 +67,15 @@ const SimpleProductPickerDialog: React.FC<SimpleProductPickerDialogProps> = ({
                   }}
                 >
                   {p.image_url ? (
-                    <img src={p.image_url} alt={p.name} className="w-16 h-16 rounded-full object-cover shrink-0" loading="lazy" />
+                    <div className="w-full aspect-square">
+                      <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
+                    </div>
                   ) : (
-                    <div className={`w-16 h-16 rounded-full flex items-center justify-center ${isSelected ? 'bg-primary-foreground/20' : 'bg-primary/10'}`}>
-                      <Package className={`w-7 h-7 ${isSelected ? 'text-primary-foreground' : 'text-primary'}`} />
+                    <div className={`w-full aspect-square flex items-center justify-center ${isSelected ? 'bg-primary-foreground/20' : 'bg-primary/10'}`}>
+                      <Package className={`w-10 h-10 ${isSelected ? 'text-primary-foreground' : 'text-primary'}`} />
                     </div>
                   )}
-                  <span className="font-semibold text-sm leading-tight truncate w-full">{p.name}</span>
+                  <span className="font-semibold text-sm leading-tight truncate w-full px-2 pb-2">{p.name}</span>
                 </button>
               );
             })}
