@@ -188,12 +188,12 @@ const SessionDetailsDialog: React.FC<SessionDetailsDialogProps> = ({ open, onOpe
             {(() => {
               const customerSurplusItem = items?.find(i => i.item_type === 'customer_surplus_cash');
               const csVal = customerSurplusItem ? Number(customerSurplusItem.expected_amount || 0) : 0;
-              return csVal > 0 ? (
+              return (
                 <div className="flex justify-between text-blue-600">
                   <span>فائض العملاء (كاش)</span>
-                  <span>+{fmt(csVal)} DA</span>
+                  <span>{csVal > 0 ? '+' : ''}{fmt(csVal)} DA</span>
                 </div>
-              ) : null;
+              );
             })()}
             {expenses.expected > 0 && (
               <div className="flex justify-between text-destructive">
