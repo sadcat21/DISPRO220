@@ -12,7 +12,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import {
   ShoppingCart, Plus, Minus, Loader2, User,
   Receipt, ReceiptText, UserPlus, Edit2, XCircle, Package, Check, ChevronsUpDown, Stamp,
-  AlertTriangle, Gift
+  AlertTriangle, Gift, Banknote
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
@@ -973,21 +973,43 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                 />
               </section>
 
-              {/* Prepaid Amount */}
+              {/* Prepaid Amount Toggle */}
               <section className="space-y-2">
-                <Label>مبلغ مسبق ({t('common.optional')})</Label>
-                <Input
-                  type="number"
-                  value={prepaidAmount}
-                  onChange={(e) => setPrepaidAmount(e.target.value)}
-                  placeholder="0"
-                  min="0"
-                  className="h-10"
-                />
+                <Button
+                  type="button"
+                  variant={Number(prepaidAmount) > 0 ? 'default' : 'outline'}
+                  className={`w-full h-12 text-sm font-bold gap-2 ${
+                    Number(prepaidAmount) > 0
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white ring-2 ring-emerald-400/50'
+                      : 'border-dashed border-2'
+                  }`}
+                  onClick={() => {
+                    if (Number(prepaidAmount) > 0) {
+                      setPrepaidAmount('');
+                    } else {
+                      setPrepaidAmount('1'); // activate to show input
+                    }
+                  }}
+                >
+                  <Banknote className="w-5 h-5" />
+                  {Number(prepaidAmount) > 0 ? `💰 دفع مسبق: ${Number(prepaidAmount).toLocaleString()} ${t('common.currency')}` : '💰 إضافة دفع مسبق (عربون)'}
+                </Button>
                 {Number(prepaidAmount) > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    سيتم خصم {Number(prepaidAmount).toLocaleString()} {t('common.currency')} من المبلغ عند التوصيل
-                  </p>
+                  <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3 space-y-2">
+                    <Label className="text-emerald-700 dark:text-emerald-400 font-semibold text-sm">مبلغ الدفع المسبق</Label>
+                    <Input
+                      type="number"
+                      value={prepaidAmount}
+                      onChange={(e) => setPrepaidAmount(e.target.value)}
+                      placeholder="0"
+                      min="1"
+                      className="h-10 border-emerald-300 dark:border-emerald-700 font-bold text-lg"
+                      autoFocus
+                    />
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                      ✅ سيتم حفظ هذا المبلغ كرصيد مسبق وسيُخصم تلقائياً عند تأكيد التوصيل
+                    </p>
+                  </div>
                 )}
               </section>
 

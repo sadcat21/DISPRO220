@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Truck, Plus, Minus, Loader2,
-  XCircle, Package, PlusCircle, Stamp, CheckCircle, PackageX, Gift, AlertTriangle, Copy, DollarSign
+  XCircle, Package, PlusCircle, Stamp, CheckCircle, PackageX, Gift, AlertTriangle, Copy, DollarSign, Banknote
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -788,6 +788,21 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
                 />
               </div>
 
+              {/* Prominent prepaid alert banner */}
+              {prepaidAmount > 0 && (
+                <Alert className="border-2 border-emerald-400 dark:border-emerald-600 bg-emerald-50 dark:bg-emerald-950/30">
+                  <Banknote className="h-5 w-5 text-emerald-600" />
+                  <AlertDescription className="flex items-center justify-between">
+                    <div>
+                      <p className="font-bold text-emerald-700 dark:text-emerald-400">💰 هذه الطلبية مدفوعة مسبقاً</p>
+                      <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                        تم دفع <strong>{prepaidAmount.toLocaleString()} {t('common.currency')}</strong> مسبقاً — حصّل المتبقي فقط
+                      </p>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+
               {/* Current Items */}
               <section className="space-y-3">
                 <Label className="text-base font-semibold">{t('nav.products')}</Label>
@@ -1004,9 +1019,23 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
                         </span>
                       </div>
                       {prepaidAmount > 0 && (
-                        <div className="flex items-center justify-between text-sm text-green-600 dark:text-green-400">
-                          <span>مبلغ مسبق مدفوع:</span>
-                          <span className="font-medium">- {prepaidAmount.toLocaleString()} {t('common.currency')}</span>
+                        <div className="bg-emerald-100 dark:bg-emerald-900/30 border-2 border-emerald-400 dark:border-emerald-600 rounded-lg p-3 space-y-1 animate-pulse-once">
+                          <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+                            <Banknote className="w-5 h-5" />
+                            <span className="font-bold text-sm">⚠️ طلبية بدفع مسبق!</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-emerald-600 dark:text-emerald-400">المبلغ المدفوع مسبقاً:</span>
+                            <span className="font-bold text-emerald-700 dark:text-emerald-300 text-base">
+                              {prepaidAmount.toLocaleString()} {t('common.currency')}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm font-bold">
+                            <span className="text-primary">المتبقي للتحصيل:</span>
+                            <span className="text-primary text-base">
+                              {totals.amountAfterPrepaid.toLocaleString('ar-DZ', { minimumFractionDigits: 2 })} {t('common.currency')}
+                            </span>
+                          </div>
                         </div>
                       )}
                       {/* Credit balance usage prompt */}

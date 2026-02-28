@@ -596,9 +596,16 @@ const MyDeliveries: React.FC = () => {
                     <span className="text-primary">{Number(selectedOrder.total_amount).toLocaleString()} دج</span>
                   </div>
                   {Number(selectedOrder.prepaid_amount || 0) > 0 && (
-                    <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 rounded-lg text-sm">
-                      <span className="text-green-700 dark:text-green-400 font-medium">مبلغ مسبق مدفوع</span>
-                      <span className="text-green-700 dark:text-green-400 font-bold">{Number(selectedOrder.prepaid_amount).toLocaleString()} دج</span>
+                    <div className="border-2 border-emerald-400 dark:border-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg p-3 space-y-1">
+                      <p className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">💰 طلبية بدفع مسبق!</p>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-emerald-600 dark:text-emerald-400">المبلغ المدفوع مسبقاً:</span>
+                        <span className="text-emerald-700 dark:text-emerald-300 font-bold">{Number(selectedOrder.prepaid_amount).toLocaleString()} دج</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm font-bold">
+                        <span className="text-primary">المتبقي للتحصيل:</span>
+                        <span className="text-primary">{Math.max(0, Number(selectedOrder.total_amount || 0) - Number(selectedOrder.prepaid_amount || 0)).toLocaleString()} دج</span>
+                      </div>
                     </div>
                   )}
                 </>
