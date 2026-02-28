@@ -306,7 +306,10 @@ const CheckVerificationDialog: React.FC<CheckVerificationDialogProps> = ({
                                     type="number"
                                     placeholder="المبلغ في الوثيقة"
                                     value={verification.document_amount}
-                                    onChange={(e) => setVerification(prev => ({ ...prev, document_amount: e.target.value }))}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setVerification(prev => ({ ...prev, document_amount: val, amount_matches: val.length > 0 }));
+                                    }}
                                     className="h-8 text-sm flex-1"
                                     dir="ltr"
                                   />
