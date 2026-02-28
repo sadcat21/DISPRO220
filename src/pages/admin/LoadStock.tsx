@@ -105,6 +105,7 @@ const LoadStock: React.FC = () => {
   const [historyDateFilter, setHistoryDateFilter] = useState<Date | undefined>(undefined);
   const [historyProductFilter, setHistoryProductFilter] = useState<string>('');
   const [sessionProductMap, setSessionProductMap] = useState<Record<string, string[]>>({});
+  const [sessionDiscrepancyMap, setSessionDiscrepancyMap] = useState<Record<string, { deficit: number; surplus: number }>>({});
   const [showAddProductDialog, setShowAddProductDialog] = useState(false);
   const [emptyTruckItems, setEmptyTruckItems] = useState<EmptyTruckItem[]>([]);
   const [isEmptying, setIsEmptying] = useState(false);
@@ -276,26 +277,80 @@ const LoadStock: React.FC = () => {
     }
   };
 
-  // Fetch product IDs per session when history opens
+  // Fetch product IDs + discrepancy counts per session when history opens
   useEffect(() => {
-    if (!showSessionHistory || sessions.length === 0) return;
+    if (!showSessionHistory) return;
+    if (sessions.length === 0) {
+      setSessionProductMap({});
+      setSessionDiscrepancyMap({});
+      return;
+    }
+
     const fetchSessionProducts = async () => {
       const sessionIds = sessions.map(s => s.id);
-      const { data } = await supabase
+
+      const { data: itemsData } = await supabase
         .from('loading_session_items')
-        .select('session_id, product_id')
+        .select('session_id, product_id, notes, quantity, previous_quantity')
         .in('session_id', sessionIds);
-      if (data) {
-        const map: Record<string, string[]> = {};
-        data.forEach(item => {
-          if (!map[item.session_id]) map[item.session_id] = [];
-          if (!map[item.session_id].includes(item.product_id)) {
-            map[item.session_id].push(item.product_id);
+
+      const productMap: Record<string, string[]> = {};
+      const fallbackDiscrepancyMap: Record<string, { deficit: number; surplus: number }> = {};
+
+      (itemsData || []).forEach((item: any) => {
+        if (!productMap[item.session_id]) productMap[item.session_id] = [];
+        if (!productMap[item.session_id].includes(item.product_id)) {
+          productMap[item.session_id].push(item.product_id);
+        }
+
+        const note = String(item.notes || '').trim();
+        const diff = Number((Number(item.quantity || 0) - Number(item.previous_quantity || 0)).toFixed(2));
+
+        let discrepancyType: 'deficit' | 'surplus' | null = null;
+        if (note.startsWith('عجز')) discrepancyType = 'deficit';
+        else if (note.startsWith('فائض')) discrepancyType = 'surplus';
+        else if (Math.abs(diff) > 0.001) discrepancyType = diff < 0 ? 'deficit' : 'surplus';
+
+        if (discrepancyType) {
+          if (!fallbackDiscrepancyMap[item.session_id]) {
+            fallbackDiscrepancyMap[item.session_id] = { deficit: 0, surplus: 0 };
           }
-        });
-        setSessionProductMap(map);
-      }
+          fallbackDiscrepancyMap[item.session_id][discrepancyType] += 1;
+        }
+      });
+
+      setSessionProductMap(productMap);
+
+      const { data: discrepanciesData } = await supabase
+        .from('stock_discrepancies')
+        .select('source_session_id, discrepancy_type')
+        .in('source_session_id', sessionIds);
+
+      const dbDiscrepancyMap: Record<string, { deficit: number; surplus: number }> = {};
+      (discrepanciesData || []).forEach((disc: any) => {
+        const sessionId = disc.source_session_id;
+        if (!sessionId) return;
+        if (!dbDiscrepancyMap[sessionId]) {
+          dbDiscrepancyMap[sessionId] = { deficit: 0, surplus: 0 };
+        }
+        if (disc.discrepancy_type === 'deficit') dbDiscrepancyMap[sessionId].deficit += 1;
+        if (disc.discrepancy_type === 'surplus') dbDiscrepancyMap[sessionId].surplus += 1;
+      });
+
+      const mergedDiscrepancyMap: Record<string, { deficit: number; surplus: number }> = {};
+      sessionIds.forEach((sessionId) => {
+        const dbCounts = dbDiscrepancyMap[sessionId] || { deficit: 0, surplus: 0 };
+        const fallbackCounts = fallbackDiscrepancyMap[sessionId] || { deficit: 0, surplus: 0 };
+
+        mergedDiscrepancyMap[sessionId] = {
+          deficit: Math.max(dbCounts.deficit, fallbackCounts.deficit),
+          surplus: Math.max(dbCounts.surplus, fallbackCounts.surplus),
+        };
+      });
+
+      setSessionDiscrepancyMap(mergedDiscrepancyMap);
     };
+
     fetchSessionProducts();
   }, [showSessionHistory, sessions]);
 
@@ -1265,60 +1320,67 @@ const LoadStock: React.FC = () => {
             <div className="space-y-2">
               {filteredSessions.length === 0 ? (
                 <p className="text-center text-muted-foreground py-6 text-sm">لا توجد جلسات سابقة</p>
-              ) : filteredSessions.map(session => (
-                <Card 
-                  key={session.id} 
-                  className={`border cursor-pointer hover:bg-accent/50 transition-colors ${session.status === 'open' ? 'border-primary/30' : ''}`}
-                  onClick={() => handleViewSession(session.id)}
-                >
-                  <CardContent className="p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                      <Badge variant={session.status === 'unloaded' ? 'destructive' : 'secondary'} className={`text-xs ${session.status === 'review' ? 'bg-blue-600 text-white hover:bg-blue-700' : session.status === 'open' || session.status === 'completed' ? 'bg-green-600 text-white hover:bg-green-700' : ''}`}>
-                          {session.status === 'open' ? 'شحن' : session.status === 'unloaded' ? 'تفريغ' : session.status === 'review' ? 'مراجعة' : 'شحن'}
-                        </Badge>
-                        {session.notes?.includes('فائض') && (
-                          <Badge className="bg-amber-500 text-white text-[10px] px-1.5 py-0 ms-1">فائض</Badge>
-                        )}
-                        <span className="text-xs text-muted-foreground ms-2">
-                          {new Date(session.created_at).toLocaleDateString('ar-DZ')} {new Date(session.created_at).toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                      <div className="flex gap-1">
-                        {session.status === 'open' && (
+              ) : filteredSessions.map(session => {
+                const reviewCounts = sessionDiscrepancyMap[session.id] || { deficit: 0, surplus: 0 };
+
+                return (
+                  <Card
+                    key={session.id}
+                    className={`border cursor-pointer hover:bg-accent/50 transition-colors ${session.status === 'open' ? 'border-primary/30' : ''}`}
+                    onClick={() => handleViewSession(session.id)}
+                  >
+                    <CardContent className="p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Badge variant={session.status === 'unloaded' ? 'destructive' : 'secondary'} className={`text-xs ${session.status === 'review' ? 'bg-blue-600 text-white hover:bg-blue-700' : session.status === 'open' || session.status === 'completed' ? 'bg-green-600 text-white hover:bg-green-700' : ''}`}>
+                            {session.status === 'open' ? 'شحن' : session.status === 'unloaded' ? 'تفريغ' : session.status === 'review' ? 'مراجعة' : 'شحن'}
+                          </Badge>
+                          {session.status === 'review' && reviewCounts.deficit > 0 && (
+                            <Badge variant="destructive" className="text-[10px] px-1.5 py-0 ms-1">عجز ({reviewCounts.deficit})</Badge>
+                          )}
+                          {session.status === 'review' && reviewCounts.surplus > 0 && (
+                            <Badge className="bg-amber-500 text-white text-[10px] px-1.5 py-0 ms-1">فائض ({reviewCounts.surplus})</Badge>
+                          )}
+                          <span className="text-xs text-muted-foreground ms-2">
+                            {new Date(session.created_at).toLocaleDateString('ar-DZ')} {new Date(session.created_at).toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <div className="flex gap-1">
+                          {session.status === 'open' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveSessionId(session.id);
+                                setShowSessionHistory(false);
+                              }}
+                            >
+                              استئناف
+                            </Button>
+                          )}
                           <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-xs"
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-destructive hover:bg-destructive/10"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setActiveSessionId(session.id);
-                              setShowSessionHistory(false);
+                              handleDeleteSession(session.id);
                             }}
+                            disabled={deleteSession.isPending}
                           >
-                            استئناف
+                            <Trash2 className="w-3.5 h-3.5" />
                           </Button>
-                        )}
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteSession(session.id);
-                          }}
-                          disabled={deleteSession.isPending}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      المدير: {(session.manager as any)?.full_name || '—'}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      <div className="text-xs text-muted-foreground">
+                        المدير: {(session.manager as any)?.full_name || '—'}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </ScrollArea>
         </DialogContent>

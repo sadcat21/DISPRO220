@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Banknote, HandCoins, TrendingDown, FileCheck2, Stamp, Coins,
-  Truck, PackageCheck, ClipboardList, Receipt, CreditCard
+  Truck, PackageCheck, ClipboardList, Receipt, CreditCard, AlertTriangle
 } from 'lucide-react';
 import { SessionCalculations } from '@/hooks/useSessionCalculations';
 
@@ -173,6 +173,18 @@ const WorkerHandoverSummary: React.FC<WorkerHandoverSummaryProps> = ({
       const surplusTotal = (surplusData || []).reduce((sum, s) => sum + Number(s.amount), 0);
       const surplusCustomers = new Set((surplusData || []).map(s => s.customer_id)).size;
 
+      // Stock discrepancies (pending)
+      const { data: stockDiscrepancies } = await supabase
+        .from('stock_discrepancies')
+        .select('id, discrepancy_type')
+        .eq('worker_id', workerId)
+        .eq('status', 'pending')
+        .gte('created_at', startTz)
+        .lte('created_at', endTz);
+
+      const stockDeficitCount = (stockDiscrepancies || []).filter(d => d.discrepancy_type === 'deficit').length;
+      const stockSurplusCount = (stockDiscrepancies || []).filter(d => d.discrepancy_type === 'surplus').length;
+
       return {
         checksCount,
         versementCount,
@@ -187,6 +199,8 @@ const WorkerHandoverSummary: React.FC<WorkerHandoverSummaryProps> = ({
         expenseReceiptsCount,
         surplusTotal,
         surplusCustomers,
+        stockDeficitCount,
+        stockSurplusCount,
       };
     },
   });
@@ -302,6 +316,24 @@ const WorkerHandoverSummary: React.FC<WorkerHandoverSummaryProps> = ({
       icon: <Coins className="w-3.5 h-3.5 text-amber-600" />,
       label: 'عملات معدنية',
       value: `${fmt(coinAmount)} DA`,
+      color: 'text-amber-600',
+    });
+  }
+
+  if (stats.stockDeficitCount > 0) {
+    logRows.push({
+      icon: <AlertTriangle className="w-3.5 h-3.5 text-destructive" />,
+      label: 'عجز المخزون',
+      value: `(${stats.stockDeficitCount})`,
+      color: 'text-destructive',
+    });
+  }
+
+  if (stats.stockSurplusCount > 0) {
+    logRows.push({
+      icon: <PackageCheck className="w-3.5 h-3.5 text-amber-600" />,
+      label: 'فائض المخزون',
+      value: `(${stats.stockSurplusCount})`,
       color: 'text-amber-600',
     });
   }
