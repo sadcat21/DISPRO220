@@ -594,16 +594,16 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                     <Label className="text-sm font-medium">{t('orders.price_type')}</Label>
                     <div className="grid grid-cols-3 gap-2">
                       {([
-                        { value: 'super_gros' as PriceSubType, label: t('products.price_super_gros') },
-                        { value: 'gros' as PriceSubType, label: t('products.price_gros') },
-                        { value: 'retail' as PriceSubType, label: t('products.price_retail') },
+                        { value: 'super_gros' as PriceSubType, label: t('products.price_super_gros'), colors: { active: 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 ring-2 ring-indigo-400', inactive: 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600' } },
+                        { value: 'gros' as PriceSubType, label: t('products.price_gros'), colors: { active: 'bg-cyan-600 hover:bg-cyan-700 text-white border-cyan-600 ring-2 ring-cyan-400', inactive: 'bg-cyan-600 hover:bg-cyan-700 text-white border-cyan-600' } },
+                        { value: 'retail' as PriceSubType, label: t('products.price_retail'), colors: { active: 'bg-rose-600 hover:bg-rose-700 text-white border-rose-600 ring-2 ring-rose-400', inactive: 'bg-rose-600 hover:bg-rose-700 text-white border-rose-600' } },
                       ]).map((option) => (
                         <Button
                           key={option.value}
                           type="button"
                           variant={priceSubType === option.value ? 'default' : 'outline'}
                           size="sm"
-                          className="h-10 text-xs"
+                          className={`h-10 text-xs transition-opacity ${priceSubType === option.value ? option.colors.active : option.colors.inactive} ${priceSubType !== option.value ? 'opacity-50' : ''}`}
                           onClick={() => setPriceSubType(option.value)}
                         >
                           {option.label}
