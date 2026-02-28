@@ -629,7 +629,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                           inCart ? 'bg-primary border-primary' : 'bg-red-50 border-red-100'
                         )}>
                           <span className={cn(
-                            "text-xs font-bold leading-tight line-clamp-2 block text-right",
+                            "text-xs font-bold leading-tight block text-right",
                             inCart ? 'text-white' : 'text-red-900'
                           )}>
                             {product.name}
@@ -637,7 +637,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                         </div>
 
                         {/* الصورة */}
-                        <div className="flex-1">
+                        <div className="flex-1 relative">
                           {product.image_url ? (
                             <img 
                               src={product.image_url} 
@@ -649,6 +649,12 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                             <div className="w-full aspect-square bg-red-50 flex items-center justify-center">
                               <Plus className="w-10 h-10 text-primary/40" />
                             </div>
+                          )}
+                          {/* شارة الكمية فوق الصورة */}
+                          {inCart && (
+                            <Badge variant="default" className="absolute bottom-2 start-2 text-sm px-2.5 py-0.5 shadow-lg font-bold">
+                              {inCart.quantity}
+                            </Badge>
                           )}
                         </div>
 
@@ -670,13 +676,6 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                             <ProductPriceBadge product={product} boxPrice={price} />
                           </div>
                         </div>
-
-                        {/* شارة الكمية */}
-                        {inCart && (
-                          <Badge variant="default" className="absolute top-1.5 start-1.5 text-sm px-2.5 py-0.5 shadow-lg font-bold">
-                            {inCart.quantity}
-                          </Badge>
-                        )}
                       </button>
                     );
                   })}
