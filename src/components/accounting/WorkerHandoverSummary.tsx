@@ -173,17 +173,29 @@ const WorkerHandoverSummary: React.FC<WorkerHandoverSummaryProps> = ({
       const surplusTotal = (surplusData || []).reduce((sum, s) => sum + Number(s.amount), 0);
       const surplusCustomers = new Set((surplusData || []).map(s => s.customer_id)).size;
 
-      // Stock discrepancies (pending)
-      const { data: stockDiscrepancies } = await supabase
-        .from('stock_discrepancies')
-        .select('id, discrepancy_type')
+      // Stock discrepancies from the LATEST review session only
+      const { data: latestReviewSession } = await supabase
+        .from('loading_sessions')
+        .select('id')
         .eq('worker_id', workerId)
-        .eq('status', 'pending')
-        .gte('created_at', startTz)
-        .lte('created_at', endTz);
+        .eq('status', 'review')
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-      const stockDeficitCount = (stockDiscrepancies || []).filter(d => d.discrepancy_type === 'deficit').length;
-      const stockSurplusCount = (stockDiscrepancies || []).filter(d => d.discrepancy_type === 'surplus').length;
+      let stockDeficitCount = 0;
+      let stockSurplusCount = 0;
+
+      if (latestReviewSession && latestReviewSession.length > 0) {
+        const { data: stockDiscrepancies } = await supabase
+          .from('stock_discrepancies')
+          .select('id, discrepancy_type')
+          .eq('worker_id', workerId)
+          .eq('status', 'pending')
+          .eq('source_session_id', latestReviewSession[0].id);
+
+        stockDeficitCount = (stockDiscrepancies || []).filter(d => d.discrepancy_type === 'deficit').length;
+        stockSurplusCount = (stockDiscrepancies || []).filter(d => d.discrepancy_type === 'surplus').length;
+      }
 
       return {
         checksCount,
