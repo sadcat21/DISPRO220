@@ -536,7 +536,7 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
               const dec = Math.round((Math.round(item.quantity * 100) / 100 - boxes) * 100);
               return boxes * piecesPerBox + dec;
             })();
-            const remainingPieces = stockPieces - soldPieces - giftInPieces;
+            const remainingPieces = stockPieces - soldPieces;
             const newBoxes = Math.floor(remainingPieces / piecesPerBox);
             const newRemaining = Math.round(remainingPieces % piecesPerBox);
             const newQty = newBoxes + newRemaining / 100;
