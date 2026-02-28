@@ -287,18 +287,19 @@ const WarehouseStock: React.FC = () => {
                   ? `${giftBoxes}.${String(giftPieces).padStart(2, '0')}`
                   : s.gifts > 0 ? `0.${String(giftPieces).padStart(2, '0')}` : '0';
 
-                const stats = [
-                  { label: 'المستلم', value: s.received, display: String(s.received), color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/30' },
+                const row1 = [
                   { label: 'عند العمال', value: s.workerStock, display: String(s.workerStock), color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-950/30' },
                   { label: 'المباع', value: s.sold, display: String(s.sold), color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-950/30' },
-                  { label: 'الهدايا', value: s.gifts, display: giftFormatted, color: 'text-pink-500', bg: 'bg-pink-50 dark:bg-pink-950/30' },
-                  { label: 'التالف', value: s.damaged, display: String(s.damaged), color: 'text-destructive', bg: 'bg-red-50 dark:bg-red-950/30' },
                   { label: 'الفائض', value: s.surplus, display: String(s.surplus), color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30' },
                   { label: 'العجز', value: s.deficit, display: String(s.deficit), color: 'text-destructive', bg: 'bg-red-50 dark:bg-red-950/30' },
                 ];
+                const row2 = [
+                  { label: 'الهدايا', value: s.gifts, display: giftFormatted, color: 'text-pink-500', bg: 'bg-pink-50 dark:bg-pink-950/30' },
+                  { label: 'التالف', value: s.damaged, display: String(s.damaged), color: 'text-destructive', bg: 'bg-red-50 dark:bg-red-950/30' },
+                ];
                 return (
                   <Card key={s.productId} className="overflow-hidden border-border/60 shadow-sm">
-                    {/* Product name + remaining - clickable to toggle details */}
+                    {/* Product name + received + remaining */}
                     <button
                       className="w-full bg-primary/5 border-b border-border/40 px-3 py-2 flex items-center justify-between gap-2 hover:bg-primary/10 transition-colors"
                       onClick={() => setExpandedProduct(prev => prev === s.productId ? null : s.productId)}
@@ -307,15 +308,29 @@ const WarehouseStock: React.FC = () => {
                         <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground shrink-0 transition-transform ${expandedProduct === s.productId ? 'rotate-180' : ''}`} />
                         <span className="font-semibold text-sm text-primary truncate">{s.productName}</span>
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-[11px] text-muted-foreground">المتبقي</span>
-                        <span className={`text-base font-extrabold tabular-nums ${s.remaining > 0 ? 'text-primary' : 'text-muted-foreground/50'}`}>{s.remaining}</span>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className="flex items-center gap-1">
+                          <span className="text-[11px] text-muted-foreground">المستلم</span>
+                          <span className="text-sm font-bold tabular-nums text-emerald-600">{s.received}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[11px] text-muted-foreground">المتبقي</span>
+                          <span className={`text-base font-extrabold tabular-nums ${s.remaining > 0 ? 'text-primary' : 'text-muted-foreground/50'}`}>{s.remaining}</span>
+                        </div>
                       </div>
                     </button>
                     {expandedProduct === s.productId && (
-                      <CardContent className="p-3">
+                      <CardContent className="p-3 space-y-1.5">
                         <div className="grid grid-cols-4 gap-1.5">
-                          {stats.map(st => (
+                          {row1.map(st => (
+                            <div key={st.label} className={`rounded-md px-2 py-1.5 text-center ${st.value > 0 ? st.bg : 'bg-muted/30'}`}>
+                              <div className={`text-[11px] leading-tight mb-0.5 ${st.value > 0 ? 'text-muted-foreground' : 'text-muted-foreground/50'}`}>{st.label}</div>
+                              <div className={`text-sm font-bold tabular-nums ${st.value > 0 ? st.color : 'text-muted-foreground/40'}`}>{st.display}</div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {row2.map(st => (
                             <div key={st.label} className={`rounded-md px-2 py-1.5 text-center ${st.value > 0 ? st.bg : 'bg-muted/30'}`}>
                               <div className={`text-[11px] leading-tight mb-0.5 ${st.value > 0 ? 'text-muted-foreground' : 'text-muted-foreground/50'}`}>{st.label}</div>
                               <div className={`text-sm font-bold tabular-nums ${st.value > 0 ? st.color : 'text-muted-foreground/40'}`}>{st.display}</div>
