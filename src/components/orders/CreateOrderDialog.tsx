@@ -615,7 +615,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                         key={product.id}
                         onClick={() => handleProductClick(product)}
                         className={cn(
-                          "flex flex-col items-center gap-2 rounded-xl border p-4 text-center transition-colors relative",
+                          "flex flex-col rounded-xl border overflow-hidden text-center transition-colors relative",
                           inCart ? 'bg-secondary border-primary' : 'bg-background border-border hover:bg-accent',
                           (isShortage || isNotInStock) && "border-orange-400/60",
                           hasOffer && !isShortage && !isNotInStock && "border-green-500/50"
@@ -625,25 +625,27 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                           <img 
                             src={product.image_url} 
                             alt={product.name} 
-                            className="w-20 h-20 rounded-xl object-cover shrink-0"
+                            className="w-full aspect-square object-cover"
                             loading="lazy"
                           />
                         ) : (
-                          <div className="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center">
-                            <Plus className="w-8 h-8 text-primary" />
+                          <div className="w-full aspect-square bg-primary/10 flex items-center justify-center">
+                            <Plus className="w-10 h-10 text-primary" />
                           </div>
                         )}
-                        <span className="font-medium text-xs leading-tight line-clamp-2 w-full">{product.name}</span>
-                        <div className="flex items-center gap-1 flex-wrap justify-center">
-                          {(isShortage || isNotInStock) && (
-                            <AlertTriangle className="w-3.5 h-3.5 text-orange-500 shrink-0" />
-                          )}
-                          {hasOffer && (
-                            <Badge variant="outline" className="text-[10px] px-1 border-green-500 text-green-600">
-                              <Gift className="w-3 h-3" />
-                            </Badge>
-                          )}
-                          <ProductPriceBadge product={product} boxPrice={price} />
+                        <div className="p-2 space-y-1">
+                          <span className="font-medium text-xs leading-tight line-clamp-2 w-full block">{product.name}</span>
+                          <div className="flex items-center gap-1 flex-wrap justify-center">
+                            {(isShortage || isNotInStock) && (
+                              <AlertTriangle className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+                            )}
+                            {hasOffer && (
+                              <Badge variant="outline" className="text-[10px] px-1 border-green-500 text-green-600">
+                                <Gift className="w-3 h-3" />
+                              </Badge>
+                            )}
+                            <ProductPriceBadge product={product} boxPrice={price} />
+                          </div>
                         </div>
                         {inCart && (
                           <Badge variant="default" className="absolute top-2 end-2 text-xs px-2">
