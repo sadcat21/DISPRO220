@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Package, Users, Loader2, ShoppingBag, Search, BarChart3, ChevronDown, ChevronUp } from 'lucide-react';
+import { Package, Users, Loader2, ShoppingBag, Search, BarChart3, ChevronDown, ChevronUp, ClipboardList, Truck } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import DirectSaleDialog from '@/components/warehouse/DirectSaleDialog';
+import QuickReceiptDialog from '@/components/warehouse/QuickReceiptDialog';
+import QuickLoadWorkerDialog from '@/components/warehouse/QuickLoadWorkerDialog';
 
 interface ProductSummary {
   productId: string;
@@ -28,8 +30,10 @@ interface ProductSummary {
 const WarehouseStock: React.FC = () => {
   const { t } = useLanguage();
   const { activeBranch } = useAuth();
-  const { warehouseStock, workerStocksByWorker, isLoading, products } = useWarehouseStock();
+  const { warehouseStock, workerStocksByWorker, isLoading, products, workers, createReceipt, loadToWorker } = useWarehouseStock();
   const [showSaleDialog, setShowSaleDialog] = useState(false);
+  const [showReceiptDialog, setShowReceiptDialog] = useState(false);
+  const [showLoadWorkerDialog, setShowLoadWorkerDialog] = useState(false);
   const [search, setSearch] = useState('');
   const [expandedWorkers, setExpandedWorkers] = useState(false);
 
@@ -194,17 +198,27 @@ const WarehouseStock: React.FC = () => {
   return (
     <div className="p-4 space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-xl font-bold flex items-center gap-2">
           <BarChart3 className="w-5 h-5 text-primary" />
           {t('stock.warehouse_stock')}
         </h2>
-        {hasStock && (
-          <Button size="sm" onClick={() => setShowSaleDialog(true)}>
-            <ShoppingBag className="w-4 h-4 ml-1" />
-            {t('stock.direct_sale')}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button size="sm" variant="outline" onClick={() => setShowReceiptDialog(true)}>
+            <ClipboardList className="w-4 h-4 ml-1" />
+            استلام
           </Button>
-        )}
+          <Button size="sm" variant="outline" onClick={() => setShowLoadWorkerDialog(true)}>
+            <Truck className="w-4 h-4 ml-1" />
+            شحن عامل
+          </Button>
+          {hasStock && (
+            <Button size="sm" onClick={() => setShowSaleDialog(true)}>
+              <ShoppingBag className="w-4 h-4 ml-1" />
+              {t('stock.direct_sale')}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Search */}
@@ -330,6 +344,23 @@ const WarehouseStock: React.FC = () => {
         onOpenChange={setShowSaleDialog}
         stockItems={stockItemsForSale}
         stockSource="warehouse"
+      />
+
+      <QuickReceiptDialog
+        open={showReceiptDialog}
+        onOpenChange={setShowReceiptDialog}
+        products={products}
+        branchId={branchId}
+        createReceipt={createReceipt}
+      />
+
+      <QuickLoadWorkerDialog
+        open={showLoadWorkerDialog}
+        onOpenChange={setShowLoadWorkerDialog}
+        products={products}
+        workers={workers}
+        warehouseStock={warehouseStock}
+        loadToWorker={loadToWorker}
       />
     </div>
   );
