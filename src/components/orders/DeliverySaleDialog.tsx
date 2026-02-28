@@ -27,6 +27,8 @@ import CustomerCreditBadges from '@/components/orders/CustomerCreditBadges';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
 import { useOrderItems } from '@/hooks/useOrders';
 import DeliveryPaymentDialog from '@/components/orders/DeliveryPaymentDialog';
+import CheckVerificationDialog from '@/components/orders/CheckVerificationDialog';
+import ReceiptPaymentDialog from '@/components/orders/ReceiptPaymentDialog';
 import ProductQuantityDialog from '@/components/orders/ProductQuantityDialog';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import CustomerDistanceIndicator from './CustomerDistanceIndicator';
@@ -100,6 +102,8 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
   const [notes, setNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [showCheckDialog, setShowCheckDialog] = useState(false);
+  const [showReceiptPaymentDialog, setShowReceiptPaymentDialog] = useState(false);
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [receiptDataState, setReceiptDataState] = useState<any>(null);
   const [showQuantityDialog, setShowQuantityDialog] = useState(false);
@@ -273,7 +277,87 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
       toast.error('يرجى اختيار إجراء التوصيل الجزئي أولاً');
       return;
     }
-    setShowPaymentDialog(true);
+    // Route based on invoice payment method
+    const invoiceMethod = (order as any).invoice_payment_method;
+    if (order.payment_type === 'with_invoice' && invoiceMethod === 'check') {
+      setShowCheckDialog(true);
+    } else if (order.payment_type === 'with_invoice' && (invoiceMethod === 'receipt' || invoiceMethod === 'transfer')) {
+      setShowReceiptPaymentDialog(true);
+    } else {
+      setShowPaymentDialog(true);
+    }
+  };
+
+  // Handle check verification confirmation
+  const handleCheckConfirm = async (data: {
+    checkReceived: boolean;
+    verification: any;
+    skippedVerification: boolean;
+  }) => {
+    // Map check result to payment data and call the core payment handler
+    const paidAmount = data.checkReceived ? totals.amountAfterPrepaid : 0;
+    const remaining = data.checkReceived ? 0 : totals.amountAfterPrepaid;
+
+    // Update document status on order
+    const docStatus = data.checkReceived ? 'received' : 'pending';
+    const docVerification = data.checkReceived ? {
+      type: 'check',
+      ...data.verification,
+      skipped: data.skippedVerification,
+      verified_at: new Date().toISOString(),
+    } : { type: 'check', status: 'not_received' };
+
+    await supabase.from('orders').update({
+      document_status: docStatus,
+      document_verification: docVerification,
+      check_due_date: data.verification?.due_date || null,
+    }).eq('id', order.id);
+
+    await handlePaymentConfirm({
+      paidAmount,
+      remainingAmount: remaining,
+      paymentMethod: 'check',
+      isFullPayment: data.checkReceived,
+      isNoPayment: !data.checkReceived,
+    });
+    setShowCheckDialog(false);
+  };
+
+  // Handle receipt/transfer payment confirmation
+  const handleReceiptPaymentConfirm = async (data: {
+    receiptReceived: boolean;
+    paidByCash: boolean;
+    receiptAmount: number;
+    cashAmount: number;
+    remainingDebt: number;
+  }) => {
+    const invoiceMethod = (order as any).invoice_payment_method;
+    const docStatus = data.receiptReceived ? 'received' : (data.paidByCash ? 'none' : 'pending');
+    const docVerification = {
+      type: invoiceMethod,
+      receipt_received: data.receiptReceived,
+      paid_by_cash: data.paidByCash,
+      receipt_amount: data.receiptAmount,
+      cash_amount: data.cashAmount,
+      verified_at: new Date().toISOString(),
+    };
+
+    await supabase.from('orders').update({
+      document_status: docStatus,
+      document_verification: docVerification,
+    }).eq('id', order.id);
+
+    const paid = data.receiptAmount + data.cashAmount;
+    const isFullPayment = paid >= totals.amountAfterPrepaid;
+
+    await handlePaymentConfirm({
+      paidAmount: Math.min(paid, totals.amountAfterPrepaid),
+      remainingAmount: data.remainingDebt,
+      paymentMethod: data.paidByCash ? 'cash' : invoiceMethod,
+      isFullPayment,
+      isNoPayment: paid === 0,
+    });
+    setShowReceiptPaymentDialog(false);
   };
 
   const handlePaymentConfirm = async (paymentData: {
@@ -864,7 +948,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
         </DialogContent>
       </Dialog>
 
-      {/* Payment Dialog */}
+      {/* Payment Dialog - Cash/Without Invoice */}
       <DeliveryPaymentDialog
         open={showPaymentDialog}
         onOpenChange={setShowPaymentDialog}
@@ -872,6 +956,25 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
         customerName={order.customer?.name || ''}
         prepaidAmount={prepaidAmount}
         onConfirm={handlePaymentConfirm}
+      />
+
+      {/* Check Verification Dialog */}
+      <CheckVerificationDialog
+        open={showCheckDialog}
+        onOpenChange={setShowCheckDialog}
+        orderTotal={totals.amountAfterPrepaid}
+        customerName={order.customer?.name || ''}
+        onConfirm={handleCheckConfirm}
+      />
+
+      {/* Receipt/Transfer Payment Dialog */}
+      <ReceiptPaymentDialog
+        open={showReceiptPaymentDialog}
+        onOpenChange={setShowReceiptPaymentDialog}
+        orderTotal={totals.amountAfterPrepaid}
+        customerName={order.customer?.name || ''}
+        paymentMethod={((order as any).invoice_payment_method === 'transfer' ? 'transfer' : 'receipt') as 'receipt' | 'transfer'}
+        onConfirm={handleReceiptPaymentConfirm}
       />
 
       {/* Receipt Dialog */}

@@ -2017,11 +2017,14 @@ export type Database = {
         Row: {
           assigned_worker_id: string | null
           branch_id: string | null
+          check_due_date: string | null
           created_at: string
           created_by: string
           created_by_customer: string | null
           customer_id: string
           delivery_date: string | null
+          document_status: string | null
+          document_verification: Json | null
           id: string
           invoice_number: string | null
           invoice_payment_method: string | null
@@ -2039,11 +2042,14 @@ export type Database = {
         Insert: {
           assigned_worker_id?: string | null
           branch_id?: string | null
+          check_due_date?: string | null
           created_at?: string
           created_by: string
           created_by_customer?: string | null
           customer_id: string
           delivery_date?: string | null
+          document_status?: string | null
+          document_verification?: Json | null
           id?: string
           invoice_number?: string | null
           invoice_payment_method?: string | null
@@ -2061,11 +2067,14 @@ export type Database = {
         Update: {
           assigned_worker_id?: string | null
           branch_id?: string | null
+          check_due_date?: string | null
           created_at?: string
           created_by?: string
           created_by_customer?: string | null
           customer_id?: string
           delivery_date?: string | null
+          document_status?: string | null
+          document_verification?: Json | null
           id?: string
           invoice_number?: string | null
           invoice_payment_method?: string | null

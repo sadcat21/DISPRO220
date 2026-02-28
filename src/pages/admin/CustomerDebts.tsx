@@ -13,6 +13,7 @@ import { useCustomerDebts } from '@/hooks/useCustomerDebts';
 import { useWorkerPermissions } from '@/hooks/usePermissions';
 import { CustomerDebtWithDetails } from '@/types/accounting';
 import DebtDetailsDialog from '@/components/debts/DebtDetailsDialog';
+import PendingDocumentsSection from '@/components/debts/PendingDocumentsSection';
 import PermissionGate from '@/components/auth/PermissionGate';
 
 const DAY_INDEX_MAP: Record<string, number> = {
@@ -148,6 +149,9 @@ const CustomerDebts: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Pending Documents */}
+        <PendingDocumentsSection />
 
         {/* Filters */}
         <div className="flex gap-2">
