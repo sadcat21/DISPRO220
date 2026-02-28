@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
@@ -123,6 +123,20 @@ const Products: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  const sortedProducts = useMemo(() => {
+    return [...products].sort((a, b) => {
+      if (a.is_active !== b.is_active) {
+        return Number(b.is_active) - Number(a.is_active);
+      }
+
+      const aOrder = (a as any).sort_order ?? Number.MAX_SAFE_INTEGER;
+      const bOrder = (b as any).sort_order ?? Number.MAX_SAFE_INTEGER;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+
+      return a.name.localeCompare(b.name);
+    });
+  }, [products]);
 
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -705,7 +719,7 @@ const Products: React.FC = () => {
 
           {/* Products List */}
           <div className="space-y-2">
-        {products.map((product) => (
+        {sortedProducts.map((product) => (
           <Card key={product.id} className="overflow-hidden">
             <CardContent className="p-0">
               <div className="flex items-center">
