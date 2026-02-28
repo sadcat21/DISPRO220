@@ -36,6 +36,7 @@ const WarehouseStock: React.FC = () => {
   const [showLoadWorkerDialog, setShowLoadWorkerDialog] = useState(false);
   const [search, setSearch] = useState('');
   const [expandedWorkers, setExpandedWorkers] = useState(false);
+  const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
 
   const branchId = activeBranch?.id;
 
@@ -261,25 +262,32 @@ const WarehouseStock: React.FC = () => {
                 ];
                 return (
                   <Card key={s.productId} className="overflow-hidden border-border/60 shadow-sm">
-                    {/* Product name + remaining in same row */}
-                    <div className="bg-primary/5 border-b border-border/40 px-3 py-2 flex items-center justify-between gap-2">
-                      <span className="font-semibold text-sm text-primary truncate">{s.productName}</span>
+                    {/* Product name + remaining - clickable to toggle details */}
+                    <button
+                      className="w-full bg-primary/5 border-b border-border/40 px-3 py-2 flex items-center justify-between gap-2 hover:bg-primary/10 transition-colors"
+                      onClick={() => setExpandedProduct(prev => prev === s.productId ? null : s.productId)}
+                    >
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground shrink-0 transition-transform ${expandedProduct === s.productId ? 'rotate-180' : ''}`} />
+                        <span className="font-semibold text-sm text-primary truncate">{s.productName}</span>
+                      </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         <span className="text-[11px] text-muted-foreground">المتبقي</span>
                         <span className={`text-base font-extrabold tabular-nums ${s.remaining > 0 ? 'text-primary' : 'text-muted-foreground/50'}`}>{s.remaining}</span>
                       </div>
-                    </div>
-                    <CardContent className="p-3">
-                      {/* Stats grid */}
-                      <div className="grid grid-cols-4 gap-1.5">
-                        {stats.map(st => (
-                          <div key={st.label} className={`rounded-md px-2 py-1.5 text-center ${st.value > 0 ? st.bg : 'bg-muted/30'}`}>
-                            <div className={`text-[11px] leading-tight mb-0.5 ${st.value > 0 ? 'text-muted-foreground' : 'text-muted-foreground/50'}`}>{st.label}</div>
-                            <div className={`text-sm font-bold tabular-nums ${st.value > 0 ? st.color : 'text-muted-foreground/40'}`}>{st.value}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
+                    </button>
+                    {expandedProduct === s.productId && (
+                      <CardContent className="p-3">
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {stats.map(st => (
+                            <div key={st.label} className={`rounded-md px-2 py-1.5 text-center ${st.value > 0 ? st.bg : 'bg-muted/30'}`}>
+                              <div className={`text-[11px] leading-tight mb-0.5 ${st.value > 0 ? 'text-muted-foreground' : 'text-muted-foreground/50'}`}>{st.label}</div>
+                              <div className={`text-sm font-bold tabular-nums ${st.value > 0 ? st.color : 'text-muted-foreground/40'}`}>{st.value}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    )}
                   </Card>
                 );
               })}
