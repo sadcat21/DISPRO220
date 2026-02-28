@@ -78,15 +78,28 @@ const DataManagement: React.FC = () => {
     // Before deleting accounting_sessions, clean up worker_debts references
     if (selectedIds.has('accounting')) {
       setDeletionProgress('جاري تنظيف المراجع المرتبطة بجلسات المحاسبة...');
-      // Delete worker_debt_payments then worker_debts (FK: worker_debts -> accounting_sessions)
-      await supabase
+      
+      // Delete worker_debt_payments first (FK: worker_debt_payments -> worker_debts)
+      const { error: wdpErr } = await supabase
         .from('worker_debt_payments' as any)
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000');
-      await supabase
+      if (wdpErr) console.error('Error deleting worker_debt_payments:', wdpErr);
+      
+      // Delete worker_debts (FK: worker_debts -> accounting_sessions)
+      const { error: wdErr } = await supabase
         .from('worker_debts' as any)
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000');
+      if (wdErr) {
+        console.error('Error deleting worker_debts:', wdErr);
+        // Try nullifying session_id instead of deleting
+        await supabase
+          .from('worker_debts' as any)
+          .update({ session_id: null })
+          .neq('id', '00000000-0000-0000-0000-000000000000');
+      }
+      
       // Nullify session_id in manager_treasury (FK: manager_treasury -> accounting_sessions)
       if (!selectedIds.has('treasury')) {
         await supabase
@@ -94,6 +107,7 @@ const DataManagement: React.FC = () => {
           .update({ session_id: null } as any)
           .neq('id', '00000000-0000-0000-0000-000000000000');
       }
+      
       // Also clean worker_liability_adjustments
       await supabase
         .from('worker_liability_adjustments' as any)
