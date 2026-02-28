@@ -99,6 +99,26 @@ const parseVerification = (v: any, docType: string) => {
   };
 };
 
+const isCollectedDuringDelivery = (order: any) => {
+  const status = String(order?.document_status || '').toLowerCase();
+  const verification = order?.document_verification;
+  const method = String(order?.invoice_payment_method || '').toLowerCase();
+
+  if (status === 'received' || status === 'verified') return true;
+  if (status !== 'pending' || !verification || typeof verification !== 'object') return false;
+  if ((verification as any).status === 'not_received') return false;
+
+  if (method === 'check') return true;
+  if (method === 'receipt' || method === 'versement') {
+    return (verification as any).receipt_received === true || !!((verification as any).receipt_number || (verification as any).receiptNumber);
+  }
+  if (method === 'transfer' || method === 'virement') {
+    return (verification as any).receipt_received === true || !!((verification as any).transfer_reference || (verification as any).transferReference);
+  }
+
+  return false;
+};
+
 const DocumentCollectionsSummary: React.FC<DocumentCollectionsSummaryProps> = ({ workerId, periodStart, periodEnd }) => {
   const queryClient = useQueryClient();
   const [verifyDoc, setVerifyDoc] = useState<CollectedDoc | null>(null);
@@ -137,18 +157,22 @@ const DocumentCollectionsSummary: React.FC<DocumentCollectionsSummaryProps> = ({
         });
       }
 
+      const pendingOrderIds = new Set(result.map((r) => r.orderId));
+
       const { data: deliveryOrders } = await supabase
         .from('orders')
         .select(`id, total_amount, invoice_payment_method, document_status, document_verification, updated_at, customer:customers!orders_customer_id_fkey(name)`)
         .eq('assigned_worker_id', workerId)
         .eq('status', 'delivered')
         .in('invoice_payment_method', ['check', 'receipt', 'transfer', 'versement', 'virement'])
-        .in('document_status', ['received', 'verified'])
+        .in('document_status', ['pending', 'received', 'verified'])
         .gte('updated_at', startTz)
         .lte('updated_at', endTz);
 
       for (const o of (deliveryOrders || [])) {
-        
+        if (pendingOrderIds.has(o.id)) continue;
+        if (!isCollectedDuringDelivery(o)) continue;
+
         const docType = o.invoice_payment_method || 'check';
         result.push({
           orderId: o.id,
@@ -198,9 +222,10 @@ const DocumentCollectionsSummary: React.FC<DocumentCollectionsSummaryProps> = ({
   if (isLoading) return <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>;
   if ((!docs || docs.length === 0) && (!stampedInvoices || stampedInvoices.length === 0)) return <p className="text-xs text-muted-foreground text-center py-3">لا توجد مستندات محصلة في هذه الفترة</p>;
 
-  const deliveryDocs = docs.filter(d => d.source === 'delivery');
-  const pendingDocs = docs.filter(d => d.source === 'pending_collection');
-  const totalAmount = docs.reduce((s, d) => s + d.orderTotal, 0);
+  const allDocs = docs || [];
+  const deliveryDocs = allDocs.filter(d => d.source === 'delivery');
+  const pendingDocs = allDocs.filter(d => d.source === 'pending_collection');
+  const totalAmount = allDocs.reduce((s, d) => s + d.orderTotal, 0);
 
   const renderDocCard = (doc: CollectedDoc) => {
     const v = doc.verification;
