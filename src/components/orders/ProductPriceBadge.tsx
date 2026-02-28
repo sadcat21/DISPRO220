@@ -59,34 +59,53 @@ const ProductPriceBadge: React.FC<ProductPriceBadgeProps> = ({ product, boxPrice
     }
   }
 
+  // Units per box for the pricing unit badge (blue circle reference)
+  const unitsPerBox = pricingUnit === 'kg' && product.weight_per_box && product.weight_per_box > 0
+    ? product.weight_per_box
+    : pricingUnit === 'unit' && product.pieces_per_box > 1
+      ? product.pieces_per_box
+      : null;
+
   return (
     <div className="flex flex-col w-full gap-1">
+      {/* Box price */}
       <div className="w-full rounded-md bg-primary/10 border border-primary/30 py-1 text-center">
         <span className="text-base font-bold text-primary flex items-center justify-center gap-1">
           <Package className="w-4 h-4" />
           {boxPrice.toLocaleString()} {t('common.currency')}
         </span>
       </div>
+
+      {/* Unit price with inline badge for units per box */}
       {unitPrice !== null && unitPrice > 0 && (
-        <div className="w-full rounded-md bg-muted border border-border py-1 text-center relative">
+        <div className="w-full rounded-md bg-muted border border-border py-1 text-center">
           <span className="text-sm font-semibold text-foreground flex items-center justify-center gap-1">
             <Boxes className="w-3.5 h-3.5" />
             {unitPrice.toLocaleString()} {t('common.currency')}/{unitLabel}
+            {unitsPerBox !== null && (
+              <span className="inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+                {Number.isInteger(unitsPerBox) ? unitsPerBox : unitsPerBox.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              </span>
+            )}
           </span>
-          {/* Badge showing units per box */}
-          {((pricingUnit === 'kg' && product.weight_per_box && product.weight_per_box > 0) ||
-            (pricingUnit === 'unit' && product.pieces_per_box > 1)) && (
-            <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow">
-              {pricingUnit === 'kg' ? product.weight_per_box : product.pieces_per_box}
-            </span>
-          )}
         </div>
       )}
+
+      {/* After offer price */}
       {afterOfferUnitPrice !== null && afterOfferUnitPrice > 0 && unitLabel && (
         <div className="w-full rounded-md bg-accent border border-accent/50 py-1 text-center">
           <span className="text-sm font-bold text-accent-foreground flex items-center justify-center gap-1">
             <Gift className="w-3.5 h-3.5" />
             {afterOfferUnitPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t('common.currency')}/{unitLabel || t('products.box')}
+          </span>
+        </div>
+      )}
+
+      {/* Pieces per box badge (green circle reference) */}
+      {product.pieces_per_box > 1 && (
+        <div className="w-full flex items-center justify-center">
+          <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+            {product.pieces_per_box}
           </span>
         </div>
       )}
