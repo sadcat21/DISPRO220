@@ -98,43 +98,19 @@ const DocumentCollectionsSummary: React.FC<DocumentCollectionsSummaryProps> = ({
 
       const result: CollectedDoc[] = [];
 
-      // 1. Direct delivery documents
-      const { data: deliveryOrders } = await supabase
-        .from('orders')
-        .select(`id, total_amount, invoice_payment_method, document_status, document_verification, created_at, customer:customers!orders_customer_id_fkey(name)`)
-        .eq('assigned_worker_id', workerId)
-        .eq('status', 'delivered')
-        .in('invoice_payment_method', ['check', 'receipt', 'transfer', 'versement', 'virement'])
-        .gte('created_at', startTz)
-        .lte('created_at', endTz);
-
-      for (const o of (deliveryOrders || [])) {
-        const docType = o.invoice_payment_method || 'check';
-        result.push({
-          orderId: o.id,
-          customerName: (o.customer as any)?.name || 'غير معروف',
-          documentType: docType,
-          orderTotal: Number(o.total_amount || 0),
-          source: 'delivery',
-          documentStatus: o.document_status,
-          verification: parseVerification(o.document_verification, docType),
-        });
-      }
-
-      // 2. Pending document collections
+      // 1) Pending documents that were actually collected (source of truth)
       const { data: pendingCollections } = await supabase
         .from('document_collections')
-        .select(`id, action, collection_date, order_id, order:orders!document_collections_order_id_fkey(id, total_amount, invoice_payment_method, document_status, document_verification, customer:customers!orders_customer_id_fkey(name))`)
+        .select(`id, action, status, collection_date, order_id, order:orders!document_collections_order_id_fkey(id, total_amount, invoice_payment_method, document_status, document_verification, customer:customers!orders_customer_id_fkey(name))`)
         .eq('worker_id', workerId)
-        .in('action', ['collected', 'partial_payment', 'full_payment'])
+        .eq('action', 'collected')
+        .neq('status', 'rejected')
         .gte('collection_date', startDate)
         .lte('collection_date', endDate);
 
-      const deliveryOrderIds = new Set(result.map(r => r.orderId));
-
       for (const c of (pendingCollections || [])) {
         const order = c.order as any;
-        if (!order || deliveryOrderIds.has(order.id)) continue;
+        if (!order) continue;
         const docType = order.invoice_payment_method || 'check';
         result.push({
           orderId: order.id,
@@ -144,6 +120,33 @@ const DocumentCollectionsSummary: React.FC<DocumentCollectionsSummaryProps> = ({
           source: 'pending_collection',
           documentStatus: order.document_status,
           verification: parseVerification(order.document_verification, docType),
+        });
+      }
+
+      const pendingOrderIds = new Set(result.map(r => r.orderId));
+
+      // 2) Directly received during delivery (exclude ones already counted as pending collections)
+      const { data: deliveryOrders } = await supabase
+        .from('orders')
+        .select(`id, total_amount, invoice_payment_method, document_status, document_verification, created_at, customer:customers!orders_customer_id_fkey(name)`)
+        .eq('assigned_worker_id', workerId)
+        .eq('status', 'delivered')
+        .in('invoice_payment_method', ['check', 'receipt', 'transfer', 'versement', 'virement'])
+        .in('document_status', ['received', 'verified'])
+        .gte('created_at', startTz)
+        .lte('created_at', endTz);
+
+      for (const o of (deliveryOrders || [])) {
+        if (pendingOrderIds.has(o.id)) continue;
+        const docType = o.invoice_payment_method || 'check';
+        result.push({
+          orderId: o.id,
+          customerName: (o.customer as any)?.name || 'غير معروف',
+          documentType: docType,
+          orderTotal: Number(o.total_amount || 0),
+          source: 'delivery',
+          documentStatus: o.document_status,
+          verification: parseVerification(o.document_verification, docType),
         });
       }
 
