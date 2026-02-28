@@ -17,10 +17,10 @@ const METHOD_ICONS: Record<InvoicePaymentMethod, React.ReactNode> = {
 };
 
 const METHOD_COLORS: Record<InvoicePaymentMethod, { active: string; inactive: string }> = {
-  receipt: { active: 'bg-blue-800 hover:bg-blue-900 text-white border-blue-800', inactive: 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' },
-  check: { active: 'bg-purple-800 hover:bg-purple-900 text-white border-purple-800', inactive: 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600' },
-  cash: { active: 'bg-amber-700 hover:bg-amber-800 text-white border-amber-700', inactive: 'bg-amber-600 hover:bg-amber-700 text-white border-amber-600' },
-  transfer: { active: 'bg-teal-800 hover:bg-teal-900 text-white border-teal-800', inactive: 'bg-teal-600 hover:bg-teal-700 text-white border-teal-600' },
+  receipt: { active: 'bg-blue-900 hover:bg-blue-950 text-white border-blue-900 ring-2 ring-blue-400', inactive: 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' },
+  check: { active: 'bg-red-900 hover:bg-red-950 text-white border-red-900 ring-2 ring-red-400', inactive: 'bg-red-600 hover:bg-red-700 text-white border-red-600' },
+  cash: { active: 'bg-green-900 hover:bg-green-950 text-white border-green-900 ring-2 ring-green-400', inactive: 'bg-green-600 hover:bg-green-700 text-white border-green-600' },
+  transfer: { active: 'bg-orange-900 hover:bg-orange-950 text-white border-orange-900 ring-2 ring-orange-400', inactive: 'bg-orange-600 hover:bg-orange-700 text-white border-orange-600' },
 };
 
 const InvoicePaymentMethodSelect: React.FC<InvoicePaymentMethodSelectProps> = ({
