@@ -4,7 +4,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -89,9 +88,12 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
         onConfirm(product.id, quantity, undefined, true, perItemPricing);
       } else {
         const giftBoxes = product.pieces_per_box > 0 ? Math.floor(giftPieces / product.pieces_per_box) : 0;
-        const hasGifts = giftPieces > 0 || giftBoxes > 0;
-        if (hasGifts && offerApplied) {
-          onConfirm(product.id, quantity, { giftQuantity: giftBoxes, giftPieces, offerId: giftOfferId }, false, perItemPricing);
+        const appliedGiftBoxes = offerApplied ? giftBoxes : 0;
+        const appliedGiftPieces = offerApplied ? giftPieces : 0;
+        const totalQuantity = quantity + appliedGiftBoxes;
+
+        if (appliedGiftPieces > 0 || appliedGiftBoxes > 0) {
+          onConfirm(product.id, totalQuantity, { giftQuantity: appliedGiftBoxes, giftPieces: appliedGiftPieces, offerId: giftOfferId }, false, perItemPricing);
         } else {
           onConfirm(product.id, quantity, undefined, false, perItemPricing);
         }
@@ -107,27 +109,26 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
   };
 
   const handleQuantityChange = (delta: number) => {
-    const nextQuantity = Math.max(1, quantity + delta);
-    if (nextQuantity !== quantity) {
-      setOfferApplied(false);
-      setGiftPieces(0);
-      setGiftOfferId(undefined);
-    }
-    setQuantity(nextQuantity);
+    setQuantity(Math.max(1, quantity + delta));
   };
 
   const handleGiftCalculated = useCallback((pieces: number, offerId?: string) => {
     setGiftPieces(pieces);
     setGiftOfferId(offerId);
-    setOfferApplied(false);
   }, []);
 
   const handleApplyOffer = () => {
     if (!product || giftPieces <= 0) return;
-    const giftBoxes = product.pieces_per_box > 0 ? Math.floor(giftPieces / product.pieces_per_box) : 0;
-    if (giftBoxes > 0) setQuantity(prev => prev + giftBoxes);
-    setOfferApplied(true); // Apply even if giftBoxes is 0 (piece-level gifts)
+    setOfferApplied(true);
   };
+
+  useEffect(() => {
+    if (!offerApplied || isUnitSale) return;
+    if (giftPieces <= 0) {
+      setOfferApplied(false);
+      setGiftOfferId(undefined);
+    }
+  }, [offerApplied, giftPieces, isUnitSale]);
 
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
@@ -146,11 +147,6 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
 
   const handleQuantityInput = (value: string) => {
     const parsedValue = Math.max(1, parseInt(value) || 1);
-    if (parsedValue !== quantity) {
-      setOfferApplied(false);
-      setGiftPieces(0);
-      setGiftOfferId(undefined);
-    }
     setQuantity(parsedValue);
   };
 
@@ -158,9 +154,11 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
 
   const giftBoxes = product.pieces_per_box > 0 ? Math.floor(giftPieces / product.pieces_per_box) : 0;
   const giftRemainingPieces = product.pieces_per_box > 0 ? giftPieces % product.pieces_per_box : 0;
-  const baseQuantity = offerApplied ? quantity - giftBoxes : quantity;
+  const appliedGiftBoxes = offerApplied ? giftBoxes : 0;
+  const appliedGiftPieces = offerApplied ? giftPieces : 0;
+  const baseQuantity = quantity;
   const basePieces = isUnitSale ? quantity : baseQuantity * product.pieces_per_box;
-  const totalPieces = isUnitSale ? quantity : (quantity * product.pieces_per_box + (offerApplied ? 0 : giftPieces));
+  const totalPieces = isUnitSale ? quantity : (baseQuantity * product.pieces_per_box + appliedGiftPieces);
   const displayPrice = isUnitSale ? unitPiecePrice : unitPrice;
   const displayTotal = isUnitSale ? (unitPiecePrice * quantity) : (unitPrice * baseQuantity);
 
@@ -245,7 +243,7 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
               <div className="rounded-lg border border-border bg-muted/30 divide-y divide-border text-xs">
                 <div className="flex justify-between items-center px-2.5 py-1.5">
                   <span className="text-muted-foreground">{t('orders.quantity_boxes') || 'الكمية'}</span>
-                  <span className="font-bold">{offerApplied ? baseQuantity : quantity} {t('offers.unit_box')}</span>
+                  <span className="font-bold">{baseQuantity} {t('offers.unit_box')}</span>
                 </div>
                 {displayPrice > 0 && (
                   <div className="flex justify-between items-center px-2.5 py-1.5">
@@ -253,7 +251,7 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
                     <span className="font-bold">{displayTotal.toLocaleString()} {t('common.currency')}</span>
                   </div>
                 )}
-                {(giftPieces > 0 || offerApplied) && (
+                {(giftPieces > 0 || appliedGiftPieces > 0) && (
                   <>
                     <div className="flex justify-between items-center px-2.5 py-1.5 text-green-700 dark:text-green-400">
                       <span className="flex items-center gap-1"><Gift className="w-3.5 h-3.5" />{t('common.free') || 'الهدية'}</span>
@@ -269,7 +267,7 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
                     </div>
                     <div className="flex justify-between items-center px-2.5 py-1.5 font-bold">
                       <span>{t('orders.total_boxes') || 'إجمالي الصناديق'}</span>
-                      <span className="text-primary">{quantity} {t('offers.unit_box')}</span>
+                      <span className="text-primary">{quantity + appliedGiftBoxes} {t('offers.unit_box')}</span>
                     </div>
                   </>
                 )}
@@ -312,23 +310,27 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
               </div>
             )}
 
-            {!isUnitSale && offerApplied && (
+            {!isUnitSale && offerApplied && (appliedGiftBoxes > 0 || appliedGiftPieces > 0) && (
               <div className="bg-green-600 text-white rounded-lg p-3">
                 <div className="flex items-center justify-center gap-2">
                   <Check className="w-5 h-5" />
                   <span className="font-bold">{t('offers.offer_applied_success')}</span>
                 </div>
                 <p className="text-sm mt-1 text-green-100">
-                  {giftBoxes > 0 && <>{t('orders.total')}: {quantity} {t('offers.unit_box')} ({baseQuantity} + {giftBoxes} {t('common.free')})</>}
-                  {giftBoxes > 0 && giftRemainingPieces > 0 && <br />}
+                  {(appliedGiftBoxes > 0 || appliedGiftPieces > 0) && (
+                    <>{t('orders.total')}: {quantity + appliedGiftBoxes} {t('offers.unit_box')} ({quantity} + {appliedGiftBoxes} {t('common.free')})</>
+                  )}
+                  {appliedGiftBoxes > 0 && giftRemainingPieces > 0 && <br />}
                   {giftRemainingPieces > 0 && <>+ {giftRemainingPieces} {t('offers.unit_piece')} {t('common.free')}</>}
-                  {giftBoxes === 0 && giftRemainingPieces > 0 && <>{giftPieces} {t('offers.unit_piece')} {t('common.free')}</>}
+                  {appliedGiftBoxes === 0 && giftRemainingPieces > 0 && <>{appliedGiftPieces} {t('offers.unit_piece')} {t('common.free')}</>}
                 </p>
               </div>
             )}
 
-            {!isUnitSale && !offerApplied && (
-              <ProductOfferBadge productId={product.id} quantity={quantity} piecesPerBox={product.pieces_per_box} onGiftCalculated={handleGiftCalculated} />
+            {!isUnitSale && (
+              <div className={offerApplied ? 'hidden' : ''}>
+                <ProductOfferBadge productId={product.id} quantity={quantity} piecesPerBox={product.pieces_per_box} onGiftCalculated={handleGiftCalculated} />
+              </div>
             )}
 
             {/* Per-Item Pricing Override */}
