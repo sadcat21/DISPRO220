@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Loader2, Trash2, Truck, AlertTriangle, Package, CheckCircle, PackageX, User, ChevronDown, Gift, Save, History, X, CalendarIcon, Search } from 'lucide-react';
+import { Plus, Loader2, Trash2, Truck, AlertTriangle, Package, CheckCircle, PackageX, User, ChevronDown, Gift, Save, History, X, CalendarIcon, Search, RefreshCw } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -27,6 +27,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCreateDiscrepancy } from '@/hooks/useStockDiscrepancies';
 import StockVerificationDialog from '@/components/stock/StockVerificationDialog';
+import ExchangeSessionDialog from '@/components/stock/ExchangeSessionDialog';
 
 interface EmptyTruckItem {
   id: string;
@@ -94,6 +95,7 @@ const LoadStock: React.FC = () => {
   const [selectedWorker, setSelectedWorker] = useState(() => contextWorkerId || '');
   const [showWorkerPicker, setShowWorkerPicker] = useState(false);
   const [showVerificationDialog, setShowVerificationDialog] = useState(false);
+  const [showExchangeDialog, setShowExchangeDialog] = useState(false);
   const [showProductPicker, setShowProductPicker] = useState(false);
   const [showEmptyDialog, setShowEmptyDialog] = useState(false);
   const [showSessionHistory, setShowSessionHistory] = useState(false);
@@ -147,6 +149,8 @@ const LoadStock: React.FC = () => {
     if (lastSession.status === 'review') return true;
     // If last session is open (active loading), allow (it's in progress)
     if (lastSession.status === 'open') return true;
+    // If last session is exchange, allow (exchange doesn't affect review requirement)
+    if (lastSession.status === 'exchange') return true;
     // Last session is loading (completed) or unloaded → require review first
     return false;
   }, [sessions]);
@@ -1135,21 +1139,30 @@ const LoadStock: React.FC = () => {
                 <Plus className="w-4 h-4 me-1" />
                 بدء جلسة شحن جديدة
               </Button>
-              <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" onClick={() => setShowSessionHistory(true)}>
-                  <History className="w-4 h-4 me-1" />
-                  سجل الجلسات
-                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button variant="outline" onClick={() => setShowSessionHistory(true)}>
+                    <History className="w-4 h-4 me-1" />
+                    سجل الجلسات
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="text-destructive border-destructive/30 hover:bg-destructive/5"
+                    onClick={handleEmptyTruckPreview}
+                    disabled={isEmptying || !hasReviewToday}
+                  >
+                    {isEmptying ? <Loader2 className="w-4 h-4 animate-spin me-2" /> : <PackageX className="w-4 h-4 me-1" />}
+                    {t('stock.empty_truck')}
+                  </Button>
+                </div>
                 <Button
                   variant="outline"
-                  className="text-destructive border-destructive/30 hover:bg-destructive/5"
-                  onClick={handleEmptyTruckPreview}
-                  disabled={isEmptying || !hasReviewToday}
+                  className="w-full border-orange-400 text-orange-700 bg-orange-50/50 dark:bg-orange-900/10 hover:bg-orange-100 dark:hover:bg-orange-900/20"
+                  onClick={() => setShowExchangeDialog(true)}
+                  disabled={!selectedWorker}
                 >
-                  {isEmptying ? <Loader2 className="w-4 h-4 animate-spin me-2" /> : <PackageX className="w-4 h-4 me-1" />}
-                  {t('stock.empty_truck')}
+                  <RefreshCw className="w-4 h-4 me-1" />
+                  جلسة استبدال تالف
                 </Button>
-              </div>
             </>
           ) : (
             <>
@@ -1346,8 +1359,8 @@ const LoadStock: React.FC = () => {
                     <CardContent className="p-3 space-y-2">
                       <div className="flex items-center justify-between">
                         <div>
-                          <Badge variant={session.status === 'unloaded' ? 'destructive' : 'secondary'} className={`text-xs ${session.status === 'review' ? 'bg-blue-600 text-white hover:bg-blue-700' : session.status === 'open' || session.status === 'completed' ? 'bg-green-600 text-white hover:bg-green-700' : ''}`}>
-                            {session.status === 'open' ? 'شحن' : session.status === 'unloaded' ? 'تفريغ' : session.status === 'review' ? 'مراجعة' : 'شحن'}
+                          <Badge variant={session.status === 'unloaded' ? 'destructive' : 'secondary'} className={`text-xs ${session.status === 'review' ? 'bg-blue-600 text-white hover:bg-blue-700' : session.status === 'exchange' ? 'bg-orange-500 text-white hover:bg-orange-600' : session.status === 'open' || session.status === 'completed' ? 'bg-green-600 text-white hover:bg-green-700' : ''}`}>
+                            {session.status === 'open' ? 'شحن' : session.status === 'unloaded' ? 'تفريغ' : session.status === 'review' ? 'مراجعة' : session.status === 'exchange' ? 'استبدال' : 'شحن'}
                           </Badge>
                           {session.status === 'review' && reviewCounts.deficit > 0 && (
                             <Badge variant="destructive" className="text-[10px] px-1.5 py-0 ms-1">عجز ({reviewCounts.deficit})</Badge>
@@ -1408,7 +1421,7 @@ const LoadStock: React.FC = () => {
               <Package className="w-5 h-5 text-primary" />
               {(() => {
                 const s = sessions.find(s => s.id === viewSessionId);
-                return s?.status === 'unloaded' ? 'تفاصيل جلسة التفريغ' : s?.status === 'review' ? 'تفاصيل جلسة المراجعة' : 'تفاصيل جلسة الشحن';
+                return s?.status === 'unloaded' ? 'تفاصيل جلسة التفريغ' : s?.status === 'review' ? 'تفاصيل جلسة المراجعة' : s?.status === 'exchange' ? 'تفاصيل جلسة الاستبدال' : 'تفاصيل جلسة الشحن';
               })()}
             </DialogTitle>
           </DialogHeader>
@@ -1420,8 +1433,8 @@ const LoadStock: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div className="text-muted-foreground">الحالة:</div>
                   <div>
-                    <Badge variant={session.status === 'unloaded' ? 'destructive' : 'secondary'} className={`text-xs ${session.status === 'review' ? 'bg-blue-600 text-white hover:bg-blue-700' : session.status !== 'unloaded' ? 'bg-green-600 text-white hover:bg-green-700' : ''}`}>
-                      {isUnload ? 'تفريغ' : session.status === 'review' ? 'مراجعة' : 'شحن'}
+                    <Badge variant={session.status === 'unloaded' ? 'destructive' : 'secondary'} className={`text-xs ${session.status === 'review' ? 'bg-blue-600 text-white hover:bg-blue-700' : session.status === 'exchange' ? 'bg-orange-500 text-white hover:bg-orange-600' : session.status !== 'unloaded' ? 'bg-green-600 text-white hover:bg-green-700' : ''}`}>
+                      {isUnload ? 'تفريغ' : session.status === 'review' ? 'مراجعة' : session.status === 'exchange' ? 'استبدال' : 'شحن'}
                     </Badge>
                     {session.notes?.includes('فائض') && (
                       <Badge className="bg-amber-500 text-white text-[10px] px-1.5 py-0 ms-1">فائض</Badge>
@@ -1811,6 +1824,21 @@ const LoadStock: React.FC = () => {
           ]);
         }}
       />
+      {selectedWorker && branchId && (
+        <ExchangeSessionDialog
+          open={showExchangeDialog}
+          onOpenChange={setShowExchangeDialog}
+          workerId={selectedWorker}
+          workerName={workers.find(w => w.id === selectedWorker)?.full_name || ''}
+          branchId={branchId}
+          onComplete={async () => {
+            await Promise.all([
+              refresh(),
+              refetchSessions(),
+            ]);
+          }}
+        />
+      )}
     </div>
   );
 };
