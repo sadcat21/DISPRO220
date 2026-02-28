@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface ReviewItem {
+  stock_row_id: string;
   product_id: string;
   product_name: string;
   system_qty: number;
@@ -46,11 +47,12 @@ const StockVerificationDialog: React.FC<StockVerificationDialogProps> = ({
       setIsLoading(true);
       const { data } = await supabase
         .from('worker_stock')
-        .select('product_id, quantity, product:products(name)')
+        .select('id, product_id, quantity, product:products(name)')
         .eq('worker_id', workerId)
         .gt('quantity', 0);
       
       setItems((data || []).map(ws => ({
+        stock_row_id: ws.id,
         product_id: ws.product_id,
         product_name: (ws.product as any)?.name || '',
         system_qty: ws.quantity,
@@ -159,14 +161,19 @@ const StockVerificationDialog: React.FC<StockVerificationDialogProps> = ({
       const stockSyncResults = await Promise.all(
         verifiedItems.map(async (item) => {
           const actualQty = Number(item.actual_qty) || 0;
-          const { error } = await supabase
+          const { data: updatedRow, error } = await supabase
             .from('worker_stock')
             .update({ quantity: actualQty })
-            .eq('worker_id', workerId)
-            .eq('product_id', item.product_id);
+            .eq('id', item.stock_row_id)
+            .select('id')
+            .maybeSingle();
 
           if (error) {
             throw new Error(`فشل تحديث رصيد المنتج ${item.product_name}: ${error.message}`);
+          }
+
+          if (!updatedRow) {
+            throw new Error(`تعذر تحديث رصيد المنتج ${item.product_name} بعد المراجعة`);
           }
 
           return { product_id: item.product_id, quantity: actualQty };
