@@ -51,7 +51,7 @@ const SimpleProductPickerDialog: React.FC<SimpleProductPickerDialogProps> = ({
           />
         </div>
         <div className="max-h-[55vh] overflow-y-auto">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-2">
             {filtered.map(p => {
               const isSelected = p.id === selectedProductId;
               return (

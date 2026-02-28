@@ -158,7 +158,7 @@ const ProductPickerDialog: React.FC<ProductPickerDialogProps> = ({
         <div className="max-h-[55vh] overflow-y-auto space-y-3">
           {activeGroup || search ? (
             <>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 {visibleProducts.map(renderProductButton)}
               </div>
               {visibleProducts.length === 0 && (
@@ -177,7 +177,7 @@ const ProductPickerDialog: React.FC<ProductPickerDialogProps> = ({
                   </span>
                   <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{group.products.length}</Badge>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-2">
                   {group.products.map(renderProductButton)}
                 </div>
               </div>
