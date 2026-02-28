@@ -652,16 +652,22 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
               <div className="p-3 bg-muted/50 rounded-lg">
                 <div className="flex items-center gap-2">
                   <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
-                    {order.customer?.name?.charAt(0) || '?'}
+                    {(order.customer?.store_name || order.customer?.name)?.charAt(0) || '?'}
                   </div>
                   <div className="flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <p className="font-bold">{order.customer?.name}</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="font-bold">{order.customer?.store_name || order.customer?.name}</p>
+                      {(order.customer as any)?.sector && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 h-4">
+                          {(order.customer as any).sector?.name}
+                        </Badge>
+                      )}
                       <CustomerCreditBadges customerId={order.customer_id} />
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {order.customer?.wilaya}
-                      {order.customer?.phone && ` • ${order.customer.phone}`}
+                      {order.customer?.store_name ? order.customer?.name : ''}
+                      {order.customer?.phone && `${order.customer?.store_name ? ' • ' : ''}${order.customer.phone}`}
+                      {order.customer?.wilaya && ` • ${order.customer.wilaya}`}
                     </p>
                   </div>
                 </div>
