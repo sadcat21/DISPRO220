@@ -78,7 +78,7 @@ const ProductPickerDialog: React.FC<ProductPickerDialogProps> = ({
       <button
         key={p.id}
         disabled={isSelected}
-        className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition-colors
+        className={`flex flex-col items-center gap-2 rounded-xl border p-4 text-center transition-colors
           ${isSelected ? 'bg-primary text-primary-foreground border-primary opacity-60 cursor-not-allowed' : 'hover:bg-accent border-border cursor-pointer'}
           ${isOutOfStock && !isSelected ? 'border-destructive/30' : ''}
         `}
@@ -92,13 +92,13 @@ const ProductPickerDialog: React.FC<ProductPickerDialogProps> = ({
         }}
       >
         {p.image_url ? (
-          <img src={p.image_url} alt={p.name} className="w-10 h-10 rounded-full object-cover shrink-0" loading="lazy" />
+          <img src={p.image_url} alt={p.name} className="w-16 h-16 rounded-full object-cover shrink-0" loading="lazy" />
         ) : (
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isOutOfStock ? 'bg-destructive/10' : isSelected ? 'bg-primary-foreground/20' : 'bg-primary/10'}`}>
-            <Package className={`w-5 h-5 ${isOutOfStock ? 'text-destructive' : isSelected ? 'text-primary-foreground' : 'text-primary'}`} />
+          <div className={`w-16 h-16 rounded-full flex items-center justify-center ${isOutOfStock ? 'bg-destructive/10' : isSelected ? 'bg-primary-foreground/20' : 'bg-primary/10'}`}>
+            <Package className={`w-7 h-7 ${isOutOfStock ? 'text-destructive' : isSelected ? 'text-primary-foreground' : 'text-primary'}`} />
           </div>
         )}
-        <span className={`font-medium text-xs leading-tight truncate w-full ${isOutOfStock && !isSelected ? 'text-destructive' : ''}`}>{p.name}</span>
+        <span className={`font-semibold text-sm leading-tight truncate w-full ${isOutOfStock && !isSelected ? 'text-destructive' : ''}`}>{p.name}</span>
         <Badge variant={isOutOfStock ? 'destructive' : isSelected ? 'outline' : 'secondary'} className="text-[10px] px-1.5 py-0">
           {isSelected ? '✓' : fmtQty(p.warehouseQty)}
         </Badge>
@@ -152,7 +152,7 @@ const ProductPickerDialog: React.FC<ProductPickerDialogProps> = ({
         <div className="max-h-[55vh] overflow-y-auto space-y-3">
           {activeGroup || search ? (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 {visibleProducts.map(renderProductButton)}
               </div>
               {visibleProducts.length === 0 && (
@@ -171,7 +171,7 @@ const ProductPickerDialog: React.FC<ProductPickerDialogProps> = ({
                   </span>
                   <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{group.products.length}</Badge>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-3">
                   {group.products.map(renderProductButton)}
                 </div>
               </div>
