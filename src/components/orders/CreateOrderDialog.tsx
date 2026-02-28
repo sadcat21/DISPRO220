@@ -618,7 +618,9 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                         className={cn(
                           "flex flex-col rounded-2xl overflow-hidden text-center transition-all relative",
                           "bg-white shadow-lg border-2",
-                          inCart ? 'border-primary ring-2 ring-primary/40' : 'border-red-200 hover:border-primary/60 hover:shadow-xl',
+                          inCart && inCart.giftPieces && inCart.giftPieces > 0
+                            ? 'border-green-500 ring-2 ring-green-400/40'
+                            : inCart ? 'border-primary ring-2 ring-primary/40' : 'border-red-200 hover:border-primary/60 hover:shadow-xl',
                           (isShortage || isNotInStock) && !inCart && "border-orange-400/60",
                           hasOffer && !isShortage && !isNotInStock && !inCart && "border-green-500/50"
                         )}
@@ -626,7 +628,9 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                         {/* اسم المنتج أعلى الصورة */}
                         <div className={cn(
                           "px-2 py-2 border-b",
-                          inCart ? 'bg-primary border-primary' : 'bg-red-50 border-red-100'
+                          inCart && inCart.giftPieces && inCart.giftPieces > 0
+                            ? 'bg-green-500 border-green-500'
+                            : inCart ? 'bg-primary border-primary' : 'bg-red-50 border-red-100'
                         )}>
                           <span className={cn(
                             "text-xs font-bold leading-tight block text-right",
@@ -653,8 +657,11 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                           {/* شارات أسفل الصورة */}
                           <div className="absolute bottom-2 start-2 end-2 flex items-center justify-between">
                             {hasOffer ? (
-                              <span className="w-7 h-7 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
+                              <span className="flex items-center gap-1 rounded-full bg-green-500 px-2 py-1 shadow-lg">
                                 <Gift className="w-4 h-4 text-white" />
+                                {inCart?.giftPieces && inCart.giftPieces > 0 && (
+                                  <span className="text-white text-xs font-bold">{inCart.giftPieces}</span>
+                                )}
                               </span>
                             ) : <span />}
                             {(isShortage || isNotInStock) && (
@@ -671,7 +678,12 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                         </div>
 
                         {/* السعر أسفل الصورة */}
-                        <div className="px-2 py-2 bg-red-50 border-t border-red-100">
+                        <div className={cn(
+                          "px-2 py-2 border-t",
+                          inCart && inCart.giftPieces && inCart.giftPieces > 0
+                            ? 'bg-green-50 border-green-100'
+                            : 'bg-red-50 border-red-100'
+                        )}>
                           <ProductPriceBadge product={product} boxPrice={price} />
                         </div>
                       </button>
