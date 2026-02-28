@@ -3,6 +3,7 @@ import { FileCheck, Check, X, Clock, Eye, FileWarning } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   usePendingDocOrders, usePendingDocCollections, useApproveDocCollection,
+  useCreateDocCollection,
   PendingDocOrder,
 } from '@/hooks/useDocumentCollections';
 import {
@@ -15,8 +16,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format, addDays } from 'date-fns';
 import { toast } from 'sonner';
-import DocCollectDialog from './DocCollectDialog';
+import CheckVerificationDialog from '@/components/orders/CheckVerificationDialog';
 import DocVisitNoCollectionDialog from './DocVisitNoCollectionDialog';
+import { supabase } from '@/integrations/supabase/client';
 
 const WORK_DAYS = [
   { num: 0, ar: 'سبت', jsDay: 6 },
@@ -54,7 +56,8 @@ const getDocColor = (type: string) => {
 };
 
 const DocumentCollectionsPopover: React.FC = () => {
-  const { role } = useAuth();
+  const { role, workerId } = useAuth();
+  const createCollection = useCreateDocCollection();
   const [selectedDayNum, setSelectedDayNum] = useState<number | null>(null);
 
   const targetDate = useMemo(() => {
@@ -232,13 +235,34 @@ const DocumentCollectionsPopover: React.FC = () => {
       )}
 
       {selectedOrder && (
-        <DocCollectDialog
+        <CheckVerificationDialog
           open={showCollect}
           onOpenChange={(open) => { setShowCollect(open); if (!open) setSelectedOrder(null); }}
-          orderId={selectedOrder.id}
-          customerName={selectedOrder.customer?.name || '—'}
-          documentType={selectedOrder.invoice_payment_method}
-          totalAmount={Number(selectedOrder.total_amount)}
+          orderTotal={Number(selectedOrder.total_amount)}
+          customerName={selectedOrder.customer?.store_name || selectedOrder.customer?.name || '—'}
+          documentType={selectedOrder.invoice_payment_method as 'check' | 'receipt' | 'transfer'}
+          initialVerification={(selectedOrder as any).document_verification}
+          onConfirm={async (data) => {
+            if (!workerId) return;
+            // Save verification data to the order
+            await supabase
+              .from('orders')
+              .update({
+                document_verification: data.verification,
+                document_status: data.checkReceived ? 'received' : 'pending',
+              })
+              .eq('id', selectedOrder.id);
+            // Create collection record
+            await createCollection.mutateAsync({
+              orderId: selectedOrder.id,
+              workerId,
+              action: 'collected',
+              notes: `تم تحصيل ${getDocLabel(selectedOrder.invoice_payment_method)}`,
+            });
+            toast.success('تم تحصيل المستند والتحقق منه بنجاح');
+            setShowCollect(false);
+            setSelectedOrder(null);
+          }}
         />
       )}
 
