@@ -68,11 +68,18 @@ const ProductPriceBadge: React.FC<ProductPriceBadgeProps> = ({ product, boxPrice
         </span>
       </div>
       {unitPrice !== null && unitPrice > 0 && (
-        <div className="w-full rounded-md bg-muted border border-border py-1 text-center">
+        <div className="w-full rounded-md bg-muted border border-border py-1 text-center relative">
           <span className="text-sm font-semibold text-foreground flex items-center justify-center gap-1">
             <Boxes className="w-3.5 h-3.5" />
             {unitPrice.toLocaleString()} {t('common.currency')}/{unitLabel}
           </span>
+          {/* Badge showing units per box */}
+          {((pricingUnit === 'kg' && product.weight_per_box && product.weight_per_box > 0) ||
+            (pricingUnit === 'unit' && product.pieces_per_box > 1)) && (
+            <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow">
+              {pricingUnit === 'kg' ? product.weight_per_box : product.pieces_per_box}
+            </span>
+          )}
         </div>
       )}
       {afterOfferUnitPrice !== null && afterOfferUnitPrice > 0 && unitLabel && (
