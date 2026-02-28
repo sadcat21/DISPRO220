@@ -234,6 +234,10 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
     if (effective.pricing_unit === 'kg' && effective.weight_per_box) {
       return basePrice * effective.weight_per_box;
     }
+    // If pricing is per unit, multiply by pieces_per_box to get box price
+    if (effective.pricing_unit === 'unit' && effective.pieces_per_box > 1) {
+      return basePrice * effective.pieces_per_box;
+    }
     return basePrice;
   }, [paymentType, priceSubType, getEffectiveProduct]);
 

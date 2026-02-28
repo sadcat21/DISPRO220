@@ -245,6 +245,10 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
     if (product.pricing_unit === 'kg' && product.weight_per_box) {
       return basePrice * product.weight_per_box;
     }
+    // If pricing is per unit, multiply by pieces_per_box to get box price
+    if (product.pricing_unit === 'unit' && product.pieces_per_box > 1) {
+      return basePrice * product.pieces_per_box;
+    }
     return basePrice;
   };
 
