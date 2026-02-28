@@ -573,6 +573,14 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                     periodEnd={periodEnd}
                   />
                 </div>
+                {/* Truck Review Section - right after truck stock */}
+                <div className="border-2 rounded-xl p-3.5">
+                  <SectionDividerWithIcon
+                    icon={<Truck className="w-4 h-4 text-primary" />}
+                    label="تفاصيل مراجعة الشاحنة"
+                  />
+                  <TruckReviewSection workerId={selectedWorkerId} />
+                </div>
                 <div className="border-2 rounded-xl p-3.5">
                   <SectionDividerWithIcon
                     icon={<ShoppingBag className="w-4 h-4 text-primary" />}
@@ -622,14 +630,6 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                     receivedDocs={receivedDocs}
                     onReceivedDocsChange={setReceivedDocs}
                   />
-                </div>
-                {/* Truck Review Section */}
-                <div className="border-2 rounded-xl p-3.5">
-                  <SectionDividerWithIcon
-                    icon={<Truck className="w-4 h-4 text-primary" />}
-                    label="تفاصيل مراجعة الشاحنة"
-                  />
-                  <TruckReviewSection workerId={selectedWorkerId} />
                 </div>
                 {pendingDiscrepancies.length > 0 && (
                   <div className="border-2 border-destructive/20 rounded-xl p-3.5">
