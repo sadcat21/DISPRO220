@@ -99,6 +99,7 @@ const LoadStock: React.FC = () => {
   const [showSessionHistory, setShowSessionHistory] = useState(false);
   const [viewSessionId, setViewSessionId] = useState<string | null>(null);
   const [viewSessionItems, setViewSessionItems] = useState<any[]>([]);
+  const [viewReviewDiscrepancies, setViewReviewDiscrepancies] = useState<any[]>([]);
   const [isLoadingViewItems, setIsLoadingViewItems] = useState(false);
   // Session history filters
   const [historyDateFilter, setHistoryDateFilter] = useState<Date | undefined>(undefined);
@@ -191,6 +192,7 @@ const LoadStock: React.FC = () => {
   const handleViewSession = async (sessionId: string) => {
     setViewSessionId(sessionId);
     setIsLoadingViewItems(true);
+    setViewReviewDiscrepancies([]);
     try {
       const { data } = await supabase
         .from('loading_session_items')
@@ -198,6 +200,17 @@ const LoadStock: React.FC = () => {
         .eq('session_id', sessionId)
         .order('created_at', { ascending: true });
       setViewSessionItems(data || []);
+
+      // For review sessions, also fetch discrepancies
+      const session = sessions.find(s => s.id === sessionId);
+      if (session?.status === 'review') {
+        const { data: discData } = await supabase
+          .from('stock_discrepancies')
+          .select('*, product:products(name, pieces_per_box)')
+          .eq('source_session_id', sessionId)
+          .order('created_at', { ascending: true });
+        setViewReviewDiscrepancies(discData || []);
+      }
     } catch (err) {
       console.error('Error loading session items:', err);
     } finally {
@@ -1300,12 +1313,50 @@ const LoadStock: React.FC = () => {
                 <div className="border-t pt-3">
                   <h4 className="text-sm font-semibold mb-2 flex items-center gap-1">
                     <Truck className="w-4 h-4" />
-                    {isUnload ? `المنتجات المفرّغة (${viewSessionItems.length})` : `المنتجات المشحونة (${viewSessionItems.length})`}
+                    {session.status === 'review' 
+                      ? `المنتجات المراجعة (${viewReviewDiscrepancies.length})`
+                      : isUnload 
+                        ? `المنتجات المفرّغة (${viewSessionItems.length})` 
+                        : `المنتجات المشحونة (${viewSessionItems.length})`}
                   </h4>
                   {isLoadingViewItems ? (
                     <div className="flex items-center justify-center py-4">
                       <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                     </div>
+                  ) : session.status === 'review' ? (
+                    viewReviewDiscrepancies.length === 0 ? (
+                      <div className="text-center py-4">
+                        <CheckCircle className="w-6 h-6 text-green-600 mx-auto mb-1" />
+                        <p className="text-sm text-green-600 font-medium">جميع المنتجات مطابقة</p>
+                        <p className="text-xs text-muted-foreground">لا توجد فوارق في هذه الجلسة</p>
+                      </div>
+                    ) : (
+                      <ScrollArea className="max-h-[40vh]">
+                        <div className="space-y-2">
+                          {viewReviewDiscrepancies.map((disc: any) => (
+                            <div key={disc.id} className={`rounded-lg px-3 py-2.5 ${
+                              disc.discrepancy_type === 'deficit' 
+                                ? 'bg-destructive/10 border border-destructive/30' 
+                                : 'bg-orange-50 dark:bg-orange-900/10 border border-orange-300'
+                            }`}>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-sm font-semibold">{disc.product?.name || '—'}</span>
+                                <Badge className={`text-[10px] ${
+                                  disc.discrepancy_type === 'deficit' 
+                                    ? 'bg-destructive text-white' 
+                                    : 'bg-orange-500 text-white'
+                                }`}>
+                                  {disc.discrepancy_type === 'deficit' ? 'عجز' : 'فائض'}
+                                </Badge>
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                الفارق: <span className="font-bold">{Number(disc.quantity).toFixed(2)}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    )
                   ) : viewSessionItems.length === 0 ? (
                     <p className="text-center text-muted-foreground text-xs py-4">لا توجد منتجات في هذه الجلسة</p>
                   ) : (

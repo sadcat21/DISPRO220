@@ -90,11 +90,6 @@ const StockVerificationDialog: React.FC<StockVerificationDialogProps> = ({
       toast.error(`يرجى إدخال الكمية الفعلية لجميع المنتجات (${items.filter(i => i.status === 'unverified').length} متبقي)`);
       return;
     }
-    if (discrepancies.length === 0) {
-      // All match - confirm directly
-      handleConfirm();
-      return;
-    }
     setShowSummary(true);
   };
 
@@ -150,6 +145,8 @@ const StockVerificationDialog: React.FC<StockVerificationDialogProps> = ({
 
   const verifiedCount = items.filter(i => i.status !== 'unverified').length;
 
+  const matchedItems = items.filter(i => i.status === 'match');
+
   // Summary view
   if (showSummary) {
     return (
@@ -157,51 +154,82 @@ const StockVerificationDialog: React.FC<StockVerificationDialogProps> = ({
         <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-orange-500" />
-              ملخص الفوارق
+              <CheckCircle className="w-5 h-5 text-primary" />
+              ملخص المراجعة
             </DialogTitle>
             <p className="text-sm text-muted-foreground">
-              المنتجات التالية بها فروقات - يمكنك التعديل أو العودة للمراجعة
+              راجع الملخص قبل التأكيد - يمكنك العودة للتعديل
             </p>
+            <div className="flex gap-2 flex-wrap">
+              <Badge className="bg-green-600 text-white">{matchedItems.length} مطابق</Badge>
+              {discrepancies.filter(d => d.status === 'deficit').length > 0 && (
+                <Badge variant="destructive">{discrepancies.filter(d => d.status === 'deficit').length} عجز</Badge>
+              )}
+              {discrepancies.filter(d => d.status === 'surplus').length > 0 && (
+                <Badge className="bg-orange-500 text-white">{discrepancies.filter(d => d.status === 'surplus').length} فائض</Badge>
+              )}
+            </div>
           </DialogHeader>
 
           <ScrollArea className="flex-1 max-h-[55vh]">
             <div className="space-y-3 p-1">
-              {discrepancies.map(item => (
-                <Card key={item.product_id} className={`border ${
-                  item.status === 'deficit' ? 'border-destructive/40 bg-destructive/5' :
-                  'border-orange-300 bg-orange-50/50 dark:bg-orange-900/10'
-                }`}>
-                  <CardContent className="p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-sm">{item.product_name}</span>
-                      {getStatusBadge(item)}
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-xs">
-                      <div>
-                        <span className="text-muted-foreground">رصيد النظام:</span>
-                        <div className="font-medium">{item.system_qty}</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">الكمية الفعلية:</span>
-                        <Input
-                          type="number"
-                          step={0.01}
-                          value={item.actual_qty}
-                          onChange={e => updateActualQty(item.product_id, e.target.value)}
-                          className="h-7 text-sm mt-0.5"
-                        />
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">الفارق:</span>
-                        <div className={`font-bold ${item.status === 'deficit' ? 'text-destructive' : 'text-orange-600'}`}>
-                          {item.status === 'deficit' ? '-' : '+'}{Math.abs(item.difference).toFixed(2)}
+              {/* Discrepancies first */}
+              {discrepancies.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    الفوارق ({discrepancies.length})
+                  </h4>
+                  {discrepancies.map(item => (
+                    <Card key={item.product_id} className={`border ${
+                      item.status === 'deficit' ? 'border-destructive/40 bg-destructive/5' :
+                      'border-orange-300 bg-orange-50/50 dark:bg-orange-900/10'
+                    }`}>
+                      <CardContent className="p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-sm">{item.product_name}</span>
+                          {getStatusBadge(item)}
                         </div>
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div>
+                            <span className="text-muted-foreground">رصيد النظام:</span>
+                            <div className="font-medium">{item.system_qty}</div>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">الكمية الفعلية:</span>
+                            <div className="font-medium">{item.actual_qty}</div>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">الفارق:</span>
+                            <div className={`font-bold ${item.status === 'deficit' ? 'text-destructive' : 'text-orange-600'}`}>
+                              {item.status === 'deficit' ? '-' : '+'}{Math.abs(item.difference).toFixed(2)}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {/* Matched items */}
+              {matchedItems.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                    <CheckCircle className="w-3.5 h-3.5 text-green-600" />
+                    مطابق ({matchedItems.length})
+                  </h4>
+                  {matchedItems.map(item => (
+                    <div key={item.product_id} className="flex items-center justify-between bg-green-50/50 dark:bg-green-900/10 border border-green-200 dark:border-green-800 rounded-lg px-3 py-2">
+                      <span className="text-sm font-medium">{item.product_name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">{item.system_qty}</span>
+                        <Badge className="bg-green-600 text-white text-[10px]">مطابق</Badge>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                  ))}
+                </div>
+              )}
             </div>
           </ScrollArea>
 
@@ -213,7 +241,7 @@ const StockVerificationDialog: React.FC<StockVerificationDialogProps> = ({
             <Button onClick={handleConfirm} disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="w-4 h-4 animate-spin me-2" />}
               <CheckCircle className="w-4 h-4 me-1" />
-              تأكيد المراجعة
+              تأكيد حفظ الجلسة
             </Button>
           </DialogFooter>
         </DialogContent>
