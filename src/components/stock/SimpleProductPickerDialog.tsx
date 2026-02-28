@@ -57,8 +57,8 @@ const SimpleProductPickerDialog: React.FC<SimpleProductPickerDialogProps> = ({
               return (
                 <button
                   key={p.id}
-                  className={`flex flex-col items-center gap-1.5 rounded-xl border overflow-hidden text-center transition-colors
-                    ${isSelected ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent border-border'}
+                  className={`flex flex-col rounded-2xl overflow-hidden text-center transition-all relative bg-white shadow-lg border-2
+                    ${isSelected ? 'border-primary ring-2 ring-primary/40' : 'border-red-200 hover:border-primary/60 hover:shadow-xl'}
                   `}
                   onClick={() => {
                     onSelect(p.id);
@@ -66,16 +66,20 @@ const SimpleProductPickerDialog: React.FC<SimpleProductPickerDialogProps> = ({
                     setSearch('');
                   }}
                 >
+                  {/* اسم المنتج أعلى الصورة */}
+                  <div className={`px-2 py-2 border-b ${isSelected ? 'bg-primary border-primary' : 'bg-red-50 border-red-100'}`}>
+                    <span className={`font-bold leading-tight block text-center truncate text-sm ${isSelected ? 'text-white' : 'text-red-900'}`}>
+                      {p.name}
+                    </span>
+                  </div>
+                  {/* الصورة */}
                   {p.image_url ? (
-                    <div className="w-full aspect-square">
-                      <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
-                    </div>
+                    <img src={p.image_url} alt={p.name} className="w-full aspect-square object-cover" loading="lazy" />
                   ) : (
-                    <div className={`w-full aspect-square flex items-center justify-center ${isSelected ? 'bg-primary-foreground/20' : 'bg-primary/10'}`}>
-                      <Package className={`w-10 h-10 ${isSelected ? 'text-primary-foreground' : 'text-primary'}`} />
+                    <div className="w-full aspect-square bg-red-50 flex items-center justify-center">
+                      <Package className="w-10 h-10 text-primary/40" />
                     </div>
                   )}
-                  <span className="font-semibold text-sm leading-tight truncate w-full px-2 pb-2">{p.name}</span>
                 </button>
               );
             })}
