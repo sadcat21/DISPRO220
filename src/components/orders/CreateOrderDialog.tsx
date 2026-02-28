@@ -271,11 +271,12 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
       const existing = prev.find(item => item.productId === productId && !item.isUnitSale && !item.itemPaymentType && !perItemPricing);
       if (existing && !perItemPricing) {
         const newQuantity = existing.quantity + quantity;
-        const newGift = (existing.giftQuantity || 0) + giftQuantity;
-        const newPaid = newQuantity - newGift;
+        const newGiftBoxes = (existing.giftQuantity || 0) + giftQuantity;
+        const newGiftPieces = (existing.giftPieces || 0) + (giftInfo?.giftPieces || 0);
+        const newPaid = newQuantity - newGiftBoxes;
         return prev.map(item =>
           item === existing
-            ? { ...item, quantity: newQuantity, totalPrice: newPaid * unitPrice, giftQuantity: newGift }
+            ? { ...item, quantity: newQuantity, totalPrice: newPaid * unitPrice, giftQuantity: newGiftBoxes, giftPieces: newGiftPieces || undefined, giftOfferId: giftInfo?.offerId || existing.giftOfferId }
             : item
         );
       }
@@ -605,7 +606,12 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                 <Label className="text-base font-semibold">{t('products.title')}</Label>
                 <div className="grid grid-cols-2 gap-3">
                   {products.map((product) => {
-                    const inCart = orderItems.find(item => item.productId === product.id);
+                    const productCartItems = orderItems.filter(item => item.productId === product.id);
+                    const inCart = productCartItems.find(item => !item.isUnitSale) || productCartItems[0];
+                    const totalCartQuantity = productCartItems.reduce((sum, item) => sum + item.quantity, 0);
+                    const totalGiftBoxes = productCartItems.reduce((sum, item) => sum + (item.giftQuantity || 0), 0);
+                    const totalGiftPieces = productCartItems.reduce((sum, item) => sum + (item.giftPieces || 0), 0);
+                    const hasAppliedGift = totalGiftBoxes > 0 || totalGiftPieces > 0;
                     const price = getProductPrice(product);
                     const isShortage = shortageProductIds.has(product.id);
                     const isNotInStock = !warehouseStockProductIds.has(product.id);
@@ -618,7 +624,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                         className={cn(
                           "flex flex-col rounded-2xl overflow-hidden text-center transition-all relative",
                           "bg-white shadow-lg border-2",
-                          inCart && inCart.giftPieces && inCart.giftPieces > 0
+                          hasAppliedGift
                             ? 'border-green-500 ring-2 ring-green-400/40'
                             : inCart ? 'border-primary ring-2 ring-primary/40' : 'border-red-200 hover:border-primary/60 hover:shadow-xl',
                           (isShortage || isNotInStock) && !inCart && "border-orange-400/60",
@@ -628,7 +634,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                         {/* اسم المنتج أعلى الصورة */}
                         <div className={cn(
                           "px-2 py-2 border-b",
-                          inCart && inCart.giftPieces && inCart.giftPieces > 0
+                          hasAppliedGift
                             ? 'bg-green-500 border-green-500'
                             : inCart ? 'bg-primary border-primary' : 'bg-red-50 border-red-100'
                         )}>
@@ -659,8 +665,8 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                             {hasOffer ? (
                               <span className="flex items-center gap-1 rounded-full bg-green-500 px-2 py-1 shadow-lg">
                                 <Gift className="w-4 h-4 text-white" />
-                                {inCart?.giftPieces && inCart.giftPieces > 0 && (
-                                  <span className="text-white text-xs font-bold">{inCart.giftPieces}</span>
+                                {hasAppliedGift && (
+                                  <span className="text-white text-xs font-bold">{totalGiftBoxes > 0 ? totalGiftBoxes : totalGiftPieces}</span>
                                 )}
                               </span>
                             ) : <span />}
@@ -671,7 +677,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                             )}
                             {inCart ? (
                               <Badge variant="default" className="text-sm px-2.5 py-0.5 shadow-lg font-bold">
-                                {inCart.quantity}
+                                {totalCartQuantity}
                               </Badge>
                             ) : <span />}
                           </div>
@@ -680,7 +686,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                         {/* السعر أسفل الصورة */}
                         <div className={cn(
                           "px-2 py-2 border-t",
-                          inCart && inCart.giftPieces && inCart.giftPieces > 0
+                          hasAppliedGift
                             ? 'bg-green-50 border-green-100'
                             : 'bg-red-50 border-red-100'
                         )}>
