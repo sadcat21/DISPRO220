@@ -184,6 +184,11 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
                       {displayPrice.toLocaleString()} {t('common.currency')}/{isUnitSale ? t('offers.unit_piece') : t('offers.unit_box')}
                     </Badge>
                   )}
+                  {!isUnitSale && unitPiecePrice > 0 && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">
+                      {unitPiecePrice.toLocaleString()} {t('common.currency')}/{t('offers.unit_piece')}
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
