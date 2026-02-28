@@ -603,7 +603,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
               {/* Products */}
               <section className="space-y-3">
                 <Label className="text-base font-semibold">{t('products.title')}</Label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-3">
                   {products.map((product) => {
                     const inCart = orderItems.find(item => item.productId === product.id);
                     const price = getProductPrice(product);
@@ -611,13 +611,12 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                     const isNotInStock = !warehouseStockProductIds.has(product.id);
                     const hasOffer = offerProductIds.has(product.id);
                     return (
-                      <Button
+                      <button
                         key={product.id}
-                        variant={inCart ? 'secondary' : 'outline'}
-                        size="sm"
                         onClick={() => handleProductClick(product)}
                         className={cn(
-                          "text-xs h-auto py-3 px-3 justify-start flex-wrap relative gap-2",
+                          "flex flex-col items-center gap-2 rounded-xl border p-4 text-center transition-colors relative",
+                          inCart ? 'bg-secondary border-primary' : 'bg-background border-border hover:bg-accent',
                           (isShortage || isNotInStock) && "border-orange-400/60",
                           hasOffer && !isShortage && !isNotInStock && "border-green-500/50"
                         )}
@@ -626,14 +625,16 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                           <img 
                             src={product.image_url} 
                             alt={product.name} 
-                            className="w-12 h-12 rounded-lg object-cover shrink-0"
+                            className="w-20 h-20 rounded-xl object-cover shrink-0"
                             loading="lazy"
                           />
                         ) : (
-                          <Plus className="w-3.5 h-3.5 shrink-0" />
+                          <div className="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center">
+                            <Plus className="w-8 h-8 text-primary" />
+                          </div>
                         )}
-                        <span className="truncate flex-1 text-start">{product.name}</span>
-                        <div className="flex items-center gap-1 mr-auto flex-wrap">
+                        <span className="font-medium text-xs leading-tight line-clamp-2 w-full">{product.name}</span>
+                        <div className="flex items-center gap-1 flex-wrap justify-center">
                           {(isShortage || isNotInStock) && (
                             <AlertTriangle className="w-3.5 h-3.5 text-orange-500 shrink-0" />
                           )}
@@ -645,11 +646,11 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                           <ProductPriceBadge product={product} boxPrice={price} />
                         </div>
                         {inCart && (
-                          <Badge variant="default" className="text-[10px] px-1.5">
+                          <Badge variant="default" className="absolute top-2 end-2 text-xs px-2">
                             {inCart.quantity}
                           </Badge>
                         )}
-                      </Button>
+                      </button>
                     );
                   })}
                 </div>
