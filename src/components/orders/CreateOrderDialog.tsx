@@ -603,7 +603,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                           type="button"
                           variant={priceSubType === option.value ? 'default' : 'outline'}
                           size="sm"
-                          className={`h-10 text-xs transition-opacity ${priceSubType === option.value ? option.colors.active : option.colors.inactive} ${priceSubType !== option.value ? 'opacity-50' : ''}`}
+                          className={`h-12 text-sm font-bold transition-opacity ${priceSubType === option.value ? option.colors.active : option.colors.inactive} ${priceSubType !== option.value ? 'opacity-50' : ''}`}
                           onClick={() => setPriceSubType(option.value)}
                         >
                           {option.label}

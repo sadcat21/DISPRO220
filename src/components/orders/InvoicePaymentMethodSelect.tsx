@@ -37,8 +37,8 @@ const InvoicePaymentMethodSelect: React.FC<InvoicePaymentMethodSelectProps> = ({
           key={methodKey}
           type="button"
           variant={value === methodKey ? 'default' : 'outline'}
-          size="sm"
-          className={`h-8 flex items-center gap-1 text-xs transition-opacity ${value === methodKey ? METHOD_COLORS[methodKey].active : METHOD_COLORS[methodKey].inactive} ${value !== null && value !== methodKey ? 'opacity-50' : ''}`}
+          size="default"
+          className={`h-10 flex items-center gap-1.5 text-sm font-bold transition-opacity ${value === methodKey ? METHOD_COLORS[methodKey].active : METHOD_COLORS[methodKey].inactive} ${value !== null && value !== methodKey ? 'opacity-50' : ''}`}
           disabled={disabled}
           onClick={() => onChange(methodKey)}
         >
