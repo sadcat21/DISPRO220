@@ -144,7 +144,7 @@ const WorkerHandoverSummary: React.FC<WorkerHandoverSummaryProps> = ({
         .order('created_at', { ascending: false })
         .limit(1);
 
-      const truckReviewed = (loadingSessions || []).length > 0;
+      const truckReviewed = (loadingSessions || []).length > 0 && loadingSessions![0]?.status === 'review';
 
       // Expenses
       const { data: expensesData } = await supabase
