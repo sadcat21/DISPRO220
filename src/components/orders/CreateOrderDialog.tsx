@@ -32,6 +32,7 @@ import EditCustomerDialog from './EditCustomerDialog';
 import CustomerRecentOrders from './CustomerRecentOrders';
 import InvoicePaymentMethodSelect from './InvoicePaymentMethodSelect';
 import ProductPriceBadge from './ProductPriceBadge';
+import { useCompanyInfo } from '@/hooks/useCompanyInfo';
 import { cn } from '@/lib/utils';
 
 interface CreateOrderDialogProps {
@@ -57,6 +58,7 @@ interface OrderItemWithPrice {
 const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChange, initialCustomerId }) => {
   const { workerId, activeBranch } = useAuth();
   const { t, dir, language } = useLanguage();
+  const { companyInfo } = useCompanyInfo();
   const createOrder = useCreateOrder();
   const { trackVisit } = useTrackVisit();
   const { data: orders } = useMyOrders();
@@ -688,6 +690,15 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                               className="w-full aspect-square object-cover"
                               loading="lazy"
                             />
+                          ) : companyInfo.company_logo ? (
+                            <div className="w-full aspect-square bg-muted flex items-center justify-center">
+                              <img 
+                                src={companyInfo.company_logo} 
+                                alt="logo" 
+                                className="w-3/4 h-3/4 object-contain opacity-40"
+                                loading="lazy"
+                              />
+                            </div>
                           ) : (
                             <div className="w-full aspect-square bg-red-50 flex items-center justify-center">
                               <Plus className="w-10 h-10 text-primary/40" />

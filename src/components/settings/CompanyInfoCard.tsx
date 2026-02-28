@@ -1,14 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Building2, Loader2, Save } from 'lucide-react';
+import { Building2, Loader2, Save, Upload, X, Image } from 'lucide-react';
 import { useCompanyInfo, CompanyInfo } from '@/hooks/useCompanyInfo';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const CompanyInfoCard: React.FC = () => {
   const { companyInfo, isLoading, saveCompanyInfo, isSaving } = useCompanyInfo();
   const [form, setForm] = useState<CompanyInfo>(companyInfo);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingIcon, setUploadingIcon] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const iconInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setForm(companyInfo);
@@ -16,6 +22,33 @@ const CompanyInfoCard: React.FC = () => {
 
   const handleChange = (key: keyof CompanyInfo, value: string) => {
     setForm(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleImageUpload = async (file: File, type: 'logo' | 'icon') => {
+    const setUploading = type === 'logo' ? setUploadingLogo : setUploadingIcon;
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const filePath = `company/${type}_${Date.now()}.${ext}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file, { upsert: true });
+      
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      const key = type === 'logo' ? 'company_logo' : 'company_icon';
+      setForm(prev => ({ ...prev, [key]: publicUrl }));
+      toast.success(type === 'logo' ? 'تم رفع اللوجو' : 'تم رفع الأيقونة');
+    } catch (err) {
+      toast.error('فشل رفع الصورة');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const fields: { key: keyof CompanyInfo; label: string; placeholder: string }[] = [
@@ -51,6 +84,99 @@ const CompanyInfoCard: React.FC = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        {/* Logo & Icon uploads */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Logo */}
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">لوجو الشركة</Label>
+            <div className="border border-border rounded-lg p-2 flex flex-col items-center gap-2 bg-muted/30">
+              {form.company_logo ? (
+                <div className="relative w-full">
+                  <img src={form.company_logo} alt="لوجو" className="w-full h-20 object-contain rounded" />
+                  <button
+                    type="button"
+                    onClick={() => handleChange('company_logo', '')}
+                    className="absolute top-0 end-0 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-full h-20 flex items-center justify-center text-muted-foreground">
+                  <Image className="w-8 h-8" />
+                </div>
+              )}
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImageUpload(file, 'logo');
+                  e.target.value = '';
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full text-xs"
+                onClick={() => logoInputRef.current?.click()}
+                disabled={uploadingLogo}
+              >
+                {uploadingLogo ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3 me-1" />}
+                رفع اللوجو
+              </Button>
+            </div>
+          </div>
+
+          {/* Icon */}
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">أيقونة الشركة</Label>
+            <div className="border border-border rounded-lg p-2 flex flex-col items-center gap-2 bg-muted/30">
+              {form.company_icon ? (
+                <div className="relative w-full">
+                  <img src={form.company_icon} alt="أيقونة" className="w-full h-20 object-contain rounded" />
+                  <button
+                    type="button"
+                    onClick={() => handleChange('company_icon', '')}
+                    className="absolute top-0 end-0 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-full h-20 flex items-center justify-center text-muted-foreground">
+                  <Image className="w-8 h-8" />
+                </div>
+              )}
+              <input
+                ref={iconInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImageUpload(file, 'icon');
+                  e.target.value = '';
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full text-xs"
+                onClick={() => iconInputRef.current?.click()}
+                disabled={uploadingIcon}
+              >
+                {uploadingIcon ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3 me-1" />}
+                رفع الأيقونة
+              </Button>
+            </div>
+          </div>
+        </div>
+
         {fields.map(({ key, label, placeholder }) => (
           <div key={key} className="space-y-1">
             <Label className="text-xs text-muted-foreground">{label}</Label>

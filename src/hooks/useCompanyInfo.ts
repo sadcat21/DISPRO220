@@ -14,6 +14,8 @@ export interface CompanyInfo {
   company_nis: string;
   company_bank: string;
   company_rib: string;
+  company_logo: string;
+  company_icon: string;
 }
 
 const COMPANY_INFO_KEY = 'company_info';
@@ -30,6 +32,8 @@ const defaultCompanyInfo: CompanyInfo = {
   company_nis: '001931030056846',
   company_bank: 'BNA',
   company_rib: '00100957030000149786',
+  company_logo: '',
+  company_icon: '',
 };
 
 export const useCompanyInfo = () => {
