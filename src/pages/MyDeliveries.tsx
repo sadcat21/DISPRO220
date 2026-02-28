@@ -10,7 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { 
   ShoppingCart, Loader2, Package, User, Calendar, Store,
   CheckCircle, Clock, Truck, XCircle, UserCheck, Phone, MapPin, ChevronDown, ChevronUp, Navigation, Search, Edit2,
-  Receipt, Banknote, Route, Gift, Trash2, ListFilter, Map, AlertTriangle
+  Receipt, Banknote, Route, Gift, Trash2, ListFilter, Map, AlertTriangle, FileCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAssignedOrders, useOrderItems, useUpdateOrderStatus, useCancelOrder } from '@/hooks/useOrders';
@@ -27,6 +27,7 @@ import LazyNavigationMapView from '@/components/map/LazyNavigationMapView';
 import OrderSearchDialog from '@/components/orders/OrderSearchDialog';
 import ModifyOrderDialog from '@/components/orders/ModifyOrderDialog';
 import DeliverySaleDialog from '@/components/orders/DeliverySaleDialog';
+import CheckVerificationDialog from '@/components/orders/CheckVerificationDialog';
 import { useLocationBroadcast } from '@/hooks/useWorkerLocation';
 import { useIsElementHidden } from '@/hooks/useUIOverrides';
 import { getLocalizedName } from '@/utils/sectorName';
@@ -47,6 +48,7 @@ const MyDeliveries: React.FC = () => {
   const [pendingDeliveryOrder, setPendingDeliveryOrder] = useState<OrderWithDetails | null>(null);
   const [modifyOrder, setModifyOrder] = useState<OrderWithDetails | null>(null);
   const [confirmCancelOrderId, setConfirmCancelOrderId] = useState<string | null>(null);
+  const [checkVerifyOrder, setCheckVerifyOrder] = useState<OrderWithDetails | null>(null);
   const [navigationTarget, setNavigationTarget] = useState<{
     lat: number; lng: number; name: string; address?: string;
   } | null>(null);
@@ -451,10 +453,25 @@ const MyDeliveries: React.FC = () => {
                   </>
                 )}
 
-                {order.status === 'delivered' && !isModifyHidden && (
-                  <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => setModifyOrder(order)}>
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
+                {order.status === 'delivered' && (
+                  <>
+                    {(order as any).document_status === 'pending' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 gap-1 border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                        onClick={() => setCheckVerifyOrder(order)}
+                      >
+                        <FileCheck className="w-4 h-4" />
+                        <span className="text-xs">إكمال التحقق</span>
+                      </Button>
+                    )}
+                    {!isModifyHidden && (
+                      <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => setModifyOrder(order)}>
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -700,6 +717,18 @@ const MyDeliveries: React.FC = () => {
               </div>
             </div>
           )}
+          {selectedOrder && selectedOrder.status === 'delivered' && (selectedOrder as any).document_status === 'pending' && (
+            <div className="border-t bg-card p-4 shrink-0">
+              <Button
+                className="w-full gap-2 border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                variant="outline"
+                onClick={() => { setShowDetailsDialog(false); setCheckVerifyOrder(selectedOrder); }}
+              >
+                <FileCheck className="w-4 h-4" />
+                إكمال التحقق من الشيك
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
       
@@ -718,6 +747,36 @@ const MyDeliveries: React.FC = () => {
         <ModifyOrderWithItems order={modifyOrder} onClose={() => setModifyOrder(null)} />
       )}
       
+      {/* Check Verification Dialog for completing later */}
+      {checkVerifyOrder && (
+        <CheckVerificationDialog
+          open={!!checkVerifyOrder}
+          onOpenChange={(open) => { if (!open) setCheckVerifyOrder(null); }}
+          orderTotal={Number(checkVerifyOrder.total_amount || 0)}
+          customerName={checkVerifyOrder.customer?.name || ''}
+          onConfirm={async (data) => {
+            const verification = data.checkReceived ? {
+              type: 'check',
+              ...data.verification,
+              skipped: data.skippedVerification,
+              verified_at: new Date().toISOString(),
+            } : { type: 'check', status: 'not_received' };
+
+            await supabase
+              .from('orders')
+              .update({
+                document_status: data.checkReceived ? 'received' : 'pending',
+                document_verification: verification as any,
+                check_due_date: data.verification?.due_date || null,
+              })
+              .eq('id', checkVerifyOrder.id);
+
+            toast.success('تم تحديث التحقق من الشيك');
+            setCheckVerifyOrder(null);
+          }}
+        />
+      )}
+
       {navigationTarget && (
         <LazyNavigationMapView
           destinationLat={navigationTarget.lat}
