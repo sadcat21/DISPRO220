@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Minus, Loader2, Package, Save, PlusCircle, Trash2, Truck } from 'lucide-react';
+import { Plus, Minus, Loader2, Package, Save, PlusCircle, Trash2, Truck, Gift } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,6 +30,7 @@ interface ModifiedItem {
   original_quantity: number;
   new_quantity: number;
   unit_price: number;
+  gift_quantity: number;
 }
 
 const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
@@ -59,6 +60,7 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
         original_quantity: item.quantity,
         new_quantity: item.quantity,
         unit_price: Number(item.unit_price || 0),
+        gift_quantity: Number(item.gift_quantity || 0),
       })));
       setAssignedWorkerId(order.assigned_worker_id || '');
     }
@@ -106,6 +108,7 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
       original_quantity: 0,
       new_quantity: 1,
       unit_price: Number(product.price_gros || product.price_invoice || 0),
+      gift_quantity: 0,
     }]);
     setNewProductId('');
   };
@@ -319,15 +322,23 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
               const changed = item.new_quantity !== item.original_quantity;
               return (
                 <div key={item.product_id} className={`border rounded-lg p-3 space-y-2 ${changed ? 'border-primary/50 bg-primary/5' : ''}`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      <span className="font-medium text-sm">{item.product_name}</span>
-                      {item.unit_price > 0 && (
-                        <p className="text-xs text-muted-foreground">
-                          {item.unit_price.toLocaleString()} دج × {item.new_quantity} = {(item.unit_price * item.new_quantity).toLocaleString()} دج
-                        </p>
-                      )}
-                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium text-sm">{item.product_name}</span>
+                          {item.gift_quantity > 0 && (
+                            <Badge className="bg-pink-100 text-pink-700 dark:bg-pink-950/40 dark:text-pink-300 text-[10px] px-1.5 py-0 gap-0.5">
+                              <Gift className="w-3 h-3" />
+                              هدية {item.gift_quantity}
+                            </Badge>
+                          )}
+                        </div>
+                        {item.unit_price > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            {item.unit_price.toLocaleString()} دج × {item.new_quantity} = {(item.unit_price * item.new_quantity).toLocaleString()} دج
+                          </p>
+                        )}
+                      </div>
                     {!item.id && (
                       <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeNewItem(index)}>
                         <Trash2 className="w-3 h-3 text-destructive" />
