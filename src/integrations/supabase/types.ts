@@ -2637,6 +2637,7 @@ export type Database = {
           price_retail: number | null
           price_super_gros: number | null
           pricing_unit: string
+          sort_order: number | null
           weight_per_box: number | null
         }
         Insert: {
@@ -2654,6 +2655,7 @@ export type Database = {
           price_retail?: number | null
           price_super_gros?: number | null
           pricing_unit?: string
+          sort_order?: number | null
           weight_per_box?: number | null
         }
         Update: {
@@ -2671,6 +2673,7 @@ export type Database = {
           price_retail?: number | null
           price_super_gros?: number | null
           pricing_unit?: string
+          sort_order?: number | null
           weight_per_box?: number | null
         }
         Relationships: [

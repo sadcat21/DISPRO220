@@ -39,6 +39,7 @@ const Products: React.FC = () => {
   const [pricingUnit, setPricingUnit] = useState<string>('box');
   const [weightPerBox, setWeightPerBox] = useState<number>(0);
   const [allowUnitSale, setAllowUnitSale] = useState<boolean>(false);
+  const [productSortOrder, setProductSortOrder] = useState<number>(0);
   const [productImage, setProductImage] = useState<File | null>(null);
   const [productImagePreview, setProductImagePreview] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -59,6 +60,7 @@ const Products: React.FC = () => {
   const [editAllowUnitSale, setEditAllowUnitSale] = useState<boolean>(false);
   const [editProductImage, setEditProductImage] = useState<File | null>(null);
   const [editProductImagePreview, setEditProductImagePreview] = useState<string | null>(null);
+  const [editSortOrder, setEditSortOrder] = useState<number>(0);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showStampPriceDialog, setShowStampPriceDialog] = useState(false);
   const [activeTab, setActiveTab] = useState('products');
@@ -108,6 +110,7 @@ const Products: React.FC = () => {
       const { data, error } = await supabase
         .from('products')
         .select('*')
+        .order('sort_order', { ascending: true })
         .order('name');
 
       if (error) throw error;
@@ -146,6 +149,7 @@ const Products: React.FC = () => {
         price_retail: priceRetail,
         price_no_invoice: priceNoInvoice,
         allow_unit_sale: allowUnitSale,
+        sort_order: productSortOrder,
         created_by: workerId,
       }).select('id').single();
 
@@ -171,6 +175,7 @@ const Products: React.FC = () => {
       setPricingUnit('box');
       setWeightPerBox(0);
       setAllowUnitSale(true);
+      setProductSortOrder(0);
       setProductImage(null);
       setProductImagePreview(null);
       fetchProducts();
@@ -209,6 +214,7 @@ const Products: React.FC = () => {
     setEditPricingUnit(product.pricing_unit || 'box');
     setEditWeightPerBox(product.weight_per_box || 0);
     setEditAllowUnitSale(product.allow_unit_sale !== false);
+    setEditSortOrder((product as any).sort_order || 0);
     setEditProductImage(null);
     setEditProductImagePreview(product.image_url || null);
     setEditPriceSuperGros(product.price_super_gros || 0);
@@ -306,6 +312,7 @@ const Products: React.FC = () => {
           price_retail: editPriceRetail,
           price_no_invoice: editPriceNoInvoice,
           allow_unit_sale: editAllowUnitSale,
+          sort_order: editSortOrder,
           image_url: imageUrl,
         })
         .eq('id', editingProduct.id);
@@ -481,6 +488,23 @@ const Products: React.FC = () => {
                   className="text-right"
                   autoFocus
                 />
+              </div>
+
+              {/* Sort Order */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Layers className="w-4 h-4" />
+                  رتبة العرض (ترتيب المنتج في القائمة)
+                </Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={productSortOrder}
+                  onChange={(e) => setProductSortOrder(parseInt(e.target.value) || 0)}
+                  placeholder="0"
+                  className="text-right"
+                />
+                <p className="text-xs text-muted-foreground">رقم أصغر = يظهر أولاً في القائمة</p>
               </div>
 
               {/* Image Upload */}
@@ -781,6 +805,23 @@ const Products: React.FC = () => {
                 className="text-right"
                 autoFocus
               />
+            </div>
+
+            {/* Sort Order */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Layers className="w-4 h-4" />
+                رتبة العرض
+              </Label>
+              <Input
+                type="number"
+                min={0}
+                value={editSortOrder}
+                onChange={(e) => setEditSortOrder(parseInt(e.target.value) || 0)}
+                placeholder="0"
+                className="text-right"
+              />
+              <p className="text-xs text-muted-foreground">رقم أصغر = يظهر أولاً في القائمة</p>
             </div>
 
             {/* Image Upload */}
