@@ -1,9 +1,12 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, FileCheck2, Truck, Clock, ShieldCheck, ShieldAlert, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, FileCheck2, Truck, Clock, ShieldCheck, ShieldAlert, AlertCircle, ClipboardCheck } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import CheckVerificationDialog from '@/components/orders/CheckVerificationDialog';
+import { toast } from 'sonner';
 
 interface DocumentCollectionsSummaryProps {
   workerId: string;
@@ -34,7 +37,7 @@ const fmt = (n: number) => n.toLocaleString();
 const extractDate = (v: string): string => v.replace('T', ' ').substring(0, 10);
 
 const docTypeLabel = (t: string) => {
-  const map: Record<string, string> = { check: 'شيك', receipt: 'وصل فيرمو', transfer: 'وصل فيرسمو', versement: 'وصل فيرسمو', virement: 'تحويل بنكي' };
+  const map: Record<string, string> = { check: 'Chèque', receipt: 'Versement', transfer: 'Virement', versement: 'Versement', virement: 'Virement' };
   return map[t] || t;
 };
 
@@ -88,6 +91,8 @@ const parseVerification = (v: any, docType: string) => {
 };
 
 const DocumentCollectionsSummary: React.FC<DocumentCollectionsSummaryProps> = ({ workerId, periodStart, periodEnd }) => {
+  const queryClient = useQueryClient();
+  const [verifyDoc, setVerifyDoc] = useState<CollectedDoc | null>(null);
   const { data: docs, isLoading } = useQuery({
     queryKey: ['session-document-collections', workerId, periodStart, periodEnd],
     queryFn: async () => {
@@ -217,7 +222,7 @@ const DocumentCollectionsSummary: React.FC<DocumentCollectionsSummaryProps> = ({
           </div>
         )}
 
-        {/* Verification progress */}
+        {/* Verification progress + button */}
         <div className="flex items-center gap-2">
           {v.verified ? (
             <ShieldCheck className="w-3.5 h-3.5 text-green-600 shrink-0" />
@@ -230,6 +235,17 @@ const DocumentCollectionsSummary: React.FC<DocumentCollectionsSummaryProps> = ({
           <span className={`text-[10px] font-bold ${v.verified ? 'text-green-600' : pct > 0 ? 'text-orange-500' : 'text-destructive'}`}>
             {pct}%
           </span>
+          {!v.verified && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-6 text-[10px] px-2 gap-1"
+              onClick={() => setVerifyDoc(doc)}
+            >
+              <ClipboardCheck className="w-3 h-3" />
+              تحقق
+            </Button>
+          )}
         </div>
       </div>
     );
@@ -267,6 +283,39 @@ const DocumentCollectionsSummary: React.FC<DocumentCollectionsSummaryProps> = ({
         <span className="text-sm font-bold">إجمالي المستندات: {docs.length}</span>
         <span className="font-bold text-primary">{fmt(totalAmount)} DA</span>
       </div>
+
+      {/* Verification dialog */}
+      {verifyDoc && (
+        <CheckVerificationDialog
+          open={!!verifyDoc}
+          onOpenChange={(open) => { if (!open) setVerifyDoc(null); }}
+          orderTotal={verifyDoc.orderTotal}
+          customerName={verifyDoc.customerName}
+          initialCheckReceived={true}
+          initialVerification={verifyDoc.verification}
+          documentType={verifyDoc.documentType === 'check' ? 'check' : verifyDoc.documentType === 'transfer' || verifyDoc.documentType === 'virement' ? 'transfer' : 'receipt'}
+          onConfirm={async (data) => {
+            if (!data.checkReceived || !data.verification) {
+              setVerifyDoc(null);
+              return;
+            }
+            const { error } = await supabase
+              .from('orders')
+              .update({
+                document_verification: data.verification,
+                document_status: data.skippedVerification ? 'received' : 'verified',
+              })
+              .eq('id', verifyDoc.orderId);
+            if (error) {
+              toast.error('فشل حفظ التحقق');
+            } else {
+              toast.success('تم حفظ التحقق بنجاح');
+              queryClient.invalidateQueries({ queryKey: ['session-document-collections'] });
+            }
+            setVerifyDoc(null);
+          }}
+        />
+      )}
     </div>
   );
 };
