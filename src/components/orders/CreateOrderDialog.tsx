@@ -615,54 +615,60 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                         key={product.id}
                         onClick={() => handleProductClick(product)}
                         className={cn(
-                          "flex flex-col rounded-xl border-2 overflow-hidden text-center transition-all relative shadow-sm",
-                          inCart ? 'border-primary ring-2 ring-primary/30' : 'border-border hover:border-primary/40 hover:shadow-md',
+                          "flex flex-col rounded-2xl overflow-hidden text-center transition-all relative",
+                          "bg-gradient-to-b from-neutral-900 to-neutral-800 shadow-lg border-2",
+                          inCart ? 'border-primary ring-2 ring-primary/40' : 'border-amber-600/40 hover:border-amber-500/70 hover:shadow-xl',
                           (isShortage || isNotInStock) && !inCart && "border-orange-400/60",
                           hasOffer && !isShortage && !isNotInStock && !inCart && "border-green-500/50"
                         )}
                       >
                         {/* اسم المنتج أعلى الصورة */}
-                        <div className={cn(
-                          "px-2 py-1.5 text-xs font-bold leading-tight line-clamp-2 w-full",
-                          inCart ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
-                        )}>
-                          {product.name}
+                        <div className="px-2 py-2 border-b border-amber-600/30">
+                          <span className="text-xs font-bold text-amber-100 leading-tight line-clamp-2 block">
+                            {product.name}
+                          </span>
                         </div>
 
                         {/* الصورة */}
-                        {product.image_url ? (
-                          <img 
-                            src={product.image_url} 
-                            alt={product.name} 
-                            className="w-full aspect-square object-cover"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="w-full aspect-square bg-muted/50 flex items-center justify-center">
-                            <Plus className="w-10 h-10 text-muted-foreground" />
-                          </div>
-                        )}
+                        <div className="p-3 flex-1 flex items-center justify-center">
+                          {product.image_url ? (
+                            <img 
+                              src={product.image_url} 
+                              alt={product.name} 
+                              className="w-full aspect-square object-contain rounded-lg drop-shadow-lg"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="w-full aspect-square bg-neutral-700/50 rounded-lg flex items-center justify-center">
+                              <Plus className="w-10 h-10 text-amber-400/60" />
+                            </div>
+                          )}
+                        </div>
 
                         {/* السعر والتفاصيل أسفل الصورة */}
-                        <div className="px-2 py-2 bg-background flex items-center justify-between gap-1">
-                          <div className="flex items-center gap-1">
-                            {hasOffer && (
-                              <span className="w-6 h-6 rounded-full bg-green-500/15 flex items-center justify-center">
-                                <Gift className="w-3.5 h-3.5 text-green-600" />
-                              </span>
-                            )}
-                            {(isShortage || isNotInStock) && (
-                              <span className="w-6 h-6 rounded-full bg-orange-500/15 flex items-center justify-center">
-                                <AlertTriangle className="w-3.5 h-3.5 text-orange-500" />
-                              </span>
-                            )}
+                        <div className="px-2 py-2 bg-neutral-950/60 border-t border-amber-600/30 space-y-1">
+                          <div className="flex items-center justify-between gap-1">
+                            <div className="flex items-center gap-1">
+                              {hasOffer && (
+                                <span className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center">
+                                  <Gift className="w-3.5 h-3.5 text-amber-400" />
+                                </span>
+                              )}
+                              {(isShortage || isNotInStock) && (
+                                <span className="w-6 h-6 rounded-full bg-orange-500/20 flex items-center justify-center">
+                                  <AlertTriangle className="w-3.5 h-3.5 text-orange-400" />
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex flex-col items-end gap-0.5 [&_.text-primary]:text-amber-300 [&_.text-muted-foreground]:text-amber-200/70 [&_.bg-muted]:bg-amber-900/30 [&_.border-primary\\/30]:border-amber-500/30">
+                              <ProductPriceBadge product={product} boxPrice={price} />
+                            </div>
                           </div>
-                          <ProductPriceBadge product={product} boxPrice={price} />
                         </div>
 
                         {/* شارة الكمية */}
                         {inCart && (
-                          <Badge variant="default" className="absolute top-1 end-1 text-sm px-2.5 py-0.5 shadow-lg">
+                          <Badge variant="default" className="absolute top-1.5 end-1.5 text-sm px-2.5 py-0.5 shadow-lg font-bold">
                             {inCart.quantity}
                           </Badge>
                         )}
