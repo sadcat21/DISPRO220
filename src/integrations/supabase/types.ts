@@ -3743,6 +3743,76 @@ export type Database = {
           },
         ]
       }
+      verification_checklist_items: {
+        Row: {
+          branch_id: string | null
+          company_info_template: string | null
+          created_at: string
+          created_by: string | null
+          document_type: string
+          field_type: string
+          group_title: string
+          id: string
+          is_active: boolean
+          label: string
+          sort_order: number
+          updated_at: string
+          uses_company_info: boolean
+        }
+        Insert: {
+          branch_id?: string | null
+          company_info_template?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_type: string
+          field_type?: string
+          group_title: string
+          id?: string
+          is_active?: boolean
+          label: string
+          sort_order?: number
+          updated_at?: string
+          uses_company_info?: boolean
+        }
+        Update: {
+          branch_id?: string | null
+          company_info_template?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_type?: string
+          field_type?: string
+          group_title?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          sort_order?: number
+          updated_at?: string
+          uses_company_info?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verification_checklist_items_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "verification_checklist_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "verification_checklist_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       visit_tracking: {
         Row: {
           accuracy: number | null
