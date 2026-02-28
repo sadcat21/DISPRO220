@@ -31,6 +31,7 @@ interface CheckVerificationDialogProps {
   customerName: string;
   initialCheckReceived?: boolean;
   initialVerification?: Partial<CheckVerification> | null;
+  documentType?: 'check' | 'receipt' | 'transfer';
   onConfirm: (data: {
     checkReceived: boolean;
     verification: CheckVerification | null;
@@ -52,7 +53,7 @@ const defaultVerification: CheckVerification = {
 };
 
 const CheckVerificationDialog: React.FC<CheckVerificationDialogProps> = ({
-  open, onOpenChange, orderTotal, customerName, initialCheckReceived = false, initialVerification = null, onConfirm,
+  open, onOpenChange, orderTotal, customerName, initialCheckReceived = false, initialVerification = null, documentType = 'check', onConfirm,
 }) => {
   const { dir, language } = useLanguage();
   const [mode, setMode] = useState<'choose' | 'verify'>('choose');
@@ -157,7 +158,7 @@ const CheckVerificationDialog: React.FC<CheckVerificationDialogProps> = ({
         <DialogHeader className="p-4 pb-2 border-b">
           <DialogTitle className="flex items-center gap-2 text-base">
             <FileCheck className="w-5 h-5 text-primary" />
-            تأكيد استلام Chèque
+            {documentType === 'check' ? 'تأكيد استلام Chèque' : documentType === 'receipt' ? 'تأكيد استلام Versement' : 'تأكيد استلام Virement'}
           </DialogTitle>
         </DialogHeader>
 
@@ -168,7 +169,9 @@ const CheckVerificationDialog: React.FC<CheckVerificationDialogProps> = ({
               <div className="bg-muted/50 rounded-lg p-3 space-y-1 text-right">
                 <p className="text-sm text-muted-foreground">{customerName}</p>
                 <p className="text-2xl font-bold">{formatNumber(orderTotal, language)} DA</p>
-                <Badge variant="outline" className="text-xs">Chèque - Facture 1</Badge>
+                <Badge variant="outline" className="text-xs">
+                  {documentType === 'check' ? 'Chèque' : documentType === 'receipt' ? 'Versement' : 'Virement'} - Facture 1
+                </Badge>
               </div>
 
               {/* Main choices */}

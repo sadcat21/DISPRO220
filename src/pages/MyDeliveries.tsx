@@ -113,12 +113,12 @@ const MyDeliveries: React.FC = () => {
     cancelled: { label: t('orders.cancelled'), color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: XCircle, tabColor: 'text-red-600' },
   };
 
-  const isCheckOrder = (order: OrderWithDetails) => (
-    order.status === 'delivered' && order.invoice_payment_method === 'check'
+  const isDocumentOrder = (order: OrderWithDetails) => (
+    order.status === 'delivered' && ['check', 'receipt', 'transfer'].includes(order.invoice_payment_method || '')
   );
 
-  const isCheckVerificationPending = (order: OrderWithDetails) => {
-    if (!isCheckOrder(order)) return false;
+  const isDocumentVerificationPending = (order: OrderWithDetails) => {
+    if (!isDocumentOrder(order)) return false;
     const verification = (order as any).document_verification as any | null;
     return (order as any).document_status === 'pending' || verification?.skipped === true || !verification;
   };
@@ -334,7 +334,7 @@ const MyDeliveries: React.FC = () => {
                     </Badge>
                   )}
 
-                  {isCheckVerificationPending(order) && (
+                  {isDocumentVerificationPending(order) && (
                     <Badge className="text-[10px] px-1.5 py-0.5 bg-accent/10 text-accent border border-accent/30 gap-0.5">
                       <FileCheck className="w-3 h-3" />
                       تحقق معلق
@@ -472,15 +472,14 @@ const MyDeliveries: React.FC = () => {
 
                 {order.status === 'delivered' && (
                   <>
-                    {isCheckOrder(order) && (
+                    {isDocumentOrder(order) && (
                       <Button
-                        size="sm"
+                        size="icon"
                         variant="outline"
-                        className="h-8 gap-1 border-accent/30 text-accent hover:bg-accent/10"
+                        className="h-8 w-8 border-accent/30 text-accent hover:bg-accent/10"
                         onClick={() => setCheckVerifyOrder(order)}
                       >
                         <FileCheck className="w-4 h-4" />
-                        <span className="text-xs">{isCheckVerificationPending(order) ? 'إكمال التحقق' : 'تعديل التحقق'}</span>
                       </Button>
                     )}
                     {!isModifyHidden && (
@@ -734,7 +733,7 @@ const MyDeliveries: React.FC = () => {
               </div>
             </div>
           )}
-          {selectedOrder && isCheckOrder(selectedOrder) && (
+          {selectedOrder && isDocumentOrder(selectedOrder) && (
             <div className="border-t bg-card p-4 shrink-0">
               <Button
                 className="w-full gap-2 border-accent/30 text-accent hover:bg-accent/10"
@@ -742,7 +741,7 @@ const MyDeliveries: React.FC = () => {
                 onClick={() => { setShowDetailsDialog(false); setCheckVerifyOrder(selectedOrder); }}
               >
                 <FileCheck className="w-4 h-4" />
-                {isCheckVerificationPending(selectedOrder) ? 'إكمال التحقق من الشيك' : 'تعديل التحقق من الشيك'}
+                {isDocumentVerificationPending(selectedOrder) ? 'إكمال التحقق' : 'تعديل التحقق'}
               </Button>
             </div>
           )}
@@ -773,13 +772,15 @@ const MyDeliveries: React.FC = () => {
           customerName={checkVerifyOrder.customer?.name || ''}
           initialCheckReceived={(checkVerifyOrder as any).document_verification?.status !== 'not_received'}
           initialVerification={(checkVerifyOrder as any).document_verification || null}
+          documentType={checkVerifyOrder.invoice_payment_method as 'check' | 'receipt' | 'transfer'}
           onConfirm={async (data) => {
+            const docType = checkVerifyOrder.invoice_payment_method || 'check';
             const verification = data.checkReceived ? {
-              type: 'check',
+              type: docType,
               ...data.verification,
               skipped: data.skippedVerification,
               verified_at: new Date().toISOString(),
-            } : { type: 'check', status: 'not_received' };
+            } : { type: docType, status: 'not_received' };
 
             await supabase
               .from('orders')
