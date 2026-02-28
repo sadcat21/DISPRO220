@@ -153,6 +153,28 @@ const StockVerificationDialog: React.FC<StockVerificationDialogProps> = ({
         }
       }
 
+      // Sync worker stock with reviewed actual quantities (so deficits/surplus are reflected immediately)
+      const stockSyncResults = await Promise.all(
+        verifiedItems.map(async (item) => {
+          const actualQty = Number(item.actual_qty) || 0;
+          const { error } = await supabase
+            .from('worker_stock')
+            .update({ quantity: actualQty })
+            .eq('worker_id', workerId)
+            .eq('product_id', item.product_id);
+
+          if (error) {
+            throw new Error(`فشل تحديث رصيد المنتج ${item.product_name}: ${error.message}`);
+          }
+
+          return { product_id: item.product_id, quantity: actualQty };
+        })
+      );
+
+      if (stockSyncResults.length !== verifiedItems.length) {
+        throw new Error('فشل في مزامنة أرصدة العامل بعد المراجعة');
+      }
+
       // Record each discrepancy
       for (const item of discrepancies) {
         await createDiscrepancy.mutateAsync({
