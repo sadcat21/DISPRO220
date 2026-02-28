@@ -81,7 +81,7 @@ const CheckVerificationDialog: React.FC<CheckVerificationDialogProps> = ({
 
   type CheckKey = keyof Omit<CheckVerification, 'has_due_date' | 'due_date' | 'is_blank_check'>;
 
-  const checkGroups: { title: string; icon: React.ElementType; items: { key: CheckKey; label: string }[] }[] = [
+  const checkGroups: { title: string; icon: React.ElementType; items: { key: CheckKey; label: string }[] }[] = documentType === 'check' ? [
     {
       title: 'بيانات الشيك',
       icon: FileCheck,
@@ -98,6 +98,42 @@ const CheckVerificationDialog: React.FC<CheckVerificationDialogProps> = ({
       icon: FileText,
       items: [
         { key: 'name_matches', label: 'اسم العميل على الشيك مطابق لاسم الفاتورة' },
+        { key: 'invoice_stamped', label: 'الفاتورة مختومة بختم العميل' },
+      ],
+    },
+  ] : documentType === 'receipt' ? [
+    {
+      title: 'بيانات الوصل',
+      icon: FileCheck,
+      items: [
+        { key: 'check_intact', label: 'وصل الدفع سليم وواضح' },
+        { key: 'amount_matches', label: `المبلغ مطابق للفاتورة (${formatNumber(orderTotal, language)} DA)` },
+        { key: 'customer_stamp', label: 'ختم البنك أو المؤسسة المالية موجود' },
+      ],
+    },
+    {
+      title: 'معلومات الفاتورة',
+      icon: FileText,
+      items: [
+        { key: 'name_matches', label: 'اسم المرسل مطابق لاسم العميل' },
+        { key: 'invoice_stamped', label: 'الفاتورة مختومة بختم العميل' },
+      ],
+    },
+  ] : [
+    {
+      title: 'بيانات التحويل',
+      icon: FileCheck,
+      items: [
+        { key: 'check_intact', label: 'إثبات التحويل سليم وواضح' },
+        { key: 'amount_matches', label: `المبلغ مطابق للفاتورة (${formatNumber(orderTotal, language)} DA)` },
+        { key: 'signature_present', label: 'رقم مرجع التحويل موجود' },
+      ],
+    },
+    {
+      title: 'معلومات الفاتورة',
+      icon: FileText,
+      items: [
+        { key: 'name_matches', label: 'اسم المرسل مطابق لاسم العميل' },
         { key: 'invoice_stamped', label: 'الفاتورة مختومة بختم العميل' },
       ],
     },
@@ -211,10 +247,13 @@ const CheckVerificationDialog: React.FC<CheckVerificationDialogProps> = ({
                 <Badge variant={allChecked ? 'default' : 'secondary'} className="text-xs">
                   {completedChecks}/{totalChecks}
                 </Badge>
-                <h3 className="text-sm font-bold">التحقق من مطابقة الشيك</h3>
+                <h3 className="text-sm font-bold">
+                  {documentType === 'check' ? 'التحقق من مطابقة الشيك' : documentType === 'receipt' ? 'التحقق من مطابقة الوصل' : 'التحقق من مطابقة التحويل'}
+                </h3>
               </div>
 
-              {/* Blank check toggle */}
+              {/* Blank check toggle - only for checks */}
+              {documentType === 'check' && (
               <div className="bg-muted/50 rounded-lg p-3 flex items-center justify-between gap-3 border border-dashed border-muted-foreground/30">
                 <Switch
                   checked={verification.is_blank_check}
@@ -226,8 +265,9 @@ const CheckVerificationDialog: React.FC<CheckVerificationDialogProps> = ({
                 </div>
                 <PenLine className="w-5 h-5 text-muted-foreground shrink-0" />
               </div>
+              )}
 
-              {!verification.is_blank_check && (
+              {!(documentType === 'check' && verification.is_blank_check) && (
                 <div className="space-y-4">
                   {checkGroups.map(group => {
                     const GroupIcon = group.icon;
@@ -291,7 +331,7 @@ const CheckVerificationDialog: React.FC<CheckVerificationDialogProps> = ({
                 </div>
               </div>
 
-              {!allChecked && !verification.is_blank_check && (
+              {!allChecked && !(documentType === 'check' && verification.is_blank_check) && (
                 <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-xs text-amber-800 dark:text-amber-300 text-right">
                   <AlertTriangle className="w-3 h-3 inline ms-1" />
                   بعض عناصر التحقق غير مكتملة. يمكنك المتابعة بدون إكمالها لكن سيتم تسجيل ذلك.
@@ -305,7 +345,7 @@ const CheckVerificationDialog: React.FC<CheckVerificationDialogProps> = ({
           <div className="p-4 border-t space-y-2">
             <Button
               className="w-full h-12"
-              onClick={() => handleConfirmCheck(verification.is_blank_check ? false : !allChecked)}
+              onClick={() => handleConfirmCheck((documentType === 'check' && verification.is_blank_check) ? false : !allChecked)}
               disabled={isSubmitting || (verification.has_due_date && !verification.due_date)}
             >
               {isSubmitting ? (
@@ -313,10 +353,10 @@ const CheckVerificationDialog: React.FC<CheckVerificationDialogProps> = ({
               ) : (
                 <>
                   <CheckCircle className="w-5 h-5 ms-2" />
-                  {verification.is_blank_check
+                  {(documentType === 'check' && verification.is_blank_check)
                     ? 'تأكيد استلام شيك فارغ ✓'
                     : allChecked
-                      ? 'تأكيد استلام الشيك ✓'
+                      ? (documentType === 'check' ? 'تأكيد استلام الشيك ✓' : documentType === 'receipt' ? 'تأكيد استلام الوصل ✓' : 'تأكيد استلام التحويل ✓')
                       : 'تأكيد (بدون إكمال التحقق)'}
                 </>
               )}
