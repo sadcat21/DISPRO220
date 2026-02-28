@@ -3,10 +3,19 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, FileCheck2, Truck, Clock, ShieldCheck, ShieldAlert, AlertCircle, ClipboardCheck } from 'lucide-react';
+import { Loader2, FileCheck2, Truck, Clock, ShieldCheck, ShieldAlert, AlertCircle, ClipboardCheck, Stamp, CheckCircle, XCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import CheckVerificationDialog from '@/components/orders/CheckVerificationDialog';
 import { toast } from 'sonner';
+
+interface StampedInvoice {
+  orderId: string;
+  customerName: string;
+  orderTotal: number;
+  paymentMethod: string;
+  received: boolean;
+  receivedAt: string | null;
+}
 
 interface DocumentCollectionsSummaryProps {
   workerId: string;
@@ -156,8 +165,38 @@ const DocumentCollectionsSummary: React.FC<DocumentCollectionsSummaryProps> = ({
     },
   });
 
+  // Query stamped invoices (فاتورة مختومة) - for with_invoice + check/cash
+  const { data: stampedInvoices } = useQuery({
+    queryKey: ['session-stamped-invoices', workerId, periodStart, periodEnd],
+    queryFn: async () => {
+      const startDate = extractDate(periodStart);
+      const endDate = extractDate(periodEnd);
+      const startTz = startDate + 'T00:00:00+01:00';
+      const endTz = endDate + 'T23:59:59+01:00';
+
+      const { data } = await supabase
+        .from('orders')
+        .select(`id, total_amount, invoice_payment_method, invoice_received_at, updated_at, payment_type, customer:customers!orders_customer_id_fkey(name)`)
+        .eq('assigned_worker_id', workerId)
+        .eq('status', 'delivered')
+        .eq('payment_type', 'with_invoice')
+        .in('invoice_payment_method', ['check', 'cash'])
+        .gte('updated_at', startTz)
+        .lte('updated_at', endTz);
+
+      return (data || []).map((o: any): StampedInvoice => ({
+        orderId: o.id,
+        customerName: o.customer?.name || 'غير معروف',
+        orderTotal: Number(o.total_amount || 0),
+        paymentMethod: o.invoice_payment_method || 'cash',
+        received: !!o.invoice_received_at,
+        receivedAt: o.invoice_received_at,
+      }));
+    },
+  });
+
   if (isLoading) return <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>;
-  if (!docs || docs.length === 0) return <p className="text-xs text-muted-foreground text-center py-3">لا توجد مستندات محصلة في هذه الفترة</p>;
+  if ((!docs || docs.length === 0) && (!stampedInvoices || stampedInvoices.length === 0)) return <p className="text-xs text-muted-foreground text-center py-3">لا توجد مستندات محصلة في هذه الفترة</p>;
 
   const deliveryDocs = docs.filter(d => d.source === 'delivery');
   const pendingDocs = docs.filter(d => d.source === 'pending_collection');
@@ -279,8 +318,44 @@ const DocumentCollectionsSummary: React.FC<DocumentCollectionsSummaryProps> = ({
         </div>
       )}
 
+      {/* Stamped invoices section */}
+      {stampedInvoices && stampedInvoices.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-xs font-semibold text-violet-700 dark:text-violet-400">
+            <Stamp className="w-3.5 h-3.5" />
+            <span>فواتير مختومة ({stampedInvoices.filter(s => s.received).length}/{stampedInvoices.length})</span>
+          </div>
+          <div className="border-2 border-violet-200 dark:border-violet-900/40 rounded-xl p-2.5 space-y-2 bg-violet-50/30 dark:bg-violet-900/10">
+            {stampedInvoices.map(inv => (
+              <div key={inv.orderId} className="border rounded-lg p-2.5 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${inv.received ? 'bg-green-100 dark:bg-green-900/30' : 'bg-destructive/10'}`}>
+                    {inv.received ? <CheckCircle className="w-3.5 h-3.5 text-green-600" /> : <XCircle className="w-3.5 h-3.5 text-destructive" />}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold truncate">{inv.customerName}</p>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-muted-foreground">#{inv.orderId.slice(0, 8)}</span>
+                      <Badge variant="outline" className="text-[9px] px-1 py-0">
+                        {inv.paymentMethod === 'check' ? 'Chèque' : 'كاش'}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-end shrink-0">
+                  <span className="font-bold text-xs">{fmt(inv.orderTotal)} DA</span>
+                  <p className={`text-[10px] font-medium ${inv.received ? 'text-green-600' : 'text-destructive'}`}>
+                    {inv.received ? 'تم الاستلام ✓' : 'لم تُستلم'}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="bg-primary/5 border border-primary/20 rounded-lg p-2.5 flex justify-between items-center">
-        <span className="text-sm font-bold">إجمالي المستندات: {docs.length}</span>
+        <span className="text-sm font-bold">إجمالي المستندات: {(docs?.length || 0) + (stampedInvoices?.length || 0)}</span>
         <span className="font-bold text-primary">{fmt(totalAmount)} DA</span>
       </div>
 
