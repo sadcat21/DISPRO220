@@ -202,8 +202,17 @@ const LoadStock: React.FC = () => {
       setViewSessionItems(data || []);
 
       // For review sessions, also fetch discrepancies
-      const session = sessions.find(s => s.id === sessionId);
-      if (session?.status === 'review') {
+      // Check from sessions list OR fetch the session status directly
+      let sessionStatus = sessions.find(s => s.id === sessionId)?.status;
+      if (!sessionStatus) {
+        const { data: sessionData } = await supabase
+          .from('loading_sessions')
+          .select('status')
+          .eq('id', sessionId)
+          .single();
+        sessionStatus = sessionData?.status || undefined;
+      }
+      if (sessionStatus === 'review') {
         const { data: discData } = await supabase
           .from('stock_discrepancies')
           .select('*, product:products(name, pieces_per_box)')
