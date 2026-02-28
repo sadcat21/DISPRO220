@@ -401,12 +401,10 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                       <span>{t('accounting.debt_collections')} ({t('accounting.method_cash')})</span>
                       <span>{fmt(calc.debtCollections.cash)} DA</span>
                     </div>
-                    {calc.customerSurplusCash > 0 && (
-                      <div className="flex justify-between text-blue-600">
-                        <span>فائض العملاء (كاش)</span>
-                        <span>+{fmt(calc.customerSurplusCash)} DA</span>
-                      </div>
-                    )}
+                    <div className="flex justify-between text-blue-600">
+                      <span>فائض العملاء (كاش)</span>
+                      <span>{calc.customerSurplusCash > 0 ? '+' : ''}{fmt(calc.customerSurplusCash)} DA</span>
+                    </div>
                     <div className="flex justify-between text-destructive">
                       <span>{t('accounting.expenses')} ({t('accounting.method_cash')})</span>
                       <span>-{fmt(calc.cashExpenses)} DA</span>
