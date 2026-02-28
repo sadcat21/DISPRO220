@@ -92,6 +92,8 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
   const [showEditCustomerDialog, setShowEditCustomerDialog] = useState(false);
   const [showQuantityDialog, setShowQuantityDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [editingProductMode, setEditingProductMode] = useState(false);
+  const [editingInitialQuantity, setEditingInitialQuantity] = useState(1);
 
   // Derived data
   const selectedCustomer = useMemo(() =>
@@ -208,6 +210,15 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
     if (shortageProductIds.has(product.id) || !warehouseStockProductIds.has(product.id)) {
       toast.warning(t('stock.product_unavailable_warning'), { duration: 5000 });
     }
+    // Check if product already in cart - open in edit mode
+    const existingItem = orderItems.find(item => item.productId === product.id && !item.isUnitSale);
+    if (existingItem) {
+      setEditingProductMode(true);
+      setEditingInitialQuantity(existingItem.quantity);
+    } else {
+      setEditingProductMode(false);
+      setEditingInitialQuantity(1);
+    }
     setSelectedProduct(product);
     setShowQuantityDialog(true);
   };
@@ -260,6 +271,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
           itemPriceSubType: perItemPricing?.priceSubType,
         }];
       });
+      setEditingProductMode(false);
       return;
     }
 
@@ -267,32 +279,48 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
     const giftQuantity = giftInfo?.giftQuantity || 0;
     const paidQuantity = quantity - giftQuantity;
 
-    setOrderItems(prev => {
-      const existing = prev.find(item => item.productId === productId && !item.isUnitSale && !item.itemPaymentType && !perItemPricing);
-      if (existing && !perItemPricing) {
-        const newQuantity = existing.quantity + quantity;
-        const newGiftBoxes = (existing.giftQuantity || 0) + giftQuantity;
-        const newGiftPieces = (existing.giftPieces || 0) + (giftInfo?.giftPieces || 0);
-        const newPaid = newQuantity - newGiftBoxes;
-        return prev.map(item =>
-          item === existing
-            ? { ...item, quantity: newQuantity, totalPrice: newPaid * unitPrice, giftQuantity: newGiftBoxes, giftPieces: newGiftPieces || undefined, giftOfferId: giftInfo?.offerId || existing.giftOfferId }
-            : item
-        );
-      }
-      return [...prev, {
-        productId,
-        quantity,
-        unitPrice,
-        totalPrice: paidQuantity * unitPrice,
-        giftQuantity: giftQuantity || undefined,
-        giftPieces: giftInfo?.giftPieces || undefined,
-        giftOfferId: giftInfo?.offerId,
-        itemPaymentType: perItemPricing?.paymentType,
-        itemInvoicePaymentMethod: perItemPricing?.invoicePaymentMethod,
-        itemPriceSubType: perItemPricing?.priceSubType,
-      }];
-    });
+    const newItem = {
+      productId,
+      quantity,
+      unitPrice,
+      totalPrice: paidQuantity * unitPrice,
+      giftQuantity: giftQuantity || undefined,
+      giftPieces: giftInfo?.giftPieces || undefined,
+      giftOfferId: giftInfo?.offerId,
+      itemPaymentType: perItemPricing?.paymentType,
+      itemInvoicePaymentMethod: perItemPricing?.invoicePaymentMethod,
+      itemPriceSubType: perItemPricing?.priceSubType,
+    };
+
+    if (editingProductMode) {
+      // Replace existing item
+      setOrderItems(prev => {
+        const idx = prev.findIndex(item => item.productId === productId && !item.isUnitSale);
+        if (idx >= 0) {
+          const updated = [...prev];
+          updated[idx] = newItem;
+          return updated;
+        }
+        return [...prev, newItem];
+      });
+    } else {
+      setOrderItems(prev => {
+        const existing = prev.find(item => item.productId === productId && !item.isUnitSale && !item.itemPaymentType && !perItemPricing);
+        if (existing && !perItemPricing) {
+          const newQuantity = existing.quantity + quantity;
+          const newGiftBoxes = (existing.giftQuantity || 0) + giftQuantity;
+          const newGiftPieces = (existing.giftPieces || 0) + (giftInfo?.giftPieces || 0);
+          const newPaid = newQuantity - newGiftBoxes;
+          return prev.map(item =>
+            item === existing
+              ? { ...item, quantity: newQuantity, totalPrice: newPaid * unitPrice, giftQuantity: newGiftBoxes, giftPieces: newGiftPieces || undefined, giftOfferId: giftInfo?.offerId || existing.giftOfferId }
+              : item
+          );
+        }
+        return [...prev, newItem];
+      });
+    }
+    setEditingProductMode(false);
   };
 
   const handleUpdateQuantity = (productId: string, delta: number) => {
@@ -916,6 +944,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
         defaultPaymentType={paymentType}
         defaultPriceSubType={priceSubType}
         defaultInvoicePaymentMethod={invoicePaymentMethod}
+        initialQuantity={editingInitialQuantity}
       />
 
       <AddCustomerDialog

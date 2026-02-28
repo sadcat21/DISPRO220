@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -41,6 +41,7 @@ interface ProductQuantityDialogProps {
   defaultPaymentType?: PaymentType;
   defaultPriceSubType?: PriceSubType;
   defaultInvoicePaymentMethod?: InvoicePaymentMethod | null;
+  initialQuantity?: number;
 }
 
 const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
@@ -53,9 +54,10 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
   defaultPaymentType = 'with_invoice',
   defaultPriceSubType = 'gros',
   defaultInvoicePaymentMethod = null,
+  initialQuantity = 1,
 }) => {
   const { t, dir } = useLanguage();
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState(initialQuantity);
   const [giftPieces, setGiftPieces] = useState(0);
   const [giftOfferId, setGiftOfferId] = useState<string | undefined>(undefined);
   const [offerApplied, setOfferApplied] = useState(false);
@@ -64,6 +66,13 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
   const [itemPaymentType, setItemPaymentType] = useState<PaymentType>(defaultPaymentType);
   const [itemPriceSubType, setItemPriceSubType] = useState<PriceSubType>(defaultPriceSubType);
   const [itemInvoicePaymentMethod, setItemInvoicePaymentMethod] = useState<InvoicePaymentMethod | null>(defaultInvoicePaymentMethod);
+
+  // Sync quantity when initialQuantity changes (edit mode vs new)
+  useEffect(() => {
+    if (open) {
+      setQuantity(initialQuantity);
+    }
+  }, [open, initialQuantity]);
 
   // Offer must be applied before confirming (mandatory)
   const hasUnappliedOffer = !isUnitSale && giftPieces > 0 && !offerApplied;
@@ -119,7 +128,7 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
     if (!isOpen) {
       setGiftPieces(0);
       setGiftOfferId(undefined);
-      setQuantity(1);
+      setQuantity(initialQuantity);
       setOfferApplied(false);
       setIsUnitSale(false);
       setShowPricingOverride(false);
