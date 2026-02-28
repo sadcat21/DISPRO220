@@ -164,16 +164,10 @@ const WarehouseStock: React.FC = () => {
       }
     }
 
-    // Show all products - columns appear even with 0 values
+    // Hide products where all values are zero
     return Object.values(summaries)
-      .sort((a, b) => {
-        // Products with any activity first
-        const aHas = a.received + a.workerStock + a.sold + a.remaining + a.deficit + a.surplus + a.damaged;
-        const bHas = b.received + b.workerStock + b.sold + b.remaining + b.deficit + b.surplus + b.damaged;
-        if (aHas > 0 && bHas === 0) return -1;
-        if (bHas > 0 && aHas === 0) return 1;
-        return a.productName.localeCompare(b.productName);
-      });
+      .filter(s => s.received + s.workerStock + s.sold + s.gifts + s.damaged + s.surplus + s.deficit + s.remaining > 0)
+      .sort((a, b) => a.productName.localeCompare(b.productName));
   }, [products, summaryData, soldData, warehouseStock]);
 
   const filteredSummaries = useMemo(() => {
