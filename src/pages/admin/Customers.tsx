@@ -76,6 +76,7 @@ const Customers: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sectorFilter, setSectorFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [missingFilter, setMissingFilter] = useState<string>('all');
   const [expandAllSectors, setExpandAllSectors] = useState(false);
 
   // Edit dialog state
@@ -154,6 +155,21 @@ const Customers: React.FC = () => {
       }
     }
 
+    if (missingFilter !== 'all') {
+      filtered = filtered.filter(c => {
+        switch (missingFilter) {
+          case 'phone': return !c.phone?.trim();
+          case 'location': return !(c.latitude && c.longitude);
+          case 'type': return !c.customer_type;
+          case 'sector': return !c.sector_id;
+          case 'store': return !c.store_name?.trim();
+          case 'address': return !c.address?.trim();
+          case 'wilaya': return !c.wilaya;
+          default: return true;
+        }
+      });
+    }
+
     if (searchQuery.trim()) {
       const query = normalizeArabic(searchQuery.toLowerCase());
       const match = (val: string | null | undefined) => val && normalizeArabic(val.toLowerCase()).includes(query);
@@ -168,7 +184,7 @@ const Customers: React.FC = () => {
       );
     }
     return filtered;
-  }, [searchQuery, filteredByBranch, sectorFilter, typeFilter]);
+  }, [searchQuery, filteredByBranch, sectorFilter, typeFilter, missingFilter]);
 
   // Fetch last delivered orders for all customers
   useEffect(() => {
@@ -676,6 +692,34 @@ const Customers: React.FC = () => {
             })}
           </div>
         )}
+        {/* Missing info filter */}
+        <div className="flex gap-1 flex-wrap">
+          <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 ml-1">
+            <AlertTriangle className="w-3 h-3" />
+            ناقص:
+          </span>
+          {[
+            { value: 'all', label: 'الكل' },
+            { value: 'phone', label: 'الهاتف' },
+            { value: 'location', label: 'الموقع' },
+            { value: 'type', label: 'النوع' },
+            { value: 'sector', label: 'القطاع' },
+            { value: 'store', label: 'المحل' },
+            { value: 'address', label: 'العنوان' },
+            { value: 'wilaya', label: 'الولاية' },
+          ].map(opt => (
+            <Button
+              key={opt.value}
+              type="button"
+              variant={missingFilter === opt.value ? 'default' : 'outline'}
+              size="sm"
+              className={`text-[10px] h-6 px-2 rounded-full ${missingFilter === opt.value && opt.value !== 'all' ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''}`}
+              onClick={() => setMissingFilter(opt.value)}
+            >
+              {opt.label}
+            </Button>
+          ))}
+        </div>
       </div>
 
       {/* Tab Interface */}
