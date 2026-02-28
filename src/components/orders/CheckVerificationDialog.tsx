@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { AlertTriangle, CheckCircle, FileCheck, Loader2, XCircle, Calendar, FileText, Stamp, PenLine } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatNumber } from '@/utils/formatters';
+import { useCompanyInfo } from '@/hooks/useCompanyInfo';
 
 interface CheckVerification {
   name_matches: boolean;
@@ -56,6 +57,7 @@ const CheckVerificationDialog: React.FC<CheckVerificationDialogProps> = ({
   open, onOpenChange, orderTotal, customerName, initialCheckReceived = false, initialVerification = null, documentType = 'check', onConfirm,
 }) => {
   const { dir, language } = useLanguage();
+  const { companyInfo } = useCompanyInfo();
   const [mode, setMode] = useState<'choose' | 'verify'>('choose');
   const [verification, setVerification] = useState<CheckVerification>({ ...defaultVerification });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -90,7 +92,7 @@ const CheckVerificationDialog: React.FC<CheckVerificationDialogProps> = ({
         { key: 'signature_present', label: 'إمضاء العميل موجود على الشيك' },
         { key: 'customer_stamp', label: 'ختم العميل موجود على الشيك' },
         { key: 'amount_matches', label: `المبلغ مطابق للفاتورة (${formatNumber(orderTotal, language)} DA)` },
-        { key: 'company_name_on_check', label: 'اسم الشركة مكتوب كمستلم على الشيك' },
+        { key: 'company_name_on_check', label: `اسم الشركة المستلمة مكتوب على الشيك: ${companyInfo.company_name || 'غير محدد'}` },
       ],
     },
     {
@@ -109,7 +111,7 @@ const CheckVerificationDialog: React.FC<CheckVerificationDialogProps> = ({
         { key: 'check_intact', label: 'وصل الدفع سليم وواضح' },
         { key: 'amount_matches', label: `المبلغ مطابق للفاتورة (${formatNumber(orderTotal, language)} DA)` },
         { key: 'customer_stamp', label: 'ختم البنك موجود على الوصل' },
-        { key: 'company_name_on_check', label: 'الحساب المستلم هو: BNA - RIB: 00100957030000149786' },
+        { key: 'company_name_on_check', label: `الحساب المستلم هو: ${companyInfo.company_bank || 'غير محدد'} - RIB: ${companyInfo.company_rib || 'غير محدد'}` },
       ],
     },
     {
@@ -117,7 +119,7 @@ const CheckVerificationDialog: React.FC<CheckVerificationDialogProps> = ({
       icon: FileText,
       items: [
         { key: 'name_matches', label: 'اسم المرسل (الدافع) مطابق لاسم العميل' },
-        { key: 'signature_present', label: 'اسم المستفيد: SARL LASER FOOD' },
+        { key: 'signature_present', label: `اسم المستفيد: ${companyInfo.company_name || 'غير محدد'}` },
         { key: 'invoice_stamped', label: 'الفاتورة مختومة بختم العميل' },
       ],
     },
@@ -129,7 +131,7 @@ const CheckVerificationDialog: React.FC<CheckVerificationDialogProps> = ({
         { key: 'check_intact', label: 'إثبات التحويل سليم وواضح' },
         { key: 'amount_matches', label: `المبلغ مطابق للفاتورة (${formatNumber(orderTotal, language)} DA)` },
         { key: 'signature_present', label: 'رقم مرجع التحويل موجود' },
-        { key: 'company_name_on_check', label: 'الحساب المستلم هو: BNA - RIB: 00100957030000149786' },
+        { key: 'company_name_on_check', label: `الحساب المستلم هو: ${companyInfo.company_bank || 'غير محدد'} - RIB: ${companyInfo.company_rib || 'غير محدد'}` },
       ],
     },
     {
@@ -137,7 +139,7 @@ const CheckVerificationDialog: React.FC<CheckVerificationDialogProps> = ({
       icon: FileText,
       items: [
         { key: 'name_matches', label: 'اسم المرسل مطابق لاسم العميل' },
-        { key: 'customer_stamp', label: 'اسم المستفيد: SARL LASER FOOD' },
+        { key: 'customer_stamp', label: `اسم المستفيد: ${companyInfo.company_name || 'غير محدد'}` },
         { key: 'invoice_stamped', label: 'الفاتورة مختومة بختم العميل' },
       ],
     },
