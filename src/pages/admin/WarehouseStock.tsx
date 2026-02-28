@@ -251,14 +251,22 @@ const WarehouseStock: React.FC = () => {
           <ScrollArea className="max-h-[calc(100vh-22rem)]">
             <div className="space-y-2 pb-2">
               {filteredSummaries.map(s => {
+                // Format gifts in boxes.pieces notation
+                const piecesPerBox = products.find(p => p.id === s.productId)?.pieces_per_box || 20;
+                const giftBoxes = Math.floor(s.gifts / piecesPerBox);
+                const giftPieces = Math.round(s.gifts % piecesPerBox);
+                const giftFormatted = giftBoxes > 0
+                  ? `${giftBoxes}.${String(giftPieces).padStart(2, '0')}`
+                  : s.gifts > 0 ? `0.${String(giftPieces).padStart(2, '0')}` : '0';
+
                 const stats = [
-                  { label: 'المستلم', value: s.received, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/30' },
-                  { label: 'عند العمال', value: s.workerStock, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-950/30' },
-                  { label: 'المباع', value: s.sold, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-950/30' },
-                  { label: 'الهدايا', value: s.gifts, color: 'text-pink-500', bg: 'bg-pink-50 dark:bg-pink-950/30' },
-                  { label: 'التالف', value: s.damaged, color: 'text-destructive', bg: 'bg-red-50 dark:bg-red-950/30' },
-                  { label: 'الفائض', value: s.surplus, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30' },
-                  { label: 'العجز', value: s.deficit, color: 'text-destructive', bg: 'bg-red-50 dark:bg-red-950/30' },
+                  { label: 'المستلم', value: s.received, display: String(s.received), color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/30' },
+                  { label: 'عند العمال', value: s.workerStock, display: String(s.workerStock), color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-950/30' },
+                  { label: 'المباع', value: s.sold, display: String(s.sold), color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-950/30' },
+                  { label: 'الهدايا', value: s.gifts, display: giftFormatted, color: 'text-pink-500', bg: 'bg-pink-50 dark:bg-pink-950/30' },
+                  { label: 'التالف', value: s.damaged, display: String(s.damaged), color: 'text-destructive', bg: 'bg-red-50 dark:bg-red-950/30' },
+                  { label: 'الفائض', value: s.surplus, display: String(s.surplus), color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30' },
+                  { label: 'العجز', value: s.deficit, display: String(s.deficit), color: 'text-destructive', bg: 'bg-red-50 dark:bg-red-950/30' },
                 ];
                 return (
                   <Card key={s.productId} className="overflow-hidden border-border/60 shadow-sm">
@@ -282,7 +290,7 @@ const WarehouseStock: React.FC = () => {
                           {stats.map(st => (
                             <div key={st.label} className={`rounded-md px-2 py-1.5 text-center ${st.value > 0 ? st.bg : 'bg-muted/30'}`}>
                               <div className={`text-[11px] leading-tight mb-0.5 ${st.value > 0 ? 'text-muted-foreground' : 'text-muted-foreground/50'}`}>{st.label}</div>
-                              <div className={`text-sm font-bold tabular-nums ${st.value > 0 ? st.color : 'text-muted-foreground/40'}`}>{st.value}</div>
+                              <div className={`text-sm font-bold tabular-nums ${st.value > 0 ? st.color : 'text-muted-foreground/40'}`}>{st.display}</div>
                             </div>
                           ))}
                         </div>
