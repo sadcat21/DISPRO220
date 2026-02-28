@@ -180,24 +180,32 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
       const reviewCount = allSessions.filter(s => s.status === 'review').length;
 
       // Fetch all loading session items for these sessions
-      const sessionIds = allSessions.map(s => s.id);
-      if (sessionIds.length === 0) return { loadedMap: {} as Record<string, number>, loadCount: 0, unloadCount: 0, reviewCount: 0 };
+      const loadSessionIds = allSessions.filter(s => s.status === 'completed' || s.status === 'open').map(s => s.id);
+      const unloadSessionIds = allSessions.filter(s => s.status === 'unloaded').map(s => s.id);
+      const allSessionIds = allSessions.map(s => s.id);
+      if (allSessionIds.length === 0) return { loadedMap: {} as Record<string, number>, unloadedMap: {} as Record<string, number>, loadCount: 0, unloadCount: 0, reviewCount: 0 };
 
       const { data: items } = await supabase
         .from('loading_session_items')
         .select('quantity, product:products(name), session_id')
-        .in('session_id', sessionIds);
+        .in('session_id', allSessionIds);
 
-      // Aggregate loaded quantity per product (net: loading - unloading)
       const loadedMap: Record<string, number> = {};
+      const unloadedMap: Record<string, number> = {};
+      const loadSet = new Set(loadSessionIds);
+      const unloadSet = new Set(unloadSessionIds);
       for (const item of (items || [])) {
         const name = (item as any).product?.name || '';
         if (!name) continue;
-        if (!loadedMap[name]) loadedMap[name] = 0;
-        loadedMap[name] += Number(item.quantity || 0);
+        const qty = Number(item.quantity || 0);
+        if (loadSet.has((item as any).session_id)) {
+          loadedMap[name] = (loadedMap[name] || 0) + qty;
+        } else if (unloadSet.has((item as any).session_id)) {
+          unloadedMap[name] = (unloadedMap[name] || 0) + qty;
+        }
       }
 
-      return { loadedMap, loadCount, unloadCount, reviewCount };
+      return { loadedMap, unloadedMap, loadCount, unloadCount, reviewCount };
     },
     enabled: !!workerId && !!periodStart,
   });
@@ -300,6 +308,7 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
   const allProductNames = new Set<string>();
   truckStock?.forEach(r => allProductNames.add(r.product_name));
   if (loadingData?.loadedMap) Object.keys(loadingData.loadedMap).forEach(n => allProductNames.add(n));
+  if (loadingData?.unloadedMap) Object.keys(loadingData.unloadedMap).forEach(n => allProductNames.add(n));
   if (salesPerProduct) Object.keys(salesPerProduct).forEach(n => allProductNames.add(n));
   if (reviewData?.items) Object.keys(reviewData.items).forEach(n => allProductNames.add(n));
 
@@ -307,13 +316,14 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
     const truckRow = truckStock?.find(r => r.product_name === name);
     const review = reviewData?.items?.[name];
     const loaded = loadingData?.loadedMap?.[name] || 0;
+    const unloaded = loadingData?.unloadedMap?.[name] || 0;
     const sold = salesPerProduct?.[name] || 0;
     const systemQty = review ? review.systemQty : (truckRow?.quantity || 0);
     const actualQty = review ? review.actualQty : null;
     const diff = review ? review.diff : null;
     const status = diff === null ? null : Math.abs(diff) < 0.001 ? 'match' : diff > 0 ? 'surplus' : 'deficit';
-    return { name, loaded, sold, systemQty, actualQty, diff, status };
-  }).filter(r => r.loaded > 0 || r.sold > 0 || r.systemQty > 0 || r.actualQty !== null);
+    return { name, loaded, unloaded, sold, systemQty, actualQty, diff, status };
+  }).filter(r => r.loaded > 0 || r.unloaded > 0 || r.sold > 0 || r.systemQty > 0 || r.actualQty !== null);
 
   return (
     <div className="space-y-4">
@@ -353,9 +363,10 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
             </div>
           )}
 
-          <div className="grid grid-cols-6 gap-1 text-xs text-muted-foreground text-center font-medium border-b pb-1">
+          <div className="grid grid-cols-7 gap-1 text-xs text-muted-foreground text-center font-medium border-b pb-1">
             <span className="text-start">{t('stock.product')}</span>
             <span>الشحن</span>
+            <span>التفريغ</span>
             <span>المبيعات</span>
             <span>كمية النظام</span>
             <span>الكمية الفعلية</span>
@@ -363,9 +374,10 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
           </div>
 
           {productRows.map((row) => (
-            <div key={row.name} className="grid grid-cols-6 gap-1 text-xs text-center items-center py-1.5 border-b border-dashed last:border-0">
+            <div key={row.name} className="grid grid-cols-7 gap-1 text-xs text-center items-center py-1.5 border-b border-dashed last:border-0">
               <span className="text-start font-medium text-wrap">{row.name}</span>
               <span className="font-bold text-green-600">{row.loaded > 0 ? fmtQty(row.loaded) : '-'}</span>
+              <span className="font-bold text-destructive">{row.unloaded > 0 ? fmtQty(row.unloaded) : '-'}</span>
               <span className="font-bold text-blue-600">{row.sold > 0 ? fmtQty(row.sold) : '-'}</span>
               <span className="font-bold">{fmtQty(row.systemQty)}</span>
               <span className={`font-bold ${row.status === 'deficit' ? 'text-destructive' : row.status === 'surplus' ? 'text-orange-600' : ''}`}>
@@ -397,9 +409,10 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
             </div>
           ))}
 
-          <div className="grid grid-cols-6 gap-1 text-xs text-center font-bold border-t-2 pt-1 bg-primary/5 rounded p-1.5">
+          <div className="grid grid-cols-7 gap-1 text-xs text-center font-bold border-t-2 pt-1 bg-primary/5 rounded p-1.5">
             <span className="text-start">{t('common.total')}</span>
             <span className="text-green-600">{productRows.reduce((s, r) => s + r.loaded, 0) ? fmtQty(productRows.reduce((s, r) => s + r.loaded, 0)) : '-'}</span>
+            <span className="text-destructive">{productRows.reduce((s, r) => s + r.unloaded, 0) ? fmtQty(productRows.reduce((s, r) => s + r.unloaded, 0)) : '-'}</span>
             <span className="text-blue-600">{productRows.reduce((s, r) => s + r.sold, 0) ? fmtQty(productRows.reduce((s, r) => s + r.sold, 0)) : '-'}</span>
             <span>{fmtQty(totalTruckQty)}</span>
             <span>-</span>
