@@ -55,10 +55,9 @@ export interface SessionCalculations {
   cashExpenses: number;
   salesDebtCollectionsCash: number;
   salesDebtCollectionsNonCash: number;
-  // NEW: gift offer monetary value
   giftOfferValue: number;
-  // NEW: promo tracking
   promoTracking: PromoTrackingItem[];
+  customerSurplusCash: number;
 }
 
 export const useSessionCalculations = (params: SessionCalcParams | null, options?: { refetchInterval?: number | false }) => {
@@ -350,7 +349,18 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
         return sum;
       }, 0) || 0;
 
-      const physicalCash = invoice2.cash + invoice1.espaceCash + debtCollections.cash - cashExpenses;
+      // Customer surplus (overpayments recorded as cash)
+      const { data: customerSurplusData } = await supabase
+        .from('manager_treasury')
+        .select('amount')
+        .eq('source_type', 'customer_surplus')
+        .eq('manager_id', workerId)
+        .gte('created_at', periodStartTz)
+        .lte('created_at', periodEndTz);
+
+      const customerSurplusCash = (customerSurplusData || []).reduce((sum, e) => sum + Number(e.amount || 0), 0);
+
+      const physicalCash = invoice2.cash + invoice1.espaceCash + debtCollections.cash - cashExpenses + customerSurplusCash;
 
       return {
         totalSales,
@@ -366,6 +376,7 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
         salesDebtCollectionsNonCash: debtCollections.total - debtCollections.cash,
         giftOfferValue,
         promoTracking: Object.values(promoMap).sort((a, b) => b.giftQuantity - a.giftQuantity),
+        customerSurplusCash,
       };
     },
     enabled: !!params,
@@ -387,5 +398,6 @@ function getEmptyCalculations(): SessionCalculations {
     salesDebtCollectionsNonCash: 0,
     giftOfferValue: 0,
     promoTracking: [],
+    customerSurplusCash: 0,
   };
 }

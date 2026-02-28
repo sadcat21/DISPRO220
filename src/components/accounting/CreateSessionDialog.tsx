@@ -159,6 +159,7 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
         { item_type: 'physical_cash', expected_amount: calc.physicalCash, actual_amount: Number(actualCash || 0) },
         { item_type: 'coin_amount', expected_amount: 0, actual_amount: Number(coinAmount || 0) },
         { item_type: 'expenses', expected_amount: calc.expenses, actual_amount: calc.expenses },
+        { item_type: 'customer_surplus_cash', expected_amount: calc.customerSurplusCash, actual_amount: calc.customerSurplusCash },
       ];
 
       let sessionId: string | undefined;
@@ -400,6 +401,12 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                       <span>{t('accounting.debt_collections')} ({t('accounting.method_cash')})</span>
                       <span>{fmt(calc.debtCollections.cash)} DA</span>
                     </div>
+                    {calc.customerSurplusCash > 0 && (
+                      <div className="flex justify-between text-blue-600">
+                        <span>فائض العملاء (كاش)</span>
+                        <span>+{fmt(calc.customerSurplusCash)} DA</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-destructive">
                       <span>{t('accounting.expenses')} ({t('accounting.method_cash')})</span>
                       <span>-{fmt(calc.cashExpenses)} DA</span>

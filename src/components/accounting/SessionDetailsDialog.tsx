@@ -185,6 +185,16 @@ const SessionDetailsDialog: React.FC<SessionDetailsDialogProps> = ({ open, onOpe
               <span>{t('accounting.debt_collections')} ({t('accounting.method_cash')})</span>
               <span>{fmt(dcCash.expected)} DA</span>
             </div>
+            {(() => {
+              const customerSurplusItem = items?.find(i => i.item_type === 'customer_surplus_cash');
+              const csVal = customerSurplusItem ? Number(customerSurplusItem.expected_amount || 0) : 0;
+              return csVal > 0 ? (
+                <div className="flex justify-between text-blue-600">
+                  <span>فائض العملاء (كاش)</span>
+                  <span>+{fmt(csVal)} DA</span>
+                </div>
+              ) : null;
+            })()}
             {expenses.expected > 0 && (
               <div className="flex justify-between text-destructive">
                 <span>{t('accounting.expenses')} ({t('accounting.method_cash')})</span>
