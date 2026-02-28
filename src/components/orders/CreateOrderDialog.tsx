@@ -673,7 +673,12 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                             {product.name}
                           </span>
                           {inCart && (
-                            <span className="text-xs text-white/90 block text-center mt-0.5">
+                            <span className={cn(
+                              "text-sm font-extrabold block text-center mt-1 rounded-md px-2 py-0.5",
+                              hasAppliedGift
+                                ? 'bg-black/10 text-black'
+                                : 'bg-white/20 text-white'
+                            )}>
                               {productCartItems.reduce((sum, item) => sum + (item.totalPrice || 0), 0).toLocaleString()} {t('common.currency')}
                             </span>
                           )}
