@@ -565,9 +565,9 @@ const CustomerApprovalTab: React.FC = () => {
                                             <Select value={editPayload.default_price_subtype || 'gros'} onValueChange={(v) => setEditPayload((p: any) => ({ ...p, default_price_subtype: v }))}>
                                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                                 <SelectContent className="bg-popover z-[10050]">
-                                                    <SelectItem value="super_gros">سوبر جملة</SelectItem>
-                                                    <SelectItem value="gros">جملة</SelectItem>
-                                                    <SelectItem value="retail">تجزئة</SelectItem>
+                                                     <SelectItem value="super_gros">Super Gros</SelectItem>
+                                                     <SelectItem value="gros">Gros</SelectItem>
+                                                     <SelectItem value="retail">Détail</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
