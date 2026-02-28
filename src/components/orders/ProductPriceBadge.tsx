@@ -75,7 +75,10 @@ const ProductPriceBadge: React.FC<ProductPriceBadgeProps> = ({ product, boxPrice
           {boxPrice.toLocaleString()} {t('common.currency')}
         </span>
         {product.pieces_per_box > 0 && (
-          <span className="absolute start-1.5 top-1/2 -translate-y-1/2 inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold gap-0.5">
+          <span
+            dir="ltr"
+            className="absolute start-1.5 top-1/2 -translate-y-1/2 inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold gap-0.5 whitespace-nowrap"
+          >
             {product.pieces_per_box} <span>pcs</span>
           </span>
         )}
@@ -89,9 +92,12 @@ const ProductPriceBadge: React.FC<ProductPriceBadgeProps> = ({ product, boxPrice
             {unitPrice.toLocaleString()} {t('common.currency')}/{unitLabel}
           </span>
           {unitsPerBox !== null && (
-            <span className="absolute start-1.5 top-1/2 -translate-y-1/2 inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold gap-0.5">
+            <span
+              dir="ltr"
+              className="absolute start-1.5 top-1/2 -translate-y-1/2 inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold gap-0.5 whitespace-nowrap"
+            >
               {Number.isInteger(unitsPerBox) ? unitsPerBox : unitsPerBox.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-              <span>{pricingUnit === 'kg' ? 'kg' : 'pcs'}</span>
+              <span>{pricingUnit === 'kg' ? 'Kg' : 'pcs'}</span>
             </span>
           )}
         </div>
