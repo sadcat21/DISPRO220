@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Banknote, Search, Users, AlertCircle, Calendar } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Loader2, Banknote, Search, Users, AlertCircle, Calendar, FileCheck } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDate } from '@/utils/formatters';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,17 +22,11 @@ const DAY_INDEX_MAP: Record<string, number> = {
   thursday: 4, friday: 5, saturday: 6,
 };
 
-/** Compute next collection date: schedule takes priority over manual due_date */
 const getNextCollectionDate = (debt: CustomerDebtWithDetails): string | null => {
   if (debt.status === 'paid') return null;
-
   const collectionType = debt.collection_type;
   const collectionDays = debt.collection_days;
-
-  if (collectionType === 'daily') {
-    return new Date().toISOString().slice(0, 10);
-  }
-
+  if (collectionType === 'daily') return new Date().toISOString().slice(0, 10);
   if (collectionType === 'weekly' && collectionDays && collectionDays.length > 0) {
     const now = new Date();
     const todayIndex = now.getDay();
@@ -49,7 +44,6 @@ const getNextCollectionDate = (debt: CustomerDebtWithDetails): string | null => 
       return next.toISOString().slice(0, 10);
     }
   }
-
   return debt.due_date || null;
 };
 
@@ -57,47 +51,30 @@ const CustomerDebts: React.FC = () => {
   const { t, language } = useLanguage();
   const { role, workerId } = useAuth();
   const isAdmin = role === 'admin' || role === 'branch_admin';
+  const [activeTab, setActiveTab] = useState<'debts' | 'documents'>('debts');
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<{ id: string; name: string; debts: CustomerDebtWithDetails[] } | null>(null);
   const location = useLocation();
 
-  // All workers can see all debts
-  const { data: debts, isLoading } = useCustomerDebts({
-    status: statusFilter,
-  });
+  const { data: debts, isLoading } = useCustomerDebts({ status: statusFilter });
 
-  // Group debts by customer
   const customerGroups = useMemo(() => {
     if (!debts) return [];
     const groups: Record<string, { id: string; name: string; phone: string | null; wilaya: string | null; debts: CustomerDebtWithDetails[]; totalRemaining: number; lastPaymentDate: string | null; nextDueDate: string | null }> = {};
-
     debts.forEach(debt => {
       const cId = debt.customer_id;
       if (!groups[cId]) {
-        groups[cId] = {
-          id: cId,
-          name: debt.customer?.name || '—',
-          phone: debt.customer?.phone || null,
-          wilaya: debt.customer?.wilaya || null,
-          debts: [],
-          totalRemaining: 0,
-          lastPaymentDate: null,
-          nextDueDate: null,
-        };
+        groups[cId] = { id: cId, name: debt.customer?.name || '—', phone: debt.customer?.phone || null, wilaya: debt.customer?.wilaya || null, debts: [], totalRemaining: 0, lastPaymentDate: null, nextDueDate: null };
       }
       groups[cId].debts.push(debt);
       groups[cId].totalRemaining += Number(debt.remaining_amount);
-      // Use schedule-aware next collection date (schedule > manual due_date)
       const nextDate = getNextCollectionDate(debt);
       if (nextDate) {
         const current = groups[cId].nextDueDate;
-        if (!current || nextDate < current) {
-          groups[cId].nextDueDate = nextDate;
-        }
+        if (!current || nextDate < current) groups[cId].nextDueDate = nextDate;
       }
     });
-
     return Object.values(groups)
       .filter(g => {
         if (!search) return true;
@@ -112,11 +89,18 @@ const CustomerDebts: React.FC = () => {
       const group = customerGroups.find(g => g.id === location.state.customerId);
       if (group) {
         setSelectedCustomer({ id: group.id, name: group.name, debts: group.debts });
-        // Clear state to avoid reopening
         window.history.replaceState({}, document.title);
       }
     }
   }, [location.state, customerGroups]);
+
+  // Check if navigated with tab=documents
+  useEffect(() => {
+    if (location.state?.tab === 'documents') {
+      setActiveTab('documents');
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const totalActiveDebts = customerGroups.reduce((sum, g) => sum + g.totalRemaining, 0);
 
@@ -136,95 +120,105 @@ const CustomerDebts: React.FC = () => {
           {t('debts.title')}
         </h2>
 
-        {/* Summary Card */}
-        <Card className="bg-destructive/10 border-destructive/30">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">{t('debts.total_debts')}</p>
-              <p className="text-2xl font-bold text-destructive">{totalActiveDebts.toLocaleString()} DA</p>
+        {/* Tabs: Debts vs Pending Documents */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} dir="rtl">
+          <TabsList className="w-full h-10 p-1 bg-muted/60">
+            <TabsTrigger value="debts" className="flex-1 gap-1.5 data-[state=active]:shadow-sm">
+              <Banknote className="w-4 h-4" />
+              <span className="text-xs font-bold">الديون</span>
+            </TabsTrigger>
+            <TabsTrigger value="documents" className="flex-1 gap-1.5 data-[state=active]:shadow-sm">
+              <FileCheck className="w-4 h-4" />
+              <span className="text-xs font-bold">المستندات المعلقة</span>
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="debts" className="space-y-4 mt-4">
+            {/* Summary Card */}
+            <Card className="bg-destructive/10 border-destructive/30">
+              <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">{t('debts.total_debts')}</p>
+                  <p className="text-2xl font-bold text-destructive">{totalActiveDebts.toLocaleString()} DA</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-lg font-bold">{customerGroups.length}</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Filters */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('common.search')} className="pr-9" />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('common.all')}</SelectItem>
+                  <SelectItem value="active">{t('debts.active')}</SelectItem>
+                  <SelectItem value="partially_paid">{t('debts.partially_paid')}</SelectItem>
+                  <SelectItem value="paid">{t('debts.paid')}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-muted-foreground" />
-              <span className="text-lg font-bold">{customerGroups.length}</span>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Pending Documents */}
-        <PendingDocumentsSection />
-
-        {/* Filters */}
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder={t('common.search')}
-              className="pr-9"
-            />
-          </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('common.all')}</SelectItem>
-              <SelectItem value="active">{t('debts.active')}</SelectItem>
-              <SelectItem value="partially_paid">{t('debts.partially_paid')}</SelectItem>
-              <SelectItem value="paid">{t('debts.paid')}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Customer List */}
-        {customerGroups.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center text-muted-foreground">
-              <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>{t('debts.no_debts')}</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-2">
-            {customerGroups.map(group => (
-              <Card
-                key={group.id}
-                className="cursor-pointer hover:shadow-md transition-shadow active:scale-[0.99]"
-                onClick={() => setSelectedCustomer({ id: group.id, name: group.name, debts: group.debts })}
-              >
-                <CardContent className="p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="font-bold">{group.name}</p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                        {group.phone && <span>{group.phone}</span>}
-                        {group.wilaya && <span>• {group.wilaya}</span>}
-                        <span>• {group.debts.length} {group.debts.length === 1 ? 'دين' : 'ديون'}</span>
-                      </div>
-                      {group.nextDueDate && (
-                        <div className="flex items-center gap-1 text-xs mt-1">
-                          <Calendar className="w-3 h-3 text-muted-foreground" />
-                          <span className="text-muted-foreground">{t('debts.next_due')}:</span>
-                          <span className={new Date(group.nextDueDate + (group.nextDueDate.includes('T') ? '' : 'T00:00:00')) < new Date() ? 'text-destructive font-medium' : 'text-primary font-medium'}>
-                            {group.nextDueDate.includes('T')
-                              ? formatDate(new Date(group.nextDueDate), 'EEEE dd/MM/yyyy HH:mm', language)
-                              : formatDate(new Date(group.nextDueDate + 'T00:00:00'), 'EEEE dd/MM/yyyy', language)
-                            }
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-left">
-                      <p className="text-lg font-bold text-destructive">{group.totalRemaining.toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground">DA</p>
-                    </div>
-                  </div>
+            {/* Customer List */}
+            {customerGroups.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center text-muted-foreground">
+                  <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>{t('debts.no_debts')}</p>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        )}
+            ) : (
+              <div className="space-y-2">
+                {customerGroups.map(group => (
+                  <Card
+                    key={group.id}
+                    className="cursor-pointer hover:shadow-md transition-shadow active:scale-[0.99]"
+                    onClick={() => setSelectedCustomer({ id: group.id, name: group.name, debts: group.debts })}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <p className="font-bold">{group.name}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                            {group.phone && <span>{group.phone}</span>}
+                            {group.wilaya && <span>• {group.wilaya}</span>}
+                            <span>• {group.debts.length} {group.debts.length === 1 ? 'دين' : 'ديون'}</span>
+                          </div>
+                          {group.nextDueDate && (
+                            <div className="flex items-center gap-1 text-xs mt-1">
+                              <Calendar className="w-3 h-3 text-muted-foreground" />
+                              <span className="text-muted-foreground">{t('debts.next_due')}:</span>
+                              <span className={new Date(group.nextDueDate + (group.nextDueDate.includes('T') ? '' : 'T00:00:00')) < new Date() ? 'text-destructive font-medium' : 'text-primary font-medium'}>
+                                {group.nextDueDate.includes('T')
+                                  ? formatDate(new Date(group.nextDueDate), 'EEEE dd/MM/yyyy HH:mm', language)
+                                  : formatDate(new Date(group.nextDueDate + 'T00:00:00'), 'EEEE dd/MM/yyyy', language)
+                                }
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-left">
+                          <p className="text-lg font-bold text-destructive">{group.totalRemaining.toLocaleString()}</p>
+                          <p className="text-xs text-muted-foreground">DA</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="documents" className="mt-4">
+            <PendingDocumentsSection />
+          </TabsContent>
+        </Tabs>
 
         {/* Debt Details Dialog */}
         {selectedCustomer && (

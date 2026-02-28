@@ -324,6 +324,13 @@ const MyDeliveries: React.FC = () => {
                     </Badge>
                   )}
 
+                  {(order as any).document_status === 'pending' && (
+                    <Badge className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700 gap-0.5">
+                      <FileCheck className="w-3 h-3" />
+                      تحقق معلق
+                    </Badge>
+                  )}
+
                   {order.customer?.default_price_subtype && order.payment_type === 'without_invoice' && (
                     <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
                       {order.customer.default_price_subtype === 'super_gros' ? t('products.price_super_gros') :
