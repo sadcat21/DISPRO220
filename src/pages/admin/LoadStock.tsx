@@ -1139,7 +1139,7 @@ const LoadStock: React.FC = () => {
                 <Plus className="w-4 h-4 me-1" />
                 بدء جلسة شحن جديدة
               </Button>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <Button variant="outline" onClick={() => setShowSessionHistory(true)}>
                     <History className="w-4 h-4 me-1" />
                     سجل الجلسات
@@ -1153,16 +1153,16 @@ const LoadStock: React.FC = () => {
                     {isEmptying ? <Loader2 className="w-4 h-4 animate-spin me-2" /> : <PackageX className="w-4 h-4 me-1" />}
                     {t('stock.empty_truck')}
                   </Button>
+                  <Button
+                    variant="outline"
+                    className="border-orange-400 text-orange-700 bg-orange-50/50 dark:bg-orange-900/10 hover:bg-orange-100 dark:hover:bg-orange-900/20"
+                    onClick={() => setShowExchangeDialog(true)}
+                    disabled={!selectedWorker}
+                  >
+                    <RefreshCw className="w-4 h-4 me-1" />
+                    تغيير
+                  </Button>
                 </div>
-                <Button
-                  variant="outline"
-                  className="w-full border-orange-400 text-orange-700 bg-orange-50/50 dark:bg-orange-900/10 hover:bg-orange-100 dark:hover:bg-orange-900/20"
-                  onClick={() => setShowExchangeDialog(true)}
-                  disabled={!selectedWorker}
-                >
-                  <RefreshCw className="w-4 h-4 me-1" />
-                  جلسة استبدال تالف
-                </Button>
             </>
           ) : (
             <>
@@ -1359,8 +1359,8 @@ const LoadStock: React.FC = () => {
                     <CardContent className="p-3 space-y-2">
                       <div className="flex items-center justify-between">
                         <div>
-                          <Badge variant={session.status === 'unloaded' ? 'destructive' : 'secondary'} className={`text-xs ${session.status === 'review' ? 'bg-blue-600 text-white hover:bg-blue-700' : session.status === 'exchange' ? 'bg-orange-500 text-white hover:bg-orange-600' : session.status === 'open' || session.status === 'completed' ? 'bg-green-600 text-white hover:bg-green-700' : ''}`}>
-                            {session.status === 'open' ? 'شحن' : session.status === 'unloaded' ? 'تفريغ' : session.status === 'review' ? 'مراجعة' : session.status === 'exchange' ? 'استبدال' : 'شحن'}
+                          <Badge variant={session.status === 'unloaded' ? 'destructive' : 'secondary'} className={`text-xs ${session.status === 'review' ? 'bg-blue-600 text-white hover:bg-blue-700' : session.status === 'exchange' ? 'bg-orange-500 text-black hover:bg-orange-600' : session.status === 'open' || session.status === 'completed' ? 'bg-green-600 text-white hover:bg-green-700' : ''}`}>
+                            {session.status === 'open' ? 'شحن' : session.status === 'unloaded' ? 'تفريغ' : session.status === 'review' ? 'مراجعة' : session.status === 'exchange' ? 'تغيير' : 'شحن'}
                           </Badge>
                           {session.status === 'review' && reviewCounts.deficit > 0 && (
                             <Badge variant="destructive" className="text-[10px] px-1.5 py-0 ms-1">عجز ({reviewCounts.deficit})</Badge>
@@ -1433,8 +1433,8 @@ const LoadStock: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div className="text-muted-foreground">الحالة:</div>
                   <div>
-                    <Badge variant={session.status === 'unloaded' ? 'destructive' : 'secondary'} className={`text-xs ${session.status === 'review' ? 'bg-blue-600 text-white hover:bg-blue-700' : session.status === 'exchange' ? 'bg-orange-500 text-white hover:bg-orange-600' : session.status !== 'unloaded' ? 'bg-green-600 text-white hover:bg-green-700' : ''}`}>
-                      {isUnload ? 'تفريغ' : session.status === 'review' ? 'مراجعة' : session.status === 'exchange' ? 'استبدال' : 'شحن'}
+                    <Badge variant={session.status === 'unloaded' ? 'destructive' : 'secondary'} className={`text-xs ${session.status === 'review' ? 'bg-blue-600 text-white hover:bg-blue-700' : session.status === 'exchange' ? 'bg-orange-500 text-black hover:bg-orange-600' : session.status !== 'unloaded' ? 'bg-green-600 text-white hover:bg-green-700' : ''}`}>
+                      {isUnload ? 'تفريغ' : session.status === 'review' ? 'مراجعة' : session.status === 'exchange' ? 'تغيير' : 'شحن'}
                     </Badge>
                     {session.notes?.includes('فائض') && (
                       <Badge className="bg-amber-500 text-white text-[10px] px-1.5 py-0 ms-1">فائض</Badge>
