@@ -75,6 +75,32 @@ const DataManagement: React.FC = () => {
   };
 
   const nullifyFkReferences = async (selectedIds: Set<string>) => {
+    // Before deleting accounting_sessions, clean up worker_debts references
+    if (selectedIds.has('accounting')) {
+      setDeletionProgress('جاري تنظيف المراجع المرتبطة بجلسات المحاسبة...');
+      // Delete worker_debt_payments then worker_debts (FK: worker_debts -> accounting_sessions)
+      await supabase
+        .from('worker_debt_payments' as any)
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase
+        .from('worker_debts' as any)
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      // Nullify session_id in manager_treasury (FK: manager_treasury -> accounting_sessions)
+      if (!selectedIds.has('treasury')) {
+        await supabase
+          .from('manager_treasury')
+          .update({ session_id: null } as any)
+          .neq('id', '00000000-0000-0000-0000-000000000000');
+      }
+      // Also clean worker_liability_adjustments
+      await supabase
+        .from('worker_liability_adjustments' as any)
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+    }
+
     // Before deleting orders, nullify order_id in customer_debts and delete stock_movements referencing orders
     if (selectedIds.has('orders')) {
       setDeletionProgress('جاري تنظيف المراجع المرتبطة بالطلبات...');
