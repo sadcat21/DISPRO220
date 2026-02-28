@@ -834,6 +834,7 @@ export const translations: Translations = {
   'offers.offer_applied': { ar: 'عرض مطبق!', fr: 'Offre appliquée!', en: 'Offer Applied!' },
   'offers.apply_offer': { ar: 'تطبيق العرض', fr: 'Appliquer l\'offre', en: 'Apply Offer' },
   'offers.offer_applied_success': { ar: 'تم تطبيق العرض ✓', fr: 'Offre appliquée ✓', en: 'Offer Applied ✓' },
+  'offers.must_apply_offer': { ar: 'يجب تفعيل العرض أولاً', fr: 'Vous devez d\'abord appliquer l\'offre', en: 'You must apply the offer first' },
   'offers.available_offer': { ar: 'عرض متاح', fr: 'Offre disponible', en: 'Available Offer' },
   'offers.offer_details': { ar: 'تفاصيل العرض', fr: 'Détails de l\'offre', en: 'Offer Details' },
   'offers.advanced_options': { ar: 'خيارات متقدمة', fr: 'Options avancées', en: 'Advanced Options' },
