@@ -14,12 +14,13 @@ import CustomerPickerDialog from '@/components/orders/CustomerPickerDialog';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
 import { Customer } from '@/types/database';
 import { toast } from 'sonner';
-import { ShoppingCart, Gift, Loader2, ShoppingBag, Truck, Package, Banknote, Users, Wallet, ClipboardList } from 'lucide-react';
+import { ShoppingCart, Gift, Loader2, ShoppingBag, Truck, Package, Banknote, Users, Wallet, ClipboardList, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import WorkerHandoverPreviewDialog from '@/components/accounting/WorkerHandoverPreviewDialog';
+import TodayCustomersDialog from '@/components/sectors/TodayCustomersDialog';
 
 const WorkerHome: React.FC = () => {
   const { user, workerId } = useAuth();
@@ -36,6 +37,7 @@ const WorkerHome: React.FC = () => {
   const [showActionDialog, setShowActionDialog] = useState(false);
   const [selectedCustomerForAction, setSelectedCustomerForAction] = useState<Customer | null>(null);
   const [showHandoverPreview, setShowHandoverPreview] = useState(false);
+  const [showTodayCustomers, setShowTodayCustomers] = useState(false);
 
   const { trackVisit } = useTrackVisit();
   const isDirectSaleHidden = useIsElementHidden('button', 'home_direct_sale');
@@ -243,6 +245,8 @@ const WorkerHome: React.FC = () => {
           if (hasExpenseAccess && !isExpensesPageHidden && !isExpensesHidden) {
             quickActions.push({ key: 'expenses', icon: <Wallet className="w-6 h-6" />, label: t('expenses.my_expenses'), onClick: () => navigate('/expenses') });
           }
+          // Today's customers - always show
+          quickActions.push({ key: 'today-customers', icon: <MapPin className="w-6 h-6" />, label: 'عملاء اليوم', onClick: () => setShowTodayCustomers(true) });
 
           const colorSchemes: Record<string, { bg: string; iconBg: string; iconColor: string; text: string; border: string }> = {
             deliveries: { bg: 'bg-gradient-to-br from-blue-500 to-blue-600', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
@@ -254,6 +258,7 @@ const WorkerHome: React.FC = () => {
             debts: { bg: 'bg-gradient-to-br from-rose-500 to-red-600', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
             customers: { bg: 'bg-gradient-to-br from-cyan-500 to-sky-600', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
             expenses: { bg: 'bg-gradient-to-br from-fuchsia-500 to-pink-600', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
+            'today-customers': { bg: 'bg-gradient-to-br from-sky-400 to-blue-500', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
           };
 
           const gridCols = quickActions.length === 1 ? 'grid-cols-1' : quickActions.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
@@ -333,6 +338,10 @@ const WorkerHome: React.FC = () => {
       <WorkerHandoverPreviewDialog
         open={showHandoverPreview}
         onOpenChange={setShowHandoverPreview}
+      />
+      <TodayCustomersDialog
+        open={showTodayCustomers}
+        onOpenChange={setShowTodayCustomers}
       />
     </div>
   );

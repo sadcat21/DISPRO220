@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Worker } from '@/types/database';
 import CoinExchangeDialog from '@/components/treasury/CoinExchangeDialog';
 import WorkerHandoverPreviewDialog from '@/components/accounting/WorkerHandoverPreviewDialog';
+import TodayCustomersDialog from '@/components/sectors/TodayCustomersDialog';
 
 const workerActions = [
   { key: 'accounting', icon: Calculator, path: '/accounting', labelKey: 'accounting.title', color: 'bg-amber-50 border-amber-200 text-amber-700' },
@@ -24,6 +25,7 @@ const workerActions = [
   { key: 'activity', icon: Activity, path: '/activity-logs', labelKey: 'nav.activity_logs', color: 'bg-violet-50 border-violet-200 text-violet-700' },
   { key: 'permissions', icon: Shield, path: '/permissions', labelKey: 'nav.permissions', color: 'bg-slate-50 border-slate-200 text-slate-700' },
   { key: 'handover_summary', icon: ClipboardList, path: '', labelKey: 'ملخص التسليم', color: 'bg-indigo-50 border-indigo-200 text-indigo-700', isDialog: true },
+  { key: 'today_customers', icon: MapPin, path: '', labelKey: 'عملاء اليوم', color: 'bg-sky-50 border-sky-200 text-sky-700', isDialog: true },
 ];
 
 const WorkerActions: React.FC = () => {
@@ -35,6 +37,7 @@ const WorkerActions: React.FC = () => {
   const { data: liability } = useWorkerLiability(selectedWorker?.id);
   const [coinExchangeOpen, setCoinExchangeOpen] = useState(false);
   const [handoverOpen, setHandoverOpen] = useState(false);
+  const [todayCustomersOpen, setTodayCustomersOpen] = useState(false);
 
   const { data: workers = [] } = useQuery({
     queryKey: ['workers-for-actions', activeBranch?.id],
@@ -63,6 +66,8 @@ const WorkerActions: React.FC = () => {
         setCoinExchangeOpen(true);
       } else if (action.key === 'handover_summary') {
         setHandoverOpen(true);
+      } else if (action.key === 'today_customers') {
+        setTodayCustomersOpen(true);
       }
       return;
     }
@@ -121,6 +126,12 @@ const WorkerActions: React.FC = () => {
       <WorkerHandoverPreviewDialog
         open={handoverOpen}
         onOpenChange={setHandoverOpen}
+        targetWorkerId={selectedWorker?.id}
+        targetWorkerName={selectedWorker?.full_name}
+      />
+      <TodayCustomersDialog
+        open={todayCustomersOpen}
+        onOpenChange={setTodayCustomersOpen}
         targetWorkerId={selectedWorker?.id}
         targetWorkerName={selectedWorker?.full_name}
       />
