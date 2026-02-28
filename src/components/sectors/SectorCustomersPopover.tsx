@@ -21,7 +21,9 @@ import { calculateDistance } from '@/utils/geoUtils';
 import { useDueDebts, usePendingCollections, useApproveCollection, DueDebt } from '@/hooks/useDebtCollections';
 import CollectDebtDialog from '@/components/debts/CollectDebtDialog';
 import VisitNoPaymentDialog from '@/components/debts/VisitNoPaymentDialog';
+import DeliverySaleDialog from '@/components/orders/DeliverySaleDialog';
 import { format } from 'date-fns';
+import { OrderWithDetails } from '@/types/database';
 
 const DAY_NAMES: Record<string, string> = {
   saturday: 'السبت',
@@ -61,6 +63,9 @@ const SectorCustomersPopover: React.FC = () => {
   const [selectedDebt, setSelectedDebt] = useState<DueDebt | null>(null);
   const [showCollect, setShowCollect] = useState(false);
   const [showVisit, setShowVisit] = useState(false);
+  const [deliveryOrder, setDeliveryOrder] = useState<OrderWithDetails | null>(null);
+  const [showDeliverySale, setShowDeliverySale] = useState(false);
+  const [loadingDeliveryFor, setLoadingDeliveryFor] = useState<string | null>(null);
 
   const { data: sectors = [] } = useQuery({
     queryKey: ['sectors-with-customers', workerId, activeBranch?.id],
@@ -308,12 +313,46 @@ const SectorCustomersPopover: React.FC = () => {
     }
   };
 
-  const handleCustomerClick = (customer: any, tab: 'delivery' | 'sales') => {
-    setIsOpen(false);
+  const handleCustomerClick = async (customer: any, tab: 'delivery' | 'sales') => {
     if (tab === 'sales') {
+      setIsOpen(false);
       navigate('/orders', { state: { customerId: customer.id } });
     } else {
-      navigate('/my-deliveries', { state: { customerId: customer.id, action: 'delivery' } });
+      // Fetch the assigned order for this customer and open DeliverySaleDialog directly
+      setLoadingDeliveryFor(customer.id);
+      try {
+        let query = supabase
+          .from('orders')
+          .select(`
+            *,
+            customer:customers(*, sector:sectors(id, name, name_fr), zone:sector_zones(id, name, name_fr)),
+            created_by_worker:workers!orders_created_by_fkey(id, full_name, username)
+          `)
+          .eq('customer_id', customer.id)
+          .in('status', ['pending', 'assigned', 'in_progress'])
+          .order('created_at', { ascending: false })
+          .limit(1);
+        
+        if (!isAdmin) {
+          query = query.eq('assigned_worker_id', workerId!);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          setDeliveryOrder(data[0] as OrderWithDetails);
+          setIsOpen(false);
+          setShowDeliverySale(true);
+        } else {
+          toast.error('لا توجد طلبية معينة لهذا العميل');
+        }
+      } catch (e) {
+        console.error('Error fetching delivery order:', e);
+        toast.error('خطأ في جلب بيانات الطلبية');
+      } finally {
+        setLoadingDeliveryFor(null);
+      }
     }
   };
 
@@ -450,6 +489,7 @@ const SectorCustomersPopover: React.FC = () => {
                   showVisitButton={true}
                   visitButtonLabel="بدون تسليم"
                   checkingLocationFor={checkingLocationFor}
+                  loadingFor={loadingDeliveryFor}
                 />
               </TabsContent>
               <TabsContent value="not-received" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
@@ -460,6 +500,7 @@ const SectorCustomersPopover: React.FC = () => {
                   onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery}
                   showVisitButton={false}
                   checkingLocationFor={checkingLocationFor}
+                  loadingFor={loadingDeliveryFor}
                 />
               </TabsContent>
               <TabsContent value="received" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
@@ -470,6 +511,7 @@ const SectorCustomersPopover: React.FC = () => {
                   onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery}
                   showVisitButton={false}
                   checkingLocationFor={checkingLocationFor}
+                  loadingFor={loadingDeliveryFor}
                 />
               </TabsContent>
             </Tabs>
@@ -631,6 +673,17 @@ const SectorCustomersPopover: React.FC = () => {
         customerLatitude={selectedDebt.customer?.latitude}
         customerLongitude={selectedDebt.customer?.longitude}
       />
+     )}
+
+    {deliveryOrder && (
+      <DeliverySaleDialog
+        open={showDeliverySale}
+        onOpenChange={(open) => {
+          setShowDeliverySale(open);
+          if (!open) setDeliveryOrder(null);
+        }}
+        order={deliveryOrder}
+      />
     )}
     </>
   );
@@ -644,7 +697,8 @@ const CustomerList: React.FC<{
   showVisitButton: boolean;
   visitButtonLabel?: string;
   checkingLocationFor: string | null;
-}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, showVisitButton, visitButtonLabel, checkingLocationFor }) => {
+  loadingFor?: string | null;
+}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, showVisitButton, visitButtonLabel, checkingLocationFor, loadingFor }) => {
   if (customers.length === 0) {
     return <div className="p-6 text-center text-sm text-muted-foreground">{emptyMessage}</div>;
   }
@@ -656,9 +710,10 @@ const CustomerList: React.FC<{
           <button
             className="w-full flex items-center gap-2 text-start"
             onClick={() => onCustomerClick(c)}
+            disabled={loadingFor === c.id}
           >
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <User className="w-4 h-4 text-primary" />
+              {loadingFor === c.id ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <User className="w-4 h-4 text-primary" />}
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-bold text-sm truncate">{c.store_name || c.name}</p>
