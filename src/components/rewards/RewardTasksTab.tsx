@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,13 +7,27 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Target, TrendingUp, Clock, Banknote, Zap, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Target, TrendingUp, Clock, Banknote, Zap, Pencil, Trash2, Users } from 'lucide-react';
 import { useRewardTasks, useUpdateRewardTask, RewardTask } from '@/hooks/useRewards';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import CreateRewardTaskDialog from './CreateRewardTaskDialog';
 import { TASK_DATA_SOURCES, TASK_CATEGORIES } from '@/data/rewardTriggers';
+
+const ROLE_LABELS: Record<string, string> = {
+  worker: 'عامل توصيل/مبيعات',
+  admin: 'مدير فرع',
+  supervisor: 'مشرف',
+  branch_admin: 'مسؤول مخزن',
+};
+
+const ROLE_COLORS: Record<string, string> = {
+  worker: 'bg-blue-100 text-blue-800',
+  admin: 'bg-purple-100 text-purple-800',
+  supervisor: 'bg-amber-100 text-amber-800',
+  branch_admin: 'bg-emerald-100 text-emerald-800',
+};
 
 const categoryIcons: Record<string, React.ReactNode> = {
   sales: <TrendingUp className="w-4 h-4" />,
@@ -38,6 +52,17 @@ const RewardTasksTab: React.FC = () => {
   const [editName, setEditName] = useState('');
   const [editReward, setEditReward] = useState('');
   const [editPenalty, setEditPenalty] = useState('');
+  const [filterRole, setFilterRole] = useState('all');
+
+  const filteredTasks = useMemo(() => {
+    if (!tasks) return [];
+    if (filterRole === 'all') return tasks;
+    return tasks.filter(t => {
+      const roles = (t as any).applicable_roles as string[] | null;
+      if (!roles) return filterRole === 'all_roles';
+      return roles.includes(filterRole);
+    });
+  }, [tasks, filterRole]);
 
   const openEdit = (task: RewardTask) => {
     setEditTask(task);
@@ -74,15 +99,33 @@ const RewardTasksTab: React.FC = () => {
         إنشاء مهمة جديدة
       </Button>
 
-      {(!tasks || tasks.length === 0) ? (
+      {/* Role Filter */}
+      <div className="flex gap-1.5 flex-wrap">
+        <Badge variant={filterRole === 'all' ? 'default' : 'outline'} className="cursor-pointer text-[10px]" onClick={() => setFilterRole('all')}>
+          <Users className="w-3 h-3 ml-1" />الكل ({tasks?.length || 0})
+        </Badge>
+        {Object.entries(ROLE_LABELS).map(([k, v]) => {
+          const count = tasks?.filter(t => {
+            const roles = (t as any).applicable_roles as string[] | null;
+            return roles?.includes(k);
+          }).length || 0;
+          return (
+            <Badge key={k} variant={filterRole === k ? 'default' : 'outline'} className="cursor-pointer text-[10px]" onClick={() => setFilterRole(k)}>
+              {v} ({count})
+            </Badge>
+          );
+        })}
+      </div>
+
+      {filteredTasks.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <Target className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p>لا توجد مهام بعد</p>
-          <p className="text-xs mt-1">أنشئ أول مهمة لبدء نظام المكافآت</p>
+          <p>لا توجد مهام {filterRole !== 'all' ? `لـ ${ROLE_LABELS[filterRole] || ''}` : 'بعد'}</p>
         </div>
       ) : (
-        tasks.map(task => {
+        filteredTasks.map(task => {
           const src = TASK_DATA_SOURCES[task.data_source];
+          const roles = (task as any).applicable_roles as string[] | null;
           return (
             <Card key={task.id} className={`${!task.is_active ? 'opacity-60' : ''}`}>
               <CardContent className="p-4">
@@ -99,6 +142,11 @@ const RewardTasksTab: React.FC = () => {
                         {src?.label || task.data_source}
                       </Badge>
                       <Badge variant="secondary" className="text-[10px]">{frequencyLabels[task.frequency] || task.frequency}</Badge>
+                      {roles ? roles.map(r => (
+                        <Badge key={r} className={`text-[9px] ${ROLE_COLORS[r] || ''}`}>{ROLE_LABELS[r] || r}</Badge>
+                      )) : (
+                        <Badge className="text-[9px] bg-gray-100 text-gray-700">جميع الأدوار</Badge>
+                      )}
                     </div>
                     {src && <p className="text-[10px] text-muted-foreground mt-1">{src.description}</p>}
                     <div className="flex gap-3 mt-2 text-xs">
