@@ -124,7 +124,7 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                     }`}
                   >
                     {item.name}
-                    <span className="text-[9px] font-normal mr-1">
+                    <span className="text-[9px] font-normal mr-1" dir="ltr">
                       {item.boxes_per_layer} B/C
                     </span>
                   </button>
@@ -157,11 +157,11 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                   </button>
                   <div className={`rounded-lg p-2 text-center flex flex-col justify-center ${desiredResult ? 'bg-primary/10 border border-primary/20' : 'bg-muted'}`}>
                     <p className="text-[10px] text-foreground font-medium">يجب أن تأخذ</p>
-                    <p className={`text-xl font-black ${desiredResult ? 'text-primary' : 'text-foreground/30'}`}>
+                    <p dir="ltr" className={`text-xl font-black ${desiredResult ? 'text-primary' : 'text-foreground/30'}`}>
                       {desiredResult ? desiredResult.formatted : '—'}
                     </p>
                     {desiredResult && (
-                      <div className="text-[10px] text-foreground">
+                      <div className="text-[10px] text-foreground" dir="ltr">
                         <p>{desiredResult.layers} C · {desiredResult.boxes} B</p>
                         {desiredResult.boxes > 0 && (
                           <p className="text-primary/80 font-medium mt-0.5">
@@ -181,23 +181,23 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                       activeField === 'available' ? 'border-primary bg-primary/5' : 'border-transparent bg-muted'
                     }`}
                   >
-                    <p className="text-[10px] text-foreground font-medium mb-0.5">المتوفر (C.B)</p>
-                    <p className={`text-xl font-black min-h-[1.75rem] text-foreground`}>
+                    <p className="text-[10px] text-foreground font-medium mb-0.5">المتوفر <span dir="ltr">(C.B)</span></p>
+                    <p dir="ltr" className={`text-xl font-black min-h-[1.75rem] text-foreground`}>
                       {availableInput || '0.00'}
                     </p>
                     {availableInput && parseLayerBoxes(availableInput, boxesPerLayer) !== null && (
-                      <p className="text-[10px] text-foreground">= {parseLayerBoxes(availableInput, boxesPerLayer)} B</p>
+                      <p dir="ltr" className="text-[10px] text-foreground">= {parseLayerBoxes(availableInput, boxesPerLayer)} B</p>
                     )}
                   </button>
                   <div className={`rounded-lg p-2 text-center flex flex-col justify-center border ${
                     remainderResult ? (remainderResult.deficit ? 'bg-destructive/10 border-destructive/20' : 'bg-primary/5 border-primary/20') : 'bg-muted border-transparent'
                   }`}>
                     <p className="text-[10px] text-foreground font-medium">{remainderResult?.deficit ? 'غير كافٍ!' : 'يجب أن تترك'}</p>
-                    <p className={`text-xl font-black ${remainderResult ? (remainderResult.deficit ? 'text-destructive' : 'text-primary') : 'text-foreground/30'}`}>
+                    <p dir="ltr" className={`text-xl font-black ${remainderResult ? (remainderResult.deficit ? 'text-destructive' : 'text-primary') : 'text-foreground/30'}`}>
                       {remainderResult ? (remainderResult.deficit ? '✕' : remainderResult.formatted) : '—'}
                     </p>
                     {remainderResult && !remainderResult.deficit && (
-                      <div className="text-[10px] text-foreground">
+                      <div className="text-[10px] text-foreground" dir="ltr">
                         <p>{remainderResult.layers} C · {remainderResult.boxes} B</p>
                         {remainderResult.boxes > 0 && (
                           <p className="text-primary/80 font-medium mt-0.5">
