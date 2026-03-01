@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import LazyWorkerTrackingMap from '@/components/map/LazyWorkerTrackingMap';
+import WorkerTrackingMap from '@/components/map/WorkerTrackingMap';
 
 const WorkerTracking: React.FC = () => {
   const { t } = useLanguage();
@@ -8,7 +8,7 @@ const WorkerTracking: React.FC = () => {
   return (
     <div className="p-4 space-y-4">
       <h2 className="text-xl font-bold">{t('navigation.tracking_title')}</h2>
-      <LazyWorkerTrackingMap />
+      <WorkerTrackingMap />
     </div>
   );
 };
