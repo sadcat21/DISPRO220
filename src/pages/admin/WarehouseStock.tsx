@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useNavigate } from 'react-router-dom';
 import { Package, Users, Loader2, ShoppingBag, Search, BarChart3, ChevronDown, ChevronUp, ClipboardList, Truck } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,7 @@ interface ProductSummary {
 
 const WarehouseStock: React.FC = () => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const { activeBranch } = useAuth();
   const { warehouseStock, workerStocksByWorker, isLoading, products, workers, createReceipt, loadToWorker } = useWarehouseStock();
   const [showSaleDialog, setShowSaleDialog] = useState(false);
@@ -240,6 +242,10 @@ const WarehouseStock: React.FC = () => {
           {t('stock.warehouse_stock')}
         </h2>
         <div className="flex items-center gap-2 flex-wrap">
+          <Button size="sm" variant="outline" onClick={() => navigate('/stock-receipts')}>
+            <ClipboardList className="w-4 h-4 ml-1" />
+            استلام وتسليم
+          </Button>
           <Button size="sm" variant="outline" onClick={() => setShowReceiptDialog(true)}>
             <ClipboardList className="w-4 h-4 ml-1" />
             استلام
