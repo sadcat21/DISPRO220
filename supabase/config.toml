@@ -2,3 +2,6 @@ project_id = "lygyeesqdenbauimkrjy"
 
 [functions.analyze-invoice]
 verify_jwt = false
+
+[functions.calculate-rewards]
+verify_jwt = false

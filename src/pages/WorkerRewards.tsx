@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Trophy, Star, TrendingUp, TrendingDown, Award, Target, Flame, Crown, Shield } from 'lucide-react';
+import { Trophy, Star, TrendingUp, TrendingDown, Award, Target, Flame, Crown, Shield, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkerPointsSummary, useAllWorkersPoints } from '@/hooks/useRewards';
 import { useRewardConfig } from '@/hooks/useRewardConfig';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const LEVELS = [
   { min: 0, max: 99, label: 'مبتدئ', icon: '🌱', color: 'text-muted-foreground', bg: 'bg-muted/30' },
@@ -27,6 +28,7 @@ const WorkerRewards: React.FC = () => {
   const { data: myPoints, isLoading } = useWorkerPointsSummary(workerId || undefined);
   const { data: allPoints } = useAllWorkersPoints();
   const { data: config } = useRewardConfig();
+  const prevLevelRef = useRef<string | null>(null);
 
   const { data: workerInfo } = useQuery({
     queryKey: ['worker-info-rewards', workerId],
@@ -51,37 +53,51 @@ const WorkerRewards: React.FC = () => {
     enabled: !!workerId,
   });
 
+  const total = myPoints?.total || 0;
+  const level = getLevel(total);
+
+  // Level-up notification
+  useEffect(() => {
+    if (!myPoints) return;
+    const currentLabel = level.label;
+    if (prevLevelRef.current && prevLevelRef.current !== currentLabel) {
+      // Level changed!
+      const prevIdx = LEVELS.findIndex(l => l.label === prevLevelRef.current);
+      const currIdx = LEVELS.findIndex(l => l.label === currentLabel);
+      if (currIdx > prevIdx) {
+        toast.success(`🎉 مبروك! وصلت لمستوى "${currentLabel}" ${level.icon}`, {
+          duration: 6000,
+          description: `نقاطك الحالية: ${total}`,
+        });
+      }
+    }
+    prevLevelRef.current = currentLabel;
+  }, [total, level.label, myPoints]);
+
   if (isLoading) return <div className="text-center py-12 text-muted-foreground">جاري التحميل...</div>;
 
-  const total = myPoints?.total || 0;
   const rewards = myPoints?.rewards || 0;
   const penalties = myPoints?.penalties || 0;
-  const level = getLevel(total);
   const nextLevel = getNextLevel(total);
-
   const pointValue = config?.point_value || 10;
 
-  // Rank
   const sorted = Object.entries(allPoints || {})
     .map(([id, pts]) => ({ id, total: pts.total }))
     .sort((a, b) => b.total - a.total);
   const rank = sorted.findIndex(w => w.id === workerId) + 1;
 
-  // Smart bonus calculation with correction factor
   const totalAllPoints = sorted.reduce((s, w) => s + Math.max(0, w.total), 0);
   const budget = config?.monthly_budget || 0;
   const autoPct = config?.auto_percentage || 70;
   const autoBudget = budget * (autoPct / 100);
   const totalRawBonuses = totalAllPoints * pointValue;
-  const correctionFactor = totalRawBonuses > autoBudget && totalRawBonuses > 0
-    ? autoBudget / totalRawBonuses : 1;
+  const correctionFactor = totalRawBonuses > autoBudget && totalRawBonuses > 0 ? autoBudget / totalRawBonuses : 1;
 
   const rawBonus = Math.max(0, total) * pointValue * correctionFactor;
   const salary = Number(workerInfo?.salary) || 0;
   const capPct = Number(workerInfo?.bonus_cap_percentage) || 20;
   const salaryCap = salary > 0 ? salary * (capPct / 100) : Infinity;
 
-  // Competition bonus
   let compBonus = 0;
   const compBudget = budget * ((config?.competition_percentage || 20) / 100);
   if (rank === 1) compBonus = compBudget * ((config?.top1_bonus_pct || 50) / 100);
@@ -89,10 +105,7 @@ const WorkerRewards: React.FC = () => {
   else if (rank === 3) compBonus = compBudget * ((config?.top3_bonus_pct || 20) / 100);
 
   const expectedBonus = Math.min(rawBonus + compBonus, salaryCap);
-
-  const levelProgress = nextLevel
-    ? ((total - level.min) / (nextLevel.min - level.min)) * 100
-    : 100;
+  const levelProgress = nextLevel ? ((total - level.min) / (nextLevel.min - level.min)) * 100 : 100;
 
   return (
     <div className="p-4 space-y-4 pb-20" dir="rtl">
@@ -117,6 +130,10 @@ const WorkerRewards: React.FC = () => {
               <span>{nextLevel.label} ({nextLevel.min} نقطة)</span>
             </div>
             <Progress value={Math.min(100, Math.max(0, levelProgress))} className="h-2" />
+            <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+              <Sparkles className="w-3 h-3" />
+              يتبقى {nextLevel.min - total} نقطة للمستوى التالي
+            </p>
           </div>
         )}
       </div>
