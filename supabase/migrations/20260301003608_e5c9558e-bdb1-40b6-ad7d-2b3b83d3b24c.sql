@@ -1,0 +1,1 @@
+ALTER TABLE public.stock_receipt_items ADD COLUMN pallet_quantity integer NOT NULL DEFAULT 0;

@@ -169,12 +169,25 @@ export const useWarehouseStock = () => {
 
     if (receiptError) throw receiptError;
 
-    // Insert items
-    const receiptItems = items.map(i => ({
-      receipt_id: receipt.id,
-      product_id: i.product_id,
-      quantity: i.quantity,
-    }));
+    // Fetch pallet settings to auto-calculate pallet quantities
+    const { data: palletSettings } = await supabase
+      .from('pallet_settings')
+      .select('product_id, boxes_per_pallet')
+      .eq('branch_id', branchId);
+
+    // Insert items with pallet quantities
+    const receiptItems = items.map(i => {
+      const setting = (palletSettings || []).find(s => s.product_id === i.product_id);
+      const palletQty = setting && setting.boxes_per_pallet > 0
+        ? Math.ceil(i.quantity / setting.boxes_per_pallet)
+        : 0;
+      return {
+        receipt_id: receipt.id,
+        product_id: i.product_id,
+        quantity: i.quantity,
+        pallet_quantity: palletQty,
+      };
+    });
     const { error: itemsError } = await supabase.from('stock_receipt_items').insert(receiptItems);
     if (itemsError) throw itemsError;
 

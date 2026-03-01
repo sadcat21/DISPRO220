@@ -367,12 +367,19 @@ const StockReceipts: React.FC = () => {
                 ) : (
                   <div className="space-y-2">
                     {viewItems.map((item: any) => (
-                      <div key={item.id} className="flex items-center justify-between rounded-lg border p-2">
-                        <div className="flex items-center gap-2">
-                          <Package className="w-4 h-4 text-primary" />
-                          <span className="text-sm font-medium">{item.product?.name || item.product_id}</span>
+                      <div key={item.id} className="rounded-lg border p-2.5 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Package className="w-4 h-4 text-primary" />
+                            <span className="text-sm font-medium">{item.product?.name || item.product_id}</span>
+                          </div>
+                          <span className="text-sm font-bold text-primary">{item.quantity}</span>
                         </div>
-                        <span className="text-sm font-bold text-primary">{item.quantity}</span>
+                        {item.pallet_quantity > 0 && (
+                          <div className="flex items-center justify-end">
+                            <span className="text-xs font-medium text-amber-600">🪵 باليطات: {item.pallet_quantity}</span>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

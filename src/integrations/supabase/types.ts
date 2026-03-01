@@ -3673,6 +3673,7 @@ export type Database = {
           created_at: string
           id: string
           notes: string | null
+          pallet_quantity: number
           product_id: string
           quantity: number
           receipt_id: string
@@ -3681,6 +3682,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          pallet_quantity?: number
           product_id: string
           quantity: number
           receipt_id: string
@@ -3689,6 +3691,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          pallet_quantity?: number
           product_id?: string
           quantity?: number
           receipt_id?: string
