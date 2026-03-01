@@ -22,14 +22,46 @@ export const useLocationBroadcast = () => {
   const [error, setError] = useState<string | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const lastUpdateRef = useRef<number>(0);
+  // Idle detection: track anchor point and time
+  const anchorRef = useRef<{ lat: number; lng: number; since: number } | null>(null);
+  const IDLE_RADIUS_KM = 0.02; // 20 meters
+  const IDLE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+
+  const haversine = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
 
   const updateLocation = useCallback(async (position: GeolocationPosition) => {
     if (!workerId) return;
     
-    // Throttle updates to every 10 seconds
     const now = Date.now();
     if (now - lastUpdateRef.current < 10000) return;
     lastUpdateRef.current = now;
+
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+
+    // Idle detection logic
+    let idleSince: string | null = null;
+    if (anchorRef.current) {
+      const dist = haversine(anchorRef.current.lat, anchorRef.current.lng, lat, lng);
+      if (dist <= IDLE_RADIUS_KM) {
+        // Still within anchor radius
+        const elapsedMs = now - anchorRef.current.since;
+        if (elapsedMs >= IDLE_THRESHOLD_MS) {
+          idleSince = new Date(anchorRef.current.since).toISOString();
+        }
+      } else {
+        // Moved outside radius — reset anchor
+        anchorRef.current = { lat, lng, since: now };
+      }
+    } else {
+      anchorRef.current = { lat, lng, since: now };
+    }
 
     try {
       const { error } = await supabase
@@ -37,12 +69,13 @@ export const useLocationBroadcast = () => {
         .upsert({
           worker_id: workerId,
           branch_id: activeBranch?.id || null,
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
+          latitude: lat,
+          longitude: lng,
           accuracy: position.coords.accuracy,
           heading: position.coords.heading,
           speed: position.coords.speed,
           is_tracking: true,
+          idle_since: idleSince,
           updated_at: new Date().toISOString(),
         }, { onConflict: 'worker_id' });
 
@@ -60,6 +93,7 @@ export const useLocationBroadcast = () => {
 
     setError(null);
     setIsTracking(true);
+    anchorRef.current = null;
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       updateLocation,
@@ -81,17 +115,16 @@ export const useLocationBroadcast = () => {
       watchIdRef.current = null;
     }
     setIsTracking(false);
+    anchorRef.current = null;
 
-    // Mark as not tracking in DB
     if (workerId) {
       await supabase
         .from('worker_locations')
-        .update({ is_tracking: false, updated_at: new Date().toISOString() })
+        .update({ is_tracking: false, idle_since: null, updated_at: new Date().toISOString() })
         .eq('worker_id', workerId);
     }
   }, [workerId]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (watchIdRef.current !== null) {

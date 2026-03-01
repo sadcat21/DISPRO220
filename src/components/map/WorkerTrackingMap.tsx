@@ -181,15 +181,17 @@ const WorkerTrackingMap: React.FC = () => {
             
             // Speed in km/h — use actual or default 40 km/h for stopped workers
             const speedKmh = (loc.speed && loc.speed > 0) ? loc.speed * 3.6 : 0;
-            const isStopped = speedKmh < 2;
-            const etaSpeedKmh = isStopped ? 40 : speedKmh;
+            
+            // Idle detection: use idle_since from DB (worker stayed in 20m radius for 5+ min)
+            const idleSince = (loc as any).idle_since ? new Date((loc as any).idle_since) : null;
+            const isStopped = !!idleSince;
+            const etaSpeedKmh = isStopped ? 40 : (speedKmh || 40);
             const etaMinutes = Math.round((distKm / etaSpeedKmh) * 60);
             const etaText = etaMinutes < 60 ? `${etaMinutes} د` : `${Math.floor(etaMinutes / 60)} س ${etaMinutes % 60} د`;
             
-            // Idle duration: time since last update (if stopped)
+            // Idle duration: time since idle_since
             const now = new Date();
-            const lastUpdate = new Date(loc.updated_at);
-            const idleMs = now.getTime() - lastUpdate.getTime();
+            const idleMs = idleSince ? now.getTime() - idleSince.getTime() : 0;
             const idleMinutes = Math.floor(idleMs / 60000);
             const idleText = idleMinutes < 60 
               ? `${idleMinutes} د` 
@@ -224,7 +226,7 @@ const WorkerTrackingMap: React.FC = () => {
                     {isStopped && idleMinutes > 0 && (
                       <span className="text-amber-600 font-medium">⏸ متوقف {idleText}</span>
                     )}
-                    <span>{format(lastUpdate, 'HH:mm')}</span>
+                    <span>{format(new Date(loc.updated_at), 'HH:mm')}</span>
                   </div>
                 </div>
               </div>
