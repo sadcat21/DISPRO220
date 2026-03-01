@@ -30,6 +30,7 @@ import { useTrackVisit } from '@/hooks/useVisitTracking';
 import CustomerProfileDialog from '@/components/customers/CustomerProfileDialog';
 import CustomerApprovalTab from '@/components/customers/CustomerApprovalTab';
 import CustomerChangeReviewDialog from '@/components/customers/CustomerChangeReviewDialog';
+import WorkerMyRequestsTab from '@/components/customers/WorkerMyRequestsTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import { format, differenceInDays } from 'date-fns';
@@ -791,7 +792,30 @@ const Customers: React.FC = () => {
           </TabsContent>
         </Tabs>
       ) : (
-        renderCustomersList()
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
+          <TabsList className="grid w-full grid-cols-2 h-8">
+            <TabsTrigger value="list" className="text-xs">{t('customers.title')}</TabsTrigger>
+            <TabsTrigger value="my-requests" className="relative text-xs">
+              طلباتي
+              {(() => {
+                const myPendingCount = Object.values(pendingRequestsMap).flat().filter((r: any) => r.requested_by === workerId).length;
+                return myPendingCount > 0 ? (
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] text-white">
+                    {myPendingCount}
+                  </span>
+                ) : null;
+              })()}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="list" className="space-y-2 mt-2">
+            {renderCustomersList()}
+          </TabsContent>
+
+          <TabsContent value="my-requests">
+            <WorkerMyRequestsTab />
+          </TabsContent>
+        </Tabs>
       )}
 
       {/* Add Customer Dialog */}
