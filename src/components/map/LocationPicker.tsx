@@ -317,15 +317,19 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   };
 
   const finalizeBestPosition = async (pos: GeolocationPosition) => {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    setPosition([lat, lng]);
+    
+    // Immediately notify parent with coordinates
+    onLocationChange(lat, lng);
+    
+    // Then generate address asynchronously and update
     try {
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
-      setPosition([lat, lng]);
-      
       const plusCodeAddress = await generateDetailedAddress(lat, lng);
       onLocationChange(lat, lng, plusCodeAddress);
     } catch (error) {
-      console.error('Error processing location:', error);
+      console.error('Error generating address:', error);
     } finally {
       setIsLocating(false);
     }
