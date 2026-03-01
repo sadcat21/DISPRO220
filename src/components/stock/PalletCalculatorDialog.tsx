@@ -120,18 +120,18 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                     className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-bold transition-all border-2 ${
                       selectedSettingId === item.id
                         ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-transparent bg-muted text-muted-foreground hover:bg-accent'
+                        : 'border-transparent bg-muted text-foreground hover:bg-accent'
                     }`}
                   >
                     {item.name}
-                    <span className="text-[9px] font-normal mr-1 opacity-70">
+                    <span className="text-[9px] font-normal mr-1">
                       {item.boxes_per_layer} B/C
                     </span>
                   </button>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-4 text-muted-foreground text-xs border rounded-lg border-dashed">
+              <div className="text-center py-4 text-foreground text-xs border rounded-lg border-dashed">
                 <p>لا توجد أنواع تغليف</p>
                 <Button variant="link" size="sm" className="text-xs h-6" onClick={() => setShowSettings(true)}>
                   اضبط الإعدادات
@@ -150,17 +150,17 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                       activeField === 'desired' ? 'border-primary bg-primary/5' : 'border-transparent bg-muted'
                     }`}
                   >
-                    <p className="text-[10px] text-muted-foreground mb-0.5">الصناديق المطلوبة</p>
-                    <p className={`text-xl font-black min-h-[1.75rem] ${desiredBoxes ? 'text-foreground' : 'text-muted-foreground/30'}`}>
+                    <p className="text-[10px] text-foreground font-medium mb-0.5">الصناديق المطلوبة</p>
+                    <p className={`text-xl font-black min-h-[1.75rem] text-foreground`}>
                       {desiredBoxes || '0'}
                     </p>
                   </button>
                   <div className={`rounded-lg p-2 text-center flex flex-col justify-center ${desiredResult ? 'bg-primary/10 border border-primary/20' : 'bg-muted'}`}>
-                    <p className="text-[10px] text-muted-foreground">يجب أن تأخذ</p>
-                    <p className={`text-xl font-black ${desiredResult ? 'text-primary' : 'text-muted-foreground/30'}`}>
+                    <p className="text-[10px] text-foreground font-medium">يجب أن تأخذ</p>
+                    <p className={`text-xl font-black ${desiredResult ? 'text-primary' : 'text-foreground/30'}`}>
                       {desiredResult ? desiredResult.formatted : '—'}
                     </p>
-                    {desiredResult && <p className="text-[10px] text-muted-foreground">{desiredResult.layers} C · {desiredResult.boxes} B</p>}
+                    {desiredResult && <p className="text-[10px] text-foreground">{desiredResult.layers} C · {desiredResult.boxes} B</p>}
                   </div>
                 </div>
 
@@ -172,22 +172,22 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                       activeField === 'available' ? 'border-primary bg-primary/5' : 'border-transparent bg-muted'
                     }`}
                   >
-                    <p className="text-[10px] text-muted-foreground mb-0.5">المتوفر (C.B)</p>
-                    <p className={`text-xl font-black min-h-[1.75rem] ${availableInput ? 'text-foreground' : 'text-muted-foreground/30'}`}>
+                    <p className="text-[10px] text-foreground font-medium mb-0.5">المتوفر (C.B)</p>
+                    <p className={`text-xl font-black min-h-[1.75rem] text-foreground`}>
                       {availableInput || '0.00'}
                     </p>
                     {availableInput && parseLayerBoxes(availableInput, boxesPerLayer) !== null && (
-                      <p className="text-[10px] text-muted-foreground">= {parseLayerBoxes(availableInput, boxesPerLayer)} B</p>
+                      <p className="text-[10px] text-foreground">= {parseLayerBoxes(availableInput, boxesPerLayer)} B</p>
                     )}
                   </button>
                   <div className={`rounded-lg p-2 text-center flex flex-col justify-center border ${
                     remainderResult ? (remainderResult.deficit ? 'bg-destructive/10 border-destructive/20' : 'bg-primary/5 border-primary/20') : 'bg-muted border-transparent'
                   }`}>
-                    <p className="text-[10px] text-muted-foreground">{remainderResult?.deficit ? 'غير كافٍ!' : 'يجب أن تترك'}</p>
-                    <p className={`text-xl font-black ${remainderResult ? (remainderResult.deficit ? 'text-destructive' : 'text-primary') : 'text-muted-foreground/30'}`}>
+                    <p className="text-[10px] text-foreground font-medium">{remainderResult?.deficit ? 'غير كافٍ!' : 'يجب أن تترك'}</p>
+                    <p className={`text-xl font-black ${remainderResult ? (remainderResult.deficit ? 'text-destructive' : 'text-primary') : 'text-foreground/30'}`}>
                       {remainderResult ? (remainderResult.deficit ? '✕' : remainderResult.formatted) : '—'}
                     </p>
-                    {remainderResult && !remainderResult.deficit && <p className="text-[10px] text-muted-foreground">{remainderResult.layers} C · {remainderResult.boxes} B</p>}
+                    {remainderResult && !remainderResult.deficit && <p className="text-[10px] text-foreground">{remainderResult.layers} C · {remainderResult.boxes} B</p>}
                   </div>
                 </div>
 
@@ -203,7 +203,7 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                         key === 'del'
                           ? 'bg-destructive/10 text-destructive hover:bg-destructive/20 flex items-center justify-center'
                           : key === '.' && activeField === 'desired'
-                            ? 'bg-muted text-muted-foreground/30 cursor-not-allowed'
+                            ? 'bg-muted text-foreground/30 cursor-not-allowed'
                             : 'bg-muted text-foreground hover:bg-accent'
                       }`}
                     >
