@@ -125,7 +125,7 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                   >
                     {item.name}
                     <span className="text-[9px] font-normal mr-1 opacity-70">
-                      {item.boxes_per_layer}ص/ط
+                      {item.boxes_per_layer} B/C
                     </span>
                   </button>
                 ))}
@@ -160,7 +160,7 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                     <p className={`text-xl font-black ${desiredResult ? 'text-primary' : 'text-muted-foreground/30'}`}>
                       {desiredResult ? desiredResult.formatted : '—'}
                     </p>
-                    {desiredResult && <p className="text-[10px] text-muted-foreground">{desiredResult.layers} ط · {desiredResult.boxes} ص</p>}
+                    {desiredResult && <p className="text-[10px] text-muted-foreground">{desiredResult.layers} C · {desiredResult.boxes} B</p>}
                   </div>
                 </div>
 
@@ -172,12 +172,12 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                       activeField === 'available' ? 'border-primary bg-primary/5' : 'border-transparent bg-muted'
                     }`}
                   >
-                    <p className="text-[10px] text-muted-foreground mb-0.5">المتوفر (ط.ص)</p>
+                    <p className="text-[10px] text-muted-foreground mb-0.5">المتوفر (C.B)</p>
                     <p className={`text-xl font-black min-h-[1.75rem] ${availableInput ? 'text-foreground' : 'text-muted-foreground/30'}`}>
                       {availableInput || '0.00'}
                     </p>
                     {availableInput && parseLayerBoxes(availableInput, boxesPerLayer) !== null && (
-                      <p className="text-[10px] text-muted-foreground">= {parseLayerBoxes(availableInput, boxesPerLayer)} ص</p>
+                      <p className="text-[10px] text-muted-foreground">= {parseLayerBoxes(availableInput, boxesPerLayer)} B</p>
                     )}
                   </button>
                   <div className={`rounded-lg p-2 text-center flex flex-col justify-center border ${
@@ -187,7 +187,7 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                     <p className={`text-xl font-black ${remainderResult ? (remainderResult.deficit ? 'text-destructive' : 'text-primary') : 'text-muted-foreground/30'}`}>
                       {remainderResult ? (remainderResult.deficit ? '✕' : remainderResult.formatted) : '—'}
                     </p>
-                    {remainderResult && !remainderResult.deficit && <p className="text-[10px] text-muted-foreground">{remainderResult.layers} ط · {remainderResult.boxes} ص</p>}
+                    {remainderResult && !remainderResult.deficit && <p className="text-[10px] text-muted-foreground">{remainderResult.layers} C · {remainderResult.boxes} B</p>}
                   </div>
                 </div>
 

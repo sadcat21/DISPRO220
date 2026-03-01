@@ -146,7 +146,7 @@ const PalletSettingsDialog: React.FC<Props> = ({ open, onOpenChange, branchId, s
                   <div className="flex-1">
                     <div className="flex items-center gap-1">
                       <Package className="w-3 h-3 text-muted-foreground" />
-                      <span className="text-[10px] text-muted-foreground">صندوق/باليت</span>
+                      <span className="text-[10px] text-muted-foreground">B/Palette</span>
                     </div>
                     <Input
                       type="number"
@@ -160,7 +160,7 @@ const PalletSettingsDialog: React.FC<Props> = ({ open, onOpenChange, branchId, s
                     <div className="flex-1">
                       <div className="flex items-center gap-1">
                         <Layers className="w-3 h-3 text-muted-foreground" />
-                        <span className="text-[10px] text-muted-foreground">صندوق/طبقة</span>
+                        <span className="text-[10px] text-muted-foreground">B/Couche</span>
                       </div>
                       <Input
                         type="number"
