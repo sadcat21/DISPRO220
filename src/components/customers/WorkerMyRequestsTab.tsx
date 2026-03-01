@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -19,46 +20,30 @@ interface WorkerRequest {
 
 const WorkerMyRequestsTab: React.FC = () => {
   const { workerId } = useAuth();
-  const [requests, setRequests] = useState<WorkerRequest[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
+  // Realtime: invalidate react-query cache on any change
   useRealtimeSubscription(
     'worker-my-requests-realtime',
-    [{ table: 'customer_approval_requests' }],
-    [['worker-my-requests']],
+    [{ table: 'customer_approval_requests', filter: workerId ? `requested_by=eq.${workerId}` : undefined }],
+    [['worker-my-requests', workerId || '']],
+    !!workerId,
   );
 
-  useEffect(() => {
-    if (workerId) fetchMyRequests();
-  }, [workerId]);
-
-  // Re-fetch when realtime triggers
-  useEffect(() => {
-    if (!workerId) return;
-    const channel = supabase.channel('worker-my-requests-refresh')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'customer_approval_requests' }, () => {
-        fetchMyRequests();
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [workerId]);
-
-  const fetchMyRequests = async () => {
-    setIsLoading(true);
-    try {
+  const { data: requests = [], isLoading } = useQuery({
+    queryKey: ['worker-my-requests', workerId || ''],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('customer_approval_requests' as any)
         .select('*')
-        .eq('requested_by', workerId)
+        .eq('requested_by', workerId!)
         .order('created_at', { ascending: false })
         .limit(50);
-      if (!error) setRequests((data as any[]) || []);
-    } catch (err) {
-      console.error('Error fetching my requests:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      if (error) throw error;
+      return (data as unknown as WorkerRequest[]) || [];
+    },
+    enabled: !!workerId,
+    refetchInterval: 10000, // Polling fallback every 10s
+  });
 
   // Filter out approved/rejected requests older than 24 hours
   const visibleRequests = requests.filter(r => {
