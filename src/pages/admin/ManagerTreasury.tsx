@@ -30,6 +30,7 @@ import CoinExchangeDialog from '@/components/treasury/CoinExchangeDialog';
 import InvoiceRequestDialog from '@/components/treasury/InvoiceRequestDialog';
 import { useTreasuryContacts } from '@/hooks/useTreasuryContacts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useIsElementHidden } from '@/hooks/useUIOverrides';
 
 const TreasuryCard = ({ icon, label, total, handed, colorClass, borderClass, onClick, currency, showDetails }: {
   icon: React.ReactNode; label: string; total: number; handed: number; colorClass: string; borderClass: string; onClick: () => void; currency: string; showDetails: boolean;
@@ -58,6 +59,9 @@ const ManagerTreasury = () => {
   const { activeBranch, workerId } = useAuth();
   const queryClient = useQueryClient();
   const { data: summary, isLoading: summaryLoading } = useTreasurySummary();
+  const isCoinExchangeHidden = useIsElementHidden('button', 'treasury_coin_exchange');
+  const isInvoiceRequestHidden = useIsElementHidden('button', 'treasury_invoice_request');
+  const isSettingsHidden = useIsElementHidden('button', 'treasury_settings');
   const { data: entries } = useManagerTreasury();
   const { data: handovers } = useManagerHandovers();
   const createHandover = useCreateHandover();
@@ -370,19 +374,25 @@ const ManagerTreasury = () => {
           <Switch checked={showCardDetails} onCheckedChange={setShowCardDetails} />
         </div>
         <div className="flex gap-2">
-          <Button size="sm" variant="ghost" onClick={() => setSettingsOpen(true)}>
-            <Settings className="w-4 h-4" />
-          </Button>
+          {!isSettingsHidden && (
+            <Button size="sm" variant="ghost" onClick={() => setSettingsOpen(true)}>
+              <Settings className="w-4 h-4" />
+            </Button>
+          )}
           <Button size="sm" variant="ghost" onClick={syncOldSessions} disabled={syncing}>
             <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
           </Button>
-          <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => setCoinExchangeOpen(true)} title={t('coin_exchange.title')}>
-            <ArrowLeftRight className="w-4 h-4" />
-          </Button>
-          <Button size="sm" variant="default" className="h-8 gap-1 px-2" onClick={() => setInvoiceRequestOpen(true)} title="طلب فاتورة">
-            <Receipt className="w-4 h-4" />
-            <span className="text-xs hidden sm:inline">فاتورة</span>
-          </Button>
+          {!isCoinExchangeHidden && (
+            <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => setCoinExchangeOpen(true)} title={t('coin_exchange.title')}>
+              <ArrowLeftRight className="w-4 h-4" />
+            </Button>
+          )}
+          {!isInvoiceRequestHidden && (
+            <Button size="sm" variant="default" className="h-8 gap-1 px-2" onClick={() => setInvoiceRequestOpen(true)} title="طلب فاتورة">
+              <Receipt className="w-4 h-4" />
+              <span className="text-xs hidden sm:inline">فاتورة</span>
+            </Button>
+          )}
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
               <Button size="sm" variant="outline" className="h-8 w-8 p-0"><FilePlus className="w-4 h-4" /></Button>

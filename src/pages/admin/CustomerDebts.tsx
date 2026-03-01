@@ -16,6 +16,7 @@ import { CustomerDebtWithDetails } from '@/types/accounting';
 import DebtDetailsDialog from '@/components/debts/DebtDetailsDialog';
 import PendingDocumentsSection from '@/components/debts/PendingDocumentsSection';
 import PermissionGate from '@/components/auth/PermissionGate';
+import { useIsElementHidden } from '@/hooks/useUIOverrides';
 
 const DAY_INDEX_MAP: Record<string, number> = {
   sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
@@ -51,6 +52,7 @@ const CustomerDebts: React.FC = () => {
   const { t, language } = useLanguage();
   const { role, workerId } = useAuth();
   const isAdmin = role === 'admin' || role === 'branch_admin';
+  const isCollectDebtHidden = useIsElementHidden('button', 'collect_debt_btn');
   const [activeTab, setActiveTab] = useState<'debts' | 'documents'>('debts');
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');

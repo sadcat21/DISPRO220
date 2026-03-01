@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useWarehouseStock, StockReceiptItem, StockReceipt } from '@/hooks/useWarehouseStock';
 import { formatDate } from '@/utils/formatters';
+import { useIsElementHidden } from '@/hooks/useUIOverrides';
 
 interface ReceiptItem {
   product_id: string;
@@ -47,6 +48,7 @@ const StockReceipts: React.FC = () => {
   const { activeBranch } = useAuth();
   const navigate = useNavigate();
   const { receipts, products, createReceipt, isLoading, branchId, refresh } = useWarehouseStock();
+  const isAddReceiptHidden = useIsElementHidden('button', 'add_stock_receipt');
 
   const [activeTab, setActiveTab] = useState('receiving');
   const [showDialog, setShowDialog] = useState(false);
@@ -248,10 +250,12 @@ const StockReceipts: React.FC = () => {
           {/* ===== Receiving Tab ===== */}
           <TabsContent value="receiving" className="space-y-3 mt-3">
             <div className="flex items-center gap-2">
-              <Button size="sm" onClick={() => setShowDialog(true)} className="flex-1">
-                <Plus className="w-4 h-4 ml-1" />
-                {t('stock.new_receipt')}
-              </Button>
+              {!isAddReceiptHidden && (
+                <Button size="sm" onClick={() => setShowDialog(true)} className="flex-1">
+                  <Plus className="w-4 h-4 ml-1" />
+                  {t('stock.new_receipt')}
+                </Button>
+              )}
               <Button size="sm" variant="outline" onClick={() => setShowPalletSettings(true)}>
                 <Settings className="w-4 h-4" />
               </Button>

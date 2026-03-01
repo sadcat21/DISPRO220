@@ -26,6 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { useIsElementHidden } from '@/hooks/useUIOverrides';
 
 const ProductOffers: React.FC = () => {
   const { t, language, dir } = useLanguage();
@@ -43,6 +44,7 @@ const ProductOffers: React.FC = () => {
   const isAdmin = role === 'admin';
   const isBranchAdmin = role === 'branch_admin';
   const canManage = isAdmin || isBranchAdmin;
+  const isAddOfferHidden = useIsElementHidden('button', 'add_offer');
 
   useEffect(() => {
     if (!canManage) {
@@ -101,10 +103,12 @@ const ProductOffers: React.FC = () => {
               <p className="text-sm text-muted-foreground">{t('offers.management_desc')}</p>
             </div>
           </div>
-          <Button onClick={() => setShowCreateDialog(true)}>
-            <Plus className="w-4 h-4 me-2" />
-            {t('offers.new')}
-          </Button>
+          {!isAddOfferHidden && (
+            <Button onClick={() => setShowCreateDialog(true)}>
+              <Plus className="w-4 h-4 me-2" />
+              {t('offers.new')}
+            </Button>
+          )}
         </div>
 
         {/* Search */}

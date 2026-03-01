@@ -38,6 +38,7 @@ import { ar } from 'date-fns/locale';
 import { fr } from 'date-fns/locale';
 import { enUS } from 'date-fns/locale';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useIsElementHidden } from '@/hooks/useUIOverrides';
 
 // Normalize Arabic text: treat all alef variants and hamza as the same
 const normalizeArabic = (text: string): string =>
@@ -80,6 +81,10 @@ const Customers: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [missingFilter, setMissingFilter] = useState<string>('all');
   const [expandAllSectors, setExpandAllSectors] = useState(false);
+  const isAddCustomerHidden = useIsElementHidden('button', 'add_customer');
+  const isEditCustomerHidden = useIsElementHidden('action', 'edit_customer');
+  const isDeleteCustomerHidden = useIsElementHidden('action', 'delete_customer');
+  const isViewProfileHidden = useIsElementHidden('action', 'view_customer_profile');
 
   // Edit dialog state
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -538,10 +543,12 @@ const Customers: React.FC = () => {
                 </div>
               )}
               <div className="flex items-center justify-end gap-0 mt-2 border-t pt-1.5 flex-wrap">
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
-                  onClick={() => { setProfileCustomer(customer); setIsProfileOpen(true); }} title={t('customers.profile.title')}>
-                  <Eye className="w-3.5 h-3.5" />
-                </Button>
+                {!isViewProfileHidden && (
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                    onClick={() => { setProfileCustomer(customer); setIsProfileOpen(true); }} title={t('customers.profile.title')}>
+                    <Eye className="w-3.5 h-3.5" />
+                  </Button>
+                )}
                 {customer.phone && (
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
                     onClick={() => window.location.href = `tel:${customer.phone}`} title={t('common.phone')}>
@@ -584,14 +591,18 @@ const Customers: React.FC = () => {
                     <FileEdit className="w-3.5 h-3.5" />
                   </Button>
                 )}
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
-                  onClick={() => openEditDialog(customer)}>
-                  <Pencil className="w-3.5 h-3.5" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={() => setCustomerToDelete(customer)}>
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
+                {!isEditCustomerHidden && (
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                    onClick={() => openEditDialog(customer)}>
+                    <Pencil className="w-3.5 h-3.5" />
+                  </Button>
+                )}
+                {!isDeleteCustomerHidden && (
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => setCustomerToDelete(customer)}>
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                )}
               </div>
             </CardContent>
            </Card>
@@ -647,9 +658,11 @@ const Customers: React.FC = () => {
           <Button size="icon" variant="outline" className="h-9 w-9" onClick={() => setShowSectorsDialog(true)} title={t('customers.sectors')}>
             <MapPinPlus className="w-4 h-4" />
           </Button>
-          <Button size="icon" className="h-9 w-9" onClick={() => setShowAddDialog(true)}>
-            <UserPlus className="w-4 h-4" />
-          </Button>
+          {!isAddCustomerHidden && (
+            <Button size="icon" className="h-9 w-9" onClick={() => setShowAddDialog(true)}>
+              <UserPlus className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       </div>
 

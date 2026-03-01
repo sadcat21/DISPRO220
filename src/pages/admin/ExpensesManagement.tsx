@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useIsElementHidden } from '@/hooks/useUIOverrides';
 
 const STATUS_MAP_KEYS: Record<string, { labelKey: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   pending: { labelKey: 'expenses.pending', variant: 'secondary' },
@@ -36,6 +37,8 @@ const ExpensesManagement: React.FC = () => {
   const [showCategories, setShowCategories] = useState(false);
   const [receiptViewerUrls, setReceiptViewerUrls] = useState<string[]>([]);
   const [showReceiptViewer, setShowReceiptViewer] = useState(false);
+  const isManageCategoriesHidden = useIsElementHidden('button', 'manage_expense_categories');
+  const isReviewExpenseHidden = useIsElementHidden('action', 'review_expense');
 
   const filtered = expenses?.filter(e =>
     statusFilter === 'all' ? true : e.status === statusFilter
@@ -51,10 +54,12 @@ const ExpensesManagement: React.FC = () => {
           {contextWorkerName && <p className="text-sm text-muted-foreground">{contextWorkerName}</p>}
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowCategories(true)}>
-            <Tag className="w-4 h-4 me-1" />
-            {t('expenses.categories')}
-          </Button>
+          {!isManageCategoriesHidden && (
+            <Button variant="outline" size="sm" onClick={() => setShowCategories(true)}>
+              <Tag className="w-4 h-4 me-1" />
+              {t('expenses.categories')}
+            </Button>
+          )}
           <Badge variant="outline" className="text-base px-3 py-1">
             {formatNumber(totalAmount, language)} {t('common.currency')}
           </Badge>

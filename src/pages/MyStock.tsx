@@ -7,11 +7,13 @@ import { Package, Loader2, ShoppingBag, TrendingDown, TrendingUp, Gift } from 'l
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import DirectSaleDialog from '@/components/warehouse/DirectSaleDialog';
+import { useIsElementHidden } from '@/hooks/useUIOverrides';
 
 const MyStock: React.FC = () => {
   const { t } = useLanguage();
   const { workerId } = useAuth();
   const [showSaleDialog, setShowSaleDialog] = useState(false);
+  const isDirectSaleHidden = useIsElementHidden('button', 'stock_direct_sale');
 
   const { data: stockItems, isLoading } = useQuery({
     queryKey: ['my-worker-stock', workerId],
@@ -187,7 +189,7 @@ const MyStock: React.FC = () => {
           <Package className="w-5 h-5 text-primary" />
           {t('stock.my_stock')}
         </h2>
-        {hasStock && (
+        {hasStock && !isDirectSaleHidden && (
           <Button size="sm" onClick={() => setShowSaleDialog(true)}>
             <ShoppingBag className="w-4 h-4 ml-1" />
             {t('stock.direct_sale')}

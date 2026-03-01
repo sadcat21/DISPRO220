@@ -15,6 +15,7 @@ import DirectSaleDialog from '@/components/warehouse/DirectSaleDialog';
 import QuickReceiptDialog from '@/components/warehouse/QuickReceiptDialog';
 import QuickLoadWorkerDialog from '@/components/warehouse/QuickLoadWorkerDialog';
 import BranchPalletCard from '@/components/stock/BranchPalletCard';
+import { useIsElementHidden } from '@/hooks/useUIOverrides';
 
 interface ProductSummary {
   productId: string;
@@ -42,6 +43,9 @@ const WarehouseStock: React.FC = () => {
   const [search, setSearch] = useState('');
   const [expandedWorkers, setExpandedWorkers] = useState(false);
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
+  const isDirectSaleHidden = useIsElementHidden('button', 'warehouse_direct_sale');
+  const isQuickLoadHidden = useIsElementHidden('button', 'warehouse_quick_load');
+  const isFactoryDeliveryHidden = useIsElementHidden('button', 'warehouse_factory_delivery');
 
   const branchId = activeBranch?.id;
 
@@ -246,15 +250,19 @@ const WarehouseStock: React.FC = () => {
             <ClipboardList className="w-4 h-4 ml-1" />
             استلام وتسليم
           </Button>
-          <Button size="sm" variant="outline" onClick={() => setShowReceiptDialog(true)}>
-            <ClipboardList className="w-4 h-4 ml-1" />
-            استلام
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => setShowLoadWorkerDialog(true)}>
-            <Truck className="w-4 h-4 ml-1" />
-            شحن عامل
-          </Button>
-          {hasStock && (
+          {!isFactoryDeliveryHidden && (
+            <Button size="sm" variant="outline" onClick={() => setShowReceiptDialog(true)}>
+              <ClipboardList className="w-4 h-4 ml-1" />
+              استلام
+            </Button>
+          )}
+          {!isQuickLoadHidden && (
+            <Button size="sm" variant="outline" onClick={() => setShowLoadWorkerDialog(true)}>
+              <Truck className="w-4 h-4 ml-1" />
+              شحن عامل
+            </Button>
+          )}
+          {hasStock && !isDirectSaleHidden && (
             <Button size="sm" onClick={() => setShowSaleDialog(true)}>
               <ShoppingBag className="w-4 h-4 ml-1" />
               {t('stock.direct_sale')}

@@ -16,6 +16,7 @@ import WorkerHandoverPreviewDialog from '@/components/accounting/WorkerHandoverP
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useIsElementHidden } from '@/hooks/useUIOverrides';
 
 
 const fmt = (n: number) => n.toLocaleString();
@@ -38,6 +39,7 @@ const AccountingSessions: React.FC = () => {
   const [loadingWorkers, setLoadingWorkers] = useState(true);
   const [previewWorker, setPreviewWorker] = useState<{ id: string; name: string } | null>(null);
   const isAdminOrBranchAdmin = role === 'admin' || role === 'branch_admin';
+  const isCreateSessionHidden = useIsElementHidden('button', 'create_session');
 
   const { data: sessions, isLoading } = useAccountingSessions({ status: statusFilter });
   const deleteSession = useDeleteSession();
