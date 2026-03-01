@@ -150,7 +150,8 @@ export const useWarehouseStock = () => {
   // Create receipt
   const createReceipt = async (
     receiptData: { invoice_number?: string; notes?: string; invoice_photo_url?: string },
-    items: { product_id: string; quantity: number }[]
+    items: { product_id: string; quantity: number }[],
+    palletCount?: number
   ) => {
     if (!workerId || !branchId) throw new Error('Missing worker or branch');
 
@@ -219,6 +220,35 @@ export const useWarehouseStock = () => {
           quantity: item.quantity,
         });
       }
+    }
+
+    // Update branch pallet balance if palletCount provided
+    if (palletCount && palletCount > 0) {
+      const { data: bp } = await supabase
+        .from('branch_pallets')
+        .select('id, quantity')
+        .eq('branch_id', branchId)
+        .maybeSingle();
+
+      if (bp) {
+        await supabase.from('branch_pallets').update({
+          quantity: bp.quantity + palletCount,
+        }).eq('id', bp.id);
+      } else {
+        await supabase.from('branch_pallets').insert({
+          branch_id: branchId,
+          quantity: palletCount,
+        });
+      }
+
+      await supabase.from('pallet_movements').insert({
+        branch_id: branchId,
+        quantity: palletCount,
+        movement_type: 'receipt',
+        reference_id: receipt.id,
+        notes: `استلام باليطات مع فاتورة: ${receiptData.invoice_number || 'بدون'}`,
+        created_by: workerId,
+      });
     }
 
     await loadAll();

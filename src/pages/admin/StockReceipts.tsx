@@ -22,6 +22,8 @@ interface ReceiptItem {
   quantity: number;
 }
 
+// Pallet quantity received with this receipt
+
 interface FactoryOrder {
   id: string;
   order_type: string;
@@ -52,6 +54,7 @@ const StockReceipts: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [invoicePhoto, setInvoicePhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [receiptPallets, setReceiptPallets] = useState(0);
   const [productPickerIndex, setProductPickerIndex] = useState<number | null>(null);
 
   // View receipt details
@@ -174,7 +177,8 @@ const StockReceipts: React.FC = () => {
 
       await createReceipt(
         { invoice_number: invoiceNumber, notes, invoice_photo_url: photoUrl },
-        validItems
+        validItems,
+        receiptPallets
       );
 
       toast.success(t('stock.receipt_saved'));
@@ -194,6 +198,7 @@ const StockReceipts: React.FC = () => {
     setItems([{ product_id: '', quantity: 1 }]);
     setInvoicePhoto(null);
     setPhotoPreview(null);
+    setReceiptPallets(0);
   };
 
   if (isLoading) {
@@ -529,6 +534,18 @@ const StockReceipts: React.FC = () => {
                 <Plus className="w-4 h-4 ml-1" />
                 {t('stock.add_products')}
               </Button>
+            </div>
+
+            <div className="space-y-2">
+              <Label>🪵 عدد الباليطات المستلمة (اختياري)</Label>
+              <Input
+                type="number"
+                min={0}
+                value={receiptPallets}
+                onChange={e => setReceiptPallets(parseInt(e.target.value) || 0)}
+                className="text-center"
+                placeholder="0"
+              />
             </div>
 
             <div className="space-y-2">

@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import DirectSaleDialog from '@/components/warehouse/DirectSaleDialog';
 import QuickReceiptDialog from '@/components/warehouse/QuickReceiptDialog';
 import QuickLoadWorkerDialog from '@/components/warehouse/QuickLoadWorkerDialog';
+import BranchPalletCard from '@/components/stock/BranchPalletCard';
 
 interface ProductSummary {
   productId: string;
@@ -255,6 +256,9 @@ const WarehouseStock: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Pallet Balance */}
+      {branchId && <BranchPalletCard branchId={branchId} />}
 
       {/* Search */}
       <div className="relative">
