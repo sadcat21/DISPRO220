@@ -18,7 +18,11 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-const WorkerTrackingMap: React.FC = () => {
+interface WorkerTrackingMapProps {
+  highlightWorkerId?: string;
+}
+
+const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId }) => {
   const { t, dir } = useLanguage();
   const { data: locations, isLoading } = useWorkerLocations();
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -98,18 +102,22 @@ const WorkerTrackingMap: React.FC = () => {
       const distKm = calculateDistance(WAREHOUSE_LOCATION.lat, WAREHOUSE_LOCATION.lng, loc.latitude, loc.longitude);
       const distText = distKm < 1 ? `${Math.round(distKm * 1000)} م` : `${distKm.toFixed(1)} كم`;
 
+      const isHighlighted = highlightWorkerId === loc.worker_id;
+      const markerColor = isHighlighted ? '#dc2626' : (loc.is_tracking ? '#3b82f6' : '#9ca3af');
+      const markerSize = isHighlighted ? 36 : 28;
+
       const icon = L.divIcon({
         html: `<div style="position:relative;">
-          <div style="background:#3b82f6;width:28px;height:28px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+          <div style="background:${markerColor};width:${markerSize}px;height:${markerSize}px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;${isHighlighted ? 'animation:pulse 1.5s infinite;' : ''}">
+            <svg width="${isHighlighted ? 18 : 14}" height="${isHighlighted ? 18 : 14}" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
           </div>
-          <div style="position:absolute;top:32px;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(0,0,0,0.75);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">
+          <div style="position:absolute;top:${markerSize + 4}px;left:50%;transform:translateX(-50%);white-space:nowrap;background:${isHighlighted ? 'rgba(220,38,38,0.9)' : 'rgba(0,0,0,0.75)'};color:white;padding:2px 6px;border-radius:4px;font-size:${isHighlighted ? '11px' : '10px'};font-weight:bold;">
             ${loc.worker_name || ''}
           </div>
         </div>`,
         className: '',
-        iconSize: [28, 28],
-        iconAnchor: [14, 14],
+        iconSize: [markerSize, markerSize],
+        iconAnchor: [markerSize / 2, markerSize / 2],
       });
 
       const popupContent = `
@@ -143,7 +151,7 @@ const WorkerTrackingMap: React.FC = () => {
       const bounds = L.latLngBounds(allPoints);
       mapRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
     }
-  }, [locations, t, dir]);
+  }, [locations, t, dir, highlightWorkerId]);
 
   if (isLoading) {
     return (
@@ -197,12 +205,14 @@ const WorkerTrackingMap: React.FC = () => {
               ? `${idleMinutes} د` 
               : `${Math.floor(idleMinutes / 60)} س ${idleMinutes % 60} د`;
 
+            const isHighlighted = highlightWorkerId === loc.worker_id;
+
             return (
-              <div key={loc.worker_id} className="flex flex-col gap-1 p-2.5 bg-muted/50 rounded-lg text-sm">
+              <div key={loc.worker_id} className={`flex flex-col gap-1 p-2.5 rounded-lg text-sm ${isHighlighted ? 'bg-destructive/10 border border-destructive/30' : 'bg-muted/50'}`}>
                 {/* Row 1: Name + Distance */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className={`w-2.5 h-2.5 rounded-full ${isStopped ? 'bg-amber-500' : 'bg-green-500 animate-pulse'}`} />
+                    <div className={`w-2.5 h-2.5 rounded-full ${!loc.is_tracking ? 'bg-gray-400' : isStopped ? 'bg-amber-500' : 'bg-green-500 animate-pulse'}`} />
                     <span className="font-medium">{loc.worker_name}</span>
                   </div>
                   <span className="flex items-center gap-1 text-xs font-semibold">

@@ -161,15 +161,13 @@ export const useWorkerLocations = () => {
     queryFn: async () => {
       let query = supabase
         .from('worker_locations')
-        .select('*')
-        .eq('is_tracking', true);
+        .select('*');
 
       if (branchId) query = query.eq('branch_id', branchId);
 
       const { data: locations, error } = await query;
       if (error) throw error;
 
-      // Fetch worker names
       const workerIds = (locations || []).map(l => l.worker_id);
       if (workerIds.length === 0) return [];
 
