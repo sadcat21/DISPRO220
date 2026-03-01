@@ -137,11 +137,18 @@ const ChatView = ({ conversation, onSend, onUpload, onBack }: Props) => {
             {msg.type === 'audio' && (
               <audio src={msg.media_url} controls className="max-w-full" />
             )}
-            {msg.type === 'file' && (
+            {msg.type === 'file' && msg.media_url?.endsWith('.pdf') ? (
+              <div className="space-y-2">
+                <iframe src={msg.media_url} className="w-full h-60 rounded-lg border-0" title={msg.media_name || 'PDF'} />
+                <a href={msg.media_url} target="_blank" rel="noopener" className="flex items-center gap-2 text-xs underline opacity-80">
+                  <Paperclip className="h-3 w-3" /> {msg.media_name || msg.content}
+                </a>
+              </div>
+            ) : msg.type === 'file' ? (
               <a href={msg.media_url} target="_blank" rel="noopener" className="flex items-center gap-2 text-sm underline">
                 <Paperclip className="h-4 w-4" /> {msg.media_name || msg.content}
               </a>
-            )}
+            ) : null}
           </div>
           <div className={`flex items-center gap-1 mt-0.5 px-1 ${isMine ? 'justify-start' : 'justify-end'}`}>
             <span className="text-[9px] text-muted-foreground">
