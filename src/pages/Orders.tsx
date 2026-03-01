@@ -18,7 +18,7 @@ import { X, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getLocalizedName } from '@/utils/sectorName';
-import { useMyOrders, useOrders as useAllOrders, useOrderItems, useAssignOrder, useDeleteOrder, useCancelOrder } from '@/hooks/useOrders';
+import { useMyOrders, useOrders as useAllOrders, useOrderItems, useAssignOrder, useDeleteOrder, useCancelOrder, useUpdateOrderStatus } from '@/hooks/useOrders';
 import { format } from 'date-fns';
 import { ar, fr, enUS } from 'date-fns/locale';
 import PermissionGate from '@/components/auth/PermissionGate';
@@ -104,6 +104,16 @@ const OrdersContent: React.FC = () => {
   const assignOrder = useAssignOrder();
   const deleteOrder = useDeleteOrder();
   const cancelOrder = useCancelOrder();
+  const updateStatus = useUpdateOrderStatus();
+
+  const handleUpdateStatus = async (orderId: string, status: import('@/types/database').OrderStatus) => {
+    try {
+      await updateStatus.mutateAsync({ orderId, status });
+      toast.success('تم تحديث حالة الطلبية');
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
   const { trackVisit } = useTrackVisit();
   const { sectors } = useSectors();
   const sectorMap = useMemo(() => {
@@ -733,6 +743,19 @@ const OrdersContent: React.FC = () => {
                         }}
                       >
                         <Edit className="w-4 h-4" />
+                      </Button>
+                    )}
+
+                    {order.status === 'assigned' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-purple-600 border-purple-300 hover:bg-purple-50"
+                        title="جاري التوصيل"
+                        onClick={() => handleUpdateStatus(order.id, 'in_progress')}
+                        disabled={updateStatus.isPending}
+                      >
+                        <Truck className="w-4 h-4" />
                       </Button>
                     )}
 
