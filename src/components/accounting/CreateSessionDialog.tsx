@@ -25,6 +25,9 @@ import DocumentCollectionsSummary from './DocumentCollectionsSummary';
 import WorkerHandoverSummary from './WorkerHandoverSummary';
 import { usePendingDiscrepancies } from '@/hooks/useStockDiscrepancies';
 import TruckReviewSection from './TruckReviewSection';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useQuery } from '@tanstack/react-query';
+import { Info } from 'lucide-react';
 
 interface CreateSessionDialogProps {
   open: boolean;
@@ -131,6 +134,30 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
 
   const { data: calc, isLoading: calcLoading } = useSessionCalculations(calcParams, { refetchInterval: autoRefresh ? 600000 : false });
   const { data: pendingDiscrepancies = [] } = usePendingDiscrepancies(selectedWorkerId || null);
+
+  // Check for loading/unloading sessions after last review
+  const { data: postReviewInfo } = useQuery({
+    queryKey: ['post-review-sessions', selectedWorkerId],
+    queryFn: async () => {
+      const { data: lastReview } = await supabase
+        .from('loading_sessions')
+        .select('id, created_at')
+        .eq('worker_id', selectedWorkerId!)
+        .eq('status', 'review')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      if (!lastReview) return { count: 0 };
+      const { count } = await supabase
+        .from('loading_sessions')
+        .select('id', { count: 'exact', head: true })
+        .eq('worker_id', selectedWorkerId!)
+        .neq('status', 'review')
+        .gt('created_at', lastReview.created_at);
+      return { count: count || 0 };
+    },
+    enabled: !!selectedWorkerId,
+  });
 
   useEffect(() => {
     if (calc && !isEditMode) {
@@ -311,6 +338,16 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                 <Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} />
               </div>
             </div>
+
+            {/* Warning: sessions after last review */}
+            {(postReviewInfo?.count || 0) > 0 && (
+              <Alert className="rounded-xl border-orange-300 bg-orange-50 dark:bg-orange-900/10">
+                <Info className="h-4 w-4 text-orange-600" />
+                <AlertDescription className="text-sm font-medium text-orange-800 dark:text-orange-400">
+                  ⚠️ توجد {postReviewInfo!.count} جلسة شحن/تفريغ بعد آخر جلسة مراجعة — المحاسبة مبنية على آخر جلسة مراجعة فقط
+                </AlertDescription>
+              </Alert>
+            )}
 
             {calcLoading && (
               <div className="flex items-center justify-center py-6">

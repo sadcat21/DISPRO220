@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ClipboardList, ArrowLeft, Calculator, Loader2, AlertTriangle } from 'lucide-react';
+import { ClipboardList, ArrowLeft, Calculator, Loader2, AlertTriangle, Info } from 'lucide-react';
 import WorkerHandoverSummary from './WorkerHandoverSummary';
 import { useSessionCalculations } from '@/hooks/useSessionCalculations';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,24 +32,43 @@ const WorkerHandoverPreviewDialog: React.FC<WorkerHandoverPreviewDialogProps> = 
     open && effectiveWorkerId ? { workerId: effectiveWorkerId, branchId: activeBranch?.id || undefined, periodStart, periodEnd } : null
   );
 
-  // Check if last loading session for this worker is a review
-  const { data: lastSession, isLoading: isCheckingReview } = useQuery({
-    queryKey: ['last-loading-session', effectiveWorkerId],
+  // Fetch the last REVIEW session and check for sessions after it
+  const { data: reviewInfo, isLoading: isCheckingReview } = useQuery({
+    queryKey: ['last-review-session-info', effectiveWorkerId],
     queryFn: async () => {
-      const { data } = await supabase
+      // Find the last review session
+      const { data: lastReview } = await supabase
         .from('loading_sessions')
         .select('id, status, created_at')
         .eq('worker_id', effectiveWorkerId!)
+        .eq('status', 'review')
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
-      return data;
+
+      if (!lastReview) {
+        return { hasReview: false, sessionsAfterReview: 0, lastReviewDate: null };
+      }
+
+      // Check for loading/unloading sessions AFTER the last review
+      const { count } = await supabase
+        .from('loading_sessions')
+        .select('id', { count: 'exact', head: true })
+        .eq('worker_id', effectiveWorkerId!)
+        .neq('status', 'review')
+        .gt('created_at', lastReview.created_at);
+
+      return {
+        hasReview: true,
+        sessionsAfterReview: count || 0,
+        lastReviewDate: lastReview.created_at,
+      };
     },
     enabled: open && !!effectiveWorkerId,
   });
 
-  const isLastSessionReview = lastSession?.status === 'review';
-  const canProceed = isLastSessionReview;
+  const canProceed = reviewInfo?.hasReview === true;
+  const hasSessionsAfterReview = (reviewInfo?.sessionsAfterReview || 0) > 0;
 
   if (!effectiveWorkerId) return null;
 
@@ -73,13 +92,24 @@ const WorkerHandoverPreviewDialog: React.FC<WorkerHandoverPreviewDialogProps> = 
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : calc ? (
-            <WorkerHandoverSummary
-              workerId={effectiveWorkerId}
-              periodStart={periodStart}
-              periodEnd={periodEnd}
-              calc={calc}
-              coinAmount={0}
-            />
+            <div className="space-y-3">
+              {/* Warning: sessions after last review */}
+              {hasSessionsAfterReview && (
+                <Alert className="rounded-xl border-orange-300 bg-orange-50 dark:bg-orange-900/10">
+                  <Info className="h-4 w-4 text-orange-600" />
+                  <AlertDescription className="text-sm font-medium text-orange-800 dark:text-orange-400">
+                    ⚠️ توجد {reviewInfo!.sessionsAfterReview} جلسة شحن/تفريغ بعد آخر جلسة مراجعة — المحاسبة ستكون بناءً على آخر جلسة مراجعة فقط ولن تُحتسب الجلسات اللاحقة
+                  </AlertDescription>
+                </Alert>
+              )}
+              <WorkerHandoverSummary
+                workerId={effectiveWorkerId}
+                periodStart={periodStart}
+                periodEnd={periodEnd}
+                calc={calc}
+                coinAmount={0}
+              />
+            </div>
           ) : (
             <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
               لا توجد بيانات لهذا العامل اليوم
@@ -92,7 +122,7 @@ const WorkerHandoverPreviewDialog: React.FC<WorkerHandoverPreviewDialogProps> = 
             <Alert variant="destructive" className="rounded-xl">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription className="text-sm font-medium">
-                لا يمكن الانتقال لجلسة المحاسبة — يجب إجراء مراجعة الشاحنة أولاً
+                لا يمكن الانتقال لجلسة المحاسبة — لا توجد أي جلسة مراجعة للشاحنة
               </AlertDescription>
             </Alert>
           </div>
