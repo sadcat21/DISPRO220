@@ -215,13 +215,13 @@ const MyStock: React.FC = () => {
             const giftQty = gifts?.totalGifts || 0;
             const giftUnit = gifts?.unit === 'piece' ? 'قطعة' : gifts?.unit === 'box' ? 'صندوق' : gifts?.unit === 'kg' ? 'كغ' : 'قطعة';
             return (
-              <Card key={item.id} className={isZero ? 'opacity-50' : ''}>
+              <Card key={item.id} className={isZero ? 'bg-destructive/10 border-destructive/30' : ''}>
                 <CardContent className="p-3">
                   <div className="flex items-center justify-between mb-1">
-                    <span className={`font-medium ${isZero ? 'text-muted-foreground' : ''}`}>
+                    <span className="font-medium">
                       {(item as any).product?.name}
                     </span>
-                    <span className={`font-bold text-lg ${isZero ? 'text-muted-foreground' : 'text-primary'}`}>
+                    <span className={`font-bold text-lg ${isZero ? 'text-destructive' : 'text-primary'}`}>
                       {item.quantity}
                     </span>
                   </div>
