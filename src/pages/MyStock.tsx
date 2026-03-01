@@ -22,7 +22,7 @@ const MyStock: React.FC = () => {
         .from('worker_stock')
         .select('*, product:products(*)')
         .eq('worker_id', workerId!)
-        .gt('quantity', 0);
+        .gte('quantity', 0);
 
       if (error) throw error;
       return data;
