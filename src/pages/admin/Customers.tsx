@@ -96,6 +96,9 @@ const Customers: React.FC = () => {
   const [activeTab, setActiveTab] = useState('list');
   const [requestsCount, setRequestsCount] = useState(0);
 
+  // Pending approval requests per customer
+  const [pendingRequestsMap, setPendingRequestsMap] = useState<Record<string, number>>({});
+
   // Last orders cache
   const [lastOrders, setLastOrders] = useState<Record<string, any>>({});
   const [lastOrderDialogCustomer, setLastOrderDialogCustomer] = useState<Customer | null>(null);
@@ -106,6 +109,7 @@ const Customers: React.FC = () => {
     if (isManager) {
       fetchRequestsCount();
     }
+    fetchPendingRequestsPerCustomer();
   }, [isManager, activeBranch]);
 
   const fetchRequestsCount = async () => {
@@ -120,6 +124,26 @@ const Customers: React.FC = () => {
       }
     } catch (err) {
       console.error('Error fetching requests count:', err);
+    }
+  };
+
+  const fetchPendingRequestsPerCustomer = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('customer_approval_requests' as any)
+        .select('customer_id')
+        .eq('status', 'pending');
+      if (!error && data) {
+        const map: Record<string, number> = {};
+        (data as any[]).forEach((r: any) => {
+          if (r.customer_id) {
+            map[r.customer_id] = (map[r.customer_id] || 0) + 1;
+          }
+        });
+        setPendingRequestsMap(map);
+      }
+    } catch (err) {
+      console.error('Error fetching pending requests per customer:', err);
     }
   };
 
@@ -406,8 +430,10 @@ const Customers: React.FC = () => {
                         ? customerTypes.find(t => t.ar === customer.customer_type)
                         : null;
                       const shortLabel = typeEntry?.short || typeEntry?.ar || '';
-                      if (!shortLabel) return storeName;
-                      return <><Badge variant="destructive" className="text-[10px] px-1.5 py-0 font-mono uppercase ml-1">{shortLabel}</Badge>{storeName}</>;
+                      const pendingCount = pendingRequestsMap[customer.id] || 0;
+                      const pendingBadge = pendingCount > 0 ? <Badge className="bg-red-600 text-white text-[10px] px-1.5 py-0 ml-1 hover:bg-red-700">طلب تعديل ({pendingCount})</Badge> : null;
+                      if (!shortLabel) return <>{storeName}{pendingBadge}</>;
+                      return <><Badge variant="destructive" className="text-[10px] px-1.5 py-0 font-mono uppercase ml-1">{shortLabel}</Badge>{storeName}{pendingBadge}</>;
                     })()}
                   </p>
                   <div className="flex items-center gap-1 flex-wrap mt-0.5">
