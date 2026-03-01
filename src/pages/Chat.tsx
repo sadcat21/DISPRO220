@@ -53,22 +53,32 @@ const Chat = () => {
   };
 
   if (isMobile) {
-    return (
-      <div className="h-[calc(100vh-120px)]">
-        {selectedConvId && !selectedConv ? (
-          <div className="h-full flex items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          </div>
-        ) : selectedConv ? (
+    // When a conversation is open, go full screen (hide header + nav)
+    if (selectedConv) {
+      return (
+        <div className="fixed inset-0 z-[100] bg-background flex flex-col">
           <ChatView
             conversation={selectedConv}
             onSend={(msg) => sendMessage.mutate({ conversationId: selectedConv.id, message: msg })}
             onUpload={uploadMedia}
             onBack={() => { setSelectedConvId(null); setPendingConversation(null); }}
           />
-        ) : (
-          <ConversationList conversations={conversations} selectedId={null} onSelect={handleSelect} onNewChat={() => setShowNewChat(true)} />
-        )}
+          <NewChatDialog open={showNewChat} onClose={() => setShowNewChat(false)} onCreate={handleNewChat} />
+        </div>
+      );
+    }
+
+    if (selectedConvId && !selectedConv) {
+      return (
+        <div className="fixed inset-0 z-[100] bg-background flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      );
+    }
+
+    return (
+      <div className="h-[calc(100vh-120px)]">
+        <ConversationList conversations={conversations} selectedId={null} onSelect={handleSelect} onNewChat={() => setShowNewChat(true)} />
         <NewChatDialog open={showNewChat} onClose={() => setShowNewChat(false)} onCreate={handleNewChat} />
       </div>
     );
