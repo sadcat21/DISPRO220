@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Home, Users, Package, BarChart3, Settings, FileSpreadsheet, UserCheck, Building2, Shield, ShoppingCart, Truck, Activity, Store, BookOpen, UserCog, Gift, Wallet, Warehouse, ClipboardList, Banknote, Calculator, MapPin, Navigation, FileText, Vault, FolderOpen, Scale } from 'lucide-react';
+import { Home, Users, Package, BarChart3, Settings, FileSpreadsheet, UserCheck, Building2, Shield, ShoppingCart, Truck, Activity, Store, BookOpen, UserCog, Gift, Wallet, Warehouse, ClipboardList, Banknote, Calculator, MapPin, Navigation, FileText, Vault, FolderOpen, Scale, Trophy } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkerPermissions } from '@/hooks/usePermissions';
 import { useMyUIOverrides } from '@/hooks/useUIOverrides';
@@ -58,6 +58,7 @@ export const useNavigation = () => {
           { path: '/manager-treasury', icon: Vault, label: t('nav.manager_treasury') },
           { path: '/shared-invoices', icon: FolderOpen, label: 'الفواتير المشاركة' },
           { path: '/surplus-deficit', icon: Scale, label: 'خزينة الفائض والعجز' },
+          { path: '/rewards', icon: Trophy, label: 'المكافآت والعقوبات' },
           { path: '/worker-debts', icon: Banknote, label: t('nav.worker_debts') },
           { path: '/worker-tracking', icon: MapPin, label: t('navigation.worker_tracking') },
           { path: '/geo-operations', icon: Navigation, label: t('nav.geo_operations') },
@@ -116,6 +117,7 @@ export const useNavigation = () => {
           { path: '/manager-treasury', icon: Vault, label: t('nav.manager_treasury') },
           { path: '/shared-invoices', icon: FolderOpen, label: 'الفواتير المشاركة' },
           { path: '/surplus-deficit', icon: Scale, label: 'خزينة الفائض والعجز' },
+          { path: '/rewards', icon: Trophy, label: 'المكافآت والعقوبات' },
           { path: '/worker-debts', icon: Banknote, label: t('nav.worker_debts') },
           { path: '/worker-tracking', icon: MapPin, label: t('navigation.worker_tracking') },
           { path: '/geo-operations', icon: Navigation, label: t('nav.geo_operations') },
