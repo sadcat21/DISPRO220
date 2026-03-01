@@ -225,24 +225,43 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
         if (item.productId !== productId) return item;
         // Current paid quantity
         const currentPaidQty = Math.max(0, item.quantity - item.giftQuantity);
-        const newPaidQty = currentPaidQty + delta;
+        let newPaidQty = currentPaidQty + delta;
         if (newPaidQty <= 0) return { ...item, quantity: 0, totalPrice: 0, giftQuantity: 0 };
-        // Recalculate gift based on new paid quantity
+        
+        // Anti-manipulation skip logic: when decreasing, if the new total (paid+gift)
+        // doesn't actually decrease, keep reducing paid qty until it does.
+        // Example: offer "buy 50 get 1" → at 51 total (50+1), pressing - should skip 50→49
+        if (delta < 0) {
+          let newGiftQty = recalcGift(item.productId, newPaidQty, item.piecesPerBox);
+          let newTotal = newPaidQty + newGiftQty;
+          while (newTotal >= item.quantity && newPaidQty > 0) {
+            newPaidQty -= 1;
+            newGiftQty = recalcGift(item.productId, newPaidQty, item.piecesPerBox);
+            newTotal = newPaidQty + newGiftQty;
+          }
+          if (newPaidQty <= 0) return { ...item, quantity: 0, totalPrice: 0, giftQuantity: 0 };
+          const oldGift = item.giftQuantity;
+          if (oldGift > 0 && newGiftQty === 0) {
+            toast.warning(`⚠️ ${item.productName}: تم فقدان الهدية (${oldGift} صندوق) لأن الكمية أقل من شرط العرض`, { duration: 5000 });
+          } else if (oldGift > 0 && newGiftQty < oldGift) {
+            toast.warning(`⚠️ ${item.productName}: تغيرت الهدية من ${oldGift} إلى ${newGiftQty} صندوق`, { duration: 4000 });
+          }
+          return { ...item, quantity: newTotal, giftQuantity: newGiftQty, totalPrice: newPaidQty * item.unitPrice };
+        }
+
+        // Increasing
         const newGiftQty = recalcGift(item.productId, newPaidQty, item.piecesPerBox);
         const newTotal = newPaidQty + newGiftQty;
         // Check stock availability for the full total (paid + gift)
-        if (newTotal > available && delta > 0) {
-          // Try without gift if stock is limited
-          if (newPaidQty > available && delta > 0) return item;
+        if (newTotal > available) {
+          if (newPaidQty > available) return item;
         }
         // Warn if gift changed
         const oldGift = item.giftQuantity;
-        if (oldGift > 0 && newGiftQty === 0) {
-          toast.warning(`⚠️ ${item.productName}: تم فقدان الهدية (${oldGift} صندوق) لأن الكمية أقل من شرط العرض`, { duration: 5000 });
-        } else if (oldGift > 0 && newGiftQty < oldGift) {
-          toast.warning(`⚠️ ${item.productName}: تغيرت الهدية من ${oldGift} إلى ${newGiftQty} صندوق`, { duration: 4000 });
-        } else if (oldGift === 0 && newGiftQty > 0) {
+        if (oldGift === 0 && newGiftQty > 0) {
           toast.success(`🎁 ${item.productName}: تم تفعيل هدية ${newGiftQty} صندوق`, { duration: 3000 });
+        } else if (oldGift > 0 && newGiftQty > oldGift) {
+          toast.success(`🎁 ${item.productName}: زادت الهدية إلى ${newGiftQty} صندوق`, { duration: 3000 });
         }
         return { 
           ...item, 
