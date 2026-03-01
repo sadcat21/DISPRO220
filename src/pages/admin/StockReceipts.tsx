@@ -596,7 +596,6 @@ const StockReceipts: React.FC = () => {
             open={showPalletSettings}
             onOpenChange={setShowPalletSettings}
             branchId={branchId}
-            products={products}
             showLayerField
           />
           <FactoryDeliveryDialog

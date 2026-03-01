@@ -2583,7 +2583,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
-          product_id: string
+          name: string | null
+          product_id: string | null
           updated_at: string
         }
         Insert: {
@@ -2593,7 +2594,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
-          product_id: string
+          name?: string | null
+          product_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -2603,7 +2605,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
-          product_id?: string
+          name?: string | null
+          product_id?: string | null
           updated_at?: string
         }
         Relationships: [
