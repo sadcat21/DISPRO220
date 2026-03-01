@@ -160,12 +160,16 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
           }
         }}
       >
-        <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="max-w-sm" dir="rtl">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Calculator className="w-5 h-5 text-primary" />
-                <span className="truncate">{selectedProduct?.name}</span>
+                <Calculator className="w-4 h-4 text-primary" />
+                <span className="truncate text-sm">{selectedProduct?.name}</span>
+                <span className="inline-flex items-center gap-1 text-[10px] bg-muted rounded-full px-2 py-0.5 font-normal text-muted-foreground">
+                  <Layers className="w-2.5 h-2.5" />
+                  {boxesPerLayer} ص/ط
+                </span>
               </div>
               <Button
                 variant="ghost"
@@ -183,87 +187,76 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="text-center mb-2">
-            <span className="inline-flex items-center gap-1.5 text-xs bg-muted rounded-full px-3 py-1">
-              <Layers className="w-3 h-3" />
-              {boxesPerLayer} صندوق/طبقة
-            </span>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <Label className="text-sm font-medium mb-1.5 block">عدد الصناديق المطلوبة</Label>
-              <Input
-                type="number"
-                min={0}
-                value={desiredBoxes}
-                onChange={e => setDesiredBoxes(e.target.value)}
-                placeholder="مثال: 50"
-                className="text-center text-lg font-bold h-12"
-                autoFocus
-              />
-            </div>
-
-            {desiredResult && (
-              <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 text-center">
-                <p className="text-xs text-muted-foreground mb-1">يجب أن تأخذ</p>
-                <p className="text-3xl font-black text-primary">{desiredResult.formatted}</p>
-                <div className="flex items-center justify-center gap-4 mt-2 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Layers className="w-3 h-3" />
-                    {desiredResult.layers} طبقة
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Package className="w-3 h-3" />
-                    {desiredResult.boxes} صندوق
-                  </span>
-                </div>
+          <div className="space-y-3">
+            {/* Row 1: Input + Result side by side */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-[11px] font-medium mb-1 block">الصناديق المطلوبة</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={desiredBoxes}
+                  onChange={e => setDesiredBoxes(e.target.value)}
+                  placeholder="50"
+                  className="text-center text-base font-bold h-10"
+                  autoFocus
+                />
               </div>
-            )}
-
-            <div>
-              <Label className="text-sm font-medium mb-1.5 block">المتوفر (طبقات.صناديق)</Label>
-              <Input
-                type="text"
-                inputMode="decimal"
-                value={availableInput}
-                onChange={e => setAvailableInput(e.target.value)}
-                placeholder="مثال: 7.12"
-                className="text-center text-lg font-bold h-12"
-              />
-              {availableInput && parseLayerBoxes(availableInput) && (
-                <p className="text-[11px] text-muted-foreground text-center mt-1">
-                  = {(parseLayerBoxes(availableInput)!.layers * boxesPerLayer) + parseLayerBoxes(availableInput)!.boxes} صندوق إجمالي
+              <div className={`rounded-lg p-2 text-center flex flex-col justify-center ${desiredResult ? 'bg-primary/10 border border-primary/20' : 'bg-muted'}`}>
+                <p className="text-[10px] text-muted-foreground">يجب أن تأخذ</p>
+                <p className={`text-2xl font-black ${desiredResult ? 'text-primary' : 'text-muted-foreground/30'}`}>
+                  {desiredResult ? desiredResult.formatted : '—'}
                 </p>
-              )}
-            </div>
-
-            {remainderResult && (
-              <div className={`rounded-xl p-4 text-center border ${
-                remainderResult.deficit
-                  ? 'bg-destructive/10 border-destructive/20'
-                  : 'bg-primary/5 border-primary/20'
-              }`}>
-                <p className="text-xs text-muted-foreground mb-1">
-                  {remainderResult.deficit ? 'الكمية غير كافية!' : 'يجب أن تترك'}
-                </p>
-                {!remainderResult.deficit && (
-                  <>
-                    <p className="text-3xl font-black text-primary">{remainderResult.formatted}</p>
-                    <div className="flex items-center justify-center gap-4 mt-2 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Layers className="w-3 h-3" />
-                        {remainderResult.layers} طبقة
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Package className="w-3 h-3" />
-                        {remainderResult.boxes} صندوق
-                      </span>
-                    </div>
-                  </>
+                {desiredResult && (
+                  <p className="text-[10px] text-muted-foreground">
+                    {desiredResult.layers} طبقة · {desiredResult.boxes} صندوق
+                  </p>
                 )}
               </div>
-            )}
+            </div>
+
+            {/* Row 2: Available + Remainder side by side */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-[11px] font-medium mb-1 block">المتوفر (ط.ص)</Label>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={availableInput}
+                  onChange={e => setAvailableInput(e.target.value)}
+                  placeholder="7.12"
+                  className="text-center text-base font-bold h-10"
+                />
+                {availableInput && parseLayerBoxes(availableInput) && (
+                  <p className="text-[10px] text-muted-foreground text-center mt-0.5">
+                    = {(parseLayerBoxes(availableInput)!.layers * boxesPerLayer) + parseLayerBoxes(availableInput)!.boxes} صندوق
+                  </p>
+                )}
+              </div>
+              <div className={`rounded-lg p-2 text-center flex flex-col justify-center border ${
+                remainderResult
+                  ? remainderResult.deficit
+                    ? 'bg-destructive/10 border-destructive/20'
+                    : 'bg-primary/5 border-primary/20'
+                  : 'bg-muted border-transparent'
+              }`}>
+                <p className="text-[10px] text-muted-foreground">
+                  {remainderResult?.deficit ? 'غير كافٍ!' : 'يجب أن تترك'}
+                </p>
+                <p className={`text-2xl font-black ${
+                  remainderResult
+                    ? remainderResult.deficit ? 'text-destructive' : 'text-primary'
+                    : 'text-muted-foreground/30'
+                }`}>
+                  {remainderResult ? (remainderResult.deficit ? '✕' : remainderResult.formatted) : '—'}
+                </p>
+                {remainderResult && !remainderResult.deficit && (
+                  <p className="text-[10px] text-muted-foreground">
+                    {remainderResult.layers} طبقة · {remainderResult.boxes} صندوق
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
