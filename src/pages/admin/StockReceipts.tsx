@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Loader2, Camera, Trash2, ClipboardList, Image as ImageIcon, Package, Settings, Truck, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
+import { Plus, Loader2, Camera, Trash2, ClipboardList, Image as ImageIcon, Package, Settings, Truck, ArrowDownToLine, ArrowUpFromLine, BarChart3 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import SimpleProductPickerDialog from '@/components/stock/SimpleProductPickerDialog';
 import PalletSettingsDialog from '@/components/stock/PalletSettingsDialog';
 import FactoryDeliveryDialog from '@/components/stock/FactoryDeliveryDialog';
@@ -44,6 +45,7 @@ interface FactoryOrderItem {
 const StockReceipts: React.FC = () => {
   const { t, language } = useLanguage();
   const { activeBranch } = useAuth();
+  const navigate = useNavigate();
   const { receipts, products, createReceipt, isLoading, branchId, refresh } = useWarehouseStock();
 
   const [activeTab, setActiveTab] = useState('receiving');
@@ -216,6 +218,10 @@ const StockReceipts: React.FC = () => {
           <ClipboardList className="w-5 h-5 text-primary" />
           أوامر الاستلام والتسليم
         </h2>
+        <Button size="sm" variant="outline" onClick={() => navigate('/warehouse')}>
+          <BarChart3 className="w-4 h-4 ml-1" />
+          مخزون الفرع
+        </Button>
       </div>
 
       {!branchId && (
