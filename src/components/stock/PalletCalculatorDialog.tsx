@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calculator, Settings, Package, Layers } from 'lucide-react';
+import { Calculator, Settings, Package, Layers, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
@@ -63,6 +63,7 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   }, [selectedProductId, palletSettings]);
 
   const boxesPerLayer = currentSetting?.boxes_per_layer || 0;
+  const selectedProduct = products.find(p => p.id === selectedProductId);
 
   const desiredResult = useMemo(() => {
     const total = parseInt(desiredBoxes) || 0;
@@ -90,9 +91,13 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
     return products.filter(p => configuredIds.has(p.id));
   }, [products, palletSettings]);
 
+  // Show calculator sub-dialog when a product is selected
+  const showCalcDialog = !!selectedProductId && boxesPerLayer > 0;
+
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      {/* Main product picker dialog */}
+      <Dialog open={open && !showCalcDialog} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
@@ -106,123 +111,156 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
             </DialogTitle>
           </DialogHeader>
 
+          <div>
+            <Label className="text-sm font-medium mb-2 block">اختر المنتج</Label>
+            {configuredProducts.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground text-sm border rounded-xl border-dashed">
+                <Settings className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                <p>لا توجد إعدادات طبقات</p>
+                <Button variant="link" size="sm" onClick={() => setShowSettings(true)}>
+                  اضبط الإعدادات أولاً
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-2 p-1">
+                {configuredProducts.map(product => {
+                  const setting = palletSettings.find(s => s.product_id === product.id);
+                  return (
+                    <button
+                      key={product.id}
+                      onClick={() => {
+                        setSelectedProductId(product.id);
+                        setDesiredBoxes('');
+                        setAvailableInput('');
+                      }}
+                      className="rounded-xl p-3 text-center transition-all border-2 border-transparent bg-muted hover:bg-accent hover:border-primary/30 active:scale-95"
+                    >
+                      <Package className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
+                      <p className="text-[11px] font-bold leading-tight truncate">{product.name}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {setting?.boxes_per_layer || 0} صندوق/طبقة
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Calculator sub-dialog for selected product */}
+      <Dialog
+        open={showCalcDialog}
+        onOpenChange={(v) => {
+          if (!v) {
+            setSelectedProductId('');
+            setDesiredBoxes('');
+            setAvailableInput('');
+          }
+        }}
+      >
+        <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Calculator className="w-5 h-5 text-primary" />
+                <span className="truncate">{selectedProduct?.name}</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs gap-1 h-7"
+                onClick={() => {
+                  setSelectedProductId('');
+                  setDesiredBoxes('');
+                  setAvailableInput('');
+                }}
+              >
+                <ArrowRight className="w-3.5 h-3.5" />
+                رجوع
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="text-center mb-2">
+            <span className="inline-flex items-center gap-1.5 text-xs bg-muted rounded-full px-3 py-1">
+              <Layers className="w-3 h-3" />
+              {boxesPerLayer} صندوق/طبقة
+            </span>
+          </div>
+
           <div className="space-y-4">
-            {/* Product Selection Grid */}
             <div>
-              <Label className="text-sm font-medium mb-2 block">اختر المنتج</Label>
-              {configuredProducts.length === 0 ? (
-                <div className="text-center py-6 text-muted-foreground text-sm border rounded-xl border-dashed">
-                  <Settings className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                  <p>لا توجد إعدادات طبقات</p>
-                  <Button variant="link" size="sm" onClick={() => setShowSettings(true)}>
-                    اضبط الإعدادات أولاً
-                  </Button>
+              <Label className="text-sm font-medium mb-1.5 block">عدد الصناديق المطلوبة</Label>
+              <Input
+                type="number"
+                min={0}
+                value={desiredBoxes}
+                onChange={e => setDesiredBoxes(e.target.value)}
+                placeholder="مثال: 50"
+                className="text-center text-lg font-bold h-12"
+                autoFocus
+              />
+            </div>
+
+            {desiredResult && (
+              <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 text-center">
+                <p className="text-xs text-muted-foreground mb-1">يجب أن تأخذ</p>
+                <p className="text-3xl font-black text-primary">{desiredResult.formatted}</p>
+                <div className="flex items-center justify-center gap-4 mt-2 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Layers className="w-3 h-3" />
+                    {desiredResult.layers} طبقة
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Package className="w-3 h-3" />
+                    {desiredResult.boxes} صندوق
+                  </span>
                 </div>
-              ) : (
-                <div className="grid grid-cols-3 gap-2">
-                  {configuredProducts.map(product => {
-                    const setting = palletSettings.find(s => s.product_id === product.id);
-                    const isSelected = selectedProductId === product.id;
-                    return (
-                      <button
-                        key={product.id}
-                        onClick={() => {
-                          setSelectedProductId(product.id);
-                          setDesiredBoxes('');
-                          setAvailableInput('');
-                        }}
-                        className={`rounded-xl p-3 text-center transition-all border-2 ${
-                          isSelected
-                            ? 'border-primary bg-primary/10 shadow-md'
-                            : 'border-transparent bg-muted hover:bg-accent'
-                        }`}
-                      >
-                        <Package className={`w-5 h-5 mx-auto mb-1 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />
-                        <p className="text-[11px] font-bold leading-tight truncate">{product.name}</p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">
-                          {setting?.boxes_per_layer || 0} صندوق/طبقة
-                        </p>
-                      </button>
-                    );
-                  })}
-                </div>
+              </div>
+            )}
+
+            <div>
+              <Label className="text-sm font-medium mb-1.5 block">المتوفر (طبقات.صناديق)</Label>
+              <Input
+                type="text"
+                inputMode="decimal"
+                value={availableInput}
+                onChange={e => setAvailableInput(e.target.value)}
+                placeholder="مثال: 7.12"
+                className="text-center text-lg font-bold h-12"
+              />
+              {availableInput && parseLayerBoxes(availableInput) && (
+                <p className="text-[11px] text-muted-foreground text-center mt-1">
+                  = {(parseLayerBoxes(availableInput)!.layers * boxesPerLayer) + parseLayerBoxes(availableInput)!.boxes} صندوق إجمالي
+                </p>
               )}
             </div>
 
-            {/* Calculator Section */}
-            {selectedProductId && boxesPerLayer > 0 && (
-              <div className="space-y-4 bg-muted/50 rounded-xl p-4">
-                <div>
-                  <Label className="text-sm font-medium mb-1.5 block">عدد الصناديق المطلوبة</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={desiredBoxes}
-                    onChange={e => setDesiredBoxes(e.target.value)}
-                    placeholder="مثال: 50"
-                    className="text-center text-lg font-bold h-12"
-                  />
-                </div>
-
-                {desiredResult && (
-                  <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 text-center">
-                    <p className="text-xs text-muted-foreground mb-1">يجب أن تأخذ</p>
-                    <p className="text-3xl font-black text-primary">{desiredResult.formatted}</p>
+            {remainderResult && (
+              <div className={`rounded-xl p-4 text-center border ${
+                remainderResult.deficit
+                  ? 'bg-destructive/10 border-destructive/20'
+                  : 'bg-primary/5 border-primary/20'
+              }`}>
+                <p className="text-xs text-muted-foreground mb-1">
+                  {remainderResult.deficit ? 'الكمية غير كافية!' : 'يجب أن تترك'}
+                </p>
+                {!remainderResult.deficit && (
+                  <>
+                    <p className="text-3xl font-black text-primary">{remainderResult.formatted}</p>
                     <div className="flex items-center justify-center gap-4 mt-2 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Layers className="w-3 h-3" />
-                        {desiredResult.layers} طبقة
+                        {remainderResult.layers} طبقة
                       </span>
                       <span className="flex items-center gap-1">
                         <Package className="w-3 h-3" />
-                        {desiredResult.boxes} صندوق
+                        {remainderResult.boxes} صندوق
                       </span>
                     </div>
-                  </div>
-                )}
-
-                <div>
-                  <Label className="text-sm font-medium mb-1.5 block">المتوفر (طبقات.صناديق)</Label>
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    value={availableInput}
-                    onChange={e => setAvailableInput(e.target.value)}
-                    placeholder="مثال: 7.12"
-                    className="text-center text-lg font-bold h-12"
-                  />
-                  {availableInput && parseLayerBoxes(availableInput) && (
-                    <p className="text-[11px] text-muted-foreground text-center mt-1">
-                      = {(parseLayerBoxes(availableInput)!.layers * boxesPerLayer) + parseLayerBoxes(availableInput)!.boxes} صندوق إجمالي
-                    </p>
-                  )}
-                </div>
-
-                {remainderResult && (
-                  <div className={`rounded-xl p-4 text-center border ${
-                    remainderResult.deficit
-                      ? 'bg-destructive/10 border-destructive/20'
-                      : 'bg-primary/5 border-primary/20'
-                  }`}>
-                    <p className="text-xs text-muted-foreground mb-1">
-                      {remainderResult.deficit ? 'الكمية غير كافية!' : 'يجب أن تترك'}
-                    </p>
-                    {!remainderResult.deficit && (
-                      <>
-                        <p className="text-3xl font-black text-primary">{remainderResult.formatted}</p>
-                        <div className="flex items-center justify-center gap-4 mt-2 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Layers className="w-3 h-3" />
-                            {remainderResult.layers} طبقة
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Package className="w-3 h-3" />
-                            {remainderResult.boxes} صندوق
-                          </span>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                  </>
                 )}
               </div>
             )}
