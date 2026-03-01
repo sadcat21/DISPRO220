@@ -82,6 +82,10 @@ const WorkerActions: React.FC = () => {
       }
       return;
     }
+    if (action.key === 'tracking') {
+      navigate(`${action.path}?worker=${selectedWorker.id}`);
+      return;
+    }
     navigate(action.path);
   };
 

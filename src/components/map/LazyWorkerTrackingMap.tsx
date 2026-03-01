@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 
-const LazyWorkerTrackingMap: React.FC = () => {
-  const [WorkerTrackingMap, setWorkerTrackingMap] = useState<React.ComponentType | null>(null);
+interface LazyWorkerTrackingMapProps {
+  highlightWorkerId?: string;
+}
+
+const LazyWorkerTrackingMap: React.FC<LazyWorkerTrackingMapProps> = ({ highlightWorkerId }) => {
+  const [WorkerTrackingMap, setWorkerTrackingMap] = useState<React.ComponentType<any> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -29,7 +33,7 @@ const LazyWorkerTrackingMap: React.FC = () => {
     );
   }
 
-  return <WorkerTrackingMap />;
+  return <WorkerTrackingMap highlightWorkerId={highlightWorkerId} />;
 };
 
 export default LazyWorkerTrackingMap;
