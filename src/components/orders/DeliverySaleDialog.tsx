@@ -388,16 +388,22 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
     checkReceived: boolean;
     verification: any;
     skippedVerification: boolean;
+    checkAmount?: number;
+    remainingAction?: 'debt' | 'another_check';
+    remainingAmount?: number;
   }) => {
-    // Map check result to payment data and call the core payment handler
-    const paidAmount = data.checkReceived ? totals.amountAfterPrepaid : 0;
-    const remaining = data.checkReceived ? 0 : totals.amountAfterPrepaid;
+    const actualCheckAmount = data.checkAmount ?? (data.checkReceived ? totals.amountAfterPrepaid : 0);
+    const paidAmount = data.checkReceived ? actualCheckAmount : 0;
+    const remaining = data.checkReceived ? Math.max(0, totals.amountAfterPrepaid - actualCheckAmount) : totals.amountAfterPrepaid;
+    const isFullPayment = data.checkReceived && remaining <= 0;
 
     // Update document status on order
     const docStatus = data.checkReceived ? (data.skippedVerification ? 'pending' : 'received') : 'pending';
     const docVerification = data.checkReceived ? {
       type: 'check',
       ...data.verification,
+      check_amount: actualCheckAmount,
+      remaining_action: data.remainingAction,
       skipped: data.skippedVerification,
       verified_at: new Date().toISOString(),
     } : { type: 'check', status: 'not_received' };
@@ -408,12 +414,23 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
       check_due_date: data.verification?.due_date || null,
     }).eq('id', order.id);
 
+    // If remaining amount exists and action is 'another_check', create a pending document collection
+    if (data.remainingAction === 'another_check' && remaining > 0) {
+      await supabase.from('orders').update({
+        doc_collection_type: 'weekly',
+        doc_due_date: null,
+      }).eq('id', order.id);
+    }
+
     await handlePaymentConfirm({
       paidAmount,
       remainingAmount: remaining,
       paymentMethod: 'check',
-      isFullPayment: data.checkReceived,
+      isFullPayment,
       isNoPayment: !data.checkReceived,
+      notes: data.remainingAction === 'another_check' && remaining > 0
+        ? `شيك جزئي - المتبقي ${remaining.toLocaleString()} دج مسند لشيك آخر`
+        : undefined,
     });
     setShowCheckDialog(false);
   };
@@ -512,13 +529,18 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
       } else {
         paymentStatus = 'cash';
       }
-      await supabase.from('orders').update({
+      const { error: statusError } = await supabase.from('orders').update({
         status: 'delivered',
         total_amount: totals.totalAmount,
         payment_status: paymentStatus,
         partial_amount: paymentData.isFullPayment ? null : paymentData.paidAmount,
         updated_at: new Date().toISOString(),
       }).eq('id', order.id);
+
+      if (statusError) {
+        console.error('Failed to update order status:', statusError);
+        throw new Error('فشل تحديث حالة الطلبية: ' + statusError.message);
+      }
 
       // Deduct from worker stock
       for (const item of activeItems) {
