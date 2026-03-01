@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calculator, Settings, Package, Layers, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { Product } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import PalletSettingsDialog from './PalletSettingsDialog';
@@ -23,34 +22,23 @@ const formatLayerBoxes = (layers: number, boxes: number): string => {
 const parseLayerBoxes = (value: string): { layers: number; boxes: number } | null => {
   if (!value || !value.includes('.')) return null;
   const [layerStr, boxStr] = value.split('.');
-  const layers = parseInt(layerStr) || 0;
-  const boxes = parseInt(boxStr) || 0;
-  return { layers, boxes };
+  return { layers: parseInt(layerStr) || 0, boxes: parseInt(boxStr) || 0 };
 };
 
 const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   const { activeBranch } = useAuth();
   const branchId = activeBranch?.id || null;
   const [showSettings, setShowSettings] = useState(false);
-  const [selectedProductId, setSelectedProductId] = useState<string>('');
+  const [selectedSettingId, setSelectedSettingId] = useState<string>('');
   const [desiredBoxes, setDesiredBoxes] = useState<string>('');
   const [availableInput, setAvailableInput] = useState<string>('');
-
-  const { data: products = [] } = useQuery({
-    queryKey: ['products-for-calculator'],
-    queryFn: async () => {
-      const { data } = await supabase.from('products').select('*').eq('is_active', true).order('name');
-      return (data || []) as Product[];
-    },
-    enabled: open,
-  });
 
   const { data: palletSettings = [], refetch: refetchSettings } = useQuery({
     queryKey: ['pallet-settings-calculator', branchId],
     queryFn: async () => {
       const { data } = await supabase
         .from('pallet_settings')
-        .select('product_id, boxes_per_pallet, boxes_per_layer')
+        .select('id, name, boxes_per_pallet, boxes_per_layer')
         .eq('branch_id', branchId!);
       return data || [];
     },
@@ -58,12 +46,11 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   });
 
   const currentSetting = useMemo(() => {
-    if (!selectedProductId) return null;
-    return palletSettings.find(s => s.product_id === selectedProductId) || null;
-  }, [selectedProductId, palletSettings]);
+    if (!selectedSettingId) return null;
+    return palletSettings.find(s => s.id === selectedSettingId) || null;
+  }, [selectedSettingId, palletSettings]);
 
   const boxesPerLayer = currentSetting?.boxes_per_layer || 0;
-  const selectedProduct = products.find(p => p.id === selectedProductId);
 
   const desiredResult = useMemo(() => {
     const total = parseInt(desiredBoxes) || 0;
@@ -86,17 +73,15 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
     return { layers, boxes, formatted: formatLayerBoxes(layers, boxes), deficit: false };
   }, [availableInput, desiredResult, desiredBoxes, boxesPerLayer]);
 
-  const configuredProducts = useMemo(() => {
-    const configuredIds = new Set(palletSettings.filter(s => s.boxes_per_layer > 0).map(s => s.product_id));
-    return products.filter(p => configuredIds.has(p.id));
-  }, [products, palletSettings]);
+  const configuredTypes = useMemo(() => {
+    return palletSettings.filter(s => (s.boxes_per_layer ?? 0) > 0 && s.name);
+  }, [palletSettings]);
 
-  // Show calculator sub-dialog when a product is selected
-  const showCalcDialog = !!selectedProductId && boxesPerLayer > 0;
+  const showCalcDialog = !!selectedSettingId && boxesPerLayer > 0;
 
   return (
     <>
-      {/* Main product picker dialog */}
+      {/* Main type picker */}
       <Dialog open={open && !showCalcDialog} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
@@ -112,49 +97,46 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
           </DialogHeader>
 
           <div>
-            <Label className="text-sm font-medium mb-2 block">اختر المنتج</Label>
-            {configuredProducts.length === 0 ? (
+            <Label className="text-sm font-medium mb-2 block">اختر نوع التغليف</Label>
+            {configuredTypes.length === 0 ? (
               <div className="text-center py-6 text-muted-foreground text-sm border rounded-xl border-dashed">
                 <Settings className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                <p>لا توجد إعدادات طبقات</p>
+                <p>لا توجد أنواع تغليف</p>
                 <Button variant="link" size="sm" onClick={() => setShowSettings(true)}>
                   اضبط الإعدادات أولاً
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-3 gap-2 p-1">
-                {configuredProducts.map(product => {
-                  const setting = palletSettings.find(s => s.product_id === product.id);
-                  return (
-                    <button
-                      key={product.id}
-                      onClick={() => {
-                        setSelectedProductId(product.id);
-                        setDesiredBoxes('');
-                        setAvailableInput('');
-                      }}
-                      className="rounded-xl p-3 text-center transition-all border-2 border-transparent bg-muted hover:bg-accent hover:border-primary/30 active:scale-95"
-                    >
-                      <Package className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
-                      <p className="text-[11px] font-bold leading-tight truncate">{product.name}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
-                        {setting?.boxes_per_layer || 0} صندوق/طبقة
-                      </p>
-                    </button>
-                  );
-                })}
+              <div className="grid grid-cols-2 gap-2 p-1">
+                {configuredTypes.map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setSelectedSettingId(item.id);
+                      setDesiredBoxes('');
+                      setAvailableInput('');
+                    }}
+                    className="rounded-xl p-4 text-center transition-all border-2 border-transparent bg-muted hover:bg-accent hover:border-primary/30 active:scale-95"
+                  >
+                    <Package className="w-6 h-6 mx-auto mb-1.5 text-muted-foreground" />
+                    <p className="text-sm font-bold leading-tight">{item.name}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      {item.boxes_per_layer} صندوق/طبقة
+                    </p>
+                  </button>
+                ))}
               </div>
             )}
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Calculator sub-dialog for selected product */}
+      {/* Calculator sub-dialog */}
       <Dialog
         open={showCalcDialog}
         onOpenChange={(v) => {
           if (!v) {
-            setSelectedProductId('');
+            setSelectedSettingId('');
             setDesiredBoxes('');
             setAvailableInput('');
           }
@@ -165,7 +147,7 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
             <DialogTitle className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Calculator className="w-4 h-4 text-primary" />
-                <span className="truncate text-sm">{selectedProduct?.name}</span>
+                <span className="truncate text-sm">{currentSetting?.name}</span>
                 <span className="inline-flex items-center gap-1 text-[10px] bg-muted rounded-full px-2 py-0.5 font-normal text-muted-foreground">
                   <Layers className="w-2.5 h-2.5" />
                   {boxesPerLayer} ص/ط
@@ -176,7 +158,7 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                 size="sm"
                 className="text-xs gap-1 h-7"
                 onClick={() => {
-                  setSelectedProductId('');
+                  setSelectedSettingId('');
                   setDesiredBoxes('');
                   setAvailableInput('');
                 }}
@@ -188,7 +170,6 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
           </DialogHeader>
 
           <div className="space-y-3">
-            {/* Row 1: Input + Result side by side */}
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label className="text-[11px] font-medium mb-1 block">الصناديق المطلوبة</Label>
@@ -215,7 +196,6 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
               </div>
             </div>
 
-            {/* Row 2: Available + Remainder side by side */}
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label className="text-[11px] font-medium mb-1 block">المتوفر (ط.ص)</Label>
@@ -269,7 +249,6 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
             if (!v) refetchSettings();
           }}
           branchId={branchId}
-          products={products}
           showLayerField
         />
       )}
