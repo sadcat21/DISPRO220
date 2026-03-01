@@ -2,10 +2,13 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ClipboardList, ArrowLeft, Calculator, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ClipboardList, ArrowLeft, Calculator, Loader2, AlertTriangle } from 'lucide-react';
 import WorkerHandoverSummary from './WorkerHandoverSummary';
 import { useSessionCalculations } from '@/hooks/useSessionCalculations';
 import { useAuth } from '@/contexts/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface WorkerHandoverPreviewDialogProps {
   open: boolean;
@@ -28,6 +31,25 @@ const WorkerHandoverPreviewDialog: React.FC<WorkerHandoverPreviewDialogProps> = 
   const { data: calc, isLoading } = useSessionCalculations(
     open && effectiveWorkerId ? { workerId: effectiveWorkerId, branchId: activeBranch?.id || undefined, periodStart, periodEnd } : null
   );
+
+  // Check if last loading session for this worker is a review
+  const { data: lastSession, isLoading: isCheckingReview } = useQuery({
+    queryKey: ['last-loading-session', effectiveWorkerId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('loading_sessions')
+        .select('id, status, created_at')
+        .eq('worker_id', effectiveWorkerId!)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      return data;
+    },
+    enabled: open && !!effectiveWorkerId,
+  });
+
+  const isLastSessionReview = lastSession?.status === 'review';
+  const canProceed = isLastSessionReview;
 
   if (!effectiveWorkerId) return null;
 
@@ -65,6 +87,17 @@ const WorkerHandoverPreviewDialog: React.FC<WorkerHandoverPreviewDialogProps> = 
           )}
         </ScrollArea>
 
+        {!isCheckingReview && !canProceed && (
+          <div className="px-4">
+            <Alert variant="destructive" className="rounded-xl">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription className="text-sm font-medium">
+                لا يمكن الانتقال لجلسة المحاسبة — يجب إجراء مراجعة الشاحنة أولاً
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
         <div className="p-4 border-t flex gap-2">
           <Button
             variant="outline"
@@ -77,12 +110,13 @@ const WorkerHandoverPreviewDialog: React.FC<WorkerHandoverPreviewDialogProps> = 
           {onProceedToSession && (
             <Button
               className="flex-1 rounded-xl h-11 text-base font-bold"
+              disabled={!canProceed || isCheckingReview}
               onClick={() => {
                 onOpenChange(false);
                 onProceedToSession();
               }}
             >
-              <Calculator className="w-4 h-4 me-1.5" />
+              {isCheckingReview ? <Loader2 className="w-4 h-4 animate-spin me-1.5" /> : <Calculator className="w-4 h-4 me-1.5" />}
               الانتقال للجلسة
             </Button>
           )}
