@@ -12,11 +12,26 @@ import { useRewardPenalties, useCreateRewardPenalty } from '@/hooks/useRewards';
 import { useAuth } from '@/contexts/AuthContext';
 
 const triggerLabels: Record<string, string> = {
+  manual: 'يدوي',
   cancel_visit: 'إلغاء زيارة',
   gps_deviation: 'مغادرة المسار GPS',
   late_arrival: 'تأخير أكثر من 30 دقيقة',
   confirmed_complaint: 'شكوى مؤكدة',
-  manual: 'يدوي',
+  missing_delivery: 'عدم تسليم طلبية',
+  stock_shortage: 'نقص في المخزون',
+  unauthorized_discount: 'خصم غير مصرح',
+  debt_overdue: 'تأخر تحصيل دين',
+  document_missing: 'عدم جمع مستند',
+  wrong_invoice: 'خطأ في الفاتورة',
+  customer_loss: 'فقدان عميل',
+  truck_damage: 'ضرر في الشاحنة',
+  absence: 'غياب بدون إذن',
+  early_leave: 'مغادرة مبكرة',
+  phone_unreachable: 'عدم الرد على الهاتف',
+  unsafe_driving: 'قيادة غير آمنة',
+  cash_discrepancy: 'فرق في النقد',
+  product_return: 'إرجاع منتج بسبب الموظف',
+  policy_violation: 'مخالفة سياسة الشركة',
 };
 
 const RewardPenaltiesTab: React.FC = () => {
@@ -99,12 +114,10 @@ const RewardPenaltiesTab: React.FC = () => {
               <Label>حدث التفعيل</Label>
               <Select value={trigger} onValueChange={setTrigger}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="manual">يدوي</SelectItem>
-                  <SelectItem value="cancel_visit">إلغاء زيارة</SelectItem>
-                  <SelectItem value="gps_deviation">مغادرة المسار GPS</SelectItem>
-                  <SelectItem value="late_arrival">تأخير</SelectItem>
-                  <SelectItem value="confirmed_complaint">شكوى مؤكدة</SelectItem>
+                <SelectContent className="max-h-60">
+                  {Object.entries(triggerLabels).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
