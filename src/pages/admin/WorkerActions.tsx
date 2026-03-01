@@ -120,15 +120,18 @@ const WorkerActions: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-4 gap-2">
+        <div
+          className="grid !grid-cols-4 gap-1.5"
+          style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}
+        >
           {workerActions.map((action) => (
             <div
               key={action.key}
-              className={`flex flex-col items-center justify-center p-2.5 gap-1.5 rounded-lg border cursor-pointer active:scale-95 transition-all hover:shadow-md ${action.color}`}
+              className={`flex min-w-0 flex-col items-center justify-center p-2 gap-1 rounded-lg border cursor-pointer active:scale-95 transition-all hover:shadow-md ${action.color}`}
               onClick={() => handleAction(action)}
             >
-              <action.icon className="w-5 h-5" />
-              <span className="text-[10px] font-medium text-center leading-tight">{t(action.labelKey)}</span>
+              <action.icon className="w-4 h-4 shrink-0" />
+              <span className="text-[10px] font-medium text-center leading-tight break-words">{t(action.labelKey)}</span>
             </div>
           ))}
         </div>

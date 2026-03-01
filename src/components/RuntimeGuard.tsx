@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 
 interface RuntimeGuardProps {
   children: React.ReactNode;
@@ -20,32 +20,41 @@ const shouldIgnoreError = (value: unknown): boolean => {
   return IGNORED_PATTERNS.some((pattern) => text.includes(pattern));
 };
 
-const RuntimeGuard: React.FC<RuntimeGuardProps> = ({ children }) => {
-  useEffect(() => {
-    const onWindowError = (event: ErrorEvent) => {
+let guardInstalled = false;
+
+const installRuntimeErrorGuard = () => {
+  if (guardInstalled || typeof window === 'undefined') return;
+
+  window.addEventListener(
+    'error',
+    (event) => {
       if (shouldIgnoreError(event.error || event.message)) {
         event.preventDefault();
         console.warn('Ignored external UIStyleError:', event.message);
       }
-    };
+    },
+    true
+  );
 
-    const onUnhandledRejection = (event: PromiseRejectionEvent) => {
+  window.addEventListener(
+    'unhandledrejection',
+    (event) => {
       if (shouldIgnoreError(event.reason)) {
         event.preventDefault();
         console.warn('Ignored external UIStyleError rejection');
       }
-    };
+    },
+    true
+  );
 
-    window.addEventListener('error', onWindowError);
-    window.addEventListener('unhandledrejection', onUnhandledRejection);
+  guardInstalled = true;
+};
 
-    return () => {
-      window.removeEventListener('error', onWindowError);
-      window.removeEventListener('unhandledrejection', onUnhandledRejection);
-    };
-  }, []);
+installRuntimeErrorGuard();
 
+const RuntimeGuard: React.FC<RuntimeGuardProps> = ({ children }) => {
   return <>{children}</>;
 };
 
 export default RuntimeGuard;
+
