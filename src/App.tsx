@@ -85,7 +85,7 @@ const ProtectedRoute: React.FC<{
     return <Navigate to="/" replace />;
   }
 
-  return <GpsGuard><MobileLayout>{children}<FloatingChat /></MobileLayout></GpsGuard>;
+  return <GpsGuard><MobileLayout>{children}</MobileLayout></GpsGuard>;
 };
 
 // Public Route (redirect if authenticated)
