@@ -4,16 +4,16 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { User, Users, Search, MessageSquarePlus } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  onCreate: (type: 'direct' | 'group', participantIds: string[], name?: string) => void;
+  onCreate: (type: 'direct' | 'group', participantIds: string[], name?: string) => Promise<boolean>;
 }
 
 interface WorkerItem {
@@ -29,36 +29,57 @@ const NewChatDialog = ({ open, onClose, onCreate }: Props) => {
   const [selected, setSelected] = useState<string[]>([]);
   const [groupName, setGroupName] = useState('');
   const [tab, setTab] = useState<'direct' | 'group'>('direct');
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     if (!open) return;
+
     const fetchWorkers = async () => {
-      const { data } = await supabase
-        .from('workers')
-        .select('id, full_name, username')
-        .eq('is_active', true)
-        .neq('id', user?.id || '')
-        .order('full_name');
-      setWorkers(data || []);
+      try {
+        const { data, error } = await supabase
+          .from('workers')
+          .select('id, full_name, username')
+          .eq('is_active', true)
+          .neq('id', user?.id || '')
+          .order('full_name');
+
+        if (error) throw error;
+        setWorkers(data || []);
+      } catch (error) {
+        console.error('خطأ في تحميل المستخدمين:', error);
+        toast.error('تعذر تحميل قائمة المستخدمين');
+        setWorkers([]);
+      }
     };
-    fetchWorkers();
+
+    void fetchWorkers();
     setSelected([]);
     setGroupName('');
     setSearch('');
   }, [open, user?.id]);
 
-  const filtered = workers.filter(w =>
-    w.full_name.includes(search) || w.username.includes(search)
+  const filtered = workers.filter(
+    (w) => w.full_name.includes(search) || w.username.includes(search)
   );
 
-  const handleCreate = () => {
-    if (selected.length === 0) return;
-    if (tab === 'direct') {
-      onCreate('direct', [selected[0]]);
-    } else {
-      onCreate('group', selected, groupName || undefined);
+  const handleCreate = async () => {
+    if (selected.length === 0 || isCreating) return;
+
+    setIsCreating(true);
+    try {
+      const created = await (tab === 'direct'
+        ? onCreate('direct', [selected[0]])
+        : onCreate('group', selected, groupName || undefined));
+
+      if (created) {
+        onClose();
+      }
+    } catch (error) {
+      console.error('خطأ في إنشاء المحادثة:', error);
+      toast.error('تعذر بدء المحادثة');
+    } finally {
+      setIsCreating(false);
     }
-    onClose();
   };
 
   const toggleWorker = (id: string) => {
@@ -66,17 +87,22 @@ const NewChatDialog = ({ open, onClose, onCreate }: Props) => {
       setSelected([id]);
       return;
     }
-    setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
   return (
-    <Dialog open={open} onOpenChange={() => onClose()}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen && !isCreating) onClose();
+      }}
+    >
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>محادثة جديدة</DialogTitle>
         </DialogHeader>
 
-        <Tabs value={tab} onValueChange={(v) => { setTab(v as any); setSelected([]); }}>
+        <Tabs value={tab} onValueChange={(v) => { setTab(v as 'direct' | 'group'); setSelected([]); }}>
           <TabsList className="w-full">
             <TabsTrigger value="direct" className="flex-1 gap-1">
               <User className="h-4 w-4" /> فردية
@@ -106,32 +132,36 @@ const NewChatDialog = ({ open, onClose, onCreate }: Props) => {
           </div>
 
           <ScrollArea className="h-60 mt-2 border rounded-md">
-            {filtered.map(w => (
-              <button
-                key={w.id}
-                onClick={() => toggleWorker(w.id)}
-                className={`w-full p-3 flex items-center gap-3 text-right hover:bg-accent/50 transition-colors border-b ${
-                  selected.includes(w.id) ? 'bg-accent' : ''
-                }`}
-              >
-                {tab === 'group' && (
-                  <Checkbox checked={selected.includes(w.id)} className="shrink-0" />
-                )}
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{w.full_name}</p>
-                  <p className="text-xs text-muted-foreground">@{w.username}</p>
-                </div>
-                {tab === 'direct' && selected.includes(w.id) && (
-                  <div className="h-2 w-2 rounded-full bg-primary" />
-                )}
-              </button>
-            ))}
+            {filtered.length === 0 ? (
+              <div className="p-4 text-center text-sm text-muted-foreground">لا يوجد مستخدمون مطابقون</div>
+            ) : (
+              filtered.map((w) => (
+                <button
+                  key={w.id}
+                  onClick={() => toggleWorker(w.id)}
+                  className={`w-full p-3 flex items-center gap-3 text-right hover:bg-accent/50 transition-colors border-b ${
+                    selected.includes(w.id) ? 'bg-accent' : ''
+                  }`}
+                >
+                  {tab === 'group' && (
+                    <Checkbox checked={selected.includes(w.id)} className="shrink-0" />
+                  )}
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{w.full_name}</p>
+                    <p className="text-xs text-muted-foreground">@{w.username}</p>
+                  </div>
+                  {tab === 'direct' && selected.includes(w.id) && (
+                    <div className="h-2 w-2 rounded-full bg-primary" />
+                  )}
+                </button>
+              ))
+            )}
           </ScrollArea>
         </Tabs>
 
-        <Button onClick={handleCreate} disabled={selected.length === 0} className="w-full gap-2">
+        <Button onClick={handleCreate} disabled={selected.length === 0 || isCreating} className="w-full gap-2">
           <MessageSquarePlus className="h-4 w-4" />
-          {tab === 'direct' ? 'بدء المحادثة' : `إنشاء مجموعة (${selected.length})`}
+          {isCreating ? 'جاري بدء المحادثة...' : tab === 'direct' ? 'بدء المحادثة' : `إنشاء مجموعة (${selected.length})`}
         </Button>
       </DialogContent>
     </Dialog>
