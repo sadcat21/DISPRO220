@@ -217,50 +217,38 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
   [stockItems]);
 
   // Quantity handlers
+  // Delta applies to PAID quantity, gift is recalculated on top (same logic as ModifyOrderDialog)
   const handleUpdateQuantity = (productId: string, delta: number) => {
     const available = getAvailable(productId);
     setSaleItems(prev =>
       prev.map(item => {
         if (item.productId !== productId) return item;
-        const currentTotal = item.quantity;
-        const newTotal = currentTotal + delta;
-        if (newTotal <= 0) return { ...item, quantity: 0, totalPrice: 0, giftQuantity: 0 };
-        if (newTotal > available && delta > 0) return item;
+        // Current paid quantity
+        const currentPaidQty = Math.max(0, item.quantity - item.giftQuantity);
+        const newPaidQty = currentPaidQty + delta;
+        if (newPaidQty <= 0) return { ...item, quantity: 0, totalPrice: 0, giftQuantity: 0 };
         // Recalculate gift based on new paid quantity
-        // First estimate: paid = newTotal (without gift), then recalc
-        const newGift = recalcGift(item.productId, newTotal, item.piecesPerBox);
-        // The total quantity includes gift, but paid qty = newTotal - newGift
-        // However we need to be careful: if user sets total to X, paid = X - gift(X)
-        // But gift depends on paid qty... iterate once: paid = newTotal, gift = recalc(newTotal)
-        // Then final total = paid + gift, but user controls total directly
-        // Simpler approach: user changes the TOTAL, we recalc gift from (total - gift) iteratively
-        // Actually the simplest: treat the quantity the user sees as TOTAL (paid + gift)
-        // paid = newTotal - newGift, but gift depends on paid... 
-        // Best approach: paid = newTotal (what user intends to pay for), gift recalculated on top
-        // Wait - looking at the original code, quantity = paid + gift combined
-        // So when user reduces from 51 to 50, quantity=50, giftQty should recalc
-        // paid = quantity - giftQty, gift = recalcGift(paid, ...)
-        // This is circular. Let's break it: 
-        // When delta applied, new raw = newTotal. Assume all is paid first.
-        // gift = recalcGift(newTotal, piecesPerBox) -- gift based on total boxes
-        // But actually offers are "buy X get Y free" so gift is based on paid qty
-        // paid = newTotal - gift, but gift depends on paid...
-        // Solution: iterate. Start with paidGuess = newTotal
-        let paidQty = newTotal;
-        let giftQty = 0;
-        // One iteration is enough for most cases
-        giftQty = recalcGift(item.productId, paidQty, item.piecesPerBox);
-        // If gift > 0, the total should be paid + gift, but user set total = newTotal
-        // So paid = newTotal - giftQty
-        paidQty = Math.max(0, newTotal - giftQty);
-        // Recalc gift with actual paid
-        giftQty = recalcGift(item.productId, paidQty, item.piecesPerBox);
-        // Final: total stays as newTotal, gift is recalculated
+        const newGiftQty = recalcGift(item.productId, newPaidQty, item.piecesPerBox);
+        const newTotal = newPaidQty + newGiftQty;
+        // Check stock availability for the full total (paid + gift)
+        if (newTotal > available && delta > 0) {
+          // Try without gift if stock is limited
+          if (newPaidQty > available && delta > 0) return item;
+        }
+        // Warn if gift changed
+        const oldGift = item.giftQuantity;
+        if (oldGift > 0 && newGiftQty === 0) {
+          toast.warning(`⚠️ ${item.productName}: تم فقدان الهدية (${oldGift} صندوق) لأن الكمية أقل من شرط العرض`, { duration: 5000 });
+        } else if (oldGift > 0 && newGiftQty < oldGift) {
+          toast.warning(`⚠️ ${item.productName}: تغيرت الهدية من ${oldGift} إلى ${newGiftQty} صندوق`, { duration: 4000 });
+        } else if (oldGift === 0 && newGiftQty > 0) {
+          toast.success(`🎁 ${item.productName}: تم تفعيل هدية ${newGiftQty} صندوق`, { duration: 3000 });
+        }
         return { 
           ...item, 
           quantity: newTotal, 
-          giftQuantity: Math.min(giftQty, newTotal), // gift can't exceed total
-          totalPrice: Math.max(0, newTotal - Math.min(giftQty, newTotal)) * item.unitPrice 
+          giftQuantity: newGiftQty,
+          totalPrice: newPaidQty * item.unitPrice 
         };
       }).filter(item => item.quantity > 0 || item.originalItemId)
     );
@@ -903,7 +891,12 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
                             >
                               <Minus className="w-3 h-3" />
                             </Button>
-                            <span className="w-8 text-center font-bold text-sm">{item.quantity}</span>
+                            <div className="flex flex-col items-center min-w-8">
+                              <span className="font-bold text-sm">{Math.max(0, item.quantity - item.giftQuantity)}</span>
+                              {item.giftQuantity > 0 && (
+                                <span className="text-[9px] text-green-600 dark:text-green-400 leading-none">+{item.giftQuantity} 🎁</span>
+                              )}
+                            </div>
                             <Button
                               type="button" variant="outline" size="icon" className="h-7 w-7"
                               onClick={() => handleUpdateQuantity(item.productId, 1)}
