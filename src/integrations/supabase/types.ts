@@ -3648,6 +3648,7 @@ export type Database = {
       }
       reward_penalties: {
         Row: {
+          applicable_roles: string[] | null
           branch_id: string | null
           created_at: string
           created_by: string | null
@@ -3660,6 +3661,7 @@ export type Database = {
           trigger_event: string | null
         }
         Insert: {
+          applicable_roles?: string[] | null
           branch_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -3672,6 +3674,7 @@ export type Database = {
           trigger_event?: string | null
         }
         Update: {
+          applicable_roles?: string[] | null
           branch_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -3753,6 +3756,7 @@ export type Database = {
       }
       reward_tasks: {
         Row: {
+          applicable_roles: string[] | null
           branch_id: string | null
           category: string
           condition_logic: Json
@@ -3770,6 +3774,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          applicable_roles?: string[] | null
           branch_id?: string | null
           category?: string
           condition_logic?: Json
@@ -3787,6 +3792,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          applicable_roles?: string[] | null
           branch_id?: string | null
           category?: string
           condition_logic?: Json

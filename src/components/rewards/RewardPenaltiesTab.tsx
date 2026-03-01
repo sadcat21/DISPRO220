@@ -9,13 +9,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, AlertTriangle, Info, Database, Zap, Pencil, Trash2 } from 'lucide-react';
+import { Plus, AlertTriangle, Info, Database, Zap, Pencil, Trash2, Users } from 'lucide-react';
 import { useRewardPenalties, useCreateRewardPenalty, RewardPenalty } from '@/hooks/useRewards';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { PENALTY_TRIGGERS, TRIGGER_CATEGORIES } from '@/data/rewardTriggers';
+
+const ROLE_LABELS: Record<string, string> = {
+  worker: 'عامل توصيل/مبيعات',
+  admin: 'مدير فرع',
+  supervisor: 'مشرف',
+  branch_admin: 'مسؤول مخزن',
+};
+
+const ROLE_COLORS: Record<string, string> = {
+  worker: 'bg-blue-100 text-blue-800',
+  admin: 'bg-purple-100 text-purple-800',
+  supervisor: 'bg-amber-100 text-amber-800',
+  branch_admin: 'bg-emerald-100 text-emerald-800',
+};
 
 const RewardPenaltiesTab: React.FC = () => {
   const { data: penalties, isLoading } = useRewardPenalties();
@@ -28,6 +42,7 @@ const RewardPenaltiesTab: React.FC = () => {
   const [trigger, setTrigger] = useState('');
   const [isAutomatic, setIsAutomatic] = useState(false);
   const [filterCategory, setFilterCategory] = useState('all');
+  const [filterRole, setFilterRole] = useState('all');
   const [editPenalty, setEditPenalty] = useState<RewardPenalty | null>(null);
   const [editName, setEditName] = useState('');
   const [editPoints, setEditPoints] = useState('');
@@ -41,6 +56,16 @@ const RewardPenaltiesTab: React.FC = () => {
       filterCategory === 'all' || v.category === filterCategory
     );
   }, [filterCategory]);
+
+  const filteredPenalties = useMemo(() => {
+    if (!penalties) return [];
+    if (filterRole === 'all') return penalties;
+    return penalties.filter(p => {
+      const roles = (p as any).applicable_roles as string[] | null;
+      if (!roles) return filterRole === 'all_roles';
+      return roles.includes(filterRole);
+    });
+  }, [penalties, filterRole]);
 
   const handleCreate = () => {
     if (!name.trim() || !trigger) return;
@@ -93,14 +118,33 @@ const RewardPenaltiesTab: React.FC = () => {
         إنشاء مخالفة جديدة
       </Button>
 
-      {(!penalties || penalties.length === 0) ? (
+      {/* Role Filter */}
+      <div className="flex gap-1.5 flex-wrap">
+        <Badge variant={filterRole === 'all' ? 'default' : 'outline'} className="cursor-pointer text-[10px]" onClick={() => setFilterRole('all')}>
+          <Users className="w-3 h-3 ml-1" />الكل ({penalties?.length || 0})
+        </Badge>
+        {Object.entries(ROLE_LABELS).map(([k, v]) => {
+          const count = penalties?.filter(p => {
+            const roles = (p as any).applicable_roles as string[] | null;
+            return roles?.includes(k);
+          }).length || 0;
+          return (
+            <Badge key={k} variant={filterRole === k ? 'default' : 'outline'} className="cursor-pointer text-[10px]" onClick={() => setFilterRole(k)}>
+              {v} ({count})
+            </Badge>
+          );
+        })}
+      </div>
+
+      {filteredPenalties.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <AlertTriangle className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p>لا توجد مخالفات بعد</p>
+          <p>لا توجد مخالفات {filterRole !== 'all' ? `لـ ${ROLE_LABELS[filterRole] || ''}` : 'بعد'}</p>
         </div>
       ) : (
-        penalties.map(p => {
+        filteredPenalties.map(p => {
           const tDef = PENALTY_TRIGGERS[p.trigger_event || 'manual'];
+          const roles = (p as any).applicable_roles as string[] | null;
           return (
             <Card key={p.id}>
               <CardContent className="p-4">
@@ -114,6 +158,11 @@ const RewardPenaltiesTab: React.FC = () => {
                         <Badge variant="secondary" className="text-[10px] gap-0.5">
                           <Zap className="w-2.5 h-2.5" />تلقائي
                         </Badge>
+                      )}
+                      {roles ? roles.map(r => (
+                        <Badge key={r} className={`text-[9px] ${ROLE_COLORS[r] || ''}`}>{ROLE_LABELS[r] || r}</Badge>
+                      )) : (
+                        <Badge className="text-[9px] bg-gray-100 text-gray-700">جميع الأدوار</Badge>
                       )}
                     </div>
                     {tDef && tDef.dbTable !== '-' && (
