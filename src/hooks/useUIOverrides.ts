@@ -133,6 +133,7 @@ export const UI_ELEMENTS = {
     { key: '/accounting', label: 'المحاسبة' },
     { key: '/worker-debts', label: 'ديون العمال' },
     { key: '/worker-tracking', label: 'تتبع العمال' },
+    { key: '/worker-actions', label: 'إجراءات العمال' },
     { key: '/geo-operations', label: 'العمليات الجغرافية' },
     { key: '/activity-logs', label: 'سجل الأحداث' },
     { key: '/nearby-stores', label: 'المحلات القريبة' },
@@ -146,6 +147,12 @@ export const UI_ELEMENTS = {
     { key: '/stats', label: 'الإحصائيات' },
     { key: '/guide', label: 'الدليل' },
     { key: '/available-offers', label: 'العروض المتاحة' },
+    { key: '/manager-treasury', label: 'خزينة المدير' },
+    { key: '/worker-liability', label: 'عهدة العمال' },
+    { key: '/shared-invoices', label: 'الفواتير المشتركة' },
+    { key: '/surplus-deficit', label: 'الفائض والعجز' },
+    { key: '/rewards', label: 'المكافآت' },
+    { key: '/my-rewards', label: 'مكافآتي' },
   ],
   tabs: [
     { key: '/', label: 'الرئيسية' },
@@ -155,6 +162,9 @@ export const UI_ELEMENTS = {
     { key: '/my-stock', label: 'مخزوني' },
     { key: '/expenses', label: 'مصاريفي' },
     { key: '/customer-debts', label: 'ديون العملاء' },
+    { key: '/daily-receipts', label: 'الفواتير اليومية' },
+    { key: '/my-rewards', label: 'مكافآتي' },
+    { key: '/available-offers', label: 'العروض المتاحة' },
   ],
   buttons: [
     // الرئيسية (WorkerHome)
@@ -166,6 +176,9 @@ export const UI_ELEMENTS = {
     { key: 'home_promos', label: 'عملياتي', group: 'الرئيسية' },
     { key: 'home_customers', label: 'العملاء', group: 'الرئيسية' },
     { key: 'home_expenses', label: 'مصاريفي', group: 'الرئيسية' },
+    { key: 'home_rewards', label: 'مكافآتي', group: 'الرئيسية' },
+    { key: 'home_daily_receipts', label: 'الفواتير اليومية', group: 'الرئيسية' },
+    { key: 'home_available_offers', label: 'العروض المتاحة', group: 'الرئيسية' },
     // الطلبيات (Orders)
     { key: 'create_order', label: 'إنشاء طلبية', group: 'الطلبيات' },
     { key: 'orders_search', label: 'بحث في الطلبيات', group: 'الطلبيات' },
@@ -184,6 +197,25 @@ export const UI_ELEMENTS = {
     { key: 'load_stock', label: 'تحميل مخزون', group: 'تحميل للعامل' },
     // عروض المنتجات (ProductOffers)
     { key: 'add_offer', label: 'إضافة عرض', group: 'عروض المنتجات' },
+    // المخزن (WarehouseStock)
+    { key: 'warehouse_direct_sale', label: 'بيع مباشر من المخزن', group: 'المخزن' },
+    { key: 'warehouse_quick_load', label: 'تحميل سريع', group: 'المخزن' },
+    { key: 'warehouse_factory_delivery', label: 'استلام من المصنع', group: 'المخزن' },
+    // خزينة المدير (ManagerTreasury)
+    { key: 'treasury_coin_exchange', label: 'صرف عملة', group: 'خزينة المدير' },
+    { key: 'treasury_invoice_request', label: 'طلب فاتورة', group: 'خزينة المدير' },
+    { key: 'treasury_quick_order', label: 'طلبية سريعة', group: 'خزينة المدير' },
+    { key: 'treasury_settings', label: 'إعدادات الخزينة', group: 'خزينة المدير' },
+    // المحاسبة (AccountingSessions)
+    { key: 'create_session', label: 'إنشاء جلسة محاسبة', group: 'المحاسبة' },
+    // المكافآت (Rewards)
+    { key: 'add_reward_task', label: 'إضافة مهمة مكافأة', group: 'المكافآت' },
+    // ديون العملاء (CustomerDebts)
+    { key: 'collect_debt_btn', label: 'تحصيل دين', group: 'ديون العملاء' },
+    // وصولات المخزن (StockReceipts)
+    { key: 'add_stock_receipt', label: 'إضافة وصل استلام', group: 'وصولات المخزن' },
+    // إدارة المصاريف (ExpensesManagement)
+    { key: 'manage_expense_categories', label: 'إدارة التصنيفات', group: 'إدارة المصاريف' },
   ],
   actions: [
     { key: 'collect_debt', label: 'تحصيل دين', group: 'ديون العملاء' },
@@ -197,5 +229,19 @@ export const UI_ELEMENTS = {
     { key: 'edit_promo', label: 'تعديل عملية', group: 'عملياتي' },
     { key: 'delete_promo', label: 'حذف عملية', group: 'عملياتي' },
     { key: 'delete_expense', label: 'حذف مصروف', group: 'مصاريفي' },
+    { key: 'edit_customer', label: 'تعديل عميل', group: 'العملاء' },
+    { key: 'delete_customer', label: 'حذف عميل', group: 'العملاء' },
+    { key: 'view_customer_profile', label: 'عرض ملف العميل', group: 'العملاء' },
+    { key: 'edit_product', label: 'تعديل منتج', group: 'المنتجات' },
+    { key: 'delete_product', label: 'حذف منتج', group: 'المنتجات' },
+    { key: 'edit_worker', label: 'تعديل عامل', group: 'العمال' },
+    { key: 'deactivate_worker', label: 'تعطيل عامل', group: 'العمال' },
+    { key: 'review_expense', label: 'مراجعة مصروف', group: 'إدارة المصاريف' },
+    { key: 'approve_debt_collection', label: 'الموافقة على تحصيل', group: 'ديون العملاء' },
+    { key: 'reject_debt_collection', label: 'رفض تحصيل', group: 'ديون العملاء' },
+    { key: 'complete_accounting_session', label: 'إتمام جلسة محاسبة', group: 'المحاسبة' },
+    { key: 'handover_print', label: 'طباعة التسليم', group: 'خزينة المدير' },
+    { key: 'approve_customer_change', label: 'الموافقة على تعديل عميل', group: 'العملاء' },
+    { key: 'reject_customer_change', label: 'رفض تعديل عميل', group: 'العملاء' },
   ],
 };
