@@ -35,14 +35,6 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
 
     const container = mapContainerRef.current;
     
-    // Ensure container has dimensions before initializing
-    if (container.clientHeight === 0) {
-      const retry = setTimeout(() => {
-        mapRef.current = null; // allow re-init
-      }, 100);
-      return () => clearTimeout(retry);
-    }
-
     const map = L.map(container, {
       center: [36.7, 3.08],
       zoom: 7,

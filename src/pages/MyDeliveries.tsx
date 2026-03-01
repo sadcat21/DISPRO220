@@ -28,7 +28,6 @@ import OrderSearchDialog from '@/components/orders/OrderSearchDialog';
 import ModifyOrderDialog from '@/components/orders/ModifyOrderDialog';
 import DeliverySaleDialog from '@/components/orders/DeliverySaleDialog';
 import CheckVerificationDialog from '@/components/orders/CheckVerificationDialog';
-import { useLocationBroadcast } from '@/hooks/useWorkerLocation';
 import { useIsElementHidden } from '@/hooks/useUIOverrides';
 import { getLocalizedName } from '@/utils/sectorName';
 import { supabase } from '@/integrations/supabase/client';
@@ -58,7 +57,6 @@ const MyDeliveries: React.FC = () => {
   const updateStatus = useUpdateOrderStatus();
   const cancelOrder = useCancelOrder();
   const logActivity = useLogActivity();
-  const { isTracking, startTracking } = useLocationBroadcast();
   const { data: locationThreshold } = useLocationThreshold();
   const canBypassLocation = useHasPermission('bypass_location_check');
   const [checkingLocation, setCheckingLocation] = useState(false);
@@ -86,13 +84,7 @@ const MyDeliveries: React.FC = () => {
       });
   }, [orders]);
 
-  // Auto-start location broadcasting when there are active orders
-  useEffect(() => {
-    const hasActiveOrders = orders?.some(o => o.status === 'in_progress' || o.status === 'assigned');
-    if (hasActiveOrders && !isTracking) {
-      startTracking();
-    }
-  }, [orders, isTracking, startTracking]);
+  // Load print settings once
   useEffect(() => {
     loadPrintSettingsFromDB(null);
   }, []);

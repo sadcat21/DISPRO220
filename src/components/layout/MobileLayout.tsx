@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation } from 'react-router-dom';
 import { LogOut, MoreHorizontal, Bluetooth, BluetoothOff, Printer, Receipt } from 'lucide-react';
@@ -27,6 +27,7 @@ import { ALGERIAN_WILAYAS } from '@/data/algerianWilayas';
 import { useNavigation } from '@/hooks/useNavigation';
 import { useNavbarPreferences } from '@/hooks/useNavbarPreferences';
 import { useBluetoothPrinter } from '@/hooks/useBluetoothPrinter';
+import { useLocationBroadcast } from '@/hooks/useWorkerLocation';
 
 interface MobileLayoutProps {
   children: React.ReactNode;
@@ -39,6 +40,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   const { isConnected, deviceName, scanAndConnect, disconnect, status: printerStatus } = useBluetoothPrinter();
   const [invoiceRequestOpen, setInvoiceRequestOpen] = useState(false);
   const showInvoiceButton = role === 'admin' || role === 'branch_admin';
+  const { startTracking } = useLocationBroadcast();
 
   // Fetch pending invoice orders count for badge
   const { data: pendingInvoiceCount } = useQuery({
@@ -86,6 +88,14 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   }
 
   const isMoreActive = moreNavItems.some(item => location.pathname === item.path);
+
+  // Start worker GPS broadcast globally (not only in deliveries page)
+  useEffect(() => {
+    const isFieldWorker = role === 'worker' || role === 'supervisor';
+    if (isFieldWorker) {
+      startTracking();
+    }
+  }, [role, startTracking]);
 
   // Get role display text
   const getRoleDisplayText = () => {
