@@ -160,7 +160,16 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                     <p className={`text-xl font-black ${desiredResult ? 'text-primary' : 'text-foreground/30'}`}>
                       {desiredResult ? desiredResult.formatted : '—'}
                     </p>
-                    {desiredResult && <p className="text-[10px] text-foreground">{desiredResult.layers} C · {desiredResult.boxes} B</p>}
+                    {desiredResult && (
+                      <div className="text-[10px] text-foreground">
+                        <p>{desiredResult.layers} C · {desiredResult.boxes} B</p>
+                        {desiredResult.boxes > 0 && (
+                          <p className="text-primary/80 font-medium mt-0.5">
+                            {desiredResult.layers + 1} C - {boxesPerLayer - desiredResult.boxes} B
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -187,7 +196,16 @@ const PalletCalculatorDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                     <p className={`text-xl font-black ${remainderResult ? (remainderResult.deficit ? 'text-destructive' : 'text-primary') : 'text-foreground/30'}`}>
                       {remainderResult ? (remainderResult.deficit ? '✕' : remainderResult.formatted) : '—'}
                     </p>
-                    {remainderResult && !remainderResult.deficit && <p className="text-[10px] text-foreground">{remainderResult.layers} C · {remainderResult.boxes} B</p>}
+                    {remainderResult && !remainderResult.deficit && (
+                      <div className="text-[10px] text-foreground">
+                        <p>{remainderResult.layers} C · {remainderResult.boxes} B</p>
+                        {remainderResult.boxes > 0 && (
+                          <p className="text-primary/80 font-medium mt-0.5">
+                            {remainderResult.layers + 1} C - {boxesPerLayer - remainderResult.boxes} B
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
