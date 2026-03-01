@@ -38,7 +38,7 @@ export const useChat = () => {
       { table: 'conversations' },
       { table: 'conversation_participants' },
     ],
-    [['conversations'], ['conversation-participants']],
+    [['conversations'], ['conversations']],
     !!user
   );
 
