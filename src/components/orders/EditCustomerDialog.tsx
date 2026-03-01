@@ -359,19 +359,84 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
         onSuccess(data);
         onOpenChange(false);
       } else {
-        // Worker: create approval request for update
-        const { error } = await supabase
-          .from('customer_approval_requests')
-          .insert({
-            operation_type: 'update',
-            customer_id: customer.id,
-            payload: { ...payload, new_debt_amount: parseFloat(debtAmount) || 0 },
-            requested_by: workerId,
-            branch_id: customer.branch_id || null,
-            status: 'pending'
-          } as any);
-        if (error) throw error;
-        toast.success('تم إرسال طلب تعديل العميل للمراجعة');
+        const locationPayload = {
+          latitude,
+          longitude,
+          address: address.trim() || null,
+          wilaya: wilaya || null,
+          location_type: locationType,
+        };
+
+        const locationChanged =
+          String(customer.latitude ?? '') !== String(latitude ?? '') ||
+          String(customer.longitude ?? '') !== String(longitude ?? '') ||
+          String(customer.address ?? '') !== String(locationPayload.address ?? '') ||
+          String(customer.wilaya ?? '') !== String(locationPayload.wilaya ?? '') ||
+          String((customer as any).location_type ?? 'store') !== String(locationType ?? 'store');
+
+        const nonLocationKeys = [
+          'name', 'name_fr', 'store_name', 'store_name_fr', 'internal_name', 'phone',
+          'sector_id', 'zone_id', 'sales_rep_name', 'sales_rep_phone', 'is_trusted',
+          'trust_notes', 'default_payment_type', 'default_price_subtype', 'customer_type',
+          'is_registered', 'default_delivery_worker_id'
+        ];
+
+        const hasNonLocationChanges = nonLocationKeys.some((key) =>
+          String((customer as any)[key] ?? '') !== String((payload as any)[key] ?? '')
+        );
+
+        if (!locationChanged && !hasNonLocationChanges) {
+          toast.info('لا توجد تغييرات للحفظ');
+          onOpenChange(false);
+          return;
+        }
+
+        let locationUpdatedCustomer: Customer | null = null;
+
+        // Allow immediate GPS persistence even for worker edits (if policy allows)
+        if (locationChanged) {
+          const { data: updatedLocationData, error: locationError } = await supabase
+            .from('customers')
+            .update(locationPayload)
+            .eq('id', customer.id)
+            .select()
+            .single();
+
+          if (!locationError && updatedLocationData) {
+            locationUpdatedCustomer = updatedLocationData as Customer;
+          } else {
+            console.warn('Direct location update failed, fallback to approval request:', locationError);
+          }
+        }
+
+        // Keep approval workflow for any non-location changes or if direct location update is not allowed
+        if (hasNonLocationChanges || (locationChanged && !locationUpdatedCustomer)) {
+          const { error } = await supabase
+            .from('customer_approval_requests')
+            .insert({
+              operation_type: 'update',
+              customer_id: customer.id,
+              payload: { ...payload, new_debt_amount: parseFloat(debtAmount) || 0 },
+              requested_by: workerId,
+              branch_id: customer.branch_id || null,
+              status: 'pending'
+            } as any);
+
+          if (error) throw error;
+
+          if (locationUpdatedCustomer) {
+            toast.success('تم حفظ موقع GPS مباشرة وإرسال باقي التعديلات للمراجعة');
+          } else {
+            toast.success('تم إرسال طلب تعديل العميل للمراجعة');
+          }
+        } else {
+          toast.success('تم حفظ موقع GPS بنجاح');
+        }
+
+        if (locationUpdatedCustomer) {
+          onSuccess(locationUpdatedCustomer);
+        }
+
         onOpenChange(false);
       }
     } catch (error) {
