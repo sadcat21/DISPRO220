@@ -1,0 +1,121 @@
+import React, { useEffect, useState, useCallback } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { MapPin, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+
+/**
+ * For worker (non-admin) accounts:
+ * - Blocks login until GPS is enabled
+ * - Monitors GPS status and forces logout when GPS is turned off
+ */
+const GpsGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { role, isAuthenticated, logout } = useAuth();
+  const [gpsStatus, setGpsStatus] = useState<'checking' | 'granted' | 'denied' | 'unavailable'>('checking');
+
+  const isWorker = isAuthenticated && role !== 'admin' && role !== 'branch_admin';
+
+  const checkGps = useCallback(() => {
+    if (!navigator.geolocation) {
+      setGpsStatus('unavailable');
+      return;
+    }
+
+    // Use permissions API if available for instant check
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+        if (result.state === 'granted') {
+          setGpsStatus('granted');
+        } else if (result.state === 'denied') {
+          setGpsStatus('denied');
+        } else {
+          // prompt — try to get position
+          navigator.geolocation.getCurrentPosition(
+            () => setGpsStatus('granted'),
+            () => setGpsStatus('denied'),
+            { timeout: 5000, maximumAge: 60000 }
+          );
+        }
+
+        // Listen for changes
+        result.onchange = () => {
+          if (result.state === 'denied') {
+            setGpsStatus('denied');
+          } else if (result.state === 'granted') {
+            setGpsStatus('granted');
+          }
+        };
+      }).catch(() => {
+        // Fallback: try getting position directly
+        navigator.geolocation.getCurrentPosition(
+          () => setGpsStatus('granted'),
+          () => setGpsStatus('denied'),
+          { timeout: 5000, maximumAge: 60000 }
+        );
+      });
+    } else {
+      navigator.geolocation.getCurrentPosition(
+        () => setGpsStatus('granted'),
+        () => setGpsStatus('denied'),
+        { timeout: 5000, maximumAge: 60000 }
+      );
+    }
+  }, []);
+
+  // Initial check + periodic monitoring
+  useEffect(() => {
+    if (!isWorker) return;
+    checkGps();
+    const interval = setInterval(checkGps, 15000);
+    return () => clearInterval(interval);
+  }, [isWorker, checkGps]);
+
+  // Force logout when GPS denied
+  useEffect(() => {
+    if (isWorker && gpsStatus === 'denied') {
+      toast.error('تم تعطيل خدمة الموقع. سيتم تسجيل الخروج.');
+      const timer = setTimeout(() => logout(), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isWorker, gpsStatus, logout]);
+
+  // Non-worker accounts bypass
+  if (!isWorker) return <>{children}</>;
+
+  // Still checking
+  if (gpsStatus === 'checking') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4 p-6 text-center" dir="rtl">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+        <p className="text-lg font-medium">جاري التحقق من خدمة الموقع...</p>
+      </div>
+    );
+  }
+
+  // GPS denied or unavailable — show blocking screen
+  if (gpsStatus === 'denied' || gpsStatus === 'unavailable') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-6 p-6 text-center" dir="rtl">
+        <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center">
+          <MapPin className="w-10 h-10 text-destructive" />
+        </div>
+        <h2 className="text-xl font-bold">يجب تفعيل خدمة الموقع (GPS)</h2>
+        <p className="text-muted-foreground max-w-sm">
+          لاستخدام التطبيق، يجب تفعيل خدمة تحديد المواقع على جهازك ومنح الإذن للتطبيق.
+        </p>
+        <div className="flex gap-3">
+          <Button onClick={checkGps} variant="default">
+            إعادة المحاولة
+          </Button>
+          <Button onClick={logout} variant="outline">
+            تسجيل الخروج
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+};
+
+export default GpsGuard;
