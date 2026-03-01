@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Send, Image, Mic, Paperclip, ArrowRight, Check, CheckCheck } from 'lucide-react';
+import { Send, Camera, Mic, Paperclip, ArrowRight, Check, CheckCheck } from 'lucide-react';
 import { Conversation, ChatMessage } from '@/hooks/useChat';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
@@ -23,6 +23,7 @@ const ChatView = ({ conversation, onSend, onUpload, onBack }: Props) => {
   const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
@@ -190,8 +191,12 @@ const ChatView = ({ conversation, onSend, onUpload, onBack }: Props) => {
       {/* Input */}
       <div className="p-2 border-t flex items-center gap-1">
         <input ref={fileRef} type="file" className="hidden" onChange={handleFileSelect} accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx" />
+        <input ref={cameraRef} type="file" className="hidden" onChange={handleFileSelect} accept="image/*" capture="environment" />
         <Button size="icon" variant="ghost" onClick={() => fileRef.current?.click()} disabled={isSending} className="shrink-0">
-          <Image className="h-5 w-5" />
+          <Paperclip className="h-5 w-5" />
+        </Button>
+        <Button size="icon" variant="ghost" onClick={() => cameraRef.current?.click()} disabled={isSending} className="shrink-0">
+          <Camera className="h-5 w-5" />
         </Button>
         <Button
           size="icon"
