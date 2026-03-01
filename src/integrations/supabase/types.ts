@@ -5059,6 +5059,7 @@ export type Database = {
           created_at: string
           heading: number | null
           id: string
+          idle_since: string | null
           is_tracking: boolean
           latitude: number
           longitude: number
@@ -5072,6 +5073,7 @@ export type Database = {
           created_at?: string
           heading?: number | null
           id?: string
+          idle_since?: string | null
           is_tracking?: boolean
           latitude: number
           longitude: number
@@ -5085,6 +5087,7 @@ export type Database = {
           created_at?: string
           heading?: number | null
           id?: string
+          idle_since?: string | null
           is_tracking?: boolean
           latitude?: number
           longitude?: number
