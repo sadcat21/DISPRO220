@@ -49,6 +49,8 @@ import SurplusDeficitTreasury from "./pages/admin/SurplusDeficitTreasury";
 import Rewards from "./pages/admin/Rewards";
 import WorkerRewards from "./pages/WorkerRewards";
 import NotFound from "./pages/NotFound";
+import Chat from "./pages/Chat";
+import FloatingChat from "./components/chat/FloatingChat";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -83,7 +85,7 @@ const ProtectedRoute: React.FC<{
     return <Navigate to="/" replace />;
   }
 
-  return <GpsGuard><MobileLayout>{children}</MobileLayout></GpsGuard>;
+  return <GpsGuard><MobileLayout>{children}<FloatingChat /></MobileLayout></GpsGuard>;
 };
 
 // Public Route (redirect if authenticated)
@@ -336,6 +338,13 @@ const AppRoutes = () => {
       <Route path="/my-rewards" element={
         <ProtectedRoute>
           <WorkerRewards />
+        </ProtectedRoute>
+      } />
+
+      {/* Chat */}
+      <Route path="/chat" element={
+        <ProtectedRoute>
+          <Chat />
         </ProtectedRoute>
       } />
 
