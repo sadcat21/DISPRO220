@@ -24,7 +24,7 @@ interface Props {
   showLayerField?: boolean;
 }
 
-const PalletSettingsDialog: React.FC<Props> = ({ open, onOpenChange, branchId, products, showLayerField = false }) => {
+const PalletSettingsDialog: React.FC<Props> = ({ open, onOpenChange, branchId, products, showLayerField = true }) => {
   const [settings, setSettings] = useState<PalletSetting[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -76,7 +76,7 @@ const PalletSettingsDialog: React.FC<Props> = ({ open, onOpenChange, branchId, p
         if (!setting.product_id || setting.boxes_per_pallet < 1) continue;
         const payload: any = {
           boxes_per_pallet: setting.boxes_per_pallet,
-          boxes_per_layer: setting.boxes_per_layer || 0,
+          boxes_per_layer: setting.boxes_per_layer ?? 0,
         };
         if (setting.id) {
           await supabase.from('pallet_settings').update(payload).eq('id', setting.id);
