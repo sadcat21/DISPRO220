@@ -159,13 +159,10 @@ export const useWorkerLocations = () => {
   return useQuery({
     queryKey: ['worker-locations', branchId],
     queryFn: async () => {
-      let query = supabase
+      // Fetch ALL worker locations (no branch filter) to show every worker
+      const { data: locations, error } = await supabase
         .from('worker_locations')
         .select('*');
-
-      if (branchId) query = query.eq('branch_id', branchId);
-
-      const { data: locations, error } = await query;
       if (error) throw error;
 
       const workerIds = (locations || []).map(l => l.worker_id);

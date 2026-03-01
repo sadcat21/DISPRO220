@@ -34,6 +34,15 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
     if (!mapContainerRef.current || mapRef.current) return;
 
     const container = mapContainerRef.current;
+    
+    // Ensure container has dimensions before initializing
+    if (container.clientHeight === 0) {
+      const retry = setTimeout(() => {
+        mapRef.current = null; // allow re-init
+      }, 100);
+      return () => clearTimeout(retry);
+    }
+
     const map = L.map(container, {
       center: [36.7, 3.08],
       zoom: 7,
@@ -46,21 +55,24 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
 
     mapRef.current = map;
 
-    // Use ResizeObserver + multiple invalidateSize to guarantee tile rendering
+    // Force multiple invalidateSize calls to ensure tiles render
     const observer = new ResizeObserver(() => {
       map.invalidateSize();
     });
     observer.observe(container);
 
-    const t1 = setTimeout(() => map.invalidateSize(), 200);
-    const t2 = setTimeout(() => map.invalidateSize(), 600);
-    const t3 = setTimeout(() => map.invalidateSize(), 1200);
+    // Aggressive tile refresh
+    const timers = [100, 300, 500, 1000, 2000].map(ms =>
+      setTimeout(() => {
+        if (mapRef.current) {
+          mapRef.current.invalidateSize();
+        }
+      }, ms)
+    );
 
     return () => {
       observer.disconnect();
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
+      timers.forEach(clearTimeout);
       map.remove();
       mapRef.current = null;
       markersRef.current.clear();
@@ -176,8 +188,8 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
       </div>
 
       {/* Map */}
-      <div className="h-[400px] rounded-lg overflow-hidden border shadow-sm">
-        <div ref={mapContainerRef} className="h-full w-full" />
+      <div className="h-[400px] rounded-lg overflow-hidden border shadow-sm relative">
+        <div ref={mapContainerRef} className="h-full w-full" style={{ zIndex: 1 }} />
       </div>
 
       {/* Worker List */}
