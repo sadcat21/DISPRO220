@@ -592,11 +592,12 @@ const StockReceipts: React.FC = () => {
 
       {branchId && (
         <>
-          <PalletSettingsDialog
+           <PalletSettingsDialog
             open={showPalletSettings}
             onOpenChange={setShowPalletSettings}
             branchId={branchId}
             products={products}
+            showLayerField
           />
           <FactoryDeliveryDialog
             open={showDeliveryDialog}
