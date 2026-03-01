@@ -8,6 +8,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { FontSizeProvider } from "@/contexts/FontSizeContext";
 import { SelectedWorkerProvider } from "@/contexts/SelectedWorkerContext";
 import MobileLayout from "@/components/layout/MobileLayout";
+import GpsGuard from "@/components/auth/GpsGuard";
 import LoginForm from "@/components/auth/LoginForm";
 import Index from "./pages/Index";
 import MyPromos from "./pages/MyPromos";
@@ -82,7 +83,7 @@ const ProtectedRoute: React.FC<{
     return <Navigate to="/" replace />;
   }
 
-  return <MobileLayout>{children}</MobileLayout>;
+  return <GpsGuard><MobileLayout>{children}</MobileLayout></GpsGuard>;
 };
 
 // Public Route (redirect if authenticated)
