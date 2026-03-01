@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation } from 'react-router-dom';
-import { LogOut, MoreHorizontal, Bluetooth, BluetoothOff, Printer, Receipt } from 'lucide-react';
+import { LogOut, MoreHorizontal, Bluetooth, BluetoothOff, Printer, Receipt, MessageCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage, Language } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -23,6 +23,7 @@ import SectorCustomersPopover from '@/components/sectors/SectorCustomersPopover'
 import DocumentCollectionsPopover from '@/components/documents/DocumentCollectionsPopover';
 import ReceiptModificationsNotification from '@/components/printing/ReceiptModificationsNotification';
 import InvoiceRequestDialog from '@/components/treasury/InvoiceRequestDialog';
+import { useChat } from '@/hooks/useChat';
 import { ALGERIAN_WILAYAS } from '@/data/algerianWilayas';
 import { useNavigation } from '@/hooks/useNavigation';
 import { useNavbarPreferences } from '@/hooks/useNavbarPreferences';
@@ -40,6 +41,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   const { isConnected, deviceName, scanAndConnect, disconnect, status: printerStatus } = useBluetoothPrinter();
   const [invoiceRequestOpen, setInvoiceRequestOpen] = useState(false);
   const showInvoiceButton = role === 'admin' || role === 'branch_admin';
+  const { totalUnread } = useChat();
   const { startTracking } = useLocationBroadcast();
 
   // Fetch pending invoice orders count for badge
@@ -152,6 +154,18 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
             <OffersNotification />
             <DocumentCollectionsPopover />
             
+            {/* Chat icon */}
+            <Link
+              to="/chat"
+              className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors"
+            >
+              <MessageCircle className="w-4 h-4 text-primary" />
+              {totalUnread > 0 && (
+                <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                  {totalUnread > 9 ? '9+' : totalUnread}
+                </span>
+              )}
+            </Link>
             
             {/* More actions dropdown: Language, Branch, Logout */}
             <DropdownMenu>

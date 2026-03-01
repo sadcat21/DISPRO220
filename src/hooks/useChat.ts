@@ -29,8 +29,9 @@ export interface Conversation {
 }
 
 export const useChat = () => {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const queryClient = useQueryClient();
+  const isAdminOrBranchAdmin = role === 'admin' || role === 'branch_admin';
 
   useRealtimeSubscription(
     'chat-realtime',
@@ -42,12 +43,64 @@ export const useChat = () => {
     !!user
   );
 
-  // Fetch all conversations for current user
+  // Fetch all conversations for current user (or ALL for admin/branch_admin)
   const { data: conversations = [], isLoading } = useQuery({
-    queryKey: ['conversations'],
+    queryKey: ['conversations', isAdminOrBranchAdmin],
     queryFn: async () => {
       if (!user) return [];
-      
+
+      let convIds: string[] = [];
+
+      if (isAdminOrBranchAdmin) {
+        // Admin/branch_admin can see ALL conversations
+        let query = supabase.from('conversations').select('*').order('last_message_at', { ascending: false });
+        if (role === 'branch_admin' && user.branch_id) {
+          query = query.eq('branch_id', user.branch_id);
+        }
+        const { data: convs } = await query;
+        if (!convs?.length) return [];
+        convIds = convs.map(c => c.id);
+
+        // Fetch participants for all conversations
+        const { data: allParticipants } = await supabase
+          .from('conversation_participants')
+          .select('conversation_id, worker_id, last_read_at')
+          .in('conversation_id', convIds);
+
+        const workerIds = [...new Set(allParticipants?.map(p => p.worker_id) || [])];
+        const { data: workers } = await supabase
+          .from('workers')
+          .select('id, full_name, username')
+          .in('id', workerIds);
+
+        const workersMap = new Map(workers?.map(w => [w.id, w]) || []);
+
+        // Check if admin is participant for unread counts
+        const myParticipantMap = new Map(
+          allParticipants?.filter(p => p.worker_id === user.id).map(p => [p.conversation_id, p.last_read_at]) || []
+        );
+
+        return convs.map(conv => {
+          const msgs = (Array.isArray(conv.messages) ? conv.messages : []) as unknown as ChatMessage[];
+          const participants = allParticipants
+            ?.filter(p => p.conversation_id === conv.id)
+            .map(p => ({ worker_id: p.worker_id, last_read_at: p.last_read_at, worker: workersMap.get(p.worker_id) })) || [];
+
+          const lastRead = myParticipantMap.get(conv.id);
+          const unreadCount = lastRead
+            ? msgs.filter(m => m.timestamp > lastRead && m.sender_id !== user.id).length
+            : 0;
+
+          return {
+            ...conv,
+            messages: msgs,
+            participants,
+            unread_count: unreadCount,
+          } as Conversation;
+        });
+      }
+
+      // Regular worker: only conversations they participate in
       const { data: participations } = await supabase
         .from('conversation_participants')
         .select('conversation_id')
@@ -55,7 +108,7 @@ export const useChat = () => {
 
       if (!participations?.length) return [];
 
-      const convIds = participations.map(p => p.conversation_id);
+      convIds = participations.map(p => p.conversation_id);
       
       const { data: convs } = await supabase
         .from('conversations')
@@ -140,6 +193,20 @@ export const useChat = () => {
         .eq('id', conversationId);
 
       if (error) throw error;
+
+      // Auto-add admin as participant if not already
+      const { data: existingPart } = await supabase
+        .from('conversation_participants')
+        .select('id')
+        .eq('conversation_id', conversationId)
+        .eq('worker_id', message.sender_id)
+        .maybeSingle();
+
+      if (!existingPart) {
+        await supabase
+          .from('conversation_participants')
+          .insert({ conversation_id: conversationId, worker_id: message.sender_id });
+      }
 
       // Update last_read_at
       await supabase
