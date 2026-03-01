@@ -33,6 +33,7 @@ import { Customer } from '@/types/database';
 import { useIsElementHidden } from '@/hooks/useUIOverrides';
 import { useSectors } from '@/hooks/useSectors';
 import ModifyOrderDialog from '@/components/orders/ModifyOrderDialog';
+import DeliverySaleDialog from '@/components/orders/DeliverySaleDialog';
 import { Edit } from 'lucide-react';
 import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
 
@@ -82,6 +83,8 @@ const OrdersContent: React.FC = () => {
   const [customerIdFilter, setCustomerIdFilter] = useState<string | null>(null);
   const [showModifyDialog, setShowModifyDialog] = useState(false);
   const [modifyOrder, setModifyOrder] = useState<OrderWithDetails | null>(null);
+  const [showDeliverySaleDialog, setShowDeliverySaleDialog] = useState(false);
+  const [pendingDeliveryOrder, setPendingDeliveryOrder] = useState<OrderWithDetails | null>(null);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
@@ -114,6 +117,12 @@ const OrdersContent: React.FC = () => {
       toast.error(error.message);
     }
   };
+
+  const handleDeliverClick = (order: OrderWithDetails) => {
+    setPendingDeliveryOrder(order);
+    setShowDeliverySaleDialog(true);
+  };
+
   const { trackVisit } = useTrackVisit();
   const { sectors } = useSectors();
   const sectorMap = useMemo(() => {
@@ -759,6 +768,18 @@ const OrdersContent: React.FC = () => {
                       </Button>
                     )}
 
+                    {order.status === 'in_progress' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-primary border-primary/30 hover:bg-primary/10"
+                        title="تم التوصيل"
+                        onClick={() => handleDeliverClick(order)}
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                      </Button>
+                    )}
+
                     {order.status === 'pending' && (
                       <>
                         {!isAssignOrderHidden && (
@@ -918,6 +939,18 @@ const OrdersContent: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Delivery Sale Dialog */}
+      {pendingDeliveryOrder && (
+        <DeliverySaleDialog
+          open={showDeliverySaleDialog}
+          onOpenChange={(open) => {
+            setShowDeliverySaleDialog(open);
+            if (!open) setPendingDeliveryOrder(null);
+          }}
+          order={pendingDeliveryOrder}
+        />
+      )}
 
       {/* Modify Order Dialog */}
       {modifyOrder && (
