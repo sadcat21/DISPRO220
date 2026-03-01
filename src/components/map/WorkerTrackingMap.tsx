@@ -21,12 +21,13 @@ const WorkerTrackingMap: React.FC = () => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
 
-  // Initialize map
+  // Initialize map with ResizeObserver to ensure tiles load
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
-    const map = L.map(mapContainerRef.current, {
-      center: [36.7, 3.08], // Algeria center
+    const container = mapContainerRef.current;
+    const map = L.map(container, {
+      center: [36.7, 3.08],
       zoom: 7,
       scrollWheelZoom: true,
     });
@@ -37,12 +38,21 @@ const WorkerTrackingMap: React.FC = () => {
 
     mapRef.current = map;
 
-    // Ensure tiles render after container is visible
-    setTimeout(() => {
+    // Use ResizeObserver + multiple invalidateSize to guarantee tile rendering
+    const observer = new ResizeObserver(() => {
       map.invalidateSize();
-    }, 300);
+    });
+    observer.observe(container);
+
+    const t1 = setTimeout(() => map.invalidateSize(), 200);
+    const t2 = setTimeout(() => map.invalidateSize(), 600);
+    const t3 = setTimeout(() => map.invalidateSize(), 1200);
 
     return () => {
+      observer.disconnect();
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
       map.remove();
       mapRef.current = null;
       markersRef.current.clear();
@@ -52,11 +62,6 @@ const WorkerTrackingMap: React.FC = () => {
   // Update markers when locations change
   useEffect(() => {
     if (!mapRef.current || !locations) return;
-
-    // Force invalidate size to ensure tiles render correctly
-    setTimeout(() => {
-      mapRef.current?.invalidateSize();
-    }, 100);
 
     const currentIds = new Set(locations.map(l => l.worker_id));
 
