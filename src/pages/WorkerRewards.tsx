@@ -2,23 +2,21 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Trophy, Star, TrendingUp, TrendingDown, Award, Target, Flame, Crown } from 'lucide-react';
+import { Trophy, Star, TrendingUp, TrendingDown, Award, Target, Flame, Crown, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useWorkerPointsSummary, useAllWorkersPoints, useRewardSettings } from '@/hooks/useRewards';
+import { useWorkerPointsSummary, useAllWorkersPoints } from '@/hooks/useRewards';
+import { useRewardConfig } from '@/hooks/useRewardConfig';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 const LEVELS = [
-  { min: 0, max: 99, label: 'مبتدئ', icon: '🌱', color: 'text-muted-foreground', bg: 'bg-muted/30', progressColor: 'bg-gray-400' },
-  { min: 100, max: 299, label: 'نشيط', icon: '🔥', color: 'text-blue-600', bg: 'bg-blue-50', progressColor: 'bg-blue-500' },
-  { min: 300, max: 599, label: 'محترف', icon: '⭐', color: 'text-purple-600', bg: 'bg-purple-50', progressColor: 'bg-purple-500' },
-  { min: 600, max: Infinity, label: 'بطل مبيعات', icon: '🏆', color: 'text-yellow-600', bg: 'bg-yellow-50', progressColor: 'bg-yellow-500' },
+  { min: 0, max: 99, label: 'مبتدئ', icon: '🌱', color: 'text-muted-foreground', bg: 'bg-muted/30' },
+  { min: 100, max: 299, label: 'نشيط', icon: '🔥', color: 'text-blue-600', bg: 'bg-blue-50' },
+  { min: 300, max: 599, label: 'محترف', icon: '⭐', color: 'text-purple-600', bg: 'bg-purple-50' },
+  { min: 600, max: Infinity, label: 'بطل مبيعات', icon: '🏆', color: 'text-yellow-600', bg: 'bg-yellow-50' },
 ];
 
-const getLevel = (points: number) => {
-  return LEVELS.find(l => points >= l.min && points <= l.max) || LEVELS[0];
-};
-
+const getLevel = (points: number) => LEVELS.find(l => points >= l.min && points <= l.max) || LEVELS[0];
 const getNextLevel = (points: number) => {
   const idx = LEVELS.findIndex(l => points >= l.min && points <= l.max);
   return idx < LEVELS.length - 1 ? LEVELS[idx + 1] : null;
@@ -28,9 +26,8 @@ const WorkerRewards: React.FC = () => {
   const { workerId } = useAuth();
   const { data: myPoints, isLoading } = useWorkerPointsSummary(workerId || undefined);
   const { data: allPoints } = useAllWorkersPoints();
-  const { data: settings } = useRewardSettings();
+  const { data: config } = useRewardConfig();
 
-  // Get worker info
   const { data: workerInfo } = useQuery({
     queryKey: ['worker-info-rewards', workerId],
     queryFn: async () => {
@@ -40,7 +37,6 @@ const WorkerRewards: React.FC = () => {
     enabled: !!workerId,
   });
 
-  // Get recent points log
   const { data: recentLog } = useQuery({
     queryKey: ['worker-points-log', workerId],
     queryFn: async () => {
@@ -63,24 +59,37 @@ const WorkerRewards: React.FC = () => {
   const level = getLevel(total);
   const nextLevel = getNextLevel(total);
 
-  // Calculate rank
-  const allWorkerIds = Object.keys(allPoints || {});
-  const sorted = allWorkerIds
-    .map(id => ({ id, total: allPoints![id].total }))
+  const pointValue = config?.point_value || 10;
+
+  // Rank
+  const sorted = Object.entries(allPoints || {})
+    .map(([id, pts]) => ({ id, total: pts.total }))
     .sort((a, b) => b.total - a.total);
   const rank = sorted.findIndex(w => w.id === workerId) + 1;
 
-  // Calculate expected bonus
-  const totalAllPoints = sorted.reduce((sum, w) => sum + Math.max(0, w.total), 0);
-  const pointValue = totalAllPoints > 0 && settings?.monthlyBudget ? settings.monthlyBudget / totalAllPoints : 0;
-  const rawBonus = Math.max(0, total) * pointValue;
+  // Smart bonus calculation with correction factor
+  const totalAllPoints = sorted.reduce((s, w) => s + Math.max(0, w.total), 0);
+  const budget = config?.monthly_budget || 0;
+  const autoPct = config?.auto_percentage || 70;
+  const autoBudget = budget * (autoPct / 100);
+  const totalRawBonuses = totalAllPoints * pointValue;
+  const correctionFactor = totalRawBonuses > autoBudget && totalRawBonuses > 0
+    ? autoBudget / totalRawBonuses : 1;
+
+  const rawBonus = Math.max(0, total) * pointValue * correctionFactor;
   const salary = Number(workerInfo?.salary) || 0;
   const capPct = Number(workerInfo?.bonus_cap_percentage) || 20;
   const salaryCap = salary > 0 ? salary * (capPct / 100) : Infinity;
-  const absoluteCap = settings?.absoluteCap && settings.absoluteCap > 0 ? settings.absoluteCap : Infinity;
-  const expectedBonus = Math.min(rawBonus, salaryCap, absoluteCap);
 
-  // Progress to next level
+  // Competition bonus
+  let compBonus = 0;
+  const compBudget = budget * ((config?.competition_percentage || 20) / 100);
+  if (rank === 1) compBonus = compBudget * ((config?.top1_bonus_pct || 50) / 100);
+  else if (rank === 2) compBonus = compBudget * ((config?.top2_bonus_pct || 30) / 100);
+  else if (rank === 3) compBonus = compBudget * ((config?.top3_bonus_pct || 20) / 100);
+
+  const expectedBonus = Math.min(rawBonus + compBonus, salaryCap);
+
   const levelProgress = nextLevel
     ? ((total - level.min) / (nextLevel.min - level.min)) * 100
     : 100;
@@ -99,6 +108,7 @@ const WorkerRewards: React.FC = () => {
         <div className="flex items-center gap-2 mb-2">
           <Badge className={`${level.color} border-current`} variant="outline">{level.label}</Badge>
           {rank > 0 && <Badge variant="secondary">المرتبة #{rank}</Badge>}
+          {rank <= 3 && rank > 0 && <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">🏅 متنافس</Badge>}
         </div>
         {nextLevel && (
           <div className="mt-3">
@@ -111,29 +121,23 @@ const WorkerRewards: React.FC = () => {
         )}
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
-        <Card>
-          <CardContent className="p-3 text-center">
-            <Star className="w-5 h-5 mx-auto mb-1 text-primary" />
-            <p className="text-xl font-bold">{total}</p>
-            <p className="text-[10px] text-muted-foreground">إجمالي النقاط</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3 text-center">
-            <TrendingUp className="w-5 h-5 mx-auto mb-1 text-green-600" />
-            <p className="text-xl font-bold text-green-600">+{rewards}</p>
-            <p className="text-[10px] text-muted-foreground">مكافآت</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3 text-center">
-            <TrendingDown className="w-5 h-5 mx-auto mb-1 text-red-500" />
-            <p className="text-xl font-bold text-red-500">-{penalties}</p>
-            <p className="text-[10px] text-muted-foreground">خصومات</p>
-          </CardContent>
-        </Card>
+        <Card><CardContent className="p-3 text-center">
+          <Star className="w-5 h-5 mx-auto mb-1 text-primary" />
+          <p className="text-xl font-bold">{total}</p>
+          <p className="text-[10px] text-muted-foreground">إجمالي النقاط</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-3 text-center">
+          <TrendingUp className="w-5 h-5 mx-auto mb-1 text-green-600" />
+          <p className="text-xl font-bold text-green-600">+{rewards}</p>
+          <p className="text-[10px] text-muted-foreground">مكافآت</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-3 text-center">
+          <TrendingDown className="w-5 h-5 mx-auto mb-1 text-red-500" />
+          <p className="text-xl font-bold text-red-500">-{penalties}</p>
+          <p className="text-[10px] text-muted-foreground">خصومات</p>
+        </CardContent></Card>
       </div>
 
       {/* Expected Bonus */}
@@ -146,13 +150,32 @@ const WorkerRewards: React.FC = () => {
             </div>
             <span className="text-xl font-bold text-primary">{expectedBonus.toFixed(0)} DA</span>
           </div>
-          {pointValue > 0 && (
-            <p className="text-[10px] text-muted-foreground mt-1">قيمة النقطة: {pointValue.toFixed(2)} DA</p>
-          )}
+          <div className="mt-2 space-y-1 text-[10px] text-muted-foreground">
+            <div className="flex justify-between">
+              <span>قيمة النقطة: {pointValue} DA</span>
+              {correctionFactor < 1 && (
+                <span className="text-orange-600 flex items-center gap-0.5">
+                  <Shield className="w-3 h-3" /> تصحيح: {(correctionFactor * 100).toFixed(0)}%
+                </span>
+              )}
+            </div>
+            {compBonus > 0 && (
+              <div className="flex justify-between text-yellow-600">
+                <span>🏅 مكافأة تنافسية</span>
+                <span>+{compBonus.toFixed(0)} DA</span>
+              </div>
+            )}
+            {salary > 0 && (
+              <div className="flex justify-between">
+                <span>الحد الأقصى ({capPct}% من الراتب)</span>
+                <span>{salaryCap.toFixed(0)} DA</span>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
-      {/* Leaderboard Preview */}
+      {/* Leaderboard */}
       {sorted.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
@@ -191,12 +214,8 @@ const WorkerRewards: React.FC = () => {
               {recentLog.map((log: any) => (
                 <div key={log.id} className="flex items-center justify-between p-2 rounded-lg border text-sm">
                   <div>
-                    <p className="font-medium text-xs">
-                      {log.task?.name || log.penalty?.name || log.notes || 'نقاط'}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {new Date(log.point_date).toLocaleDateString('ar-DZ')}
-                    </p>
+                    <p className="font-medium text-xs">{log.task?.name || log.penalty?.name || log.notes || 'نقاط'}</p>
+                    <p className="text-[10px] text-muted-foreground">{new Date(log.point_date).toLocaleDateString('ar-DZ')}</p>
                   </div>
                   <Badge variant={log.point_type === 'reward' ? 'default' : 'destructive'} className="text-xs">
                     {log.point_type === 'reward' ? '+' : '-'}{Math.abs(log.points)}
@@ -208,7 +227,7 @@ const WorkerRewards: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Badges / Levels Info */}
+      {/* Levels */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">

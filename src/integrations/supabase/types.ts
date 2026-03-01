@@ -3430,6 +3430,82 @@ export type Database = {
           },
         ]
       }
+      reward_config: {
+        Row: {
+          auto_percentage: number
+          branch_id: string | null
+          competition_percentage: number
+          created_at: string
+          id: string
+          is_active: boolean
+          minimum_threshold: number
+          monthly_budget: number
+          point_value: number
+          reserve_percentage: number
+          top1_bonus_pct: number
+          top2_bonus_pct: number
+          top3_bonus_pct: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          auto_percentage?: number
+          branch_id?: string | null
+          competition_percentage?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          minimum_threshold?: number
+          monthly_budget?: number
+          point_value?: number
+          reserve_percentage?: number
+          top1_bonus_pct?: number
+          top2_bonus_pct?: number
+          top3_bonus_pct?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          auto_percentage?: number
+          branch_id?: string | null
+          competition_percentage?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          minimum_threshold?: number
+          monthly_budget?: number
+          point_value?: number
+          reserve_percentage?: number
+          top1_bonus_pct?: number
+          top2_bonus_pct?: number
+          top3_bonus_pct?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reward_config_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: true
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reward_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reward_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reward_penalties: {
         Row: {
           branch_id: string | null
@@ -3487,6 +3563,50 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reward_reserve_fund: {
+        Row: {
+          branch_id: string | null
+          carried_balance: number
+          created_at: string
+          id: string
+          month: string
+          notes: string | null
+          surplus_added: number
+          updated_at: string
+          used_amount: number
+        }
+        Insert: {
+          branch_id?: string | null
+          carried_balance?: number
+          created_at?: string
+          id?: string
+          month: string
+          notes?: string | null
+          surplus_added?: number
+          updated_at?: string
+          used_amount?: number
+        }
+        Update: {
+          branch_id?: string | null
+          carried_balance?: number
+          created_at?: string
+          id?: string
+          month?: string
+          notes?: string | null
+          surplus_added?: number
+          updated_at?: string
+          used_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reward_reserve_fund_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
             referencedColumns: ["id"]
           },
         ]
