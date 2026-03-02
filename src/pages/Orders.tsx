@@ -105,13 +105,16 @@ const OrdersContent: React.FC = () => {
   const rawOrders = isAdminOrBranchAdmin ? adminOrders : myOrders;
   const isLoading = isAdminOrBranchAdmin ? adminLoading : myLoading;
 
+  // For cutoff: use contextWorkerId (admin viewing worker) or own workerId (worker viewing own orders)
+  const cutoffWorkerId = contextWorkerId || (!isAdminOrBranchAdmin ? workerId : null);
+
   const { data: contextWorkerLastSession } = useQuery({
-    queryKey: ['worker-last-accounting-session', contextWorkerId],
+    queryKey: ['worker-last-accounting-session', cutoffWorkerId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('accounting_sessions')
         .select('completed_at, period_end')
-        .eq('worker_id', contextWorkerId!)
+        .eq('worker_id', cutoffWorkerId!)
         .eq('status', 'completed')
         .order('completed_at', { ascending: false })
         .order('period_end', { ascending: false })
@@ -121,7 +124,7 @@ const OrdersContent: React.FC = () => {
       if (error) throw error;
       return data;
     },
-    enabled: !!contextWorkerId,
+    enabled: !!cutoffWorkerId,
   });
 
   const contextWorkerCutoff = useMemo(() => {
