@@ -10,7 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { 
   ShoppingCart, Loader2, Package, User, Calendar, Store,
   CheckCircle, Clock, Truck, XCircle, UserCheck, Phone, MapPin, ChevronDown, ChevronUp, Navigation, Search, Edit2,
-  Receipt, Banknote, Route, Gift, Trash2, ListFilter, Map, AlertTriangle, FileCheck
+  Receipt, Banknote, Route, Gift, Trash2, ListFilter, Map, AlertTriangle, FileCheck, Printer
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAssignedOrders, useOrderItems, useUpdateOrderStatus, useCancelOrder } from '@/hooks/useOrders';
@@ -31,12 +31,16 @@ import CheckVerificationDialog from '@/components/orders/CheckVerificationDialog
 import { useIsElementHidden } from '@/hooks/useUIOverrides';
 import { getLocalizedName } from '@/utils/sectorName';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import ReceiptDialog from '@/components/printing/ReceiptDialog';
+import { ReceiptItem, ReceiptType } from '@/types/receipt';
 
 type TabStatus = 'all' | OrderStatus;
 type DeliveryType = 'orders' | 'direct_sales';
 
 const MyDeliveries: React.FC = () => {
   const { t, language, loadPrintSettingsFromDB } = useLanguage();
+  const { workerId, user } = useAuth();
   
   const [activeTab, setActiveTab] = useState<TabStatus>('assigned');
   const [deliveryType, setDeliveryType] = useState<DeliveryType>('orders');
@@ -61,6 +65,8 @@ const MyDeliveries: React.FC = () => {
   const canBypassLocation = useHasPermission('bypass_location_check');
   const [checkingLocation, setCheckingLocation] = useState(false);
   const [customerDebts, setCustomerDebts] = useState<Record<string, boolean>>({});
+  const [showReprintReceipt, setShowReprintReceipt] = useState(false);
+  const [reprintReceiptData, setReprintReceiptData] = useState<any>(null);
 
   // UI override checks
   const isSearchHidden = useIsElementHidden('button', 'deliveries_search');
@@ -152,6 +158,53 @@ const MyDeliveries: React.FC = () => {
 
   const handleCancelOrder_direct = (order: OrderWithDetails) => {
     setConfirmCancelOrderId(order.id);
+  };
+
+  const handleReprintReceipt = async (order: OrderWithDetails) => {
+    try {
+      // Fetch order items for this order
+      const { data: items } = await supabase
+        .from('order_items')
+        .select('*, product:products(*)')
+        .eq('order_id', order.id);
+
+      if (!items || items.length === 0) {
+        toast.error('لا توجد بنود لهذه الطلبية');
+        return;
+      }
+
+      const receiptItems: ReceiptItem[] = items.map(item => ({
+        productId: item.product_id,
+        productName: item.product?.name || 'منتج',
+        quantity: item.quantity,
+        unitPrice: Number(item.unit_price || 0),
+        totalPrice: Number(item.total_price || 0),
+        giftQuantity: item.gift_quantity || 0,
+      }));
+
+      const totalAmount = Number(order.total_amount || 0);
+
+      setReprintReceiptData({
+        receiptType: 'delivery' as ReceiptType,
+        orderId: order.id,
+        customerId: order.customer_id,
+        customerName: order.customer?.store_name || order.customer?.name || '',
+        customerPhone: order.customer?.phone,
+        workerId: workerId || '',
+        workerName: user?.full_name || '',
+        branchId: order.branch_id,
+        items: receiptItems,
+        totalAmount,
+        paidAmount: totalAmount,
+        remainingAmount: 0,
+        paymentMethod: order.payment_status || 'cash',
+        orderPaymentType: order.payment_type,
+        orderInvoicePaymentMethod: order.invoice_payment_method,
+      });
+      setShowReprintReceipt(true);
+    } catch {
+      toast.error('خطأ في تحضير الوصل');
+    }
   };
 
   const handleCancelOrder = async (orderId: string) => {
@@ -491,6 +544,15 @@ const MyDeliveries: React.FC = () => {
 
                 {order.status === 'delivered' && (
                   <>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="h-8 w-8"
+                      onClick={() => handleReprintReceipt(order)}
+                      title="طباعة الوصل"
+                    >
+                      <Printer className="w-4 h-4" />
+                    </Button>
                     {isDocumentOrder(order) && (
                       <Button
                         size="icon"
@@ -848,6 +910,17 @@ const MyDeliveries: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* Reprint Receipt Dialog */}
+      {reprintReceiptData && (
+        <ReceiptDialog
+          open={showReprintReceipt}
+          onOpenChange={(open) => {
+            setShowReprintReceipt(open);
+            if (!open) setReprintReceiptData(null);
+          }}
+          receiptData={reprintReceiptData}
+        />
+      )}
     </div>
   );
 };
