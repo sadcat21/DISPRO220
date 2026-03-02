@@ -57,7 +57,8 @@ const MyStock: React.FC = () => {
       let sessionsQuery = supabase
         .from('loading_sessions')
         .select('id')
-        .eq('worker_id', workerId!);
+        .eq('worker_id', workerId!)
+        .in('status', ['completed', 'open']);
       
       if (lastAccountingDate) {
         sessionsQuery = sessionsQuery.gte('created_at', lastAccountingDate);
