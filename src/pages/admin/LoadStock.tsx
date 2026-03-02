@@ -489,26 +489,26 @@ const LoadStock: React.FC = () => {
     return offer;
   };
 
-  // Auto-calculate gift quantity when product qty changes
+  // Calculate suggested gift quantity (read-only suggestion, NOT auto-applied)
+  const [suggestedGiftQty, setSuggestedGiftQty] = useState(0);
+  const [suggestedGiftUnit, setSuggestedGiftUnit] = useState('piece');
   useEffect(() => {
-    if (!addProductId || addProductQty <= 0) return;
+    if (!addProductId || addProductQty <= 0) { setSuggestedGiftQty(0); return; }
     const offer = productOffers[addProductId];
-    if (!offer) { setAddProductGiftQty(0); return; }
+    if (!offer) { setSuggestedGiftQty(0); return; }
 
-    // Find the matching tier for the entered quantity
     let totalGifts = 0;
     const qty = addProductQty;
-
-    // Check tiers from highest to lowest
     const sortedTiers = [...offer.tiers].sort((a, b) => b.minQty - a.minQty);
     for (const tier of sortedTiers) {
       if (qty >= tier.minQty) {
         totalGifts = Math.floor(qty / tier.minQty) * tier.giftQty;
-        setAddProductGiftUnit(tier.giftUnit);
+        setSuggestedGiftUnit(tier.giftUnit);
         break;
       }
     }
-    setAddProductGiftQty(totalGifts);
+    setSuggestedGiftQty(totalGifts);
+    // Do NOT auto-set addProductGiftQty - user must click to apply
   }, [addProductQty, addProductId, productOffers]);
 
   // Auto-calculate gift quantity when edit qty changes

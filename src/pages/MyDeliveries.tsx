@@ -518,25 +518,27 @@ const MyDeliveries: React.FC = () => {
         </TabsList>
       </Tabs>
 
-      {/* Status Tabs */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabStatus)} dir="rtl">
-        <TabsList className="w-full h-auto p-1 bg-muted/60 flex-wrap">
-          {tabs.map((tab) => {
-            const count = statusCounts[tab.value] || 0;
-            const TabIcon = tab.icon;
-            return (
-              <TabsTrigger 
-                key={tab.value} 
-                value={tab.value}
-                className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 px-1 data-[state=active]:shadow-sm"
-              >
-                <TabIcon className={`w-4 h-4 ${tab.color}`} />
-                <span className="text-xs font-bold">{count}</span>
-              </TabsTrigger>
-            );
-          })}
-        </TabsList>
-      </Tabs>
+      {/* Status Tabs - only for orders, not direct sales */}
+      {deliveryType === 'orders' && (
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabStatus)} dir="rtl">
+          <TabsList className="w-full h-auto p-1 bg-muted/60 flex-wrap">
+            {tabs.map((tab) => {
+              const count = statusCounts[tab.value] || 0;
+              const TabIcon = tab.icon;
+              return (
+                <TabsTrigger 
+                  key={tab.value} 
+                  value={tab.value}
+                  className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 px-1 data-[state=active]:shadow-sm"
+                >
+                  <TabIcon className={`w-4 h-4 ${tab.color}`} />
+                  <span className="text-xs font-bold">{count}</span>
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+        </Tabs>
+      )}
 
       {/* Orders List */}
       <div className="space-y-2.5">

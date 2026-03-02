@@ -13,6 +13,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { formatNumber } from '@/utils/formatters';
 import { useCompanyInfo } from '@/hooks/useCompanyInfo';
 import { useVerificationChecklist } from '@/hooks/useVerificationChecklist';
+import { toast } from 'sonner';
 
 interface CheckVerificationDialogProps {
   open: boolean;
@@ -94,7 +95,17 @@ const CheckVerificationDialog: React.FC<CheckVerificationDialogProps> = ({
   const filledDates = dateItems.every(i => !verification[`${i.id}_checked`] || verification[i.id]);
   const allChecked = completedChecks === totalChecks && filledDates;
 
+  // Check amount is required for non-blank checks
+  const isCheckAmountRequired = documentType === 'check' && !isBlankCheck;
+  const isCheckAmountMissing = isCheckAmountRequired && numericCheckAmount <= 0;
+
   const handleConfirmCheck = async (skipped: boolean) => {
+    // Block if check amount not entered (required for non-blank checks)
+    if (isCheckAmountMissing && mode === 'verify') {
+      toast.error('يجب إدخال مبلغ الشيك قبل التأكيد');
+      return;
+    }
+
     // If amount is entered and mismatched, go to mismatch screen
     if (isAmountMismatch && mode === 'verify') {
       setMode('amount_mismatch');
@@ -460,7 +471,7 @@ const CheckVerificationDialog: React.FC<CheckVerificationDialogProps> = ({
             <Button
               className="w-full h-12"
               onClick={() => handleConfirmCheck(isBlankCheck ? false : !allChecked)}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isCheckAmountMissing}
             >
               {isSubmitting ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
