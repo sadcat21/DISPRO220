@@ -75,7 +75,6 @@ export const useAssignedOrders = () => {
           customer:customers(*, sector:sectors(id, name, name_fr), zone:sector_zones(id, name, name_fr)),
           created_by_worker:workers!orders_created_by_fkey(id, full_name, username)
         `)
-        .neq('status', 'cancelled')
         .order('created_at', { ascending: false });
 
       if (role === 'admin' || role === 'branch_admin') {
@@ -105,11 +104,15 @@ export const useAssignedOrders = () => {
         if (lastSession?.period_end) {
           const cutoff = new Date(lastSession.period_end);
           return orders.filter(order => {
-            // Keep non-delivered orders (pending, assigned, in_progress)
-            if (order.status !== 'delivered') return true;
-            // Hide delivered orders created before the accounting cutoff
-            return new Date(order.created_at) > cutoff;
+            // Hide delivered and cancelled orders created before the accounting cutoff
+            if (order.status === 'delivered' || order.status === 'cancelled') {
+              return new Date(order.created_at) > cutoff;
+            }
+            return true;
           });
+        } else {
+          // No session yet: still hide cancelled orders
+          return orders.filter(order => order.status !== 'cancelled');
         }
       }
 
