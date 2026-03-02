@@ -4953,6 +4953,76 @@ export type Database = {
           },
         ]
       }
+      worker_attendance: {
+        Row: {
+          attendance_date: string
+          branch_id: string | null
+          clock_in_at: string | null
+          clock_in_latitude: number | null
+          clock_in_longitude: number | null
+          clock_out_at: string | null
+          clock_out_latitude: number | null
+          clock_out_longitude: number | null
+          created_at: string
+          id: string
+          notes: string | null
+          updated_at: string
+          worker_id: string
+        }
+        Insert: {
+          attendance_date?: string
+          branch_id?: string | null
+          clock_in_at?: string | null
+          clock_in_latitude?: number | null
+          clock_in_longitude?: number | null
+          clock_out_at?: string | null
+          clock_out_latitude?: number | null
+          clock_out_longitude?: number | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          updated_at?: string
+          worker_id: string
+        }
+        Update: {
+          attendance_date?: string
+          branch_id?: string | null
+          clock_in_at?: string | null
+          clock_in_latitude?: number | null
+          clock_in_longitude?: number | null
+          clock_out_at?: string | null
+          clock_out_latitude?: number | null
+          clock_out_longitude?: number | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          updated_at?: string
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "worker_attendance_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "worker_attendance_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "worker_attendance_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       worker_debt_payments: {
         Row: {
           amount: number
