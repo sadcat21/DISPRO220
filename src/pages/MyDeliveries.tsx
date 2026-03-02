@@ -150,9 +150,7 @@ const MyDeliveries: React.FC = () => {
     }
   };
 
-  const handleCancelWithLocationCheck = async (order: OrderWithDetails) => {
-    const allowed = await checkLocationForOrder(order);
-    if (!allowed) return;
+  const handleCancelOrder_direct = (order: OrderWithDetails) => {
     setConfirmCancelOrderId(order.id);
   };
 
@@ -482,7 +480,7 @@ const MyDeliveries: React.FC = () => {
                         size="icon"
                         variant="destructive"
                         className="h-8 w-8"
-                        onClick={() => handleCancelWithLocationCheck(order)}
+                        onClick={() => handleCancelOrder_direct(order)}
                         disabled={cancelOrder.isPending || checkingLocation}
                       >
                         {checkingLocation ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
@@ -754,7 +752,7 @@ const MyDeliveries: React.FC = () => {
                   variant="destructive"
                   size="sm"
                   className="flex-1"
-                  onClick={() => { setSelectedOrderId(null); handleCancelWithLocationCheck(selectedOrder); }}
+                  onClick={() => { setSelectedOrderId(null); handleCancelOrder_direct(selectedOrder); }}
                   disabled={cancelOrder.isPending || checkingLocation}
                 >
                   {checkingLocation ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4 ms-1" />}
