@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
-import { ArrowRight, Calculator, Truck, Banknote, Wallet, MapPin, ShoppingCart, Activity, Shield, HardHat, HandCoins, ArrowLeftRight, ClipboardList, Trophy, AlertTriangle, DollarSign, Package, PackageOpen, ClipboardCheck } from 'lucide-react';
+import { ArrowRight, Calculator, Truck, Banknote, Wallet, MapPin, ShoppingCart, Activity, Shield, HardHat, HandCoins, ArrowLeftRight, ClipboardList, Trophy, AlertTriangle, DollarSign, Package, PackageOpen, ClipboardCheck, TrendingUp, TrendingDown, Gift } from 'lucide-react';
 import { useWorkerLiability } from '@/hooks/useWorkerLiability';
 import { Badge } from '@/components/ui/badge';
 import { Worker } from '@/types/database';
@@ -69,13 +69,117 @@ const WorkerActions: React.FC = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from('worker_stock')
-        .select('*, product:products(name)')
+        .select('*, product:products(name, pieces_per_box)')
         .eq('worker_id', selectedWorker!.id)
         .gte('quantity', 0);
       return data || [];
     },
     enabled: !!selectedWorker?.id && truckStockOpen,
   });
+
+  // Fetch last accounting session for selected worker
+  const { data: lastWorkerAccounting } = useQuery({
+    queryKey: ['worker-last-accounting', selectedWorker?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('accounting_sessions')
+        .select('completed_at')
+        .eq('worker_id', selectedWorker!.id)
+        .eq('status', 'completed')
+        .order('completed_at', { ascending: false })
+        .limit(1)
+        .single();
+      return data?.completed_at || null;
+    },
+    enabled: !!selectedWorker?.id && truckStockOpen,
+  });
+
+  // Fetch loaded quantities since last accounting
+  const { data: truckLoadedData } = useQuery({
+    queryKey: ['worker-truck-loaded', selectedWorker?.id, lastWorkerAccounting],
+    queryFn: async () => {
+      let sessionsQuery = supabase
+        .from('loading_sessions')
+        .select('id')
+        .eq('worker_id', selectedWorker!.id)
+        .in('status', ['completed', 'open']);
+      if (lastWorkerAccounting) {
+        sessionsQuery = sessionsQuery.gte('created_at', lastWorkerAccounting);
+      }
+      const { data: sessions } = await sessionsQuery;
+      if (!sessions || sessions.length === 0) return [];
+      const sessionIds = sessions.map(s => s.id);
+      const { data: items } = await supabase
+        .from('loading_session_items')
+        .select('product_id, quantity, gift_quantity')
+        .in('session_id', sessionIds);
+      return items || [];
+    },
+    enabled: !!selectedWorker?.id && truckStockOpen,
+  });
+
+  // Fetch sold quantities since last accounting
+  const { data: truckSoldData } = useQuery({
+    queryKey: ['worker-truck-sold', selectedWorker?.id, lastWorkerAccounting],
+    queryFn: async () => {
+      let ordersQuery = supabase
+        .from('orders')
+        .select('id')
+        .eq('assigned_worker_id', selectedWorker!.id)
+        .eq('status', 'delivered');
+      if (lastWorkerAccounting) {
+        ordersQuery = ordersQuery.gte('created_at', lastWorkerAccounting);
+      }
+      const { data: orders } = await ordersQuery;
+      if (!orders || orders.length === 0) return [];
+      const orderIds = orders.map(o => o.id);
+      const { data: items } = await supabase
+        .from('order_items')
+        .select('product_id, quantity, gift_quantity, gift_offer_id')
+        .in('order_id', orderIds);
+      if (!items || items.length === 0) return [];
+      const offerIds = [...new Set(items.map(i => i.gift_offer_id).filter(Boolean))] as string[];
+      let offerUnits: Record<string, string> = {};
+      if (offerIds.length > 0) {
+        const { data: tiers } = await supabase
+          .from('product_offer_tiers')
+          .select('offer_id, gift_quantity_unit')
+          .in('offer_id', offerIds);
+        for (const t of (tiers || [])) {
+          offerUnits[t.offer_id] = t.gift_quantity_unit || 'piece';
+        }
+      }
+      return items.map(i => ({
+        ...i,
+        gift_unit: i.gift_offer_id ? (offerUnits[i.gift_offer_id] || 'piece') : 'piece',
+      }));
+    },
+    enabled: !!selectedWorker?.id && truckStockOpen,
+  });
+
+  const truckMovementStats = useMemo(() => {
+    const stats: Record<string, { loaded: number; sold: number; giftQty: number; giftUnit: string }> = {};
+    for (const item of (truckLoadedData || [])) {
+      if (!stats[item.product_id]) stats[item.product_id] = { loaded: 0, sold: 0, giftQty: 0, giftUnit: 'piece' };
+      stats[item.product_id].loaded += item.quantity + (item.gift_quantity || 0);
+    }
+    for (const item of (truckSoldData || [])) {
+      if (!stats[item.product_id]) stats[item.product_id] = { loaded: 0, sold: 0, giftQty: 0, giftUnit: 'piece' };
+      stats[item.product_id].sold += item.quantity;
+      if ((item.gift_quantity || 0) > 0) {
+        stats[item.product_id].giftQty += item.gift_quantity;
+        stats[item.product_id].giftUnit = (item as any).gift_unit || 'piece';
+      }
+    }
+    // Also add gifts from loading sessions
+    for (const item of (truckLoadedData || [])) {
+      if ((item.gift_quantity || 0) > 0) {
+        if (!stats[item.product_id]) stats[item.product_id] = { loaded: 0, sold: 0, giftQty: 0, giftUnit: 'piece' };
+        stats[item.product_id].giftQty += item.gift_quantity;
+      }
+    }
+    return stats;
+  }, [truckLoadedData, truckSoldData]);
 
   const handleSelectWorker = (worker: Worker) => {
     setSelectedWorker(worker);
@@ -208,15 +312,48 @@ const WorkerActions: React.FC = () => {
                   <p>لا يوجد رصيد في الشاحنة</p>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {truckStock
-                    .sort((a: any, b: any) => (b.quantity || 0) - (a.quantity || 0))
-                    .map((item: any) => (
-                      <div key={item.id} className={`flex items-center justify-between p-3 rounded-lg border ${item.quantity === 0 ? 'bg-destructive/10 border-destructive/30' : 'bg-card'}`}>
-                        <span className="font-medium text-sm">{item.product?.name}</span>
-                        <Badge variant={item.quantity > 0 ? 'default' : 'destructive'}>{item.quantity}</Badge>
-                      </div>
-                    ))}
+                <div className="grid gap-2">
+                  {[...truckStock]
+                    .sort((a: any, b: any) => {
+                      if (a.quantity === 0 && b.quantity > 0) return 1;
+                      if (a.quantity > 0 && b.quantity === 0) return -1;
+                      return ((a as any).product?.name || '').localeCompare((b as any).product?.name || '');
+                    })
+                    .map((item: any) => {
+                      const stats = truckMovementStats[item.product_id];
+                      const loaded = stats?.loaded || 0;
+                      const sold = stats?.sold || 0;
+                      const giftQty = stats?.giftQty || 0;
+                      const giftUnit = stats?.giftUnit === 'piece' ? 'قطعة' : stats?.giftUnit === 'box' ? 'صندوق' : stats?.giftUnit === 'kg' ? 'كغ' : 'قطعة';
+                      const isZero = item.quantity === 0;
+                      return (
+                        <div key={item.id} className={`p-3 rounded-lg border ${isZero ? 'bg-destructive/10 border-destructive/30' : 'bg-card'}`}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-medium text-sm">{item.product?.name}</span>
+                            <span className={`font-bold text-lg ${isZero ? 'text-destructive' : 'text-primary'}`}>
+                              {item.quantity}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground border-t pt-1 mt-1">
+                            <span className="flex items-center gap-0.5">
+                              <TrendingUp className="w-3 h-3 text-blue-500" />
+                              شحن: {loaded}
+                            </span>
+                            <span className="flex items-center gap-0.5">
+                              <TrendingDown className="w-3 h-3 text-green-500" />
+                              مباع: {sold}
+                            </span>
+                            {giftQty > 0 && (
+                              <span className="flex items-center gap-0.5">
+                                <Gift className="w-3 h-3 text-orange-500" />
+                                هدايا: {giftQty} {giftUnit}
+                              </span>
+                            )}
+                            <span className="font-semibold">باقي: {item.quantity}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
                 </div>
               )}
             </ScrollArea>
