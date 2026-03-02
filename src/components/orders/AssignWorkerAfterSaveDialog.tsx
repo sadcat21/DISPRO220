@@ -30,7 +30,7 @@ const AssignWorkerAfterSaveDialog: React.FC<AssignWorkerAfterSaveDialogProps> = 
   const assignOrder = useAssignOrder();
 
   useEffect(() => {
-    if (open && customerBranchId) {
+    if (open) {
       fetchDeliveryWorkers();
     }
   }, [open, customerBranchId]);
@@ -46,14 +46,18 @@ const AssignWorkerAfterSaveDialog: React.FC<AssignWorkerAfterSaveDialogProps> = 
   }, [defaultDeliveryWorkerId, deliveryWorkers]);
 
   const fetchDeliveryWorkers = async () => {
-    if (!customerBranchId) return;
     setIsLoading(true);
     try {
-      const { data: workerRoles } = await supabase
+      let query = supabase
         .from('worker_roles')
         .select(`worker_id, custom_roles!inner(code)`)
-        .eq('branch_id', customerBranchId)
         .eq('custom_roles.code', 'delivery_rep');
+
+      if (customerBranchId) {
+        query = query.eq('branch_id', customerBranchId);
+      }
+
+      const { data: workerRoles } = await query;
 
       if (!workerRoles || workerRoles.length === 0) {
         setDeliveryWorkers([]);
