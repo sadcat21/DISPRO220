@@ -50,6 +50,7 @@ import Rewards from "./pages/admin/Rewards";
 import WorkerRewards from "./pages/WorkerRewards";
 import NotFound from "./pages/NotFound";
 import Chat from "./pages/Chat";
+import Attendance from "./pages/admin/Attendance";
 import FloatingChat from "./components/chat/FloatingChat";
 import { Loader2 } from "lucide-react";
 
@@ -338,6 +339,13 @@ const AppRoutes = () => {
       <Route path="/my-rewards" element={
         <ProtectedRoute>
           <WorkerRewards />
+        </ProtectedRoute>
+      } />
+
+      {/* Attendance */}
+      <Route path="/attendance" element={
+        <ProtectedRoute allowedRoles={['admin', 'branch_admin']}>
+          <Attendance />
         </ProtectedRoute>
       } />
 

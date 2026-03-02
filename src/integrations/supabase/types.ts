@@ -240,6 +240,64 @@ export type Database = {
           },
         ]
       }
+      attendance_logs: {
+        Row: {
+          action_type: string
+          branch_id: string | null
+          created_at: string
+          distance_meters: number | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          recorded_at: string
+          worker_id: string
+        }
+        Insert: {
+          action_type: string
+          branch_id?: string | null
+          created_at?: string
+          distance_meters?: number | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          recorded_at?: string
+          worker_id: string
+        }
+        Update: {
+          action_type?: string
+          branch_id?: string | null
+          created_at?: string
+          distance_meters?: number | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          recorded_at?: string
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_logs_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_logs_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_logs_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       branch_pallets: {
         Row: {
           branch_id: string
