@@ -851,6 +851,21 @@ const OrdersContent: React.FC = () => {
                       </>
                     )}
 
+                    {/* Reassign button for assigned/in_progress orders */}
+                    {(order.status === 'assigned' || order.status === 'in_progress') && !isAssignOrderHidden && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        title="إعادة تعيين عامل التوصيل"
+                        onClick={() => {
+                          setSelectedOrderId(order.id);
+                          setShowAssignDialog(true);
+                        }}
+                      >
+                        <UserCheck className="w-4 h-4" />
+                      </Button>
+                    )}
+
                     {!isCancelOrderHidden && (order.status === 'assigned' || order.status === 'in_progress' || order.status === 'delivered') && (
                       <Button
                         variant="outline"
