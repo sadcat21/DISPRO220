@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useLocation } from 'react-router-dom';
 import { Product, Worker, OrderWithDetails } from '@/types/database';
@@ -101,8 +102,53 @@ const OrdersContent: React.FC = () => {
 
   const { data: adminOrders, isLoading: adminLoading } = useAllOrders();
   const { data: myOrders, isLoading: myLoading } = useMyOrders();
-  const orders = isAdminOrBranchAdmin ? adminOrders : myOrders;
+  const rawOrders = isAdminOrBranchAdmin ? adminOrders : myOrders;
   const isLoading = isAdminOrBranchAdmin ? adminLoading : myLoading;
+
+  const { data: contextWorkerLastSession } = useQuery({
+    queryKey: ['worker-last-accounting-session', contextWorkerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('accounting_sessions')
+        .select('completed_at, period_end')
+        .eq('worker_id', contextWorkerId!)
+        .eq('status', 'completed')
+        .order('completed_at', { ascending: false })
+        .order('period_end', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!contextWorkerId,
+  });
+
+  const contextWorkerCutoff = useMemo(() => {
+    if (!contextWorkerLastSession) return null;
+    const cutoffText = contextWorkerLastSession.completed_at || contextWorkerLastSession.period_end;
+    if (!cutoffText) return null;
+    const cutoff = new Date(cutoffText);
+    return Number.isNaN(cutoff.getTime()) ? null : cutoff;
+  }, [contextWorkerLastSession]);
+
+  const orders = useMemo(() => {
+    const list = rawOrders || [];
+
+    const workerScopedOrders = contextWorkerId
+      ? list.filter(order => order.assigned_worker_id === contextWorkerId || order.created_by === contextWorkerId)
+      : list;
+
+    if (!contextWorkerCutoff) return workerScopedOrders;
+
+    return workerScopedOrders.filter(order => {
+      if (order.status === 'delivered' || order.status === 'cancelled') {
+        return new Date(order.created_at) > contextWorkerCutoff;
+      }
+      return true;
+    });
+  }, [rawOrders, contextWorkerId, contextWorkerCutoff]);
+
   const { data: selectedOrderItems } = useOrderItems(selectedOrderId);
   const assignOrder = useAssignOrder();
   const deleteOrder = useDeleteOrder();
@@ -443,7 +489,7 @@ const OrdersContent: React.FC = () => {
       {/* Print View */}
       <OrdersPrintView
         ref={printRef}
-        orders={filteredOrdersForPrint.length > 0 ? filteredOrdersForPrint : orders || []}
+        orders={filteredOrdersForPrint.length > 0 ? filteredOrdersForPrint : orders}
         orderItems={allOrderItems}
         products={products}
         title={printWorkerName ? `${tp('print.orders_for')} - ${printWorkerName}` : tp('print.order_list')}
@@ -456,7 +502,7 @@ const OrdersContent: React.FC = () => {
         open={showPrintDialog}
         onOpenChange={setShowPrintDialog}
         workers={workers}
-        orders={(orders || []).filter(o => o.status !== 'cancelled')}
+        orders={orders.filter(o => o.status !== 'cancelled')}
         products={products}
         onPrint={handlePrint}
         onExportCSV={handleExportCSV}
@@ -590,7 +636,7 @@ const OrdersContent: React.FC = () => {
               </Button>
             )}
             {!isPrintHidden && (
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setShowPrintDialog(true)} disabled={!orders || orders.length === 0}>
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setShowPrintDialog(true)} disabled={orders.length === 0}>
                 <Printer className="w-4 h-4" />
               </Button>
             )}
@@ -607,7 +653,7 @@ const OrdersContent: React.FC = () => {
           <div className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-md text-sm animate-in fade-in slide-in-from-top-1">
             <User className="w-4 h-4" />
             <span className="font-medium">
-              {t('common.filter_by')}: {orders?.find(o => o.customer_id === customerIdFilter)?.customer?.name || t('common.customer')}
+              {t('common.filter_by')}: {orders.find(o => o.customer_id === customerIdFilter)?.customer?.name || t('common.customer')}
             </span>
             <Button
               variant="ghost"
@@ -626,32 +672,30 @@ const OrdersContent: React.FC = () => {
         <TabsList className="w-full grid grid-cols-5 h-10">
           <TabsTrigger value="all" className="text-[10px] sm:text-xs px-0.5 sm:px-1 gap-0.5 flex flex-col sm:flex-row items-center">
             <Package className="w-3.5 h-3.5 shrink-0" />
-            <span>{orders?.length || 0}</span>
+            <span>{orders.length}</span>
           </TabsTrigger>
           <TabsTrigger value="pending" className="text-[10px] sm:text-xs px-0.5 sm:px-1 gap-0.5 flex flex-col sm:flex-row items-center">
             <Clock className="w-3.5 h-3.5 shrink-0 text-yellow-600" />
-            <span>{orders?.filter(o => o.status === 'pending' || o.status === 'assigned').length || 0}</span>
+            <span>{orders.filter(o => o.status === 'pending' || o.status === 'assigned').length}</span>
           </TabsTrigger>
           <TabsTrigger value="in_progress" className="text-[10px] sm:text-xs px-0.5 sm:px-1 gap-0.5 flex flex-col sm:flex-row items-center">
             <Truck className="w-3.5 h-3.5 shrink-0 text-purple-600" />
-            <span>{orders?.filter(o => o.status === 'in_progress').length || 0}</span>
+            <span>{orders.filter(o => o.status === 'in_progress').length}</span>
           </TabsTrigger>
           <TabsTrigger value="delivered" className="text-[10px] sm:text-xs px-0.5 sm:px-1 gap-0.5 flex flex-col sm:flex-row items-center">
             <CheckCircle className="w-3.5 h-3.5 shrink-0 text-green-600" />
-            <span>{orders?.filter(o => o.status === 'delivered').length || 0}</span>
+            <span>{orders.filter(o => o.status === 'delivered').length}</span>
           </TabsTrigger>
           <TabsTrigger value="cancelled" className="text-[10px] sm:text-xs px-0.5 sm:px-1 gap-0.5 flex flex-col sm:flex-row items-center">
             <XCircle className="w-3.5 h-3.5 shrink-0 text-red-600" />
-            <span>{orders?.filter(o => o.status === 'cancelled').length || 0}</span>
+            <span>{orders.filter(o => o.status === 'cancelled').length}</span>
           </TabsTrigger>
         </TabsList>
       </Tabs>
 
       {/* Orders List - Filtered by Tab */}
       <div className="space-y-3">
-        {orders?.filter(order => {
-          // If context worker filter is active, only show that worker's orders
-          if (contextWorkerId && order.assigned_worker_id !== contextWorkerId && order.created_by !== contextWorkerId) return false;
+        {orders.filter(order => {
           // If customer filter is active, only show that customer's orders
           if (customerIdFilter && order.customer_id !== customerIdFilter) return false;
 
@@ -838,7 +882,7 @@ const OrdersContent: React.FC = () => {
           );
         })}
 
-        {(!orders || orders.length === 0) && (
+        {orders.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
             <ShoppingCart className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p>{t('orders.no_orders')}</p>
@@ -875,7 +919,7 @@ const OrdersContent: React.FC = () => {
               </div>
             ))}
             {(() => {
-              const selectedOrder = orders?.find(o => o.id === selectedOrderId);
+              const selectedOrder = orders.find(o => o.id === selectedOrderId);
               return selectedOrder?.total_amount && Number(selectedOrder.total_amount) > 0 ? (
                 <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg font-bold">
                   <span>{t('orders.grand_total')}</span>

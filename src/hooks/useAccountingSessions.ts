@@ -166,6 +166,8 @@ export const useCreateSession = () => {
       queryClient.invalidateQueries({ queryKey: ['manager-treasury'] });
       queryClient.invalidateQueries({ queryKey: ['treasury-summary'] });
       queryClient.invalidateQueries({ queryKey: ['assigned-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['my-orders'] });
     },
   });
 };
@@ -245,6 +247,8 @@ export const useUpdateFullSession = () => {
       queryClient.invalidateQueries({ queryKey: ['accounting-sessions'] });
       queryClient.invalidateQueries({ queryKey: ['session-items'] });
       queryClient.invalidateQueries({ queryKey: ['assigned-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['my-orders'] });
     },
   });
 };
