@@ -88,7 +88,32 @@ export const useAssignedOrders = () => {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as OrderWithDetails[];
+      
+      const orders = data as OrderWithDetails[];
+
+      // For workers: hide delivered orders that were accounted for
+      if (role !== 'admin' && role !== 'branch_admin' && workerId) {
+        const { data: lastSession } = await supabase
+          .from('accounting_sessions')
+          .select('period_end')
+          .eq('worker_id', workerId)
+          .eq('status', 'completed')
+          .order('period_end', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (lastSession?.period_end) {
+          const cutoff = new Date(lastSession.period_end);
+          return orders.filter(order => {
+            // Keep non-delivered orders (pending, assigned, in_progress)
+            if (order.status !== 'delivered') return true;
+            // Hide delivered orders created before the accounting cutoff
+            return new Date(order.created_at) > cutoff;
+          });
+        }
+      }
+
+      return orders;
     },
     enabled: !!workerId,
   });

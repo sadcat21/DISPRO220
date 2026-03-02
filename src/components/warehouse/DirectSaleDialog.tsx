@@ -398,7 +398,8 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
         const product = availableProducts.find(p => p.id === item.productId);
         if (product) {
           const unitPrice = getProductPrice(product);
-          return { ...item, unitPrice, totalPrice: item.quantity * unitPrice };
+          const paidQuantity = item.quantity - (item.giftQuantity || 0);
+          return { ...item, unitPrice, totalPrice: paidQuantity * unitPrice };
         }
         return item;
       }));
