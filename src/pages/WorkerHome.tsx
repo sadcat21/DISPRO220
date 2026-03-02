@@ -22,6 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import WorkerHandoverPreviewDialog from '@/components/accounting/WorkerHandoverPreviewDialog';
 import TodayCustomersDialog from '@/components/sectors/TodayCustomersDialog';
 import PalletCalculatorDialog from '@/components/stock/PalletCalculatorDialog';
+import AttendanceButton from '@/components/attendance/AttendanceButton';
 
 const WorkerHome: React.FC = () => {
   const { user, workerId } = useAuth();
@@ -189,6 +190,7 @@ const WorkerHome: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <AttendanceButton />
             <button
               onClick={() => setShowPalletCalculator(true)}
               className="bg-white/20 hover:bg-white/30 rounded-xl p-2.5 transition-colors"
