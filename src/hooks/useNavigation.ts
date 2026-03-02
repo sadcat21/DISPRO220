@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Home, Users, Package, BarChart3, Settings, FileSpreadsheet, UserCheck, Building2, Shield, ShoppingCart, Truck, Activity, Store, BookOpen, UserCog, Gift, Wallet, Warehouse, ClipboardList, Banknote, Calculator, MapPin, Navigation, FileText, Vault, FolderOpen, Scale, Trophy } from 'lucide-react';
+import { Home, Users, Package, BarChart3, Settings, FileSpreadsheet, UserCheck, Building2, Shield, ShoppingCart, Truck, Activity, Store, BookOpen, UserCog, Gift, Wallet, Warehouse, ClipboardList, Banknote, Calculator, MapPin, Navigation, FileText, Vault, FolderOpen, Scale, Trophy, CalendarDays } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkerPermissions } from '@/hooks/usePermissions';
 import { useMyUIOverrides } from '@/hooks/useUIOverrides';
@@ -61,6 +61,7 @@ export const useNavigation = () => {
           { path: '/rewards', icon: Trophy, label: 'المكافآت والعقوبات' },
           { path: '/worker-debts', icon: Banknote, label: t('nav.worker_debts') },
           { path: '/worker-tracking', icon: MapPin, label: t('navigation.worker_tracking') },
+          { path: '/attendance', icon: CalendarDays, label: 'المداومة' },
           { path: '/geo-operations', icon: Navigation, label: t('nav.geo_operations') },
           { path: '/activity-logs', icon: Activity, label: t('nav.activity_logs') },
           { path: '/nearby-stores', icon: Store, label: t('nav.nearby_stores') },
@@ -120,6 +121,7 @@ export const useNavigation = () => {
           { path: '/rewards', icon: Trophy, label: 'المكافآت والعقوبات' },
           { path: '/worker-debts', icon: Banknote, label: t('nav.worker_debts') },
           { path: '/worker-tracking', icon: MapPin, label: t('navigation.worker_tracking') },
+          { path: '/attendance', icon: CalendarDays, label: 'المداومة' },
           { path: '/geo-operations', icon: Navigation, label: t('nav.geo_operations') },
           { path: '/activity-logs', icon: Activity, label: t('nav.activity_logs') },
           { path: '/nearby-stores', icon: Store, label: t('nav.nearby_stores') },

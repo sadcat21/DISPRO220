@@ -29,6 +29,7 @@ import { useNavigation } from '@/hooks/useNavigation';
 import { useNavbarPreferences } from '@/hooks/useNavbarPreferences';
 import { useBluetoothPrinter } from '@/hooks/useBluetoothPrinter';
 import { useLocationBroadcast } from '@/hooks/useWorkerLocation';
+import AttendanceButton from '@/components/attendance/AttendanceButton';
 
 interface MobileLayoutProps {
   children: React.ReactNode;
@@ -145,6 +146,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
           </div>
           
           <div className="flex items-center gap-1 shrink-0">
+            {(role === 'worker' || role === 'supervisor') && <AttendanceButton />}
             <WorkerRequestsPopover />
             <TasksPopover />
             <SectorCustomersPopover />
