@@ -374,6 +374,35 @@ const MyDeliveries: React.FC = () => {
                   <Package className="w-4 h-4" />
                 </Button>
                 
+                {order.status === 'pending' && (
+                  <>
+                    {!isModifyHidden && (
+                      <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => setModifyOrder(order)}>
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                    <Button
+                      size="icon"
+                      className="h-8 w-8 bg-primary"
+                      onClick={() => handleUpdateStatus(order.id, 'in_progress')}
+                      disabled={updateStatus.isPending}
+                    >
+                      <Truck className="w-4 h-4" />
+                    </Button>
+                    {!isCancelHidden && (
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        className="h-8 w-8"
+                        onClick={() => handleCancelOrder(order.id)}
+                        disabled={cancelOrder.isPending}
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </>
+                )}
+
                 {order.status === 'assigned' && (
                   <>
                     {order.customer?.latitude && order.customer?.longitude && (
