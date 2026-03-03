@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ShoppingBag, Package } from 'lucide-react';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 
 interface Props {
   open: boolean;
@@ -14,6 +15,17 @@ interface Props {
 }
 
 const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerId, workerName }) => {
+  // Realtime subscription for orders and order_items
+  useRealtimeSubscription(
+    `worker-sales-realtime-${workerId}`,
+    [
+      { table: 'orders', filter: workerId ? `assigned_worker_id=eq.${workerId}` : undefined },
+      { table: 'order_items' },
+    ],
+    [['worker-sales-summary', workerId], ['worker-last-accounting-sales', workerId]],
+    open && !!workerId
+  );
+
   // Fetch last completed accounting session
   const { data: lastAccounting } = useQuery({
     queryKey: ['worker-last-accounting-sales', workerId],
