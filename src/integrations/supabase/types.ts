@@ -5652,13 +5652,17 @@ export type Database = {
           created_at: string
           department: string | null
           full_name: string
+          full_name_fr: string | null
           id: string
           is_active: boolean
           password_hash: string
+          personal_phone: string | null
+          print_name: string | null
           role: Database["public"]["Enums"]["app_role"]
           salary: number | null
           updated_at: string
           username: string
+          work_phone: string | null
         }
         Insert: {
           bonus_cap_percentage?: number | null
@@ -5666,13 +5670,17 @@ export type Database = {
           created_at?: string
           department?: string | null
           full_name: string
+          full_name_fr?: string | null
           id?: string
           is_active?: boolean
           password_hash: string
+          personal_phone?: string | null
+          print_name?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           salary?: number | null
           updated_at?: string
           username: string
+          work_phone?: string | null
         }
         Update: {
           bonus_cap_percentage?: number | null
@@ -5680,13 +5688,17 @@ export type Database = {
           created_at?: string
           department?: string | null
           full_name?: string
+          full_name_fr?: string | null
           id?: string
           is_active?: boolean
           password_hash?: string
+          personal_phone?: string | null
+          print_name?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           salary?: number | null
           updated_at?: string
           username?: string
+          work_phone?: string | null
         }
         Relationships: [
           {

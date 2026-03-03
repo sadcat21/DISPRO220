@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
-import { ArrowRight, Calculator, Truck, Banknote, Wallet, MapPin, ShoppingCart, Activity, Shield, HardHat, HandCoins, ArrowLeftRight, ClipboardList, Trophy, AlertTriangle, DollarSign, Package, PackageOpen, ClipboardCheck, TrendingUp, TrendingDown, Gift, CalendarDays, ShoppingBag } from 'lucide-react';
+import { ArrowRight, Calculator, Truck, Banknote, Wallet, MapPin, ShoppingCart, Activity, Shield, HardHat, HandCoins, ArrowLeftRight, ClipboardList, Trophy, AlertTriangle, DollarSign, Package, PackageOpen, ClipboardCheck, TrendingUp, TrendingDown, Gift, CalendarDays, ShoppingBag, Settings } from 'lucide-react';
 import { useWorkerLiability } from '@/hooks/useWorkerLiability';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +20,7 @@ import WorkerPointsDialog from '@/components/rewards/WorkerPointsDialog';
 import StockVerificationDialog from '@/components/stock/StockVerificationDialog';
 import WorkerAttendanceLogDialog from '@/components/attendance/WorkerAttendanceLogDialog';
 import WorkerSalesSummaryDialog from '@/components/accounting/WorkerSalesSummaryDialog';
+import EditWorkerProfileDialog from '@/components/workers/EditWorkerProfileDialog';
 
 const workerActions = [
   { key: 'accounting', icon: Calculator, path: '/accounting', labelKey: 'accounting.title', color: 'bg-amber-50 border-amber-200 text-amber-700' },
@@ -42,6 +43,7 @@ const workerActions = [
   { key: 'today_customers', icon: MapPin, path: '', labelKey: 'عملاء اليوم', color: 'bg-sky-50 border-sky-200 text-sky-700', isDialog: true },
   { key: 'attendance_log', icon: CalendarDays, path: '', labelKey: 'سجل المداومة', color: 'bg-teal-50 border-teal-200 text-teal-700', isDialog: true },
   { key: 'sales_summary', icon: ShoppingBag, path: '', labelKey: 'تجميع المبيعات', color: 'bg-amber-50 border-amber-200 text-amber-700', isDialog: true },
+  { key: 'worker_profile', icon: Settings, path: '', labelKey: 'إعدادات البيانات', color: 'bg-gray-50 border-gray-200 text-gray-700', isDialog: true },
 ];
 
 const WorkerActions: React.FC = () => {
@@ -60,6 +62,7 @@ const WorkerActions: React.FC = () => {
   const [stockReviewOpen, setStockReviewOpen] = useState(false);
   const [attendanceLogOpen, setAttendanceLogOpen] = useState(false);
   const [salesSummaryOpen, setSalesSummaryOpen] = useState(false);
+  const [workerProfileOpen, setWorkerProfileOpen] = useState(false);
 
   useRealtimeSubscription(
     `worker-actions-realtime-${selectedWorker?.id || 'none'}`,
@@ -250,6 +253,8 @@ const WorkerActions: React.FC = () => {
         setAttendanceLogOpen(true);
       } else if (action.key === 'sales_summary') {
         setSalesSummaryOpen(true);
+      } else if (action.key === 'worker_profile') {
+        setWorkerProfileOpen(true);
       }
       return;
     }
@@ -420,6 +425,12 @@ const WorkerActions: React.FC = () => {
       <WorkerSalesSummaryDialog
         open={salesSummaryOpen}
         onOpenChange={setSalesSummaryOpen}
+        workerId={selectedWorker?.id}
+        workerName={selectedWorker?.full_name}
+      />
+      <EditWorkerProfileDialog
+        open={workerProfileOpen}
+        onOpenChange={setWorkerProfileOpen}
         workerId={selectedWorker?.id}
         workerName={selectedWorker?.full_name}
       />

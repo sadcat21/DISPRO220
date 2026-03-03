@@ -12,6 +12,7 @@ import QuickDayPicker, { DAY_NAMES } from './QuickDayPicker';
 import ScheduleOverrideAlert from './ScheduleOverrideAlert';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useWorkerPrintInfo } from '@/hooks/useWorkerPrintInfo';
 import { useUpdateDebtPayment } from '@/hooks/useCustomerDebts';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
 import { toast } from 'sonner';
@@ -36,6 +37,7 @@ const CollectDebtDialog: React.FC<CollectDebtDialogProps> = ({
 }) => {
   const { t, dir } = useLanguage();
   const { workerId, user } = useAuth();
+  const { data: workerPrintInfo } = useWorkerPrintInfo(workerId);
   const updatePayment = useUpdateDebtPayment();
   const { trackVisit } = useTrackVisit();
   const [amount, setAmount] = useState(defaultAmount ? String(defaultAmount) : '');
@@ -127,8 +129,8 @@ const CollectDebtDialog: React.FC<CollectDebtDialogProps> = ({
         customerName: customerName,
         customerPhone: null,
         workerId: workerId!,
-        workerName: user?.full_name || '',
-        workerPhone: null,
+        workerName: workerPrintInfo?.printName || user?.full_name || '',
+        workerPhone: workerPrintInfo?.workPhone || null,
         branchId: null,
         items: [],
         totalAmount: numAmount,

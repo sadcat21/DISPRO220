@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useWorkerPrintInfo } from '@/hooks/useWorkerPrintInfo';
 import { Customer, Product, PaymentType, PriceSubType, Sector } from '@/types/database';
 import { InvoicePaymentMethod } from '@/types/stamp';
 import { useActiveStampTiers, calculateStampAmount } from '@/hooks/useStampTiers';
@@ -63,6 +64,7 @@ interface OrderItemWithPrice {
 
 const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange, stockItems, initialCustomerId, stockSource = 'worker' }) => {
   const { workerId, activeBranch, user } = useAuth();
+  const { data: workerPrintInfo } = useWorkerPrintInfo(workerId);
   const { t, dir } = useLanguage();
   const queryClient = useQueryClient();
   const { companyInfo } = useCompanyInfo();
@@ -632,8 +634,8 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
         customerName: selectedCustomer?.name || '',
         customerPhone: selectedCustomer?.phone || null,
         workerId: workerId!,
-        workerName: user?.full_name || '',
-        workerPhone: null,
+        workerName: workerPrintInfo?.printName || user?.full_name || '',
+        workerPhone: workerPrintInfo?.workPhone || null,
         branchId: activeBranch?.id || null,
         items: receiptItems,
         totalAmount: orderTotals.totalAmount,

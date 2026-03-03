@@ -34,6 +34,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import ReceiptDialog from '@/components/printing/ReceiptDialog';
 import { ReceiptItem, ReceiptType } from '@/types/receipt';
+import { useWorkerPrintInfo } from '@/hooks/useWorkerPrintInfo';
 
 type TabStatus = 'all' | OrderStatus;
 type DeliveryType = 'orders' | 'direct_sales';
@@ -41,6 +42,7 @@ type DeliveryType = 'orders' | 'direct_sales';
 const MyDeliveries: React.FC = () => {
   const { t, language, loadPrintSettingsFromDB } = useLanguage();
   const { workerId, user } = useAuth();
+  const { data: workerPrintInfo } = useWorkerPrintInfo(workerId);
   
   const [activeTab, setActiveTab] = useState<TabStatus>('assigned');
   const [deliveryType, setDeliveryType] = useState<DeliveryType>('orders');
@@ -191,7 +193,8 @@ const MyDeliveries: React.FC = () => {
         customerName: order.customer?.store_name || order.customer?.name || '',
         customerPhone: order.customer?.phone,
         workerId: workerId || '',
-        workerName: user?.full_name || '',
+        workerName: workerPrintInfo?.printName || user?.full_name || '',
+        workerPhone: workerPrintInfo?.workPhone || null,
         branchId: order.branch_id,
         items: receiptItems,
         totalAmount,
