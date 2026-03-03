@@ -1,5 +1,5 @@
 /**
- * ESC/POS Receipt Formatter for 80mm thermal printers
+ * ESC/POS Receipt Formatter for 48mm thermal printers
  * Professional POS receipt design for distribution systems
  * Algerian accounting compliance (Facture 1/2, stamp tax, etc.)
  */
@@ -10,8 +10,8 @@ const ESC = 0x1B;
 const GS = 0x1D;
 const LF = 0x0A;
 
-// 80mm printer ≈ 42 chars per line (monospace)
-const LINE_WIDTH = 42;
+// 48mm printer ≈ 32 chars per line (monospace)
+const LINE_WIDTH = 32;
 
 // --- Arabic to Latin transliteration ---
 const ARABIC_TO_LATIN: Record<string, string> = {
@@ -302,11 +302,10 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
     }
   } else {
     // ═══════ ITEMS TABLE ═══════
-    // Column header: Produit | QTE | Unite | Prix U | Total
+    // Multi-line item format for 48mm (32 chars)
+    // Line 1: Product name (full width)
+    // Line 2: QTE x PxU = Total
     add(ALIGN_LEFT);
-    add(BOLD_ON);
-    addText(padRight('Produit', 14) + padLeft('QTE', 5) + padLeft('U', 4) + padLeft('PxU', 8) + padLeft('Total', 11));
-    add(BOLD_OFF);
     addText(separator());
 
     let totalBoxes = 0;
@@ -317,56 +316,80 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
       const unitLabel = getUnitLabel(item);
       const unitPrice = getUnitPrice(item);
       const totalStr = formatAmount(item.totalPrice);
+      const qtyStr = formatQty(item.quantity);
 
-      // Product name (truncate to fit)
+      // Line 1: Product name (can use full width)
       const nameStr = sanitizeForPrint(item.productName);
-      const displayName = nameStr.length > 14 ? nameStr.substring(0, 13) + '.' : nameStr;
+      if (nameStr.length > LINE_WIDTH) {
+        addText(nameStr.substring(0, LINE_WIDTH));
+        addText(' ' + nameStr.substring(LINE_WIDTH).substring(0, LINE_WIDTH - 1));
+      } else {
+        addText(nameStr);
+      }
 
-      let qtyStr = formatQty(item.quantity);
-
-      addText(padRight(displayName, 14) + padLeft(qtyStr, 5) + padLeft(unitLabel, 4) + padLeft(unitPrice, 8) + padLeft(totalStr, 11));
+      // Line 2: qty x price = total
+      const detailLine = ` ${qtyStr}${unitLabel} x ${unitPrice}`;
+      const totalPart = `${totalStr} DA`;
+      const spaceBetween = LINE_WIDTH - detailLine.length - totalPart.length;
+      if (spaceBetween > 0) {
+        addText(detailLine + ' '.repeat(spaceBetween) + totalPart);
+      } else {
+        addText(detailLine);
+        addText(padLeft(totalPart, LINE_WIDTH));
+      }
 
       // Gift line
       if (giftBoxes > 0 || giftPieces > 0) {
-        let giftStr = '  +CADEAU: ';
-        if (giftBoxes > 0) giftStr += `${formatQty(giftBoxes)} BTS`;
-        if (giftPieces > 0) giftStr += `${giftBoxes > 0 ? ' + ' : ''}${formatQty(giftPieces)} PCS`;
+        let giftStr = ' +CADEAU:';
+        if (giftBoxes > 0) giftStr += ` ${formatQty(giftBoxes)}BTS`;
+        if (giftPieces > 0) giftStr += `${giftBoxes > 0 ? '+' : ' '}${formatQty(giftPieces)}PCS`;
         addText(giftStr);
       }
 
       if (item.offerNote) {
-        addText(`  ${sanitizeForPrint(item.offerNote)}`);
+        const note = sanitizeForPrint(item.offerNote);
+        addText(` ${note.substring(0, LINE_WIDTH - 1)}`);
       }
 
+      addText(separator('-'));
       totalBoxes += item.quantity;
       totalProducts++;
     }
 
-    addText(separator());
-    addText(`Articles: ${totalProducts}  |  Collisage: ${formatQty(totalBoxes)}`);
+    addText(`Art:${totalProducts} Colis:${formatQty(totalBoxes)}`);
     addText(doubleSeparator());
 
     // ═══════ TOTALS ═══════
     add(ALIGN_LEFT);
+    addText(doubleSeparator());
     if (data.discountAmount > 0) {
-      addText(padRight('SOUS-TOTAL', 22) + padLeft(`${formatAmount(data.totalAmount + data.discountAmount - (data.stampAmount || 0))} DA`, 20));
-      addText(padRight('REMISE', 22) + padLeft(`-${formatAmount(data.discountAmount)} DA`, 20));
+      const stLabel = 'S-TOTAL';
+      const stVal = `${formatAmount(data.totalAmount + data.discountAmount - (data.stampAmount || 0))} DA`;
+      addText(padRight(stLabel, LINE_WIDTH - stVal.length) + stVal);
+      const rmVal = `-${formatAmount(data.discountAmount)} DA`;
+      addText(padRight('REMISE', LINE_WIDTH - rmVal.length) + rmVal);
     }
 
     if (data.stampAmount && data.stampAmount > 0) {
-      const pct = data.stampPercentage ? ` (${data.stampPercentage}%)` : '';
-      addText(padRight(`TIMBRE${pct}`, 22) + padLeft(`${formatAmount(data.stampAmount)} DA`, 20));
+      const pct = data.stampPercentage ? `(${data.stampPercentage}%)` : '';
+      const tLabel = `TIMBRE${pct}`;
+      const tVal = `${formatAmount(data.stampAmount)} DA`;
+      addText(padRight(tLabel, LINE_WIDTH - tVal.length) + tVal);
     }
 
     add(BOLD_ON);
     add(DOUBLE_HEIGHT);
-    addText(padRight('NET A PAYER', 20) + padLeft(`${formatAmount(data.totalAmount)} DA`, 22));
+    const netVal = `${formatAmount(data.totalAmount)} DA`;
+    addText('NET A PAYER');
+    addText(padLeft(netVal, LINE_WIDTH));
     add(NORMAL_SIZE);
     add(BOLD_OFF);
 
     addText(separator());
-    addText(padRight('MONTANT PAYE', 22) + padLeft(`${formatAmount(data.paidAmount)} DA`, 20));
-    addText(padRight('RESTANT', 22) + padLeft(`${formatAmount(data.remainingAmount)} DA`, 20));
+    const paidVal = `${formatAmount(data.paidAmount)} DA`;
+    addText(padRight('PAYE', LINE_WIDTH - paidVal.length) + paidVal);
+    const restVal = `${formatAmount(data.remainingAmount)} DA`;
+    addText(padRight('RESTANT', LINE_WIDTH - restVal.length) + restVal);
   }
 
   // ═══════ ADVANCED DISTRIBUTION SECTION ═══════
@@ -388,14 +411,14 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
     // Stock before/after
     if (opts.showWorkerStockBeforeAfter && opts.stockBefore && opts.stockAfter) {
       addText(separator());
-      addText(centerText('--- STOCK VENDEUR ---'));
-      addText(padRight('Produit', 18) + padLeft('Avant', 8) + padLeft('Apres', 8) + padLeft('Diff', 8));
+      addText(centerText('-- STOCK VENDEUR --'));
+      addText(padRight('Produit', 14) + padLeft('Avt', 6) + padLeft('Apr', 6) + padLeft('Dif', 6));
       for (const [productId, before] of Object.entries(opts.stockBefore)) {
         const after = opts.stockAfter[productId] ?? before;
         const diff = after - before;
         const item = data.items.find(i => i.productId === productId);
-        const name = item ? sanitizeForPrint(item.productName).substring(0, 16) : productId.substring(0, 16);
-        addText(padRight(name, 18) + padLeft(String(before), 8) + padLeft(String(after), 8) + padLeft(String(diff), 8));
+        const name = item ? sanitizeForPrint(item.productName).substring(0, 14) : productId.substring(0, 14);
+        addText(padRight(name, 14) + padLeft(String(before), 6) + padLeft(String(after), 6) + padLeft(String(diff), 6));
       }
     }
   }
@@ -414,9 +437,9 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
 
   // Signatures
   add(ALIGN_LEFT);
-  addText(padRight('Vendeur:', 21) + padRight('Client:', 21));
+  addText(padRight('Vendeur:', 16) + padRight('Client:', 16));
   addText('');
-  addText(padRight('___________', 21) + padRight('___________', 21));
+  addText(padRight('_________', 16) + padRight('_________', 16));
   addText('');
 
   add(ALIGN_CENTER);
@@ -443,7 +466,7 @@ export function formatReceiptForPreview(data: ReceiptData): string {
   const receiptNum = String(data.receiptNumber).padStart(6, '0');
   const invoiceType = getInvoiceType(data);
 
-  // ── Items table rows ──
+  // ── Items - multi-line format for narrow 48mm ──
   let itemsHtml = '';
   let totalBoxes = 0;
   let totalProducts = 0;
@@ -457,21 +480,22 @@ export function formatReceiptForPreview(data: ReceiptData): string {
     if (giftBoxes > 0 || giftPieces > 0) {
       let giftText = '';
       if (giftBoxes > 0) giftText += `${formatQty(giftBoxes)} BTS`;
-      if (giftPieces > 0) giftText += `${giftBoxes > 0 ? ' + ' : ''}${formatQty(giftPieces)} PCS`;
-      giftHtml = `<div style="color:#16a34a;font-size:9px;text-align:center;">🎁 +CADEAU: ${giftText}</div>`;
+      if (giftPieces > 0) giftText += `${giftBoxes > 0 ? '+' : ''}${formatQty(giftPieces)} PCS`;
+      giftHtml = `<div style="color:#16a34a;font-size:8px;">🎁 +CADEAU: ${giftText}</div>`;
     }
 
-    const noteHtml = item.offerNote ? `<div style="font-size:8px;color:#d97706;padding-left:4px;">${item.offerNote}</div>` : '';
+    const noteHtml = item.offerNote ? `<div style="font-size:7px;color:#d97706;">${item.offerNote}</div>` : '';
 
+    // Multi-line: Line 1 = product name, Line 2 = qty x price = total
     itemsHtml += `
-      <tr style="border-bottom:1px dotted #ddd;">
-        <td style="padding:3px 2px;font-size:10px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.productName}</td>
-        <td style="text-align:center;font-size:10px;padding:3px 1px;">${formatQty(item.quantity)}</td>
-        <td style="text-align:center;font-size:9px;padding:3px 1px;">${unitLabel}</td>
-        <td style="text-align:right;font-size:10px;padding:3px 1px;">${unitPrice}</td>
-        <td style="text-align:right;font-size:10px;font-weight:bold;padding:3px 2px;">${Math.round(item.totalPrice).toLocaleString()}</td>
-      </tr>
-      ${(giftHtml || noteHtml) ? `<tr><td colspan="5">${giftHtml}${noteHtml}</td></tr>` : ''}`;
+      <div style="border-bottom:1px dotted #ccc;padding:2px 0;">
+        <div style="font-size:10px;font-weight:500;word-wrap:break-word;">${item.productName}</div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:#444;">
+          <span>${formatQty(item.quantity)}${unitLabel} x ${unitPrice}</span>
+          <span style="font-weight:bold;">${Math.round(item.totalPrice).toLocaleString()} DA</span>
+        </div>
+        ${giftHtml}${noteHtml}
+      </div>`;
 
     totalBoxes += item.quantity;
     totalProducts++;
@@ -522,7 +546,7 @@ export function formatReceiptForPreview(data: ReceiptData): string {
   if (data.receiptType === 'debt_payment') {
     const methodLabels: Record<string, string> = { cash: 'Espèces', check: 'Chèque', transfer: 'Virement', receipt: 'Versement' };
     return `
-      <div style="font-family:'Courier New',monospace;max-width:300px;margin:0 auto;font-size:11px;line-height:1.4;color:#1a1a1a;">
+      <div style="font-family:'Courier New',monospace;max-width:200px;margin:0 auto;font-size:10px;line-height:1.3;color:#1a1a1a;">
         <!-- Header -->
         <div style="text-align:center;padding-bottom:6px;">
           <div style="font-size:16px;font-weight:bold;letter-spacing:1px;">${data.companyName || 'Laser Food'}</div>
@@ -557,7 +581,7 @@ export function formatReceiptForPreview(data: ReceiptData): string {
 
   // ── SALE / DELIVERY RECEIPT ──
   return `
-    <div style="font-family:'Courier New',monospace;max-width:300px;margin:0 auto;font-size:11px;line-height:1.4;color:#1a1a1a;">
+    <div style="font-family:'Courier New',monospace;max-width:200px;margin:0 auto;font-size:10px;line-height:1.3;color:#1a1a1a;">
       <!-- Header -->
       <div style="text-align:center;padding-bottom:6px;">
         <div style="font-size:16px;font-weight:bold;letter-spacing:1px;">${data.companyName || 'Laser Food'}</div>
@@ -577,25 +601,14 @@ export function formatReceiptForPreview(data: ReceiptData): string {
         ${data.customerPhone ? `<div>Tel: ${data.customerPhone}</div>` : ''}
       </div>
 
-      <!-- Items Table -->
-      <table style="width:100%;border-collapse:collapse;">
-        <thead>
-          <tr style="border-bottom:2px solid #000;font-size:9px;font-weight:bold;">
-            <th style="text-align:left;padding:2px;">Produit</th>
-            <th style="text-align:center;padding:2px;">QTE</th>
-            <th style="text-align:center;padding:2px;">U</th>
-            <th style="text-align:right;padding:2px;">PxU</th>
-            <th style="text-align:right;padding:2px;">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${itemsHtml}
-        </tbody>
-      </table>
+      <!-- Items - multi-line for 48mm -->
+      <div style="border-top:1px dashed #000;margin-bottom:4px;">
+        ${itemsHtml}
+      </div>
 
       <!-- Article count -->
-      <div style="border-top:1px dashed #000;padding:3px 0;font-size:10px;text-align:center;">
-        Articles: ${totalProducts}  |  Collisage: ${formatQty(totalBoxes)}
+      <div style="padding:3px 0;font-size:9px;text-align:center;border-top:1px dashed #000;">
+        Art: ${totalProducts} | Colis: ${formatQty(totalBoxes)}
       </div>
 
       <!-- Totals -->
