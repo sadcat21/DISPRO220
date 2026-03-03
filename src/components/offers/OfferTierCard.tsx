@@ -203,20 +203,53 @@ const OfferTierCard: React.FC<OfferTierCardProps> = ({
             </div>
           )}
 
-          {tier.gift_type === 'discount' && (
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                min={0}
-                max={100}
-                value={tier.discount_percentage || ''}
-                onChange={(e) => onUpdate(tierIndex, { discount_percentage: e.target.value ? parseFloat(e.target.value) : null })}
-                className="flex-1 h-8 text-sm"
-                placeholder={t('offers.discount_percentage')}
-              />
-              <span className="text-sm text-muted-foreground">%</span>
-            </div>
-          )}
+          {tier.gift_type === 'discount' && (() => {
+            const originalPrice = selectedProduct?.price_gros || 0;
+            const currentPercentage = tier.discount_percentage || 0;
+            const salePrice = originalPrice > 0 && currentPercentage > 0
+              ? originalPrice * (1 - currentPercentage / 100)
+              : '';
+
+            const handleDiscountSalePriceChange = (newSalePrice: string) => {
+              if (!newSalePrice || !originalPrice) {
+                onUpdate(tierIndex, { discount_percentage: null });
+                return;
+              }
+              const salePriceNum = parseFloat(newSalePrice);
+              const pct = ((originalPrice - salePriceNum) / originalPrice) * 100;
+              onUpdate(tierIndex, { discount_percentage: pct > 0 ? Math.round(pct * 100) / 100 : 0 });
+            };
+
+            return (
+              <div className="space-y-2">
+                {originalPrice > 0 && (
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">السعر الأصلي:</span>
+                    <Badge variant="outline">{originalPrice} DA</Badge>
+                  </div>
+                )}
+                <Label className="text-xs text-muted-foreground">سعر البيع بعد التخفيض (DA)</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={salePrice !== '' ? Math.round(Number(salePrice) * 100) / 100 : ''}
+                    onChange={(e) => handleDiscountSalePriceChange(e.target.value)}
+                    className="flex-1 h-8 text-sm"
+                    placeholder="سعر البيع..."
+                  />
+                  <span className="text-sm text-muted-foreground">DA</span>
+                </div>
+                {currentPercentage > 0 && (
+                  <div className="flex items-center justify-between text-xs bg-green-50 dark:bg-green-950/30 rounded p-1.5">
+                    <span className="text-green-700 dark:text-green-400">نسبة التخفيض:</span>
+                    <span className="font-medium text-green-700 dark:text-green-400">-{Math.round(currentPercentage * 100) / 100}%</span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {tier.gift_type === 'price_discount' && (() => {
             // Get the original price from product (use price_gros as reference)
