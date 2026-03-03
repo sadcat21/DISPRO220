@@ -288,12 +288,15 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customer) return;
+    const isManager = role === 'admin' || role === 'branch_admin';
     if (!name.trim()) { toast.error('الرجاء إدخال اسم العميل'); return; }
-    if (!phones[0]?.trim()) { toast.error('الرجاء إدخال رقم هاتف العميل'); return; }
-    if (!storeName.trim()) { toast.error('الرجاء إدخال اسم المحل'); return; }
-    if (!sectorId || sectorId === 'none') { toast.error('الرجاء اختيار السكتور'); return; }
-    if (latitude === null || latitude === undefined || longitude === null || longitude === undefined) { toast.error('يرجى تحديد الموقع الجغرافي على الخريطة'); return; }
-    if (customerTypes.length > 0 && !customerType) { toast.error('يجب تحديد نوع العميل'); return; }
+    if (!isManager) {
+      if (!phones[0]?.trim()) { toast.error('الرجاء إدخال رقم هاتف العميل'); return; }
+      if (!storeName.trim()) { toast.error('الرجاء إدخال اسم المحل'); return; }
+      if (!sectorId || sectorId === 'none') { toast.error('الرجاء اختيار السكتور'); return; }
+      if (latitude === null || latitude === undefined || longitude === null || longitude === undefined) { toast.error('يرجى تحديد الموقع الجغرافي على الخريطة'); return; }
+      if (customerTypes.length > 0 && !customerType) { toast.error('يجب تحديد نوع العميل'); return; }
+    }
 
     setIsLoading(true);
     try {
