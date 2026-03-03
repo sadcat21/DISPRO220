@@ -113,7 +113,7 @@ const ExpandedCarousel: React.FC<{
                 {item.customers.map((c) => (
                   <div
                     key={c.customerId}
-                    className="flex items-center justify-between py-2 px-3 rounded-lg bg-card/80 border border-border/60 text-sm"
+                    className="flex items-center justify-between py-2 px-3 rounded-lg bg-card/80 border border-border/60 text-sm" dir="rtl"
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <User className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
@@ -220,9 +220,9 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
 
       const customerIds = [...new Set(orders.map(o => o.customer_id).filter(Boolean))];
       const { data: customers } = customerIds.length > 0
-        ? await supabase.from('customers').select('id, name').in('id', customerIds)
+        ? await supabase.from('customers').select('id, name, store_name').in('id', customerIds)
         : { data: [] };
-      const customerMap = new Map((customers || []).map(c => [c.id, c.name]));
+      const customerMap = new Map((customers || []).map(c => [c.id, c.store_name || c.name]));
 
       const agg: Record<string, ProductAgg> = {};
 
