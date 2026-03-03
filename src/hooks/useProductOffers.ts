@@ -21,7 +21,7 @@ export const useProductOffers = () => {
           tiers:product_offer_tiers(
             id, offer_id, min_quantity, max_quantity, min_quantity_unit,
             gift_quantity, gift_quantity_unit, gift_type, gift_product_id,
-            discount_percentage, worker_reward_type, worker_reward_amount, tier_order,
+            discount_percentage, discount_amount, worker_reward_type, worker_reward_amount, tier_order,
             gift_product:products(id, name)
           )
         `)
@@ -59,7 +59,7 @@ export const useProductOffers = () => {
           tiers:product_offer_tiers(
             id, offer_id, min_quantity, max_quantity, min_quantity_unit,
             gift_quantity, gift_quantity_unit, gift_type, gift_product_id,
-            discount_percentage, worker_reward_type, worker_reward_amount, tier_order,
+            discount_percentage, discount_amount, worker_reward_type, worker_reward_amount, tier_order,
             gift_product:products(id, name)
           )
         `)

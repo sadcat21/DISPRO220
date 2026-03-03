@@ -146,10 +146,11 @@ const OfferTierCard: React.FC<OfferTierCardProps> = ({
               <SelectItem value="same_product">{t('offers.same_product')}</SelectItem>
               <SelectItem value="different_product">{t('offers.different_product')}</SelectItem>
               <SelectItem value="discount">{t('offers.discount_type')}</SelectItem>
+              <SelectItem value="price_discount">تخفيض في السعر (DA)</SelectItem>
             </SelectContent>
           </Select>
 
-          {tier.gift_type !== 'discount' && (
+          {tier.gift_type !== 'discount' && tier.gift_type !== 'price_discount' && (
             <div className="flex gap-1">
               {tier.gift_type === 'different_product' && (
                 <>
@@ -212,6 +213,27 @@ const OfferTierCard: React.FC<OfferTierCardProps> = ({
                 placeholder={t('offers.discount_percentage')}
               />
               <span className="text-sm text-muted-foreground">%</span>
+            </div>
+          )}
+
+          {tier.gift_type === 'price_discount' && (
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">مبلغ التخفيض لكل وحدة (DA)</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={tier.discount_amount || ''}
+                  onChange={(e) => onUpdate(tierIndex, { discount_amount: e.target.value ? parseFloat(e.target.value) : null })}
+                  className="flex-1 h-8 text-sm"
+                  placeholder="مبلغ التخفيض..."
+                />
+                <span className="text-sm text-muted-foreground">DA / وحدة</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                التخفيض يُطبق على سعر الوحدة (صندوق / كيلو / علبة) حسب تسعير المنتج
+              </p>
             </div>
           )}
         </div>

@@ -2883,6 +2883,7 @@ export type Database = {
       product_offer_tiers: {
         Row: {
           created_at: string
+          discount_amount: number | null
           discount_percentage: number | null
           gift_product_id: string | null
           gift_quantity: number
@@ -2899,6 +2900,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          discount_amount?: number | null
           discount_percentage?: number | null
           gift_product_id?: string | null
           gift_quantity?: number
@@ -2915,6 +2917,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          discount_amount?: number | null
           discount_percentage?: number | null
           gift_product_id?: string | null
           gift_quantity?: number
@@ -2953,6 +2956,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
+          discount_amount: number | null
           discount_percentage: number | null
           end_date: string | null
           gift_product_id: string | null
@@ -2980,6 +2984,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          discount_amount?: number | null
           discount_percentage?: number | null
           end_date?: string | null
           gift_product_id?: string | null
@@ -3007,6 +3012,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          discount_amount?: number | null
           discount_percentage?: number | null
           end_date?: string | null
           gift_product_id?: string | null

@@ -11,6 +11,7 @@ export interface ProductOfferTier {
   gift_type: string;
   gift_product_id: string | null;
   discount_percentage: number | null;
+  discount_amount: number | null;
   worker_reward_type: string;
   worker_reward_amount: number;
   tier_order: number;
@@ -37,6 +38,7 @@ export interface ProductOffer {
   gift_type: string;
   gift_product_id: string | null;
   discount_percentage: number | null;
+  discount_amount: number | null;
   
   // Worker reward
   worker_reward_type: string;
