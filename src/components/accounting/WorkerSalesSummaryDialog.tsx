@@ -26,6 +26,7 @@ interface CustomerBreakdown {
   customerId: string;
   customerName: string;
   storeName: string | null;
+  deliveryTime: string | null;
   quantity: number;
   giftQuantity: number;
   totalAmount: number;
@@ -120,6 +121,11 @@ const ExpandedCarousel: React.FC<{
                       <div className="flex items-center gap-1.5">
                         <User className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                         <span className="truncate font-medium">{c.storeName || c.customerName}</span>
+                        {c.deliveryTime && (
+                          <span className="text-[10px] text-muted-foreground shrink-0">
+                            {new Date(c.deliveryTime).toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        )}
                       </div>
                       {c.storeName && (
                         <span className="text-[10px] text-muted-foreground truncate pr-5">{c.customerName}</span>
@@ -208,6 +214,7 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
 
       const orderIds = orders.map(o => o.id);
       const orderCustomerMap = new Map(orders.map(o => [o.id, o.customer_id]));
+      const orderTimeMap = new Map(orders.map(o => [o.id, o.updated_at]));
 
       const { data: items, error: itemsError } = await supabase
         .from('order_items')
@@ -262,6 +269,7 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
             customerId,
             customerName: customerNameMap.get(customerId) || 'عميل غير معروف',
             storeName: customerStoreMap.get(customerId) || null,
+            deliveryTime: orderTimeMap.get(item.order_id) || null,
             quantity: item.quantity || 0,
             giftQuantity: item.gift_quantity || 0,
             totalAmount: item.total_price || 0,
