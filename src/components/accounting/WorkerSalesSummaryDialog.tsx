@@ -76,7 +76,7 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
 
       const { data: orders, error } = await ordersQuery;
       if (error) throw error;
-      if (!orders || orders.length === 0) return { items: [], orderCount: 0 };
+      if (!orders || orders.length === 0) return { items: [], orderCount: 0, firstOrderTime: null, lastOrderTime: null };
 
       const orderIds = orders.map(o => o.id);
 
@@ -150,9 +150,10 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
       }
 
       // Get first and last order times
-      const times = orders.map(o => new Date(o.updated_at).getTime());
-      const firstOrderTime = times.length ? new Date(Math.min(...times)).toISOString() : null;
-      const lastOrderTime = times.length ? new Date(Math.max(...times)).toISOString() : null;
+      const createdTimes = orders.map(o => new Date(o.created_at).getTime());
+      const updatedTimes = orders.map(o => new Date(o.updated_at).getTime());
+      const firstOrderTime = createdTimes.length ? new Date(Math.min(...createdTimes)).toISOString() : null;
+      const lastOrderTime = updatedTimes.length ? new Date(Math.max(...updatedTimes)).toISOString() : null;
 
       return {
         items: Object.values(agg).sort((a, b) => b.quantity - a.quantity),
