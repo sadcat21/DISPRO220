@@ -276,10 +276,13 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
         promoTag = `PRM-${item.giftPieces}pcs `;
       }
 
-      let qtyStr = String(item.quantity);
+      // Determine unit suffix
+      const unitSuffix = (item.pricingUnit === 'unit' && item.piecesPerBox && item.piecesPerBox > 1) ? 'pcs' : 'bts';
+
+      let qtyStr = `${item.quantity}${unitSuffix}`;
       if (item.giftQuantity && item.giftQuantity > 0) {
         const paid = item.quantity - item.giftQuantity;
-        qtyStr = `${paid}+${item.giftQuantity}`;
+        qtyStr = `${paid}+${item.giftQuantity}${unitSuffix}`;
       }
 
       // Show unit price with unit info if pricing is per kg or per unit
@@ -371,11 +374,12 @@ export function formatReceiptForPreview(data: ReceiptData): string {
   let itemsHtml = '';
   let totalBoxes = 0;
   for (const item of data.items) {
-    let qtyStr = String(item.quantity);
+    const unitSuffix = (item.pricingUnit === 'unit' && item.piecesPerBox && item.piecesPerBox > 1) ? 'pcs' : 'bts';
+    let qtyStr = `${item.quantity}${unitSuffix}`;
     let promoTag = '';
     if (item.giftQuantity && item.giftQuantity > 0) {
       const paid = item.quantity - item.giftQuantity;
-      qtyStr = `${paid}+${item.giftQuantity}`;
+      qtyStr = `${paid}+${item.giftQuantity}${unitSuffix}`;
       promoTag = `<span style="color:#16a34a;font-size:9px;">🎁PRM-${item.giftQuantity}BTS</span> `;
     } else if (item.giftPieces && item.giftPieces > 0) {
       promoTag = `<span style="color:#16a34a;font-size:9px;">🎁PRM-${item.giftPieces}pcs</span> `;
