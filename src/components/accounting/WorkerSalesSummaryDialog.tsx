@@ -278,7 +278,11 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
       }
 
       for (const p of Object.values(agg)) {
-        p.customers.sort((a, b) => b.quantity - a.quantity);
+        p.customers.sort((a, b) => {
+          const tA = a.deliveryTime ? new Date(a.deliveryTime).getTime() : 0;
+          const tB = b.deliveryTime ? new Date(b.deliveryTime).getTime() : 0;
+          return tA - tB;
+        });
       }
 
       const createdTimes = orders.map(o => new Date(o.created_at).getTime());
