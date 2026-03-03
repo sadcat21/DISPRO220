@@ -181,22 +181,35 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
   useEffect(() => {
     if (open && orderItems && orderItems.length > 0 && !initialized) {
       setSaleItems(orderItems.map(item => {
-        const giftQty = Number((item as any).gift_quantity || 0);
-        const paidQty = item.quantity - giftQty;
-        const ppb = item.product?.pieces_per_box || 1;
-        const giftPcs = Number((item as any).gift_pieces || 0);
+        const storedGiftQty = Number((item as any).gift_quantity || 0);
+        const ppb = (item as any).pieces_per_box ?? item.product?.pieces_per_box ?? 1;
+        const storedGiftPcs = Number((item as any).gift_pieces || 0);
+
+        // Recalculate gifts from active offers to catch piece-level gifts not stored in DB
+        const paidQty = item.quantity - storedGiftQty;
+        const recalculated = recalcGift(item.product_id, paidQty, ppb);
+
+        // Use recalculated gifts if they're greater than stored (covers piece-level gifts)
+        const totalRecalcPieces = recalculated.giftBoxes * ppb + recalculated.giftPieces;
+        const totalStoredPieces = storedGiftQty * ppb + storedGiftPcs;
+        const useRecalc = totalRecalcPieces > totalStoredPieces;
+
+        const effectiveGiftQty = useRecalc ? recalculated.giftBoxes : storedGiftQty;
+        const effectiveGiftPcs = useRecalc ? recalculated.giftPieces : storedGiftPcs;
+        const effectiveQuantity = paidQty + effectiveGiftQty;
+
         return {
           productId: item.product_id,
           productName: item.product?.name || '',
-          quantity: item.quantity,
+          quantity: effectiveQuantity,
           unitPrice: Number(item.unit_price || 0),
           totalPrice: Number(item.total_price || 0) || (paidQty * Number(item.unit_price || 0)),
           originalItemId: item.id,
           originalQuantity: item.quantity,
-          giftQuantity: giftQty,
-          giftPieces: giftPcs,
+          giftQuantity: effectiveGiftQty,
+          giftPieces: effectiveGiftPcs,
           giftOfferId: (item as any).gift_offer_id || null,
-          piecesPerBox: (item as any).pieces_per_box ?? item.product?.pieces_per_box ?? ppb,
+          piecesPerBox: ppb,
           pricingUnit: (item as any).pricing_unit || item.product?.pricing_unit || 'box',
           weightPerBox: (item as any).weight_per_box ?? item.product?.weight_per_box ?? null,
         };
@@ -204,7 +217,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
       setNotes(order.notes || '');
       setInitialized(true);
     }
-  }, [open, orderItems, initialized, order.notes]);
+  }, [open, orderItems, initialized, order.notes, recalcGift]);
 
   // Reset on close — but preserve receipt data so ReceiptDialog can show after main dialog closes
   useEffect(() => {
