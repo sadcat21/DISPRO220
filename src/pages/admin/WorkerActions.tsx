@@ -23,6 +23,7 @@ import WorkerSalesSummaryDialog from '@/components/accounting/WorkerSalesSummary
 import EditWorkerProfileDialog from '@/components/workers/EditWorkerProfileDialog';
 
 const workerActions = [
+  { key: 'worker_profile', icon: Settings, path: '', labelKey: 'إعدادات البيانات', color: 'bg-gray-50 border-gray-200 text-gray-700', isDialog: true },
   { key: 'accounting', icon: Calculator, path: '/accounting', labelKey: 'accounting.title', color: 'bg-amber-50 border-amber-200 text-amber-700' },
   { key: 'load_stock', icon: Truck, path: '/load-stock', labelKey: 'stock.load_to_worker', color: 'bg-green-50 border-green-200 text-green-700' },
   { key: 'truck_stock', icon: Package, path: '', labelKey: 'رصيد الشاحنة', color: 'bg-lime-50 border-lime-200 text-lime-700', isDialog: true },
@@ -43,7 +44,6 @@ const workerActions = [
   { key: 'today_customers', icon: MapPin, path: '', labelKey: 'عملاء اليوم', color: 'bg-sky-50 border-sky-200 text-sky-700', isDialog: true },
   { key: 'attendance_log', icon: CalendarDays, path: '', labelKey: 'سجل المداومة', color: 'bg-teal-50 border-teal-200 text-teal-700', isDialog: true },
   { key: 'sales_summary', icon: ShoppingBag, path: '', labelKey: 'تجميع المبيعات', color: 'bg-amber-50 border-amber-200 text-amber-700', isDialog: true },
-  { key: 'worker_profile', icon: Settings, path: '', labelKey: 'إعدادات البيانات', color: 'bg-gray-50 border-gray-200 text-gray-700', isDialog: true },
 ];
 
 const WorkerActions: React.FC = () => {
