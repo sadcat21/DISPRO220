@@ -182,6 +182,46 @@ const LoadStock: React.FC = () => {
     deleteSessionItem, sessionItemsQuery, refetch: refetchSessions,
   } = useLoadingSessions(selectedWorker || null);
 
+  // Fetch total loaded quantities from loading sessions since last accounting for the selected worker
+  const { data: workerLoadedData } = useQuery({
+    queryKey: ['worker-loaded-since-accounting', selectedWorker],
+    queryFn: async () => {
+      // Get last completed accounting session date
+      const { data: lastAccounting } = await supabase
+        .from('accounting_sessions')
+        .select('completed_at')
+        .eq('worker_id', selectedWorker!)
+        .eq('status', 'completed')
+        .order('completed_at', { ascending: false })
+        .limit(1)
+        .single();
+      const sinceDate = lastAccounting?.completed_at || null;
+
+      // Get loading sessions (completed or open, exclude review)
+      let sessionsQuery = supabase
+        .from('loading_sessions')
+        .select('id')
+        .eq('worker_id', selectedWorker!)
+        .in('status', ['completed', 'open']);
+      if (sinceDate) sessionsQuery = sessionsQuery.gte('created_at', sinceDate);
+      const { data: loadSessions } = await sessionsQuery;
+      if (!loadSessions || loadSessions.length === 0) return {};
+
+      const sessionIds = loadSessions.map(s => s.id);
+      const { data: items } = await supabase
+        .from('loading_session_items')
+        .select('product_id, quantity, gift_quantity')
+        .in('session_id', sessionIds);
+
+      const totals: Record<string, number> = {};
+      for (const item of (items || [])) {
+        totals[item.product_id] = (totals[item.product_id] || 0) + item.quantity + (item.gift_quantity || 0);
+      }
+      return totals;
+    },
+    enabled: !!selectedWorker,
+  });
+
   // Check if the last session is a review - review must separate load/unload sessions
   const hasReviewToday = useMemo(() => {
     if (sessions.length === 0) return true; // No sessions = allow first load
@@ -1044,10 +1084,14 @@ const LoadStock: React.FC = () => {
                             <Badge variant="outline" className="text-xs border-primary/30 text-primary">✓ كافي</Badge>
                           )}
                         </div>
-                        <div className={`grid ${hasGifts ? 'grid-cols-6' : 'grid-cols-5'} gap-1 text-xs`}>
+                        <div className={`grid ${hasGifts ? 'grid-cols-7' : 'grid-cols-6'} gap-1 text-xs`}>
                           <div className="bg-muted/50 rounded p-1 text-center">
                             <div className="text-muted-foreground text-[10px]">سابق</div>
                             <div className="font-bold">{fmtQty(oldStock)}</div>
+                          </div>
+                          <div className="bg-blue-50 dark:bg-blue-950/30 rounded p-1 text-center">
+                            <div className="text-muted-foreground text-[10px]">شحن</div>
+                            <div className="font-bold text-blue-600 dark:text-blue-400">{fmtQty((workerLoadedData || {})[s.product_id] || 0)}</div>
                           </div>
                           <div className="bg-primary/5 rounded p-1 text-center">
                             <div className="text-muted-foreground text-[10px]">جديد</div>
