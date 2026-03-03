@@ -50,6 +50,7 @@ interface SaleItem {
   originalItemId?: string; // existing order_item id
   originalQuantity: number;
   giftQuantity: number; // gift boxes included in quantity
+  giftPieces: number; // gift pieces (remainder not filling a full box)
   giftOfferId?: string | null;
   piecesPerBox: number;
   pricingUnit?: string;
@@ -131,9 +132,10 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
 
   // Initialize sale items from order items
   // Helper: recalculate gift for a product based on paid quantity and active offers
-  const recalcGift = useCallback((productId: string, paidQty: number, piecesPerBox: number): number => {
+  // Returns { giftBoxes, giftPieces } where giftPieces is the remainder that doesn't fill a full box
+  const recalcGift = useCallback((productId: string, paidQty: number, piecesPerBox: number): { giftBoxes: number; giftPieces: number } => {
     const offersForProduct = activeOffers.filter(o => o.product_id === productId);
-    if (offersForProduct.length === 0) return 0;
+    if (offersForProduct.length === 0) return { giftBoxes: 0, giftPieces: 0 };
 
     let totalGiftPieces = 0;
     for (const offer of offersForProduct) {
@@ -170,8 +172,10 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
         }
       }
     }
-    // Convert pieces to boxes (gift is tracked in boxes in saleItems)
-    return piecesPerBox > 0 ? Math.floor(totalGiftPieces / piecesPerBox) : 0;
+    // Split into full boxes and remaining pieces
+    const giftBoxes = piecesPerBox > 0 ? Math.floor(totalGiftPieces / piecesPerBox) : 0;
+    const giftPieces = piecesPerBox > 0 ? totalGiftPieces % piecesPerBox : totalGiftPieces;
+    return { giftBoxes, giftPieces };
   }, [activeOffers]);
 
   useEffect(() => {
@@ -180,6 +184,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
         const giftQty = Number((item as any).gift_quantity || 0);
         const paidQty = item.quantity - giftQty;
         const ppb = item.product?.pieces_per_box || 1;
+        const giftPcs = Number((item as any).gift_pieces || 0);
         return {
           productId: item.product_id,
           productName: item.product?.name || '',
@@ -189,6 +194,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
           originalItemId: item.id,
           originalQuantity: item.quantity,
           giftQuantity: giftQty,
+          giftPieces: giftPcs,
           giftOfferId: (item as any).gift_offer_id || null,
           piecesPerBox: (item as any).pieces_per_box ?? item.product?.pieces_per_box ?? ppb,
           pricingUnit: (item as any).pricing_unit || item.product?.pricing_unit || 'box',
@@ -227,31 +233,37 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
         // Current paid quantity
         const currentPaidQty = Math.max(0, item.quantity - item.giftQuantity);
         let newPaidQty = currentPaidQty + delta;
-        if (newPaidQty <= 0) return { ...item, quantity: 0, totalPrice: 0, giftQuantity: 0 };
+        if (newPaidQty <= 0) return { ...item, quantity: 0, totalPrice: 0, giftQuantity: 0, giftPieces: 0 };
         
         // Anti-manipulation skip logic: when decreasing, if the new total (paid+gift)
         // doesn't actually decrease, keep reducing paid qty until it does.
         // Example: offer "buy 50 get 1" → at 51 total (50+1), pressing - should skip 50→49
         if (delta < 0) {
-          let newGiftQty = recalcGift(item.productId, newPaidQty, item.piecesPerBox);
+          let giftResult = recalcGift(item.productId, newPaidQty, item.piecesPerBox);
+          let newGiftQty = giftResult.giftBoxes;
+          let newGiftPcs = giftResult.giftPieces;
           let newTotal = newPaidQty + newGiftQty;
           while (newTotal >= item.quantity && newPaidQty > 0) {
             newPaidQty -= 1;
-            newGiftQty = recalcGift(item.productId, newPaidQty, item.piecesPerBox);
+            giftResult = recalcGift(item.productId, newPaidQty, item.piecesPerBox);
+            newGiftQty = giftResult.giftBoxes;
+            newGiftPcs = giftResult.giftPieces;
             newTotal = newPaidQty + newGiftQty;
           }
-          if (newPaidQty <= 0) return { ...item, quantity: 0, totalPrice: 0, giftQuantity: 0 };
+          if (newPaidQty <= 0) return { ...item, quantity: 0, totalPrice: 0, giftQuantity: 0, giftPieces: 0 };
           const oldGift = item.giftQuantity;
-          if (oldGift > 0 && newGiftQty === 0) {
-            toast.warning(`⚠️ ${item.productName}: تم فقدان الهدية (${oldGift} صندوق) لأن الكمية أقل من شرط العرض`, { duration: 5000 });
+          if (oldGift > 0 && newGiftQty === 0 && newGiftPcs === 0) {
+            toast.warning(`⚠️ ${item.productName}: تم فقدان الهدية لأن الكمية أقل من شرط العرض`, { duration: 5000 });
           } else if (oldGift > 0 && newGiftQty < oldGift) {
             toast.warning(`⚠️ ${item.productName}: تغيرت الهدية من ${oldGift} إلى ${newGiftQty} صندوق`, { duration: 4000 });
           }
-          return { ...item, quantity: newTotal, giftQuantity: newGiftQty, totalPrice: newPaidQty * item.unitPrice };
+          return { ...item, quantity: newTotal, giftQuantity: newGiftQty, giftPieces: newGiftPcs, totalPrice: newPaidQty * item.unitPrice };
         }
 
         // Increasing
-        const newGiftQty = recalcGift(item.productId, newPaidQty, item.piecesPerBox);
+        const giftResult = recalcGift(item.productId, newPaidQty, item.piecesPerBox);
+        const newGiftQty = giftResult.giftBoxes;
+        const newGiftPcs = giftResult.giftPieces;
         const newTotal = newPaidQty + newGiftQty;
         // Check stock availability for the full total (paid + gift)
         if (newTotal > available) {
@@ -259,8 +271,10 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
         }
         // Warn if gift changed
         const oldGift = item.giftQuantity;
-        if (oldGift === 0 && newGiftQty > 0) {
-          toast.success(`🎁 ${item.productName}: تم تفعيل هدية ${newGiftQty} صندوق`, { duration: 3000 });
+        const oldGiftPcs = item.giftPieces;
+        if (oldGift === 0 && oldGiftPcs === 0 && (newGiftQty > 0 || newGiftPcs > 0)) {
+          const giftLabel = newGiftQty > 0 ? `${newGiftQty} صندوق` : `${newGiftPcs} قطعة`;
+          toast.success(`🎁 ${item.productName}: تم تفعيل هدية ${giftLabel}`, { duration: 3000 });
         } else if (oldGift > 0 && newGiftQty > oldGift) {
           toast.success(`🎁 ${item.productName}: زادت الهدية إلى ${newGiftQty} صندوق`, { duration: 3000 });
         }
@@ -268,6 +282,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
           ...item, 
           quantity: newTotal, 
           giftQuantity: newGiftQty,
+          giftPieces: newGiftPcs,
           totalPrice: newPaidQty * item.unitPrice 
         };
       }).filter(item => item.quantity > 0 || item.originalItemId)
@@ -309,6 +324,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
       totalPrice: price,
       originalQuantity: 0,
       giftQuantity: 0,
+      giftPieces: 0,
       giftOfferId: null,
       piecesPerBox: product.pieces_per_box || 1,
       pricingUnit: product.pricing_unit || 'box',
@@ -724,7 +740,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
         unitPrice: item.unitPrice,
         totalPrice: item.totalPrice,
         giftQuantity: item.giftQuantity > 0 ? item.giftQuantity : undefined,
-        giftPieces: (item as any).giftPieces > 0 ? (item as any).giftPieces : undefined,
+        giftPieces: item.giftPieces > 0 ? item.giftPieces : undefined,
         pricingUnit: item.pricingUnit,
         weightPerBox: item.weightPerBox,
         piecesPerBox: item.piecesPerBox,
@@ -902,10 +918,15 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
                             </span>
                           ) : (
                             <>
-                          {item.giftQuantity > 0 && (
+                          {(item.giftQuantity > 0 || item.giftPieces > 0) && (
                                 <Badge variant="outline" className="text-[10px] px-1 py-0 border-green-500 text-green-600">
                                   <Gift className="w-3 h-3 ms-0.5" />
-                                  {item.giftQuantity} {t('common.free')}
+                                  {item.giftQuantity > 0 && item.giftPieces > 0
+                                    ? `مجاني ${item.giftQuantity}🎁+${item.giftPieces}pcs`
+                                    : item.giftQuantity > 0
+                                      ? `${item.giftQuantity} ${t('common.free')}`
+                                      : `${item.giftPieces}pcs ${t('common.free')}`
+                                  }
                                 </Badge>
                               )}
                               {item.unitPrice > 0 && item.quantity > 0 && (
@@ -932,8 +953,11 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
                           <div className="flex items-center gap-1.5">
                             <div className="flex flex-col items-center min-w-8">
                               <span className="font-bold text-sm">{Math.max(0, item.quantity - item.giftQuantity)}</span>
-                              {item.giftQuantity > 0 && (
-                                <span className="text-[9px] text-green-600 dark:text-green-400 leading-none">+{item.giftQuantity} 🎁</span>
+                              {(item.giftQuantity > 0 || item.giftPieces > 0) && (
+                                <span className="text-[9px] text-green-600 dark:text-green-400 leading-none">
+                                  {item.giftQuantity > 0 ? `+${item.giftQuantity}🎁` : ''}
+                                  {item.giftPieces > 0 ? `+${item.giftPieces}pcs` : ''}
+                                </span>
                               )}
                             </div>
                           </div>
