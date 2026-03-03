@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { useAllAttendance } from '@/hooks/useAttendance';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { CalendarDays, Clock, MapPin, ChevronRight, ChevronLeft, LogIn, LogOut } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { CalendarDays, Clock, MapPin, ChevronRight, ChevronLeft, LogIn, LogOut, Users, ListChecks, Timer } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -13,7 +14,6 @@ const Attendance: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
   const { data: logs = [], isLoading } = useAllAttendance(selectedDate, activeBranch?.id);
 
-  // Group by worker
   const workerGroups = useMemo(() => {
     const groups: Record<string, { worker: any; logs: any[] }> = {};
     logs.forEach((log: any) => {
@@ -38,109 +38,170 @@ const Attendance: React.FC = () => {
 
   const displayDate = format(new Date(selectedDate), 'EEEE d MMMM yyyy', { locale: ar });
 
+  const getDuration = (clockIn: any, clockOut: any) => {
+    const diff = new Date(clockOut.recorded_at).getTime() - new Date(clockIn.recorded_at).getTime();
+    const hours = Math.floor(diff / 3600000);
+    const minutes = Math.floor((diff % 3600000) / 60000);
+    return { hours, minutes, totalMs: diff };
+  };
+
   return (
-    <div className="p-4 space-y-4" dir="rtl">
-      <h1 className="text-xl font-bold">سجل المداومة</h1>
-
-      {/* Date picker */}
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="icon" onClick={() => changeDate(1)}>
-          <ChevronRight className="w-4 h-4" />
-        </Button>
-        <div className="flex-1 text-center">
-          <Input
-            type="date"
-            value={selectedDate}
-            onChange={e => setSelectedDate(e.target.value)}
-            className="text-center"
-          />
-          <p className="text-xs text-muted-foreground mt-1">{displayDate}</p>
+    <div className="p-4 space-y-5" dir="rtl">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25">
+          <CalendarDays className="w-5 h-5 text-white" />
         </div>
-        <Button variant="outline" size="icon" onClick={() => changeDate(-1)}>
-          <ChevronLeft className="w-4 h-4" />
-        </Button>
+        <div>
+          <h1 className="text-lg font-bold text-foreground">سجل المداومة</h1>
+          <p className="text-xs text-muted-foreground">متابعة حضور وانصراف العمال</p>
+        </div>
       </div>
 
-      {/* Stats */}
+      {/* Date Navigation */}
+      <Card className="border-0 shadow-md bg-gradient-to-br from-card to-muted/30">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="rounded-xl h-9 w-9 hover:bg-primary/10" onClick={() => changeDate(1)}>
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+            <div className="flex-1 text-center space-y-1">
+              <Input
+                type="date"
+                value={selectedDate}
+                onChange={e => setSelectedDate(e.target.value)}
+                className="text-center border-0 bg-transparent font-medium text-sm h-8"
+              />
+              <p className="text-xs text-muted-foreground font-medium">{displayDate}</p>
+            </div>
+            <Button variant="ghost" size="icon" className="rounded-xl h-9 w-9 hover:bg-primary/10" onClick={() => changeDate(-1)}>
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-3">
-        <Card>
-          <CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold text-primary">{workerGroups.length}</p>
-            <p className="text-xs text-muted-foreground">عدد العمال</p>
+        <Card className="border-0 shadow-md bg-gradient-to-br from-blue-500 to-blue-600 text-white overflow-hidden relative">
+          <div className="absolute -top-4 -left-4 w-16 h-16 bg-white/10 rounded-full" />
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{workerGroups.length}</p>
+              <p className="text-[11px] opacity-80">عدد العمال</p>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold text-primary">{logs.length}</p>
-            <p className="text-xs text-muted-foreground">إجمالي السجلات</p>
+        <Card className="border-0 shadow-md bg-gradient-to-br from-violet-500 to-purple-600 text-white overflow-hidden relative">
+          <div className="absolute -top-4 -left-4 w-16 h-16 bg-white/10 rounded-full" />
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+              <ListChecks className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{logs.length}</p>
+              <p className="text-[11px] opacity-80">إجمالي السجلات</p>
+            </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Content */}
       {isLoading ? (
-        <div className="text-center py-8 text-muted-foreground">جاري التحميل...</div>
-      ) : workerGroups.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <CalendarDays className="w-12 h-12 mx-auto mb-3 opacity-40" />
-          <p>لا توجد سجلات مداومة لهذا اليوم</p>
+        <div className="flex flex-col items-center py-12 gap-3">
+          <div className="w-10 h-10 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground">جاري التحميل...</p>
         </div>
+      ) : workerGroups.length === 0 ? (
+        <Card className="border-0 shadow-md">
+          <CardContent className="flex flex-col items-center py-14 gap-3">
+            <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center">
+              <CalendarDays className="w-8 h-8 text-muted-foreground/50" />
+            </div>
+            <p className="text-sm text-muted-foreground font-medium">لا توجد سجلات مداومة لهذا اليوم</p>
+          </CardContent>
+        </Card>
       ) : (
         <div className="space-y-3">
           {workerGroups.map((group) => {
             const clockIn = group.logs.find((l: any) => l.action_type === 'clock_in');
             const clockOut = group.logs.filter((l: any) => l.action_type === 'clock_out').pop();
+            const duration = clockIn && clockOut ? getDuration(clockIn, clockOut) : null;
 
             return (
-              <Card key={group.worker?.id || group.logs[0].worker_id}>
-                <CardHeader className="p-3 pb-2">
-                  <CardTitle className="text-sm font-bold">
-                    {group.worker?.full_name || 'عامل غير معروف'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-3 pt-0 space-y-2">
-                  {group.logs.map((log: any) => (
-                    <div
-                      key={log.id}
-                      className={`flex items-center gap-3 p-2 rounded-lg text-sm ${
-                        log.action_type === 'clock_in'
-                          ? 'bg-emerald-500/10'
-                          : 'bg-destructive/10'
-                      }`}
-                    >
-                      {log.action_type === 'clock_in' ? (
-                        <LogIn className="w-4 h-4 text-emerald-600 shrink-0" />
-                      ) : (
-                        <LogOut className="w-4 h-4 text-destructive shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <span className="font-medium">
-                          {log.action_type === 'clock_in' ? 'بداية العمل' : 'نهاية العمل'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-                        <Clock className="w-3 h-3" />
-                        {formatTime(log.recorded_at)}
-                      </div>
-                      {log.distance_meters != null && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-                          <MapPin className="w-3 h-3" />
-                          {Math.round(log.distance_meters)}م
+              <Card key={group.worker?.id || group.logs[0].worker_id} className="border-0 shadow-md overflow-hidden">
+                {/* Worker Header */}
+                <div className="bg-gradient-to-l from-primary/5 to-primary/10 px-4 py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center">
+                      <span className="text-sm font-bold text-primary">
+                        {(group.worker?.full_name || '?')[0]}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm text-foreground">
+                        {group.worker?.full_name || 'عامل غير معروف'}
+                      </p>
+                      {duration && (
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <Timer className="w-3 h-3 text-muted-foreground" />
+                          <span className="text-[11px] text-muted-foreground">
+                            {duration.hours} سا {duration.minutes} د
+                          </span>
                         </div>
                       )}
                     </div>
-                  ))}
+                  </div>
+                  <Badge variant="secondary" className="text-[10px] rounded-lg px-2 py-0.5">
+                    {group.logs.length} سجل
+                  </Badge>
+                </div>
 
-                  {/* Duration if both clock in and out exist */}
-                  {clockIn && clockOut && (
-                    <div className="text-xs text-muted-foreground text-center pt-1 border-t">
-                      مدة العمل: {(() => {
-                        const diff = new Date(clockOut.recorded_at).getTime() - new Date(clockIn.recorded_at).getTime();
-                        const hours = Math.floor(diff / 3600000);
-                        const minutes = Math.floor((diff % 3600000) / 60000);
-                        return `${hours} ساعة ${minutes} دقيقة`;
-                      })()}
+                <CardContent className="p-3 space-y-2">
+                  {group.logs.map((log: any) => (
+                    <div
+                      key={log.id}
+                      className={`flex items-center gap-3 p-2.5 rounded-xl text-sm transition-colors ${
+                        log.action_type === 'clock_in'
+                          ? 'bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/60 dark:border-emerald-500/20'
+                          : 'bg-red-50 dark:bg-red-500/10 border border-red-200/60 dark:border-red-500/20'
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                        log.action_type === 'clock_in'
+                          ? 'bg-emerald-500/15'
+                          : 'bg-red-500/15'
+                      }`}>
+                        {log.action_type === 'clock_in' ? (
+                          <LogIn className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        ) : (
+                          <LogOut className="w-4 h-4 text-red-600 dark:text-red-400" />
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <span className="font-semibold text-xs">
+                          {log.action_type === 'clock_in' ? 'بداية العمل' : 'نهاية العمل'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1 bg-background/80 rounded-lg px-2 py-1">
+                          <Clock className="w-3 h-3 text-muted-foreground" />
+                          <span className="text-[11px] font-medium text-foreground">{formatTime(log.recorded_at)}</span>
+                        </div>
+                        {log.distance_meters != null && (
+                          <div className="flex items-center gap-1 bg-background/80 rounded-lg px-2 py-1">
+                            <MapPin className="w-3 h-3 text-muted-foreground" />
+                            <span className="text-[11px] font-medium text-foreground">{Math.round(log.distance_meters)}م</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
+                  ))}
                 </CardContent>
               </Card>
             );
