@@ -253,14 +253,41 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
                           {item.name}
                         </span>
                       </div>
-                      {/* Product image */}
-                      {item.imageUrl ? (
-                        <img src={item.imageUrl} alt={item.name} className="w-full aspect-square object-cover" loading="lazy" />
-                      ) : (
-                        <div className="w-full aspect-square bg-muted flex items-center justify-center">
-                          <Package className="w-10 h-10 text-primary/30" />
-                        </div>
-                      )}
+                      {/* Product image + expanded overlay */}
+                      <div className="relative w-full aspect-square overflow-hidden bg-muted">
+                        {item.imageUrl ? (
+                          <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
+                        ) : (
+                          <div className="w-full h-full bg-muted flex items-center justify-center">
+                            <Package className="w-10 h-10 text-primary/30" />
+                          </div>
+                        )}
+
+                        {isExpanded && item.customers.length > 0 && (
+                          <>
+                            <div className="absolute inset-0 bg-background/50 backdrop-blur-sm" />
+                            <div className="absolute inset-0 z-10 p-2 overflow-y-auto space-y-1">
+                              {item.customers.map((c) => (
+                                <div
+                                  key={c.customerId}
+                                  className="flex items-center justify-between py-1.5 px-2 rounded-md bg-card/80 border border-border/60 text-xs"
+                                >
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <User className="w-3 h-3 text-muted-foreground shrink-0" />
+                                    <span className="truncate font-medium">{c.customerName}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <span className="font-bold text-primary">{c.quantity}</span>
+                                    {c.giftQuantity > 0 && (
+                                      <span className="text-[10px] text-muted-foreground">(+{c.giftQuantity})</span>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
                       {/* Quantity + amount footer */}
                       <div className="px-2 py-1.5 bg-card flex items-center justify-between">
                         <span className="font-bold text-sm text-primary">{item.quantity}</span>
@@ -272,43 +299,6 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
                         </div>
                       )}
                     </div>
-
-                    {/* Customer breakdown when expanded - overlay with product image background */}
-                    {/* Customer breakdown when expanded - overlay with product image background */}
-                    {isExpanded && item.customers.length > 0 && (
-                      <div className="relative mt-1 rounded-xl overflow-hidden col-span-3 border border-primary/20">
-                        {/* Product image as background with high transparency */}
-                        {item.imageUrl && (
-                          <img
-                            src={item.imageUrl}
-                            alt=""
-                            className="absolute inset-0 w-full h-full object-cover opacity-20 scale-110"
-                          />
-                        )}
-                        <div className="absolute inset-0 bg-background/55 backdrop-blur-sm" />
-                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/20 to-background/70" />
-                        {/* Customer list overlay */}
-                        <div className="relative z-10 space-y-1 p-3">
-                          {item.customers.map((c) => (
-                            <div
-                              key={c.customerId}
-                              className="flex items-center justify-between py-1.5 px-2 rounded-md bg-card/75 border border-border/60 text-xs"
-                            >
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <User className="w-3 h-3 text-muted-foreground shrink-0" />
-                                <span className="truncate font-medium">{c.customerName}</span>
-                              </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                <span className="font-bold text-primary">{c.quantity}</span>
-                                {c.giftQuantity > 0 && (
-                                  <span className="text-[10px] text-muted-foreground">(+{c.giftQuantity})</span>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 );
               })}
