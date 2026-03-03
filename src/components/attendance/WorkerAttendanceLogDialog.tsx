@@ -26,18 +26,22 @@ const WorkerAttendanceLogDialog: React.FC<Props> = ({ open, onOpenChange, worker
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
 
-  // Fetch work start time setting
-  const { data: workStartTime = '08:00' } = useQuery({
-    queryKey: ['work-start-time', activeBranch?.id],
+  // Fetch work start time and grace period settings
+  const { data: attendanceSettings } = useQuery({
+    queryKey: ['attendance-time-settings', activeBranch?.id],
     queryFn: async () => {
-      const keys = ['work_start_time'];
+      const keys = ['work_start_time', 'attendance_grace_period'];
       const { data } = await supabase
         .from('app_settings')
         .select('key, value')
         .in('key', keys)
         .eq('branch_id', activeBranch?.id || '');
       
-      if (data && data.length > 0) return data[0].value;
+      if (data && data.length > 0) {
+        const map: Record<string, string> = {};
+        data.forEach(d => { map[d.key] = d.value; });
+        if (map['work_start_time']) return map;
+      }
 
       const { data: global } = await supabase
         .from('app_settings')
@@ -45,11 +49,15 @@ const WorkerAttendanceLogDialog: React.FC<Props> = ({ open, onOpenChange, worker
         .in('key', keys)
         .is('branch_id', null);
       
-      if (global && global.length > 0) return global[0].value;
-      return '08:00';
+      const map: Record<string, string> = {};
+      global?.forEach(d => { map[d.key] = d.value; });
+      return map;
     },
     enabled: open,
   });
+
+  const workStartTime = attendanceSettings?.['work_start_time'] || '08:00';
+  const gracePeriodMinutes = parseInt(attendanceSettings?.['attendance_grace_period'] || '0') || 0;
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ['worker-attendance-log', workerId, format(monthStart, 'yyyy-MM')],
@@ -73,11 +81,11 @@ const WorkerAttendanceLogDialog: React.FC<Props> = ({ open, onOpenChange, worker
     return { hours: h || 8, minutes: m || 0 };
   }, [workStartTime]);
 
-  // Calculate lateness in minutes for a clock-in record
+  // Calculate lateness in minutes for a clock-in record (minus grace period)
   const getLatenessMinutes = (clockInDate: string) => {
     const d = new Date(clockInDate);
     const clockInMinutes = d.getHours() * 60 + d.getMinutes();
-    const startMinutes = workStartParts.hours * 60 + workStartParts.minutes;
+    const startMinutes = workStartParts.hours * 60 + workStartParts.minutes + gracePeriodMinutes;
     return Math.max(0, clockInMinutes - startMinutes);
   };
 
@@ -201,7 +209,7 @@ const WorkerAttendanceLogDialog: React.FC<Props> = ({ open, onOpenChange, worker
             </Badge>
           )}
           <Badge variant="outline" className="text-[10px] text-muted-foreground">
-            بداية العمل: {workStartTime}
+            بداية العمل: {workStartTime} {gracePeriodMinutes > 0 ? `(هامش ${gracePeriodMinutes} د)` : ''}
           </Badge>
         </div>
 

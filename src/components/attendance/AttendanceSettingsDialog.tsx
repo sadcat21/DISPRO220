@@ -23,6 +23,7 @@ const AttendanceSettingsDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   const [warehouseLat, setWarehouseLat] = useState('');
   const [warehouseLng, setWarehouseLng] = useState('');
   const [workStartTime, setWorkStartTime] = useState('08:00');
+  const [gracePeriod, setGracePeriod] = useState('0');
   const [showMap, setShowMap] = useState(false);
 
   const branchId = activeBranch?.id || null;
@@ -30,7 +31,7 @@ const AttendanceSettingsDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   const { data: settings, isLoading } = useQuery({
     queryKey: ['attendance-settings', branchId],
     queryFn: async () => {
-      const keys = ['warehouse_latitude', 'warehouse_longitude', 'attendance_max_distance', 'work_start_time'];
+      const keys = ['warehouse_latitude', 'warehouse_longitude', 'attendance_max_distance', 'work_start_time', 'attendance_grace_period'];
       
       // Try branch-specific first
       let { data } = await supabase
@@ -62,6 +63,7 @@ const AttendanceSettingsDialog: React.FC<Props> = ({ open, onOpenChange }) => {
       setWarehouseLng(settings['warehouse_longitude'] || '0.10253');
       setMaxDistance(settings['attendance_max_distance'] || '50');
       setWorkStartTime(settings['work_start_time'] || '08:00');
+      setGracePeriod(settings['attendance_grace_period'] || '0');
     }
   }, [settings]);
 
@@ -72,6 +74,7 @@ const AttendanceSettingsDialog: React.FC<Props> = ({ open, onOpenChange }) => {
         { key: 'warehouse_longitude', value: warehouseLng },
         { key: 'attendance_max_distance', value: maxDistance },
         { key: 'work_start_time', value: workStartTime },
+        { key: 'attendance_grace_period', value: gracePeriod },
       ];
 
       for (const entry of entries) {
@@ -140,6 +143,25 @@ const AttendanceSettingsDialog: React.FC<Props> = ({ open, onOpenChange }) => {
               value={workStartTime}
               onChange={e => setWorkStartTime(e.target.value)}
             />
+          </div>
+
+          {/* Grace Period */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2 text-sm font-medium">
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              هامش التأخير (دقيقة)
+            </Label>
+            <Input
+              type="number"
+              min={0}
+              max={120}
+              value={gracePeriod}
+              onChange={e => setGracePeriod(e.target.value)}
+              placeholder="0"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              لا يُحتسب تأخير خلال هذه المدة بعد توقيت بداية العمل
+            </p>
           </div>
 
           {/* Max Distance */}
