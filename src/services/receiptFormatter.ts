@@ -125,6 +125,46 @@ function getReceiptTypeName(type: ReceiptType): string {
   }
 }
 
+function formatQty(value: number): string {
+  if (Number.isInteger(value)) return String(value);
+  return value.toFixed(2).replace(/\.0+$/, '').replace(/(\.[1-9]*)0+$/, '$1');
+}
+
+function resolveGiftDisplay(item: ReceiptItem): { paidQuantity: number; giftBoxes: number; giftPieces: number } {
+  const rawGiftBoxes = Math.max(0, Number(item.giftQuantity || 0));
+  const rawGiftPieces = Math.max(0, Number(item.giftPieces || 0));
+
+  const paidFromTotal = item.unitPrice > 0 ? Number((item.totalPrice / item.unitPrice).toFixed(3)) : null;
+  const inferredGiftBoxes = paidFromTotal !== null
+    ? Math.max(0, Number((item.quantity - paidFromTotal).toFixed(3)))
+    : 0;
+
+  // Legacy compatibility: some flows stored gift pieces in gift_quantity.
+  // If totals indicate no gifted boxes were deducted, treat raw gift as pieces.
+  const looksLikeGiftPiecesInGiftQuantity =
+    rawGiftBoxes > 0 &&
+    rawGiftPieces === 0 &&
+    inferredGiftBoxes <= 0.001 &&
+    (item.piecesPerBox || 0) > 1;
+
+  if (looksLikeGiftPiecesInGiftQuantity) {
+    return {
+      paidQuantity: paidFromTotal ?? item.quantity,
+      giftBoxes: 0,
+      giftPieces: rawGiftBoxes,
+    };
+  }
+
+  const giftBoxes = inferredGiftBoxes > 0.001 ? inferredGiftBoxes : rawGiftBoxes;
+  const paidQuantity = paidFromTotal ?? Math.max(0, item.quantity - giftBoxes);
+
+  return {
+    paidQuantity,
+    giftBoxes,
+    giftPieces: rawGiftPieces,
+  };
+}
+
 /**
  * Build a short payment/pricing label for the receipt
  * e.g. "F-1 Especes" or "F-2 Cheque" or "SG" or "Gros"
@@ -269,20 +309,22 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
       addText(headerLine.substring(0, LINE_WIDTH));
 
       // Build promo tag + qty/price in one line
+      const { paidQuantity, giftBoxes, giftPieces } = resolveGiftDisplay(item);
       let promoTag = '';
-      if (item.giftQuantity && item.giftQuantity > 0) {
-        promoTag = `PRM-${item.giftQuantity}BTS `;
-      } else if (item.giftPieces && item.giftPieces > 0) {
-        promoTag = `PRM-${item.giftPieces}pcs `;
+      if (giftBoxes > 0) {
+        promoTag = `PRM-${formatQty(giftBoxes)}BTS `;
+      } else if (giftPieces > 0) {
+        promoTag = `PRM-${formatQty(giftPieces)}pcs `;
       }
 
       // Determine unit suffix
       const unitSuffix = (item.pricingUnit === 'unit' && item.piecesPerBox && item.piecesPerBox > 1) ? 'pcs' : 'bts';
 
-      let qtyStr = `${item.quantity}${unitSuffix}`;
-      if (item.giftQuantity && item.giftQuantity > 0) {
-        const paid = item.quantity - item.giftQuantity;
-        qtyStr = `${paid}+${item.giftQuantity}${unitSuffix}`;
+      let qtyStr = `${formatQty(item.quantity)}${unitSuffix}`;
+      if (giftBoxes > 0) {
+        qtyStr = `${formatQty(paidQuantity)}+${formatQty(giftBoxes)}${unitSuffix}`;
+      } else if (giftPieces > 0) {
+        qtyStr = `${formatQty(paidQuantity)}${unitSuffix}+${formatQty(giftPieces)}pcs`;
       }
 
       // Show unit price with unit info if pricing is per kg or per unit
@@ -375,14 +417,16 @@ export function formatReceiptForPreview(data: ReceiptData): string {
   let totalBoxes = 0;
   for (const item of data.items) {
     const unitSuffix = (item.pricingUnit === 'unit' && item.piecesPerBox && item.piecesPerBox > 1) ? 'pcs' : 'bts';
-    let qtyStr = `${item.quantity}${unitSuffix}`;
+    const { paidQuantity, giftBoxes, giftPieces } = resolveGiftDisplay(item);
+
+    let qtyStr = `${formatQty(item.quantity)}${unitSuffix}`;
     let promoTag = '';
-    if (item.giftQuantity && item.giftQuantity > 0) {
-      const paid = item.quantity - item.giftQuantity;
-      qtyStr = `${paid}+${item.giftQuantity}${unitSuffix}`;
-      promoTag = `<span style="color:#16a34a;font-size:9px;">🎁PRM-${item.giftQuantity}BTS</span> `;
-    } else if (item.giftPieces && item.giftPieces > 0) {
-      promoTag = `<span style="color:#16a34a;font-size:9px;">🎁PRM-${item.giftPieces}pcs</span> `;
+    if (giftBoxes > 0) {
+      qtyStr = `${formatQty(paidQuantity)}+${formatQty(giftBoxes)}${unitSuffix}`;
+      promoTag = `<span style="color:#16a34a;font-size:9px;">🎁PRM-${formatQty(giftBoxes)}BTS</span> `;
+    } else if (giftPieces > 0) {
+      qtyStr = `${formatQty(paidQuantity)}${unitSuffix}+${formatQty(giftPieces)}pcs`;
+      promoTag = `<span style="color:#16a34a;font-size:9px;">🎁PRM-${formatQty(giftPieces)}pcs</span> `;
     }
     
     // Show unit price with unit info if pricing is per kg or per unit
