@@ -145,7 +145,7 @@ function resolveGiftDisplay(item: ReceiptItem): { paidQuantity: number; giftBoxe
 
 function getUnitLabel(item: ReceiptItem): string {
   // Quantity is always in boxes (BTS), pricing unit details are shown in getUnitPrice()
-  return 'BTS';
+  return 'BOX';
 }
 
 function getUnitPrice(item: ReceiptItem): string {
@@ -382,7 +382,7 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
 
         if (giftBoxes > 0 || giftPieces > 0) {
           let giftStr = ' +CADEAU:';
-          if (giftBoxes > 0) giftStr += ` ${formatQty(giftBoxes)}BTS`;
+          if (giftBoxes > 0) giftStr += ` ${formatQty(giftBoxes)}BOX`;
           if (giftPieces > 0) giftStr += `${giftBoxes > 0 ? '+' : ' '}${formatQty(giftPieces)}PCS`;
           addText(giftStr);
         }
@@ -550,7 +550,7 @@ export function formatReceiptForPreview(data: ReceiptData): string {
       let giftHtml = '';
       if (giftBoxes > 0 || giftPieces > 0) {
         let giftText = '';
-        if (giftBoxes > 0) giftText += `${formatQty(giftBoxes)} BTS`;
+        if (giftBoxes > 0) giftText += `${formatQty(giftBoxes)} BOX`;
         if (giftPieces > 0) giftText += `${giftBoxes > 0 ? '+' : ''}${formatQty(giftPieces)} PCS`;
         giftHtml = `<div style="color:#16a34a;font-size:8px;">🎁 +CADEAU: ${giftText}</div>`;
       }
