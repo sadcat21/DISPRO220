@@ -213,13 +213,13 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
           </div>
           <div className="flex items-center gap-2">
             {firstTime && (
-              <span className="flex items-center gap-1 rounded-full px-2 py-0.5 bg-green-100 text-green-700 font-semibold text-[11px]">
+              <span className="flex items-center gap-1 rounded-full px-2 py-0.5 bg-primary/15 text-primary font-semibold text-[11px]">
                 <Clock className="w-3 h-3" />
                 {firstTime.toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' })}
               </span>
             )}
             {lastTime && (
-              <span className="flex items-center gap-1 rounded-full px-2 py-0.5 bg-red-100 text-red-700 font-semibold text-[11px]">
+              <span className="flex items-center gap-1 rounded-full px-2 py-0.5 bg-destructive/15 text-destructive font-semibold text-[11px]">
                 <Clock className="w-3 h-3" />
                 {lastTime.toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' })}
               </span>
@@ -274,23 +274,25 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
                     </div>
 
                     {/* Customer breakdown when expanded - overlay with product image background */}
+                    {/* Customer breakdown when expanded - overlay with product image background */}
                     {isExpanded && item.customers.length > 0 && (
-                      <div className="relative mt-1 rounded-xl overflow-hidden col-span-3">
+                      <div className="relative mt-1 rounded-xl overflow-hidden col-span-3 border border-primary/20">
                         {/* Product image as background with high transparency */}
                         {item.imageUrl && (
                           <img
                             src={item.imageUrl}
                             alt=""
-                            className="absolute inset-0 w-full h-full object-cover opacity-15"
+                            className="absolute inset-0 w-full h-full object-cover opacity-30 scale-110"
                           />
                         )}
-                        <div className="absolute inset-0 bg-background/70 backdrop-blur-sm" />
+                        <div className="absolute inset-0 bg-background/45 backdrop-blur-[1px]" />
+                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/20 to-background/65" />
                         {/* Customer list overlay */}
                         <div className="relative z-10 space-y-1 p-3">
                           {item.customers.map((c) => (
                             <div
                               key={c.customerId}
-                              className="flex items-center justify-between py-1.5 px-2 rounded-md bg-card/60 text-xs"
+                              className="flex items-center justify-between py-1.5 px-2 rounded-md bg-card/75 border border-border/60 text-xs"
                             >
                               <div className="flex items-center gap-1.5 min-w-0">
                                 <User className="w-3 h-3 text-muted-foreground shrink-0" />
