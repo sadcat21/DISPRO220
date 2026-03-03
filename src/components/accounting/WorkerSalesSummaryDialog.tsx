@@ -26,6 +26,7 @@ interface CustomerBreakdown {
   customerId: string;
   customerName: string;
   storeName: string | null;
+  phone: string | null;
   deliveryTime: string | null;
   quantity: number;
   giftQuantity: number;
@@ -127,9 +128,10 @@ const ExpandedCarousel: React.FC<{
                           </span>
                         )}
                       </div>
-                      {c.storeName && (
-                        <span className="text-[10px] text-muted-foreground truncate pr-5">{c.customerName}</span>
-                      )}
+                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                        {c.storeName && <span className="truncate">{c.customerName}</span>}
+                        {c.phone && <span dir="ltr" className="shrink-0">{c.phone}</span>}
+                      </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="font-bold text-primary text-base">{c.quantity}</span>
@@ -233,10 +235,11 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
 
       const customerIds = [...new Set(orders.map(o => o.customer_id).filter(Boolean))];
       const { data: customers } = customerIds.length > 0
-        ? await supabase.from('customers').select('id, name, store_name').in('id', customerIds)
+        ? await supabase.from('customers').select('id, name, store_name, phone').in('id', customerIds)
         : { data: [] };
       const customerNameMap = new Map((customers || []).map(c => [c.id, c.name]));
       const customerStoreMap = new Map((customers || []).map(c => [c.id, c.store_name || null]));
+      const customerPhoneMap = new Map((customers || []).map(c => [c.id, c.phone || null]));
 
       const agg: Record<string, ProductAgg> = {};
 
@@ -269,6 +272,7 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
             customerId,
             customerName: customerNameMap.get(customerId) || 'عميل غير معروف',
             storeName: customerStoreMap.get(customerId) || null,
+            phone: customerPhoneMap.get(customerId) || null,
             deliveryTime: orderTimeMap.get(item.order_id) || null,
             quantity: item.quantity || 0,
             giftQuantity: item.gift_quantity || 0,
