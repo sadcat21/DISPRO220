@@ -144,8 +144,7 @@ function resolveGiftDisplay(item: ReceiptItem): { paidQuantity: number; giftBoxe
 }
 
 function getUnitLabel(item: ReceiptItem): string {
-  if (item.pricingUnit === 'kg') return 'KG';
-  if (item.pricingUnit === 'unit' && item.piecesPerBox && item.piecesPerBox > 1) return 'PCS';
+  // Quantity is always in boxes (BTS), pricing unit details are shown in getUnitPrice()
   return 'BTS';
 }
 
