@@ -25,6 +25,7 @@ interface Props {
 interface CustomerBreakdown {
   customerId: string;
   customerName: string;
+  storeName: string | null;
   quantity: number;
   giftQuantity: number;
   totalAmount: number;
@@ -115,9 +116,14 @@ const ExpandedCarousel: React.FC<{
                     key={c.customerId}
                     className="flex items-center justify-between py-2 px-3 rounded-lg bg-card/80 border border-border/60 text-sm" dir="rtl"
                   >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <User className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                      <span className="truncate font-medium">{c.customerName}</span>
+                    <div className="flex flex-col min-w-0 gap-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                        <span className="truncate font-medium">{c.storeName || c.customerName}</span>
+                      </div>
+                      {c.storeName && (
+                        <span className="text-[10px] text-muted-foreground truncate pr-5">{c.customerName}</span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="font-bold text-primary text-base">{c.quantity}</span>
@@ -222,7 +228,8 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
       const { data: customers } = customerIds.length > 0
         ? await supabase.from('customers').select('id, name, store_name').in('id', customerIds)
         : { data: [] };
-      const customerMap = new Map((customers || []).map(c => [c.id, c.store_name || c.name]));
+      const customerNameMap = new Map((customers || []).map(c => [c.id, c.name]));
+      const customerStoreMap = new Map((customers || []).map(c => [c.id, c.store_name || null]));
 
       const agg: Record<string, ProductAgg> = {};
 
@@ -253,7 +260,8 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
         } else {
           agg[item.product_id].customers.push({
             customerId,
-            customerName: customerMap.get(customerId) || 'عميل غير معروف',
+            customerName: customerNameMap.get(customerId) || 'عميل غير معروف',
+            storeName: customerStoreMap.get(customerId) || null,
             quantity: item.quantity || 0,
             giftQuantity: item.gift_quantity || 0,
             totalAmount: item.total_price || 0,
