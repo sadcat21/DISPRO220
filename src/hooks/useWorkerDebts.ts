@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRealtimeSubscription } from './useRealtimeSubscription';
 
 export interface WorkerDebt {
   id: string;
@@ -33,6 +34,20 @@ export interface WorkerDebtPayment {
 
 export const useWorkerDebts = (workerId?: string) => {
   const { activeBranch } = useAuth();
+
+  useRealtimeSubscription(
+    `worker-debts-realtime-${workerId || 'all'}`,
+    [
+      { table: 'worker_debts', filter: workerId ? `worker_id=eq.${workerId}` : undefined },
+      { table: 'worker_debt_payments' },
+    ],
+    [
+      ['worker-debts', workerId || undefined, activeBranch?.id],
+      ['worker-debt-payments'],
+    ],
+    true
+  );
+
   return useQuery({
     queryKey: ['worker-debts', workerId, activeBranch?.id],
     queryFn: async () => {
@@ -56,6 +71,13 @@ export const useWorkerDebts = (workerId?: string) => {
 };
 
 export const useWorkerDebtPayments = (debtId: string | null) => {
+  useRealtimeSubscription(
+    `worker-debt-payments-realtime-${debtId || 'all'}`,
+    [{ table: 'worker_debt_payments', filter: debtId ? `worker_debt_id=eq.${debtId}` : undefined }],
+    [['worker-debt-payments', debtId || undefined]],
+    !!debtId
+  );
+
   return useQuery({
     queryKey: ['worker-debt-payments', debtId],
     queryFn: async () => {

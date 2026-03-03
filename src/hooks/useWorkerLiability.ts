@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRealtimeSubscription } from './useRealtimeSubscription';
 
 export interface WorkerLiabilitySummary {
   workerId: string;
@@ -106,6 +107,24 @@ async function calcWorkerLiability(workerId: string, branchId?: string | null): 
 
 export const useWorkerLiability = (workerId?: string | null) => {
   const { activeBranch } = useAuth();
+
+  useRealtimeSubscription(
+    `worker-liability-realtime-${workerId || 'all'}`,
+    [
+      { table: 'accounting_sessions', filter: workerId ? `worker_id=eq.${workerId}` : undefined },
+      { table: 'orders', filter: workerId ? `assigned_worker_id=eq.${workerId}` : undefined },
+      { table: 'debt_collections', filter: workerId ? `worker_id=eq.${workerId}` : undefined },
+      { table: 'expenses', filter: workerId ? `worker_id=eq.${workerId}` : undefined },
+      { table: 'worker_liability_adjustments', filter: workerId ? `worker_id=eq.${workerId}` : undefined },
+      { table: 'coin_exchange_tasks', filter: workerId ? `worker_id=eq.${workerId}` : undefined },
+    ],
+    [
+      ['worker-liability', workerId || undefined, activeBranch?.id],
+      ['all-workers-liability', activeBranch?.id],
+    ],
+    !!workerId
+  );
+
   return useQuery({
     queryKey: ['worker-liability', workerId, activeBranch?.id],
     queryFn: () => calcWorkerLiability(workerId!, activeBranch?.id),
@@ -115,6 +134,22 @@ export const useWorkerLiability = (workerId?: string | null) => {
 
 export const useAllWorkersLiability = () => {
   const { activeBranch } = useAuth();
+
+  useRealtimeSubscription(
+    `all-workers-liability-realtime-${activeBranch?.id || 'all'}`,
+    [
+      { table: 'workers' },
+      { table: 'accounting_sessions' },
+      { table: 'orders' },
+      { table: 'debt_collections' },
+      { table: 'expenses' },
+      { table: 'worker_liability_adjustments' },
+      { table: 'coin_exchange_tasks' },
+    ],
+    [['all-workers-liability', activeBranch?.id]],
+    true
+  );
+
   return useQuery({
     queryKey: ['all-workers-liability', activeBranch?.id],
     queryFn: async (): Promise<WorkerLiabilitySummary[]> => {

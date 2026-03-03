@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRealtimeSubscription } from './useRealtimeSubscription';
 
 export type OperationType = 'order' | 'direct_sale' | 'delivery' | 'add_customer' | 'update_customer' | 'delete_customer' | 'debt_collection' | 'visit' | 'delivery_visit';
 
@@ -99,6 +100,13 @@ export const useVisitTrackingList = (filters?: {
 }) => {
   const { activeBranch, role } = useAuth();
   const isAdmin = role === 'admin' || role === 'branch_admin';
+
+  useRealtimeSubscription(
+    `visit-tracking-realtime-${activeBranch?.id || 'all'}`,
+    [{ table: 'visit_tracking' }, { table: 'worker_locations' }],
+    [['visit-tracking', activeBranch?.id]],
+    isAdmin
+  );
 
   return useQuery({
     queryKey: ['visit-tracking', activeBranch?.id, filters],

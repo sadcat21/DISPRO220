@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
 import { ArrowRight, Calculator, Truck, Banknote, Wallet, MapPin, ShoppingCart, Activity, Shield, HardHat, HandCoins, ArrowLeftRight, ClipboardList, Trophy, AlertTriangle, DollarSign, Package, PackageOpen, ClipboardCheck, TrendingUp, TrendingDown, Gift, CalendarDays, ShoppingBag } from 'lucide-react';
 import { useWorkerLiability } from '@/hooks/useWorkerLiability';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { Badge } from '@/components/ui/badge';
 import { Worker } from '@/types/database';
 import CoinExchangeDialog from '@/components/treasury/CoinExchangeDialog';
@@ -59,6 +60,37 @@ const WorkerActions: React.FC = () => {
   const [stockReviewOpen, setStockReviewOpen] = useState(false);
   const [attendanceLogOpen, setAttendanceLogOpen] = useState(false);
   const [salesSummaryOpen, setSalesSummaryOpen] = useState(false);
+
+  useRealtimeSubscription(
+    `worker-actions-realtime-${selectedWorker?.id || 'none'}`,
+    [
+      { table: 'workers' },
+      { table: 'worker_stock', filter: selectedWorker?.id ? `worker_id=eq.${selectedWorker.id}` : undefined },
+      { table: 'loading_sessions', filter: selectedWorker?.id ? `worker_id=eq.${selectedWorker.id}` : undefined },
+      { table: 'loading_session_items' },
+      { table: 'orders' },
+      { table: 'order_items' },
+      { table: 'accounting_sessions', filter: selectedWorker?.id ? `worker_id=eq.${selectedWorker.id}` : undefined },
+      { table: 'worker_locations' },
+      { table: 'customer_debts' },
+      { table: 'debt_collections' },
+      { table: 'worker_debts' },
+      { table: 'worker_debt_payments' },
+    ],
+    [
+      ['workers-for-actions', activeBranch?.id],
+      ['worker-truck-stock', selectedWorker?.id],
+      ['worker-last-accounting', selectedWorker?.id],
+      ['worker-truck-loaded', selectedWorker?.id],
+      ['worker-truck-sold', selectedWorker?.id],
+      ['worker-liability', selectedWorker?.id, activeBranch?.id],
+      ['worker-sales-summary', selectedWorker?.id],
+      ['worker-locations', activeBranch?.id],
+      ['worker-debts', selectedWorker?.id, activeBranch?.id],
+      ['visit-tracking', activeBranch?.id],
+    ],
+    !!selectedWorker?.id
+  );
 
   const { data: workers = [] } = useQuery({
     queryKey: ['workers-for-actions', activeBranch?.id],
@@ -131,10 +163,10 @@ const WorkerActions: React.FC = () => {
       let ordersQuery = supabase
         .from('orders')
         .select('id')
-        .eq('assigned_worker_id', selectedWorker!.id)
-        .eq('status', 'delivered');
+        .eq('status', 'delivered')
+        .or(`assigned_worker_id.eq.${selectedWorker!.id},created_by.eq.${selectedWorker!.id}`);
       if (lastWorkerAccounting) {
-        ordersQuery = ordersQuery.gte('created_at', lastWorkerAccounting);
+        ordersQuery = ordersQuery.gte('updated_at', lastWorkerAccounting);
       }
       const { data: orders } = await ordersQuery;
       if (!orders || orders.length === 0) return [];

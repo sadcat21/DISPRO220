@@ -19,7 +19,7 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
   useRealtimeSubscription(
     `worker-sales-realtime-${workerId}`,
     [
-      { table: 'orders', filter: workerId ? `assigned_worker_id=eq.${workerId}` : undefined },
+      { table: 'orders' },
       { table: 'order_items' },
     ],
     [['worker-sales-summary', workerId], ['worker-last-accounting-sales', workerId]],
@@ -49,12 +49,12 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
     queryFn: async () => {
       let ordersQuery = supabase
         .from('orders')
-        .select('id, status, payment_type, created_at')
-        .eq('assigned_worker_id', workerId!)
-        .in('status', ['delivered', 'completed', 'confirmed']);
+        .select('id, status, payment_type, created_at, updated_at')
+        .in('status', ['delivered', 'completed', 'confirmed'])
+        .or(`assigned_worker_id.eq.${workerId!},created_by.eq.${workerId!}`);
 
       if (lastAccounting) {
-        ordersQuery = ordersQuery.gte('created_at', lastAccounting);
+        ordersQuery = ordersQuery.gte('updated_at', lastAccounting);
       }
 
       const { data: orders, error } = await ordersQuery;
@@ -105,6 +105,8 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
       };
     },
     enabled: open && !!workerId,
+    refetchInterval: open ? 15000 : false,
+    refetchOnWindowFocus: true,
   });
 
   const totalAmount = useMemo(() => {
