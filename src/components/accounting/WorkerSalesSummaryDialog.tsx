@@ -7,6 +7,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { ShoppingBag, Package, User, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 
+/** Format quantity as boxes.pieces (e.g. 1.05 = 1 box + 5 pieces) */
+const formatBoxPieces = (qty: number, piecesPerBox: number | null): string => {
+  if (!piecesPerBox || piecesPerBox <= 0) return String(qty);
+  const boxes = Math.floor(qty / piecesPerBox);
+  const pieces = qty % piecesPerBox;
+  return `${boxes}.${String(pieces).padStart(2, '0')}`;
+};
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -114,7 +122,7 @@ const ExpandedCarousel: React.FC<{
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="font-bold text-primary text-base">{c.quantity}</span>
                       {c.giftQuantity > 0 && (
-                        <span className="text-xs text-muted-foreground">(+{c.giftQuantity})</span>
+                        <span className="text-xs text-muted-foreground">(+{formatBoxPieces(c.giftQuantity, item.piecesPerBox)})</span>
                       )}
                     </div>
                   </div>
@@ -133,7 +141,7 @@ const ExpandedCarousel: React.FC<{
             </div>
             {item.giftQuantity > 0 && (
               <div className="flex items-center justify-center gap-1 rounded-md bg-secondary py-1.5 px-2 text-xs font-semibold text-secondary-foreground">
-                🎁 {item.giftQuantity}
+                🎁 {formatBoxPieces(item.giftQuantity, item.piecesPerBox)}
               </div>
             )}
           </div>
@@ -380,7 +388,7 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
                       </div>
                       {item.giftQuantity > 0 && (
                         <div className="flex items-center justify-center gap-0.5 rounded-md bg-secondary py-1 px-1.5 text-[10px] font-semibold text-secondary-foreground">
-                          🎁 {item.giftQuantity}
+                          🎁 {formatBoxPieces(item.giftQuantity, item.piecesPerBox)}
                         </div>
                       )}
                     </div>
