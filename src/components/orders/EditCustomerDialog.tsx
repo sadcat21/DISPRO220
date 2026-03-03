@@ -294,7 +294,6 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
       if (!phones[0]?.trim()) { toast.error('الرجاء إدخال رقم هاتف العميل'); return; }
       if (!storeName.trim()) { toast.error('الرجاء إدخال اسم المحل'); return; }
       if (!sectorId || sectorId === 'none') { toast.error('الرجاء اختيار السكتور'); return; }
-      if (latitude === null || latitude === undefined || longitude === null || longitude === undefined) { toast.error('يرجى تحديد الموقع الجغرافي على الخريطة'); return; }
       if (customerTypes.length > 0 && !customerType) { toast.error('يجب تحديد نوع العميل'); return; }
     }
 
