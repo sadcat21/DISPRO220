@@ -171,6 +171,10 @@ const WorkerAttendanceLogDialog: React.FC<Props> = ({ open, onOpenChange, worker
                     {/* Days */}
                     {week.days.map((day, di) => {
                       if (!day.isInMonth) return null;
+                      // Hide future days
+                      const today = new Date();
+                      today.setHours(23, 59, 59, 999);
+                      if (day.date > today) return null;
                       const hasData = !!day.clockIn;
                       const durH = Math.floor(day.durationMinutes / 60);
                       const durM = day.durationMinutes % 60;
