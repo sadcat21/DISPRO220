@@ -89,7 +89,7 @@ const ExpandedCarousel: React.FC<{
         </div>
 
         {/* Image area with guaranteed height + customer overlay */}
-        <div className="relative w-full overflow-hidden bg-muted h-[46vh] min-h-[240px] max-h-[520px] sm:h-[52vh]">
+        <div className="relative w-full overflow-hidden bg-muted h-[38vh] min-h-[200px] max-h-[400px]">
           {item.imageUrl ? (
             <img src={item.imageUrl} alt={item.name} className="absolute inset-0 w-full h-full object-cover" />
           ) : (
