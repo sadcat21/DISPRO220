@@ -3,11 +3,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useBluetoothPrinter } from '@/hooks/useBluetoothPrinter';
 import { useCreateReceipt, useUpdateReceiptPrintCount } from '@/hooks/useReceipts';
-import { formatReceiptForPreview, ReceiptData } from '@/services/receiptFormatter';
+import { formatReceiptForPreview, ReceiptData, AdvancedReceiptOptions } from '@/services/receiptFormatter';
 import { ReceiptItem, ReceiptType } from '@/types/receipt';
-import { Printer, Eye, Bluetooth, Loader2, Check, AlertCircle, RefreshCw } from 'lucide-react';
+import { Printer, Eye, Bluetooth, Loader2, Check, AlertCircle, ChevronDown, Settings2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ReceiptDialogProps {
@@ -31,11 +36,9 @@ interface ReceiptDialogProps {
     remainingAmount: number;
     paymentMethod?: string | null;
     notes?: string | null;
-    // Payment/pricing info
     orderPaymentType?: string;
     orderPriceSubtype?: string;
     orderInvoicePaymentMethod?: string;
-    // Debt-specific
     debtTotalAmount?: number;
     debtPaidBefore?: number;
     collectorName?: string;
@@ -53,9 +56,33 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
   const [receiptNumber, setReceiptNumber] = useState<number>(0);
   const [showPreview, setShowPreview] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+
+  // Advanced distribution toggles
+  const [showStockBeforeAfter, setShowStockBeforeAfter] = useState(false);
+  const [showDeliveryStatus, setShowDeliveryStatus] = useState(false);
+  const [deliveryStatusValue, setDeliveryStatusValue] = useState<'full' | 'partial' | 'refused'>('full');
+  const [showRouteCode, setShowRouteCode] = useState(false);
+  const [routeCode, setRouteCode] = useState('');
+  const [showTruckId, setShowTruckId] = useState(false);
+  const [truckId, setTruckId] = useState('');
+  const [showSessionId, setShowSessionId] = useState(false);
+  const [sessionId, setSessionId] = useState('');
+
+  const advancedOptions: AdvancedReceiptOptions = {
+    showWorkerStockBeforeAfter: showStockBeforeAfter,
+    showDeliveryStatus,
+    deliveryStatusValue,
+    showRouteCode,
+    routeCode,
+    showTruckId,
+    truckId,
+    showSessionId,
+    sessionId,
+  };
 
   const receiptDataForFormatter: ReceiptData = {
-    receiptNumber: receiptNumber,
+    receiptNumber,
     receiptType: receiptData.receiptType,
     customerName: receiptData.customerName,
     customerPhone: receiptData.customerPhone,
@@ -70,21 +97,19 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
     notes: receiptData.notes,
     date: new Date(),
     printCount: 0,
-    // Payment/pricing info
     orderPaymentType: receiptData.orderPaymentType,
     orderPriceSubtype: receiptData.orderPriceSubtype,
     orderInvoicePaymentMethod: receiptData.orderInvoicePaymentMethod,
-    // Debt-specific
     debtTotalAmount: receiptData.debtTotalAmount,
     debtPaidBefore: receiptData.debtPaidBefore,
     collectorName: receiptData.collectorName,
     nextCollectionDate: receiptData.nextCollectionDate,
     nextCollectionTime: receiptData.nextCollectionTime,
+    advancedOptions,
   };
 
   const previewHtml = formatReceiptForPreview(receiptDataForFormatter);
 
-  // Save receipt to DB
   const handleSaveAndPrint = async () => {
     setIsSaving(true);
     try {
@@ -115,7 +140,6 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
         receiptDataForFormatter.receiptNumber = saved.receipt_number;
       }
 
-      // Print
       const printed = await printReceipt(receiptDataForFormatter);
       if (printed && receiptId) {
         await updatePrintCount.mutateAsync(receiptId);
@@ -159,11 +183,70 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
           )}
         </div>
 
-        {/* Preview */}
-        <ScrollArea className="max-h-[calc(90vh-12rem)] px-4">
+        <ScrollArea className="max-h-[calc(90vh-14rem)] px-4">
+          {/* Advanced Distribution Toggles */}
+          <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen} className="mt-3">
+            <CollapsibleTrigger className="flex items-center gap-2 w-full text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2">
+              <Settings2 className="w-4 h-4" />
+              <span>خيارات التوزيع المتقدمة</span>
+              <ChevronDown className={`w-4 h-4 mr-auto transition-transform ${advancedOpen ? 'rotate-180' : ''}`} />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-3 pb-3 border rounded-lg p-3 bg-muted/30">
+              {/* Delivery Status */}
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">حالة التسليم</Label>
+                <Switch checked={showDeliveryStatus} onCheckedChange={setShowDeliveryStatus} />
+              </div>
+              {showDeliveryStatus && (
+                <Select value={deliveryStatusValue} onValueChange={(v) => setDeliveryStatusValue(v as any)}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="full">✅ كامل (Complet)</SelectItem>
+                    <SelectItem value="partial">⚠️ جزئي (Partiel)</SelectItem>
+                    <SelectItem value="refused">❌ مرفوض (Refusé)</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+
+              {/* Route Code */}
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">رمز المسار</Label>
+                <Switch checked={showRouteCode} onCheckedChange={setShowRouteCode} />
+              </div>
+              {showRouteCode && (
+                <Input className="h-8 text-xs" placeholder="رمز المسار..." value={routeCode} onChange={e => setRouteCode(e.target.value)} />
+              )}
+
+              {/* Truck ID */}
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">رقم الشاحنة</Label>
+                <Switch checked={showTruckId} onCheckedChange={setShowTruckId} />
+              </div>
+              {showTruckId && (
+                <Input className="h-8 text-xs" placeholder="رقم الشاحنة..." value={truckId} onChange={e => setTruckId(e.target.value)} />
+              )}
+
+              {/* Session ID */}
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">رقم الجلسة</Label>
+                <Switch checked={showSessionId} onCheckedChange={setShowSessionId} />
+              </div>
+              {showSessionId && (
+                <Input className="h-8 text-xs" placeholder="رقم الجلسة..." value={sessionId} onChange={e => setSessionId(e.target.value)} />
+              )}
+
+              {/* Worker Stock Before/After */}
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">مخزون العامل (قبل/بعد)</Label>
+                <Switch checked={showStockBeforeAfter} onCheckedChange={setShowStockBeforeAfter} />
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* Preview */}
           <div className="py-3">
             {showPreview && (
-              <div 
+              <div
                 className="bg-white text-black rounded border p-3 text-xs"
                 dangerouslySetInnerHTML={{ __html: previewHtml }}
               />
