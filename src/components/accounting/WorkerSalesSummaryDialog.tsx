@@ -54,9 +54,9 @@ const ExpandedCarousel: React.FC<{
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col gap-2 pb-2">
       {/* Navigation header */}
-      <div className="flex items-center justify-between px-1 py-1.5 shrink-0">
+      <div className="flex items-center justify-between px-1 py-1.5">
         <button
           onClick={goPrev}
           disabled={currentIdx === 0}
@@ -76,20 +76,20 @@ const ExpandedCarousel: React.FC<{
         </button>
       </div>
 
-      {/* Full-height product card */}
+      {/* Product card */}
       <div
-        className="flex flex-col flex-1 min-h-0 rounded-2xl overflow-hidden shadow-lg border-2 border-primary ring-2 ring-primary/30 cursor-pointer"
+        className="flex flex-col rounded-2xl overflow-hidden shadow-lg border-2 border-primary ring-2 ring-primary/30 cursor-pointer"
         onClick={onClose}
       >
         {/* Product name */}
-        <div className="px-3 py-2 text-center bg-primary shrink-0">
+        <div className="px-3 py-2 text-center bg-primary">
           <span className="font-bold text-sm block truncate text-primary-foreground">
             {item.name}
           </span>
         </div>
 
-        {/* Image fills remaining space with customer overlay */}
-        <div className="relative flex-1 min-h-0 overflow-hidden bg-muted">
+        {/* Image area with guaranteed height + customer overlay */}
+        <div className="relative w-full overflow-hidden bg-muted h-[46vh] min-h-[240px] max-h-[520px] sm:h-[52vh]">
           {item.imageUrl ? (
             <img src={item.imageUrl} alt={item.name} className="absolute inset-0 w-full h-full object-cover" />
           ) : (
@@ -125,7 +125,7 @@ const ExpandedCarousel: React.FC<{
         </div>
 
         {/* Footer buttons */}
-        <div className="px-2 py-2 bg-card flex flex-col gap-1.5 shrink-0">
+        <div className="px-2 py-2 bg-card flex flex-col gap-1.5">
           <div className="flex items-center gap-1.5">
             <div className="flex-1 flex items-center justify-center gap-1 rounded-md bg-primary/10 text-primary py-1.5 text-sm font-bold">
               <Package className="w-3.5 h-3.5" />
