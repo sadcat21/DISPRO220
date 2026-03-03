@@ -521,6 +521,9 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
             unit_price: item.unitPrice,
             total_price: item.totalPrice,
             gift_quantity: item.giftQuantity || 0,
+            pricing_unit: item.pricingUnit || 'box',
+            weight_per_box: item.weightPerBox || null,
+            pieces_per_box: item.piecesPerBox || null,
           });
           changes.push({ منتج: item.productName, كمية: item.quantity, عملية: 'إضافة جديد' });
         }

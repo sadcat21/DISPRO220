@@ -160,7 +160,7 @@ export const useCreateOrder = () => {
       prepaidAmount
     }: { 
       customerId: string; 
-      items: { productId: string; quantity: number; unitPrice?: number; totalPrice?: number; giftQuantity?: number; giftOfferId?: string; itemPaymentType?: string; itemInvoicePaymentMethod?: string | null; itemPriceSubType?: string }[];
+      items: { productId: string; quantity: number; unitPrice?: number; totalPrice?: number; giftQuantity?: number; giftOfferId?: string; itemPaymentType?: string; itemInvoicePaymentMethod?: string | null; itemPriceSubType?: string; pricingUnit?: string; weightPerBox?: number | null; piecesPerBox?: number }[];
       notes?: string;
       deliveryDate?: string;
       paymentType?: 'with_invoice' | 'without_invoice';
@@ -200,6 +200,9 @@ export const useCreateOrder = () => {
         payment_type: item.itemPaymentType || null,
         invoice_payment_method: item.itemInvoicePaymentMethod || null,
         price_subtype: item.itemPriceSubType || null,
+        pricing_unit: item.pricingUnit || 'box',
+        weight_per_box: item.weightPerBox || null,
+        pieces_per_box: item.piecesPerBox || null,
       }));
 
       const { error: itemsError } = await supabase

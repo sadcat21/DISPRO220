@@ -502,15 +502,21 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
 
       if (orderErr) throw orderErr;
 
-      const orderItemsData = orderItems.map(item => ({
-        order_id: order.id,
-        product_id: item.productId,
-        quantity: item.quantity,
-        unit_price: item.unitPrice,
-        total_price: item.totalPrice,
-        gift_quantity: item.giftPieces || item.giftQuantity || 0,
-        gift_offer_id: item.giftOfferId || null,
-      }));
+      const orderItemsData = orderItems.map(item => {
+        const prod = availableProducts.find(p => p.id === item.productId);
+        return {
+          order_id: order.id,
+          product_id: item.productId,
+          quantity: item.quantity,
+          unit_price: item.unitPrice,
+          total_price: item.totalPrice,
+          gift_quantity: item.giftPieces || item.giftQuantity || 0,
+          gift_offer_id: item.giftOfferId || null,
+          pricing_unit: prod?.pricing_unit || 'box',
+          weight_per_box: prod?.weight_per_box || null,
+          pieces_per_box: prod?.pieces_per_box || null,
+        };
+      });
 
       const { error: itemsErr } = await supabase.from('order_items').insert(orderItemsData);
       if (itemsErr) throw new Error('فشل في حفظ بنود الطلب: ' + itemsErr.message);

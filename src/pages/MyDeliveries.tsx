@@ -182,9 +182,9 @@ const MyDeliveries: React.FC = () => {
         unitPrice: Number(item.unit_price || 0),
         totalPrice: Number(item.total_price || 0),
         giftQuantity: item.gift_quantity || 0,
-        pricingUnit: item.product?.pricing_unit || 'box',
-        weightPerBox: item.product?.weight_per_box,
-        piecesPerBox: item.product?.pieces_per_box,
+        pricingUnit: (item as any).pricing_unit || item.product?.pricing_unit || 'box',
+        weightPerBox: (item as any).weight_per_box ?? item.product?.weight_per_box,
+        piecesPerBox: (item as any).pieces_per_box ?? item.product?.pieces_per_box,
       }));
 
       const totalAmount = Number(order.total_amount || 0);

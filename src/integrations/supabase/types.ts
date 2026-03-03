@@ -2490,11 +2490,14 @@ export type Database = {
           invoice_payment_method: string | null
           order_id: string
           payment_type: string | null
+          pieces_per_box: number | null
           price_subtype: string | null
+          pricing_unit: string | null
           product_id: string
           quantity: number
           total_price: number | null
           unit_price: number | null
+          weight_per_box: number | null
         }
         Insert: {
           created_at?: string
@@ -2504,11 +2507,14 @@ export type Database = {
           invoice_payment_method?: string | null
           order_id: string
           payment_type?: string | null
+          pieces_per_box?: number | null
           price_subtype?: string | null
+          pricing_unit?: string | null
           product_id: string
           quantity?: number
           total_price?: number | null
           unit_price?: number | null
+          weight_per_box?: number | null
         }
         Update: {
           created_at?: string
@@ -2518,11 +2524,14 @@ export type Database = {
           invoice_payment_method?: string | null
           order_id?: string
           payment_type?: string | null
+          pieces_per_box?: number | null
           price_subtype?: string | null
+          pricing_unit?: string | null
           product_id?: string
           quantity?: number
           total_price?: number | null
           unit_price?: number | null
+          weight_per_box?: number | null
         }
         Relationships: [
           {

@@ -54,6 +54,9 @@ interface OrderItemWithPrice {
   itemPaymentType?: string;
   itemInvoicePaymentMethod?: string | null;
   itemPriceSubType?: string;
+  pricingUnit?: string;
+  weightPerBox?: number | null;
+  piecesPerBox?: number;
 }
 
 const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChange, initialCustomerId }) => {
@@ -278,6 +281,9 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
           itemPaymentType: perItemPricing?.paymentType,
           itemInvoicePaymentMethod: perItemPricing?.invoicePaymentMethod,
           itemPriceSubType: perItemPricing?.priceSubType,
+          pricingUnit: product.pricing_unit || 'box',
+          weightPerBox: product.weight_per_box,
+          piecesPerBox: product.pieces_per_box,
         }];
       });
       setEditingProductMode(false);
@@ -299,6 +305,9 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
       itemPaymentType: perItemPricing?.paymentType,
       itemInvoicePaymentMethod: perItemPricing?.invoicePaymentMethod,
       itemPriceSubType: perItemPricing?.priceSubType,
+      pricingUnit: product.pricing_unit || 'box',
+      weightPerBox: product.weight_per_box,
+      piecesPerBox: product.pieces_per_box,
     };
 
     if (editingProductMode) {
