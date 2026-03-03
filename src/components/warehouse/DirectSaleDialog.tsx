@@ -614,16 +614,22 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
 
       // Build receipt data and show receipt dialog
       const offerNotes = orderItems.filter(i => i.offerNote).map(i => i.offerNote).join(' | ');
-      const receiptItems: ReceiptItem[] = orderItems.map(item => ({
-        productId: item.productId,
-        productName: getProductName(item.productId),
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        totalPrice: item.totalPrice,
-        giftQuantity: item.giftQuantity,
-        giftPieces: item.giftPieces,
-        offerNote: item.offerNote,
-      }));
+      const receiptItems: ReceiptItem[] = orderItems.map(item => {
+        const prod = availableProducts.find(p => p.id === item.productId);
+        return {
+          productId: item.productId,
+          productName: getProductName(item.productId),
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalPrice: item.totalPrice,
+          giftQuantity: item.giftQuantity,
+          giftPieces: item.giftPieces,
+          offerNote: item.offerNote,
+          pricingUnit: prod?.pricing_unit || 'box',
+          weightPerBox: prod?.weight_per_box,
+          piecesPerBox: prod?.pieces_per_box,
+        };
+      });
       const combinedNotes = [notes, offerNotes].filter(Boolean).join(' | ');
 
       setReceiptData({

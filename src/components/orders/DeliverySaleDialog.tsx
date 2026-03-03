@@ -703,6 +703,9 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
         totalPrice: item.totalPrice,
         giftQuantity: item.giftQuantity > 0 ? item.giftQuantity : undefined,
         giftPieces: (item as any).giftPieces > 0 ? (item as any).giftPieces : undefined,
+        pricingUnit: item.pricingUnit,
+        weightPerBox: item.weightPerBox,
+        piecesPerBox: item.piecesPerBox,
       }));
 
       setReceiptDataState({

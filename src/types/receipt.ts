@@ -13,6 +13,9 @@ export interface ReceiptItem {
   priceSubtype?: string;
   invoicePaymentMethod?: string;
   offerNote?: string; // note for managers when offer was overridden
+  pricingUnit?: string; // 'box' | 'kg' | 'unit'
+  weightPerBox?: number | null;
+  piecesPerBox?: number;
 }
 
 export interface Receipt {

@@ -282,7 +282,15 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
         qtyStr = `${paid}+${item.giftQuantity}`;
       }
 
-      const priceStr = `${Math.round(item.unitPrice)}`;
+      // Show unit price with unit info if pricing is per kg or per unit
+      let priceStr = `${Math.round(item.unitPrice)}`;
+      if (item.pricingUnit === 'kg' && item.weightPerBox && item.weightPerBox > 0) {
+        const perKgPrice = item.unitPrice / item.weightPerBox;
+        priceStr = `${Math.round(perKgPrice)}{${item.weightPerBox}kg}`;
+      } else if (item.pricingUnit === 'unit' && item.piecesPerBox && item.piecesPerBox > 1) {
+        const perUnitPrice = item.unitPrice / item.piecesPerBox;
+        priceStr = `${Math.round(perUnitPrice)}{${item.piecesPerBox}pcs}`;
+      }
       const totalStr = formatAmount(item.totalPrice);
 
       addText(`${promoTag}${qtyStr} | ${priceStr} DA | ${totalStr} DA`);
@@ -373,6 +381,16 @@ export function formatReceiptForPreview(data: ReceiptData): string {
       promoTag = `<span style="color:#16a34a;font-size:9px;">🎁PRM-${item.giftPieces}pcs</span> `;
     }
     
+    // Show unit price with unit info if pricing is per kg or per unit
+    let priceDisplay = `${Math.round(item.unitPrice)} DA`;
+    if (item.pricingUnit === 'kg' && item.weightPerBox && item.weightPerBox > 0) {
+      const perKgPrice = item.unitPrice / item.weightPerBox;
+      priceDisplay = `${Math.round(perKgPrice)}{${item.weightPerBox}kg} DA`;
+    } else if (item.pricingUnit === 'unit' && item.piecesPerBox && item.piecesPerBox > 1) {
+      const perUnitPrice = item.unitPrice / item.piecesPerBox;
+      priceDisplay = `${Math.round(perUnitPrice)}{${item.piecesPerBox}pcs} DA`;
+    }
+
     const noteHtml = item.offerNote ? `<div style="font-size:8px;color:#d97706;text-align:center;">${item.offerNote}</div>` : '';
     
     itemsHtml += `
@@ -380,7 +398,7 @@ export function formatReceiptForPreview(data: ReceiptData): string {
         -----( ${item.productName} )-----
       </div>
       <div style="text-align:center;font-size:10px;padding:2px 0 4px;">
-        ${promoTag}<span>${qtyStr}</span><span style="margin:0 3px;color:#999;">|</span><span>${Math.round(item.unitPrice)} DA</span><span style="margin:0 3px;color:#999;">|</span><span style="font-weight:bold;">${Math.round(item.totalPrice).toLocaleString()} DA</span>
+        ${promoTag}<span>${qtyStr}</span><span style="margin:0 3px;color:#999;">|</span><span>${priceDisplay}</span><span style="margin:0 3px;color:#999;">|</span><span style="font-weight:bold;">${Math.round(item.totalPrice).toLocaleString()} DA</span>
       </div>
       ${noteHtml}`;
     totalBoxes += item.quantity;
