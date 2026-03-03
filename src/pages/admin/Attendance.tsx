@@ -5,15 +5,17 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { CalendarDays, Clock, MapPin, ChevronRight, ChevronLeft, LogIn, LogOut, Users, ListChecks, Timer, Settings2 } from 'lucide-react';
+import { CalendarDays, Clock, MapPin, ChevronRight, ChevronLeft, LogIn, LogOut, Users, ListChecks, Timer, Settings2, UserCog } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import AttendanceSettingsDialog from '@/components/attendance/AttendanceSettingsDialog';
+import WorkerAttendanceLocationDialog from '@/components/attendance/WorkerAttendanceLocationDialog';
 
 const Attendance: React.FC = () => {
   const { activeBranch } = useAuth();
   const [selectedDate, setSelectedDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [workerLocationOpen, setWorkerLocationOpen] = useState(false);
   const { data: logs = [], isLoading } = useAllAttendance(selectedDate, activeBranch?.id);
 
   const workerGroups = useMemo(() => {
@@ -60,9 +62,14 @@ const Attendance: React.FC = () => {
             <p className="text-xs text-muted-foreground">متابعة حضور وانصراف العمال</p>
           </div>
         </div>
-        <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => setSettingsOpen(true)}>
-          <Settings2 className="w-5 h-5 text-muted-foreground" />
-        </Button>
+        <div className="flex gap-1">
+          <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => setWorkerLocationOpen(true)} title="تخصيص موقع مداومة لعامل">
+            <UserCog className="w-5 h-5 text-muted-foreground" />
+          </Button>
+          <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => setSettingsOpen(true)}>
+            <Settings2 className="w-5 h-5 text-muted-foreground" />
+          </Button>
+        </div>
       </div>
 
       {/* Date Navigation */}
@@ -232,6 +239,7 @@ const Attendance: React.FC = () => {
       )}
 
       <AttendanceSettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <WorkerAttendanceLocationDialog open={workerLocationOpen} onOpenChange={setWorkerLocationOpen} />
     </div>
   );
 };

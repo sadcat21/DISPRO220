@@ -5081,6 +5081,71 @@ export type Database = {
           },
         ]
       }
+      worker_attendance_locations: {
+        Row: {
+          created_at: string
+          id: string
+          label: string | null
+          latitude: number
+          longitude: number
+          max_distance_meters: number
+          set_by: string | null
+          updated_at: string
+          worker_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          latitude: number
+          longitude: number
+          max_distance_meters?: number
+          set_by?: string | null
+          updated_at?: string
+          worker_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          latitude?: number
+          longitude?: number
+          max_distance_meters?: number
+          set_by?: string | null
+          updated_at?: string
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "worker_attendance_locations_set_by_fkey"
+            columns: ["set_by"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "worker_attendance_locations_set_by_fkey"
+            columns: ["set_by"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "worker_attendance_locations_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: true
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "worker_attendance_locations_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: true
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       worker_debt_payments: {
         Row: {
           amount: number

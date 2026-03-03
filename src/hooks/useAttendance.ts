@@ -32,13 +32,30 @@ export const useAttendance = () => {
   const lastAction = todayLogs.length > 0 ? todayLogs[todayLogs.length - 1] : null;
   const isClockedIn = lastAction?.action_type === 'clock_in';
 
-  // Get branch/warehouse location
+  // Get worker-specific or branch/warehouse location for attendance
   const { data: branchLocation } = useQuery({
-    queryKey: ['branch-location', activeBranch?.id],
+    queryKey: ['branch-location', activeBranch?.id, workerId],
     queryFn: async () => {
+      // 1) Check for worker-specific attendance location
+      if (workerId) {
+        const { data: workerLoc } = await supabase
+          .from('worker_attendance_locations')
+          .select('latitude, longitude, max_distance_meters')
+          .eq('worker_id', workerId)
+          .maybeSingle();
+        
+        if (workerLoc) {
+          return {
+            latitude: workerLoc.latitude,
+            longitude: workerLoc.longitude,
+            maxDistance: workerLoc.max_distance_meters || 50,
+          };
+        }
+      }
+
+      // 2) Fallback: branch-specific settings
       const keys = ['warehouse_latitude', 'warehouse_longitude', 'attendance_max_distance'];
       
-      // Get warehouse location from app_settings
       const { data } = await supabase
         .from('app_settings')
         .select('key, value')
@@ -54,7 +71,7 @@ export const useAttendance = () => {
         }
       }
 
-      // Fallback: try global settings
+      // 3) Fallback: global settings
       const { data: global } = await supabase
         .from('app_settings')
         .select('key, value')
@@ -69,10 +86,10 @@ export const useAttendance = () => {
           return { latitude: parseFloat(lat.value), longitude: parseFloat(lng.value), maxDistance: dist ? parseFloat(dist.value) : 50 };
         }
       }
-      // Fallback: use hardcoded warehouse coordinates (same as WorkerTrackingMap)
+      // 4) Fallback: hardcoded warehouse coordinates
       return { latitude: 35.90775, longitude: 0.10253, maxDistance: 50 };
     },
-    enabled: !!activeBranch?.id || true,
+    enabled: !!workerId || !!activeBranch?.id,
   });
 
   const recordMutation = useMutation({
