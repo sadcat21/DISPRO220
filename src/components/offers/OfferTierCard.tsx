@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, GripVertical, Gift, Users, Package } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Trash2, GripVertical, Gift, Users, Package, Layers } from 'lucide-react';
 import SimpleProductPickerDialog from '@/components/stock/SimpleProductPickerDialog';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Product } from '@/types/database';
@@ -49,6 +50,9 @@ const OfferTierCard: React.FC<OfferTierCardProps> = ({
             <Badge variant="secondary" className="text-xs">
               {t('offers.tier')} {tierIndex + 1}
             </Badge>
+            <Badge variant="outline" className="text-[9px] px-1">
+              #{tier.tier_order + 1}
+            </Badge>
           </div>
           {canDelete && (
             <Button
@@ -60,6 +64,31 @@ const OfferTierCard: React.FC<OfferTierCardProps> = ({
             >
               <Trash2 className="w-4 h-4" />
             </Button>
+          )}
+        </div>
+
+        {/* Stackable Switch & Priority */}
+        <div className="flex items-center justify-between p-2 bg-accent/50 rounded">
+          <div className="flex items-center gap-2">
+            <Layers className="w-3.5 h-3.5 text-muted-foreground" />
+            <Label className="text-xs cursor-pointer" htmlFor={`stackable-${tierIndex}`}>تجميع الشريحة</Label>
+            <Switch
+              id={`stackable-${tierIndex}`}
+              checked={tier.is_stackable}
+              onCheckedChange={(checked) => onUpdate(tierIndex, { is_stackable: checked })}
+            />
+          </div>
+          {!tier.is_stackable && (
+            <div className="flex items-center gap-1">
+              <Label className="text-[10px] text-muted-foreground">الأولوية</Label>
+              <Input
+                type="number"
+                min={1}
+                value={tier.tier_order + 1}
+                onChange={(e) => onUpdate(tierIndex, { tier_order: Math.max(0, (parseInt(e.target.value) || 1) - 1) })}
+                className="w-14 h-7 text-xs text-center"
+              />
+            </div>
           )}
         </div>
 

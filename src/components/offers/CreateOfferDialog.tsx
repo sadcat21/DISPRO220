@@ -40,6 +40,7 @@ const defaultTier: Omit<ProductOfferTier, 'id' | 'offer_id' | 'created_at'> = {
   worker_reward_type: 'none',
   worker_reward_amount: 0,
   tier_order: 0,
+  is_stackable: false,
 };
 
 const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
@@ -115,6 +116,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
           worker_reward_type: editOffer.worker_reward_type,
           worker_reward_amount: editOffer.worker_reward_amount,
           tier_order: 0,
+          is_stackable: false,
         }]);
       }
     }
@@ -298,6 +300,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
           worker_reward_type: tier.worker_reward_type,
           worker_reward_amount: tier.worker_reward_amount,
           tier_order: index,
+          is_stackable: tier.is_stackable ?? false,
         }));
 
         const { error: tiersError } = await supabase

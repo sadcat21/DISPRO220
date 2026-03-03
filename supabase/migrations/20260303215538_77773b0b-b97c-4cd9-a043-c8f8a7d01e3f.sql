@@ -1,0 +1,1 @@
+ALTER TABLE public.product_offer_tiers ADD COLUMN is_stackable boolean NOT NULL DEFAULT false;

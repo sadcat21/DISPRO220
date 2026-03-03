@@ -23,6 +23,7 @@ export interface ProductOfferTier {
   worker_reward_type: string;
   worker_reward_amount: number;
   tier_order: number;
+  is_stackable: boolean;
   created_at?: string;
 }
 

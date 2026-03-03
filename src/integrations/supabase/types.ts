@@ -2891,6 +2891,7 @@ export type Database = {
           gift_quantity_unit: string | null
           gift_type: string
           id: string
+          is_stackable: boolean
           max_quantity: number | null
           min_quantity: number
           min_quantity_unit: string | null
@@ -2909,6 +2910,7 @@ export type Database = {
           gift_quantity_unit?: string | null
           gift_type?: string
           id?: string
+          is_stackable?: boolean
           max_quantity?: number | null
           min_quantity?: number
           min_quantity_unit?: string | null
@@ -2927,6 +2929,7 @@ export type Database = {
           gift_quantity_unit?: string | null
           gift_type?: string
           id?: string
+          is_stackable?: boolean
           max_quantity?: number | null
           min_quantity?: number
           min_quantity_unit?: string | null
