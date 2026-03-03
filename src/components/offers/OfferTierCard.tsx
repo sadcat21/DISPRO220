@@ -231,9 +231,14 @@ const OfferTierCard: React.FC<OfferTierCardProps> = ({
                 />
                 <span className="text-sm text-muted-foreground">DA / وحدة</span>
               </div>
-              <p className="text-[10px] text-muted-foreground">
-                التخفيض يُطبق على سعر الوحدة (صندوق / كيلو / علبة) حسب تسعير المنتج
-              </p>
+              <div className="bg-accent/50 rounded p-2 space-y-1">
+                <p className="text-[10px] text-muted-foreground">
+                  ⬆️ الحد الأدنى للكمية محدد أعلاه — يتفعّل التخفيض عند بلوغ تلك الكمية
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  💡 أضف شرائح إضافية لتخفيضات تصاعدية (مثلاً: 10 صناديق = -5 DA، 20 صندوق = -10 DA)
+                </p>
+              </div>
             </div>
           )}
         </div>
