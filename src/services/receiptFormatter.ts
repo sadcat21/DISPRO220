@@ -401,7 +401,7 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
         }
 
         if (giftBoxes > 0 || giftPieces > 0) {
-          let giftStr = ' +CADEAU:';
+          let giftStr = ' +PROMO:';
           if (giftBoxes > 0) giftStr += ` ${formatQty(giftBoxes)} BOX`;
           if (giftPieces > 0) giftStr += `${giftBoxes > 0 ? '+' : ' '}${formatQty(giftPieces)}PCS`;
           addText(giftStr);
@@ -587,15 +587,15 @@ export function formatReceiptForPreview(data: ReceiptData): string {
         let giftText = '';
         if (giftBoxes > 0) giftText += `${formatQty(giftBoxes)} BOX`;
         if (giftPieces > 0) giftText += `${giftBoxes > 0 ? '+' : ''}${formatQty(giftPieces)} PCS`;
-        giftHtml = `<div style="color:#16a34a;font-size:8px;">🎁 +CADEAU: ${giftText}</div>`;
+        giftHtml = `<div style="color:#16a34a;font-size:8px;">🎁 +PROMO: ${giftText}</div>`;
       }
 
       const noteHtml = item.offerNote ? `<div style="font-size:7px;color:#d97706;">${item.offerNote}</div>` : '';
 
       itemsHtml += `
-        <div style="border-bottom:1px dotted #ccc;padding:2px 0;">
-          <div style="font-size:10px;font-weight:bold;word-wrap:break-word;">${item.productName}</div>
-          <div style="display:flex;justify-content:space-between;font-size:9px;color:#444;">
+        <div style="border-bottom:1px dotted #ccc;padding:4px 0;margin-bottom:2px;">
+          <div style="font-size:10px;font-weight:bold;word-wrap:break-word;margin-bottom:2px;">${item.productName}</div>
+          <div style="display:flex;justify-content:space-between;font-size:9px;color:#444;line-height:1.4;">
             <span><strong>${formatQty(item.quantity)} ${unitLabel}</strong> x ${unitPrice}</span>
             <span style="font-weight:bold;">${Math.round(item.totalPrice).toLocaleString()} DA</span>
           </div>
