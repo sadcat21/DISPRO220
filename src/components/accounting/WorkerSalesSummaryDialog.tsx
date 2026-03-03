@@ -4,7 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { ShoppingBag, Package, ChevronDown, ChevronUp, User, Clock, Calendar } from 'lucide-react';
+import { ShoppingBag, Package, User, Clock, Calendar } from 'lucide-react';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 
 interface Props {
@@ -29,6 +29,7 @@ interface ProductAgg {
   giftQuantity: number;
   totalAmount: number;
   piecesPerBox: number | null;
+  imageUrl: string | null;
   customers: CustomerBreakdown[];
 }
 
@@ -79,8 +80,6 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
       if (!orders || orders.length === 0) return { items: [], orderCount: 0, firstOrderTime: null, lastOrderTime: null };
 
       const orderIds = orders.map(o => o.id);
-
-      // Build order->customer map
       const orderCustomerMap = new Map(orders.map(o => [o.id, o.customer_id]));
 
       const { data: items, error: itemsError } = await supabase
@@ -90,23 +89,20 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
 
       if (itemsError) throw itemsError;
 
-      // Fetch product names
       const productIds = [...new Set((items || []).map(i => i.product_id))];
       const { data: products } = await supabase
         .from('products')
-        .select('id, name, pieces_per_box')
+        .select('id, name, pieces_per_box, image_url')
         .in('id', productIds);
 
       const productMap = new Map((products || []).map(p => [p.id, p]));
 
-      // Fetch customer names
       const customerIds = [...new Set(orders.map(o => o.customer_id).filter(Boolean))];
       const { data: customers } = customerIds.length > 0
         ? await supabase.from('customers').select('id, name').in('id', customerIds)
         : { data: [] };
       const customerMap = new Map((customers || []).map(c => [c.id, c.name]));
 
-      // Aggregate per product with customer breakdown
       const agg: Record<string, ProductAgg> = {};
 
       for (const item of (items || [])) {
@@ -120,6 +116,7 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
             giftQuantity: 0,
             totalAmount: 0,
             piecesPerBox: product?.pieces_per_box || null,
+            imageUrl: product?.image_url || null,
             customers: [],
           };
         }
@@ -127,7 +124,6 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
         agg[item.product_id].giftQuantity += item.gift_quantity || 0;
         agg[item.product_id].totalAmount += item.total_price || 0;
 
-        // Customer breakdown
         const existing = agg[item.product_id].customers.find(c => c.customerId === customerId);
         if (existing) {
           existing.quantity += item.quantity || 0;
@@ -144,12 +140,10 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
         }
       }
 
-      // Sort customers inside each product by quantity desc
       for (const p of Object.values(agg)) {
         p.customers.sort((a, b) => b.quantity - a.quantity);
       }
 
-      // Get first and last order times
       const createdTimes = orders.map(o => new Date(o.created_at).getTime());
       const updatedTimes = orders.map(o => new Date(o.updated_at).getTime());
       const firstOrderTime = createdTimes.length ? new Date(Math.min(...createdTimes)).toISOString() : null;
@@ -171,13 +165,13 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
     return (salesData?.items || []).reduce((s, i) => s + i.totalAmount, 0);
   }, [salesData]);
 
-  const firstTime = salesData?.firstOrderTime ? new Date(salesData.firstOrderTime) : null;
-  const lastTime = salesData?.lastOrderTime ? new Date(salesData.lastOrderTime) : null;
-  const todayDate = new Date().toLocaleDateString('ar-DZ', { year: 'numeric', month: 'long', day: 'numeric' });
-
   const totalQty = useMemo(() => {
     return (salesData?.items || []).reduce((s, i) => s + i.quantity, 0);
   }, [salesData]);
+
+  const firstTime = salesData?.firstOrderTime ? new Date(salesData.firstOrderTime) : null;
+  const lastTime = salesData?.lastOrderTime ? new Date(salesData.lastOrderTime) : null;
+  const todayDate = new Date().toLocaleDateString('ar-DZ', { year: 'numeric', month: 'long', day: 'numeric' });
 
   const toggleProduct = (productId: string) => {
     setExpandedProduct(prev => prev === productId ? null : productId);
@@ -193,8 +187,8 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
           </DialogTitle>
         </DialogHeader>
 
-        {/* Stats */}
-        <div className="flex flex-wrap gap-2">
+        {/* Stats row with time badges */}
+        <div className="flex flex-wrap gap-2 items-center">
           <Badge variant="secondary" className="text-xs">
             {salesData?.orderCount || 0} طلبية
           </Badge>
@@ -211,7 +205,7 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
           )}
         </div>
 
-        {/* Date and time info */}
+        {/* Date + Time row */}
         <div className="flex items-center justify-between text-xs px-1">
           <div className="flex items-center gap-1 text-muted-foreground">
             <Calendar className="w-3.5 h-3.5" />
@@ -219,13 +213,13 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
           </div>
           <div className="flex items-center gap-2">
             {firstTime && (
-              <span className="flex items-center gap-1 text-green-600 font-medium">
+              <span className="flex items-center gap-1 rounded-full px-2 py-0.5 bg-green-100 text-green-700 font-semibold text-[11px]">
                 <Clock className="w-3 h-3" />
                 {firstTime.toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' })}
               </span>
             )}
             {lastTime && (
-              <span className="flex items-center gap-1 text-destructive font-medium">
+              <span className="flex items-center gap-1 rounded-full px-2 py-0.5 bg-red-100 text-red-700 font-semibold text-[11px]">
                 <Clock className="w-3 h-3" />
                 {lastTime.toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' })}
               </span>
@@ -244,42 +238,44 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
               <p>لا توجد مبيعات في هذه الفترة</p>
             </div>
           ) : (
-            <div className="space-y-2 pb-2">
+            <div className="grid grid-cols-3 gap-2 pb-2">
               {salesData.items.map((item) => {
                 const isExpanded = expandedProduct === item.productId;
                 return (
-                  <div key={item.productId}>
+                  <div key={item.productId} className={isExpanded ? 'col-span-3' : ''}>
                     <div
-                      className="flex items-center justify-between p-3 rounded-lg border bg-card cursor-pointer active:scale-[0.98] transition-all"
+                      className={`flex flex-col rounded-2xl overflow-hidden shadow-lg border-2 cursor-pointer active:scale-[0.97] transition-all ${isExpanded ? 'border-primary ring-2 ring-primary/30' : 'border-border hover:border-primary/50'}`}
                       onClick={() => toggleProduct(item.productId)}
                     >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <Package className="w-4 h-4 text-primary" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm truncate">{item.name}</p>
-                          {item.giftQuantity > 0 && (
-                            <p className="text-[10px] text-muted-foreground">هدايا: {item.giftQuantity}</p>
-                          )}
-                        </div>
+                      {/* Product name header */}
+                      <div className={`px-2 py-1.5 border-b text-center ${isExpanded ? 'bg-primary border-primary' : 'bg-muted border-border'}`}>
+                        <span className={`font-bold text-xs leading-tight block truncate ${isExpanded ? 'text-primary-foreground' : 'text-foreground'}`}>
+                          {item.name}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <div className="text-left">
-                          <p className="font-bold text-sm text-primary">{item.quantity}</p>
-                          <p className="text-[10px] text-muted-foreground">{item.totalAmount.toLocaleString('ar-DZ')} د.ج</p>
+                      {/* Product image */}
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt={item.name} className="w-full aspect-square object-cover" loading="lazy" />
+                      ) : (
+                        <div className="w-full aspect-square bg-muted flex items-center justify-center">
+                          <Package className="w-10 h-10 text-primary/30" />
                         </div>
-                        {isExpanded ? (
-                          <ChevronUp className="w-4 h-4 text-muted-foreground" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                        )}
+                      )}
+                      {/* Quantity + amount footer */}
+                      <div className="px-2 py-1.5 bg-card flex items-center justify-between">
+                        <span className="font-bold text-sm text-primary">{item.quantity}</span>
+                        <span className="text-[10px] text-muted-foreground">{item.totalAmount.toLocaleString('ar-DZ')} د.ج</span>
                       </div>
+                      {item.giftQuantity > 0 && (
+                        <div className="px-2 pb-1 bg-card text-center">
+                          <span className="text-[10px] text-muted-foreground">هدايا: {item.giftQuantity}</span>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Customer breakdown */}
+                    {/* Customer breakdown when expanded */}
                     {isExpanded && item.customers.length > 0 && (
-                      <div className="mr-4 mt-1 space-y-1 border-r-2 border-primary/20 pr-3">
+                      <div className="mt-1 space-y-1 border-r-2 border-primary/20 pr-3 mr-2">
                         {item.customers.map((c) => (
                           <div
                             key={c.customerId}
