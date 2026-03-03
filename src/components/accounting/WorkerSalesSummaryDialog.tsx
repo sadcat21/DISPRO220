@@ -365,15 +365,22 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
                       </div>
                     )}
                   </div>
-                  <div className="px-2 py-1.5 bg-card flex items-center justify-between">
-                    <span className="font-bold text-sm text-primary">{item.quantity}</span>
-                    <span className="text-[10px] text-muted-foreground">{item.totalAmount.toLocaleString('ar-DZ')} د.ج</span>
-                  </div>
-                  {item.giftQuantity > 0 && (
-                    <div className="px-2 pb-1 bg-card text-center">
-                      <span className="text-[10px] text-muted-foreground">هدايا: {item.giftQuantity}</span>
+                  <div className="px-1.5 py-1.5 bg-card flex flex-col gap-1">
+                    <div className="flex items-center gap-1">
+                      <div className="flex-1 flex items-center justify-center gap-1 rounded-md bg-primary/10 text-primary py-1 text-xs font-bold">
+                        <Package className="w-3 h-3" />
+                        {item.quantity}
+                      </div>
+                      {item.giftQuantity > 0 && (
+                        <div className="flex items-center justify-center gap-0.5 rounded-md bg-secondary py-1 px-1.5 text-[10px] font-semibold text-secondary-foreground">
+                          🎁 {item.giftQuantity}
+                        </div>
+                      )}
                     </div>
-                  )}
+                    <div className="flex items-center justify-center rounded-md bg-muted py-1 text-[10px] font-semibold text-muted-foreground">
+                      {item.totalAmount.toLocaleString('ar-DZ')} د.ج
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
