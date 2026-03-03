@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -14,6 +14,24 @@ import { formatReceiptForPreview, ReceiptData, AdvancedReceiptOptions } from '@/
 import { ReceiptItem, ReceiptType } from '@/types/receipt';
 import { Printer, Eye, Bluetooth, Loader2, Check, AlertCircle, ChevronDown, Settings2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+const PRINT_SETTINGS_KEY = 'receipt_print_settings';
+
+interface PrintSettings {
+  showSignatures: boolean;
+  showThankYouMessage: boolean;
+  thankYouMessage: string;
+  useClassicLayout: boolean;
+}
+
+const DEFAULT_SETTINGS: PrintSettings = {
+  showSignatures: false,
+  showThankYouMessage: false,
+  thankYouMessage: 'Merci pour votre confiance',
+  useClassicLayout: false,
+};
 
 interface ReceiptDialogProps {
   open: boolean;
@@ -57,7 +75,13 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
   const [showPreview, setShowPreview] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+
+  // Persisted settings
   const [useClassicLayout, setUseClassicLayout] = useState(false);
+  const [showSignatures, setShowSignatures] = useState(false);
+  const [showThankYouMessage, setShowThankYouMessage] = useState(false);
+  const [thankYouMessage, setThankYouMessage] = useState('Merci pour votre confiance');
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   // Advanced distribution toggles
   const [showStockBeforeAfter, setShowStockBeforeAfter] = useState(false);
@@ -70,6 +94,56 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
   const [showSessionId, setShowSessionId] = useState(false);
   const [sessionId, setSessionId] = useState('');
 
+  // Load settings from DB
+  useEffect(() => {
+    if (!open || settingsLoaded) return;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('app_settings')
+          .select('value')
+          .eq('key', PRINT_SETTINGS_KEY)
+          .maybeSingle();
+        if (data?.value) {
+          const s: PrintSettings = JSON.parse(data.value);
+          setUseClassicLayout(s.useClassicLayout ?? false);
+          setShowSignatures(s.showSignatures ?? false);
+          setShowThankYouMessage(s.showThankYouMessage ?? false);
+          setThankYouMessage(s.thankYouMessage || 'Merci pour votre confiance');
+        }
+      } catch { /* use defaults */ }
+      setSettingsLoaded(true);
+    })();
+  }, [open, settingsLoaded]);
+
+  // Save settings to DB when they change
+  const saveSettings = async (partial: Partial<PrintSettings>) => {
+    const settings: PrintSettings = {
+      showSignatures,
+      showThankYouMessage,
+      thankYouMessage,
+      useClassicLayout,
+      ...partial,
+    };
+    try {
+      const { data: existing } = await supabase
+        .from('app_settings')
+        .select('id')
+        .eq('key', PRINT_SETTINGS_KEY)
+        .maybeSingle();
+      if (existing) {
+        await supabase.from('app_settings').update({ value: JSON.stringify(settings) }).eq('key', PRINT_SETTINGS_KEY);
+      } else {
+        await supabase.from('app_settings').insert({ key: PRINT_SETTINGS_KEY, value: JSON.stringify(settings) });
+      }
+    } catch { /* silent */ }
+  };
+
+  const handleClassicToggle = (v: boolean) => { setUseClassicLayout(v); saveSettings({ useClassicLayout: v }); };
+  const handleSignaturesToggle = (v: boolean) => { setShowSignatures(v); saveSettings({ showSignatures: v }); };
+  const handleThankYouToggle = (v: boolean) => { setShowThankYouMessage(v); saveSettings({ showThankYouMessage: v }); };
+  const handleThankYouMessageChange = (v: string) => { setThankYouMessage(v); saveSettings({ thankYouMessage: v }); };
+
   const advancedOptions: AdvancedReceiptOptions = {
     showWorkerStockBeforeAfter: showStockBeforeAfter,
     showDeliveryStatus,
@@ -80,6 +154,9 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
     truckId,
     showSessionId,
     sessionId,
+    showSignatures,
+    showThankYouMessage,
+    thankYouMessage,
   };
 
   const receiptDataForFormatter: ReceiptData = {
@@ -177,7 +254,7 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
         {/* Classic Layout Toggle + Printer Status */}
         <div className="px-4 pt-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <Switch checked={useClassicLayout} onCheckedChange={setUseClassicLayout} />
+            <Switch checked={useClassicLayout} onCheckedChange={handleClassicToggle} />
             <Label className="text-xs">طباعة كلاسيكية</Label>
           </div>
         </div>
@@ -196,10 +273,30 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
           <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen} className="mt-3">
             <CollapsibleTrigger className="flex items-center gap-2 w-full text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2">
               <Settings2 className="w-4 h-4" />
-              <span>خيارات التوزيع المتقدمة</span>
+              <span>خيارات الطباعة المتقدمة</span>
               <ChevronDown className={`w-4 h-4 mr-auto transition-transform ${advancedOpen ? 'rotate-180' : ''}`} />
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-3 pb-3 border rounded-lg p-3 bg-muted/30">
+              {/* Signatures */}
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">إمضاء البائع والعميل</Label>
+                <Switch checked={showSignatures} onCheckedChange={handleSignaturesToggle} />
+              </div>
+
+              {/* Thank you message */}
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">رسالة الشكر</Label>
+                <Switch checked={showThankYouMessage} onCheckedChange={handleThankYouToggle} />
+              </div>
+              {showThankYouMessage && (
+                <Input
+                  className="h-8 text-xs"
+                  placeholder="Merci pour votre confiance"
+                  value={thankYouMessage}
+                  onChange={e => handleThankYouMessageChange(e.target.value)}
+                />
+              )}
+
               {/* Delivery Status */}
               <div className="flex items-center justify-between">
                 <Label className="text-xs">حالة التسليم</Label>

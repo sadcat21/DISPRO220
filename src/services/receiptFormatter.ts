@@ -213,6 +213,9 @@ export interface AdvancedReceiptOptions {
   sessionId?: string;
   showAccountingLink?: boolean;
   accountingSessionId?: string;
+  showSignatures?: boolean;
+  showThankYouMessage?: boolean;
+  thankYouMessage?: string;
   // Stock before/after data
   stockBefore?: Record<string, number>;
   stockAfter?: Record<string, number>;
@@ -417,13 +420,9 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
       addText(padRight(tLabel, LINE_WIDTH - tVal.length) + tVal);
     }
 
-    add(BOLD_ON);
-    add(DOUBLE_HEIGHT);
     const netVal = `${formatAmount(data.totalAmount)} DA`;
-    addText('NET A PAYER');
-    addText(padLeft(netVal, LINE_WIDTH));
-    add(NORMAL_SIZE);
-    add(BOLD_OFF);
+    const netLine = `NET A PAYER  ${netVal}`;
+    addText(netLine);
 
     addText(separator());
     const paidVal = `${formatAmount(data.paidAmount)} DA`;
@@ -475,16 +474,20 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
   addText('');
   addText(separator());
 
-  // Signatures
-  add(ALIGN_LEFT);
-  addText(padRight('Vendeur:', 16) + padRight('Client:', 16));
-  addText('');
-  addText(padRight('_________', 16) + padRight('_________', 16));
-  addText('');
+  // Signatures (conditional)
+  if (opts?.showSignatures) {
+    add(ALIGN_LEFT);
+    addText(padRight('Vendeur:', 16) + padRight('Client:', 16));
+    addText('');
+    addText(padRight('_________', 16) + padRight('_________', 16));
+    addText('');
+  }
 
-  add(ALIGN_CENTER);
-  addText('Merci pour votre confiance');
-  addText('Retour sous 48h avec bon d\'achat');
+  // Thank you message (conditional)
+  if (opts?.showThankYouMessage) {
+    add(ALIGN_CENTER);
+    addText(opts.thankYouMessage || 'Merci pour votre confiance');
+  }
 
   add(FEED_LINES(3));
   add(CUT_PAPER);
@@ -641,10 +644,12 @@ export function formatReceiptForPreview(data: ReceiptData): string {
         ${data.nextCollectionDate ? `<div style="border-top:1px dashed #000;margin-top:4px;padding-top:4px;text-align:center;font-weight:bold;">PROCHAIN RDV: ${data.nextCollectionDate}${data.nextCollectionTime ? ' ' + data.nextCollectionTime : ''}</div>` : ''}
         ${data.notes ? `<div style="border-top:1px dashed #000;margin-top:4px;padding-top:4px;">Note: ${data.notes}</div>` : ''}
         ${advancedHtml}
+        ${data.advancedOptions?.showSignatures ? `
         <div style="border-top:2px solid #000;margin-top:8px;padding-top:6px;">
           <div style="display:flex;justify-content:space-between;font-size:9px;"><span>Vendeur: ___________</span><span>Client: ___________</span></div>
-        </div>
-        <div style="text-align:center;margin-top:8px;font-size:10px;color:#555;">Merci pour votre confiance</div>
+        </div>` : ''}
+        ${data.advancedOptions?.showThankYouMessage ? `
+        <div style="text-align:center;margin-top:8px;font-size:10px;color:#555;">${data.advancedOptions.thankYouMessage || 'Merci pour votre confiance'}</div>` : ''}
       </div>`;
   }
 
@@ -689,7 +694,7 @@ export function formatReceiptForPreview(data: ReceiptData): string {
         ${data.stampAmount && data.stampAmount > 0 ? `
           <div style="display:flex;justify-content:space-between;font-size:10px;color:#d97706;"><span>TIMBRE${data.stampPercentage ? ` (${data.stampPercentage}%)` : ''}</span><span>${formatAmount(data.stampAmount)} DA</span></div>
         ` : ''}
-        <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:13px;padding:4px 0;border-top:1px dashed #000;border-bottom:1px dashed #000;margin:3px 0;background:#f5f5f5;">
+        <div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-top:1px dashed #000;border-bottom:1px dashed #000;margin:3px 0;">
           <span>NET A PAYER</span><span>${formatAmount(data.totalAmount)} DA</span>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:10px;padding:2px 0;"><span>MONTANT PAYÉ</span><span>${formatAmount(data.paidAmount)} DA</span></div>
@@ -702,12 +707,13 @@ export function formatReceiptForPreview(data: ReceiptData): string {
       ${advancedHtml}
 
       <!-- Footer -->
+      ${data.advancedOptions?.showSignatures ? `
       <div style="border-top:2px solid #000;margin-top:8px;padding-top:6px;">
         <div style="display:flex;justify-content:space-between;font-size:9px;"><span>Vendeur: ___________</span><span>Client: ___________</span></div>
-      </div>
+      </div>` : ''}
+      ${data.advancedOptions?.showThankYouMessage ? `
       <div style="text-align:center;margin-top:8px;font-size:10px;color:#555;">
-        <div>Merci pour votre confiance</div>
-        <div style="font-size:8px;margin-top:2px;">Retour sous 48h avec bon d'achat</div>
-      </div>
+        <div>${data.advancedOptions.thankYouMessage || 'Merci pour votre confiance'}</div>
+      </div>` : ''}
     </div>`;
 }
