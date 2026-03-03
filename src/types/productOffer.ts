@@ -1,5 +1,12 @@
 export type UnitType = 'box' | 'piece';
 
+export interface DiscountPrices {
+  retail?: number | null;
+  gros?: number | null;
+  super_gros?: number | null;
+  invoice?: number | null;
+}
+
 export interface ProductOfferTier {
   id?: string;
   offer_id?: string;
@@ -12,6 +19,7 @@ export interface ProductOfferTier {
   gift_product_id: string | null;
   discount_percentage: number | null;
   discount_amount: number | null;
+  discount_prices?: any;
   worker_reward_type: string;
   worker_reward_amount: number;
   tier_order: number;
@@ -39,6 +47,7 @@ export interface ProductOffer {
   gift_product_id: string | null;
   discount_percentage: number | null;
   discount_amount: number | null;
+  discount_prices?: any;
   
   // Worker reward
   worker_reward_type: string;

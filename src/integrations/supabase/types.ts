@@ -2885,6 +2885,7 @@ export type Database = {
           created_at: string
           discount_amount: number | null
           discount_percentage: number | null
+          discount_prices: Json | null
           gift_product_id: string | null
           gift_quantity: number
           gift_quantity_unit: string | null
@@ -2902,6 +2903,7 @@ export type Database = {
           created_at?: string
           discount_amount?: number | null
           discount_percentage?: number | null
+          discount_prices?: Json | null
           gift_product_id?: string | null
           gift_quantity?: number
           gift_quantity_unit?: string | null
@@ -2919,6 +2921,7 @@ export type Database = {
           created_at?: string
           discount_amount?: number | null
           discount_percentage?: number | null
+          discount_prices?: Json | null
           gift_product_id?: string | null
           gift_quantity?: number
           gift_quantity_unit?: string | null
@@ -2958,6 +2961,7 @@ export type Database = {
           description: string | null
           discount_amount: number | null
           discount_percentage: number | null
+          discount_prices: Json | null
           end_date: string | null
           gift_product_id: string | null
           gift_quantity: number
@@ -2986,6 +2990,7 @@ export type Database = {
           description?: string | null
           discount_amount?: number | null
           discount_percentage?: number | null
+          discount_prices?: Json | null
           end_date?: string | null
           gift_product_id?: string | null
           gift_quantity?: number
@@ -3014,6 +3019,7 @@ export type Database = {
           description?: string | null
           discount_amount?: number | null
           discount_percentage?: number | null
+          discount_prices?: Json | null
           end_date?: string | null
           gift_product_id?: string | null
           gift_quantity?: number

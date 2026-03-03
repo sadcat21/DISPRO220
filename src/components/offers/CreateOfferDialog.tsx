@@ -36,6 +36,7 @@ const defaultTier: Omit<ProductOfferTier, 'id' | 'offer_id' | 'created_at'> = {
   gift_product_id: null,
   discount_percentage: null,
   discount_amount: null,
+  discount_prices: null,
   worker_reward_type: 'none',
   worker_reward_amount: 0,
   tier_order: 0,
@@ -110,6 +111,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
           gift_product_id: editOffer.gift_product_id,
           discount_percentage: editOffer.discount_percentage,
           discount_amount: editOffer.discount_amount,
+          discount_prices: (editOffer as any).discount_prices || null,
           worker_reward_type: editOffer.worker_reward_type,
           worker_reward_amount: editOffer.worker_reward_amount,
           tier_order: 0,
@@ -249,9 +251,10 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
         gift_product_id: firstTier.gift_product_id,
         discount_percentage: firstTier.discount_percentage,
         discount_amount: firstTier.discount_amount,
+        discount_prices: firstTier.discount_prices || null,
         worker_reward_type: firstTier.worker_reward_type,
         worker_reward_amount: firstTier.worker_reward_amount,
-      };
+      } as any;
 
       let offerId: string;
 
@@ -291,6 +294,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
           gift_product_id: tier.gift_product_id,
           discount_percentage: tier.discount_percentage,
           discount_amount: tier.discount_amount,
+          discount_prices: tier.discount_prices || null,
           worker_reward_type: tier.worker_reward_type,
           worker_reward_amount: tier.worker_reward_amount,
           tier_order: index,
@@ -298,7 +302,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
 
         const { error: tiersError } = await supabase
           .from('product_offer_tiers')
-          .insert(tiersData);
+          .insert(tiersData as any);
         if (tiersError) throw tiersError;
       }
 
@@ -315,7 +319,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] p-0" dir={dir}>
+      <DialogContent className="max-w-lg max-h-[90vh] p-0 flex flex-col" dir={dir}>
         <DialogHeader className="bg-gradient-to-r from-amber-500 to-orange-500 text-white p-4 rounded-t-lg">
           <DialogTitle className="flex items-center gap-2">
             <Gift className="w-5 h-5" />
@@ -323,8 +327,8 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit}>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col flex-1 min-h-0">
             <TabsList className="w-full grid grid-cols-2 mx-4 mt-2" style={{ width: 'calc(100% - 2rem)' }}>
               <TabsTrigger value="tiers" className="text-xs">
                 <Layers className="w-3 h-3 me-1" />
@@ -336,7 +340,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
               </TabsTrigger>
             </TabsList>
 
-            <ScrollArea className="h-[450px] px-4 py-2">
+            <ScrollArea className="flex-1 px-4 py-2" style={{ maxHeight: 'calc(90vh - 180px)' }}>
               {/* Tiers Tab */}
               <TabsContent value="tiers" className="space-y-4 mt-0">
                 {/* Product Selection */}
@@ -549,7 +553,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
             </ScrollArea>
           </Tabs>
 
-          <div className="p-4 border-t">
+          <div className="p-4 border-t shrink-0 bg-background">
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>

@@ -21,7 +21,7 @@ export const useProductOffers = () => {
           tiers:product_offer_tiers(
             id, offer_id, min_quantity, max_quantity, min_quantity_unit,
             gift_quantity, gift_quantity_unit, gift_type, gift_product_id,
-            discount_percentage, discount_amount, worker_reward_type, worker_reward_amount, tier_order,
+            discount_percentage, discount_amount, discount_prices, worker_reward_type, worker_reward_amount, tier_order,
             gift_product:products(id, name)
           )
         `)
@@ -30,11 +30,14 @@ export const useProductOffers = () => {
 
       if (error) throw error;
       
-      // Sort tiers by tier_order
+      // Sort tiers by tier_order and cast discount_prices
       const offersWithSortedTiers = (data || []).map(offer => ({
         ...offer,
-        tiers: offer.tiers?.sort((a: any, b: any) => a.tier_order - b.tier_order) || [],
-      }));
+        discount_prices: offer.discount_prices as any,
+        tiers: (offer.tiers || [])
+          .map((t: any) => ({ ...t, discount_prices: t.discount_prices as any }))
+          .sort((a: any, b: any) => a.tier_order - b.tier_order),
+      })) as any;
       
       setOffers(offersWithSortedTiers);
     } catch (error) {
@@ -59,7 +62,7 @@ export const useProductOffers = () => {
           tiers:product_offer_tiers(
             id, offer_id, min_quantity, max_quantity, min_quantity_unit,
             gift_quantity, gift_quantity_unit, gift_type, gift_product_id,
-            discount_percentage, discount_amount, worker_reward_type, worker_reward_amount, tier_order,
+            discount_percentage, discount_amount, discount_prices, worker_reward_type, worker_reward_amount, tier_order,
             gift_product:products(id, name)
           )
         `)
@@ -70,11 +73,14 @@ export const useProductOffers = () => {
 
       if (error) throw error;
       
-      // Sort tiers by tier_order
+      // Sort tiers by tier_order and cast discount_prices
       const offersWithSortedTiers = (data || []).map(offer => ({
         ...offer,
-        tiers: offer.tiers?.sort((a: any, b: any) => a.tier_order - b.tier_order) || [],
-      }));
+        discount_prices: offer.discount_prices as any,
+        tiers: (offer.tiers || [])
+          .map((t: any) => ({ ...t, discount_prices: t.discount_prices as any }))
+          .sort((a: any, b: any) => a.tier_order - b.tier_order),
+      })) as any;
       
       setActiveOffers(offersWithSortedTiers);
     } catch (error) {

@@ -252,48 +252,92 @@ const OfferTierCard: React.FC<OfferTierCardProps> = ({
           })()}
 
           {tier.gift_type === 'price_discount' && (() => {
-            // Get the original price from product (use price_gros as reference)
-            const originalPrice = selectedProduct?.price_gros || 0;
-            const currentDiscount = tier.discount_amount || 0;
-            const salePrice = originalPrice > 0 ? originalPrice - currentDiscount : '';
+            const prices = {
+              retail: selectedProduct?.price_retail || 0,
+              gros: selectedProduct?.price_gros || 0,
+              super_gros: selectedProduct?.price_super_gros || 0,
+              invoice: selectedProduct?.price_invoice || 0,
+            };
+            const discountPrices = (tier.discount_prices || {}) as Record<string, number | null>;
             
-            const handleSalePriceChange = (newSalePrice: string) => {
-              if (!newSalePrice || !originalPrice) {
-                onUpdate(tierIndex, { discount_amount: null });
-                return;
+            const priceTypes = [
+              { key: 'retail', label: 'التجزئة' },
+              { key: 'gros', label: 'الجملة (غرو)' },
+              { key: 'super_gros', label: 'سبر غرو' },
+              { key: 'invoice', label: 'فاتورة 1' },
+            ];
+
+            const handlePriceChange = (key: string, value: string) => {
+              const newPrices = { ...discountPrices };
+              if (!value) {
+                newPrices[key] = null;
+              } else {
+                newPrices[key] = parseFloat(value);
               }
-              const salePriceNum = parseFloat(newSalePrice);
-              const discountVal = originalPrice - salePriceNum;
-              onUpdate(tierIndex, { discount_amount: discountVal > 0 ? discountVal : 0 });
+              onUpdate(tierIndex, { discount_prices: newPrices });
+            };
+
+            const handleApplyAll = () => {
+              // Find first filled sale price and apply its discount ratio to all
+              const firstFilledKey = priceTypes.find(pt => discountPrices[pt.key] != null && prices[pt.key as keyof typeof prices] > 0);
+              if (firstFilledKey) {
+                const origPrice = prices[firstFilledKey.key as keyof typeof prices];
+                const salePrice = discountPrices[firstFilledKey.key]!;
+                const ratio = salePrice / origPrice;
+                const newPrices: Record<string, number> = {};
+                priceTypes.forEach(pt => {
+                  const orig = prices[pt.key as keyof typeof prices];
+                  if (orig > 0) {
+                    newPrices[pt.key] = Math.round(orig * ratio);
+                  }
+                });
+                onUpdate(tierIndex, { discount_prices: newPrices });
+              }
             };
 
             return (
               <div className="space-y-2">
-                {originalPrice > 0 && (
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">السعر الأصلي:</span>
-                    <Badge variant="outline">{originalPrice} DA</Badge>
-                  </div>
-                )}
-                <Label className="text-xs text-muted-foreground">سعر البيع بعد التخفيض (DA)</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={salePrice}
-                    onChange={(e) => handleSalePriceChange(e.target.value)}
-                    className="flex-1 h-8 text-sm"
-                    placeholder="سعر البيع..."
-                  />
-                  <span className="text-sm text-muted-foreground">DA</span>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-muted-foreground">أسعار البيع بعد التخفيض</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-6 text-[10px] px-2"
+                    onClick={handleApplyAll}
+                  >
+                    تطبيق على الكل
+                  </Button>
                 </div>
-                {currentDiscount > 0 && (
-                  <div className="flex items-center justify-between text-xs bg-green-50 dark:bg-green-950/30 rounded p-1.5">
-                    <span className="text-green-700 dark:text-green-400">قيمة التخفيض:</span>
-                    <span className="font-medium text-green-700 dark:text-green-400">-{currentDiscount} DA</span>
-                  </div>
-                )}
+                
+                <div className="space-y-1.5">
+                  {priceTypes.map(pt => {
+                    const origPrice = prices[pt.key as keyof typeof prices];
+                    const salePrice = discountPrices[pt.key];
+                    const discount = origPrice && salePrice != null ? origPrice - salePrice : 0;
+                    
+                    return (
+                      <div key={pt.key} className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-muted-foreground w-16 shrink-0 text-end">{pt.label}</span>
+                        {origPrice > 0 && (
+                          <Badge variant="outline" className="text-[9px] h-5 shrink-0">{origPrice}</Badge>
+                        )}
+                        <Input
+                          type="number"
+                          min={0}
+                          value={salePrice ?? ''}
+                          onChange={(e) => handlePriceChange(pt.key, e.target.value)}
+                          className="flex-1 h-7 text-xs"
+                          placeholder={origPrice > 0 ? `${origPrice}` : '—'}
+                        />
+                        {discount > 0 && (
+                          <span className="text-[9px] text-green-600 font-medium shrink-0">-{discount}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
                 <div className="bg-accent/50 rounded p-2 space-y-1">
                   <p className="text-[10px] text-muted-foreground">
                     ⬆️ الحد الأدنى للكمية محدد أعلاه — يتفعّل التخفيض عند بلوغ تلك الكمية
