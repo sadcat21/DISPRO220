@@ -283,6 +283,19 @@ const WorkerActions: React.FC = () => {
         )}
       </div>
 
+      {selectedWorker && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setWorkerProfileOpen(true)}
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-secondary px-3 py-2 text-sm font-medium text-secondary-foreground transition-colors hover:bg-muted"
+          >
+            <Settings className="w-4 h-4" />
+            إعدادات بيانات العامل
+          </button>
+        </div>
+      )}
+
       {!selectedWorker ? (
         <div className="grid grid-cols-3 gap-3">
           {workers.map((worker) => (
