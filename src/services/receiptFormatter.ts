@@ -198,6 +198,10 @@ export interface ReceiptData {
   advancedOptions?: AdvancedReceiptOptions;
   // Classic single-line layout toggle
   classicLayout?: boolean;
+  // Logo options
+  showLogo?: boolean;
+  replaceNameWithLogo?: boolean;
+  companyLogoUrl?: string;
 }
 
 export interface AdvancedReceiptOptions {
@@ -231,11 +235,27 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
 
   // ═══════ HEADER ═══════
   add(ALIGN_CENTER);
-  add(BOLD_ON);
-  add(DOUBLE_HEIGHT);
-  addText(data.companyName || 'Laser Food');
-  add(NORMAL_SIZE);
-  add(BOLD_OFF);
+  if (data.showLogo && data.replaceNameWithLogo) {
+    // Logo replaces name - show decorative marker for thermal
+    add(BOLD_ON);
+    add(DOUBLE_HEIGHT);
+    addText('*** LOGO ***');
+    add(NORMAL_SIZE);
+    add(BOLD_OFF);
+  } else if (data.showLogo) {
+    // Logo icons on both sides of company name
+    add(BOLD_ON);
+    add(DOUBLE_HEIGHT);
+    addText(`* ${data.companyName || 'Laser Food'} *`);
+    add(NORMAL_SIZE);
+    add(BOLD_OFF);
+  } else {
+    add(BOLD_ON);
+    add(DOUBLE_HEIGHT);
+    addText(data.companyName || 'Laser Food');
+    add(NORMAL_SIZE);
+    add(BOLD_OFF);
+  }
 
   if (data.companyPhone) addText(`Tel: ${data.companyPhone}`);
   if (data.companyAddress) addText(data.companyAddress);
@@ -508,6 +528,21 @@ export function formatReceiptForPreview(data: ReceiptData): string {
   const receiptNum = String(data.receiptNumber).padStart(6, '0');
   const invoiceType = getInvoiceType(data);
 
+  // Logo helper
+  const logoIcon = `<img src="/favicon.png" style="width:20px;height:20px;vertical-align:middle;display:inline-block;" alt="logo" />`;
+  const logoLarge = `<img src="/favicon.png" style="width:40px;height:40px;display:block;margin:0 auto 4px;" alt="logo" />`;
+  
+  function buildHeaderName(): string {
+    const companyName = data.companyName || 'Laser Food';
+    if (data.showLogo && data.replaceNameWithLogo) {
+      return logoLarge;
+    }
+    if (data.showLogo) {
+      return `<div style="display:flex;align-items:center;justify-content:center;gap:6px;">${logoIcon}<span style="font-size:16px;font-weight:bold;letter-spacing:1px;">${companyName}</span>${logoIcon}</div>`;
+    }
+    return `<div style="font-size:16px;font-weight:bold;letter-spacing:1px;">${companyName}</div>`;
+  }
+
   // ── Items ──
   let itemsHtml = '';
   let totalBoxes = 0;
@@ -620,7 +655,7 @@ export function formatReceiptForPreview(data: ReceiptData): string {
       <div style="font-family:'Courier New',monospace;max-width:200px;margin:0 auto;font-size:10px;line-height:1.3;color:#1a1a1a;">
         <!-- Header -->
         <div style="text-align:center;padding-bottom:6px;">
-          <div style="font-size:16px;font-weight:bold;letter-spacing:1px;">${data.companyName || 'Laser Food'}</div>
+          ${buildHeaderName()}
           ${data.companyPhone ? `<div style="font-size:10px;">Tel: ${data.companyPhone}</div>` : ''}
           ${data.companyAddress ? `<div style="font-size:10px;">${data.companyAddress}</div>` : ''}
           <div style="font-size:12px;font-weight:bold;margin-top:4px;padding:2px;background:#f0f0f0;">${typeName}</div>
@@ -657,7 +692,7 @@ export function formatReceiptForPreview(data: ReceiptData): string {
     <div style="font-family:'Courier New',monospace;max-width:200px;margin:0 auto;font-size:10px;line-height:1.3;color:#1a1a1a;">
       <!-- Header -->
       <div style="text-align:center;padding-bottom:6px;">
-        <div style="font-size:16px;font-weight:bold;letter-spacing:1px;">${data.companyName || 'Laser Food'}</div>
+        ${buildHeaderName()}
         ${data.companyPhone ? `<div style="font-size:10px;">Tel: ${data.companyPhone}</div>` : ''}
         ${data.companyAddress ? `<div style="font-size:10px;">${data.companyAddress}</div>` : ''}
         <div style="font-size:12px;font-weight:bold;margin-top:4px;padding:2px;background:#f0f0f0;">${typeName}</div>

@@ -24,6 +24,8 @@ interface PrintSettings {
   showThankYouMessage: boolean;
   thankYouMessage: string;
   useClassicLayout: boolean;
+  showLogo: boolean;
+  replaceNameWithLogo: boolean;
 }
 
 const DEFAULT_SETTINGS: PrintSettings = {
@@ -31,6 +33,8 @@ const DEFAULT_SETTINGS: PrintSettings = {
   showThankYouMessage: false,
   thankYouMessage: 'Merci pour votre confiance',
   useClassicLayout: false,
+  showLogo: true,
+  replaceNameWithLogo: false,
 };
 
 interface ReceiptDialogProps {
@@ -81,6 +85,8 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
   const [showSignatures, setShowSignatures] = useState(false);
   const [showThankYouMessage, setShowThankYouMessage] = useState(false);
   const [thankYouMessage, setThankYouMessage] = useState('Merci pour votre confiance');
+  const [showLogo, setShowLogo] = useState(true);
+  const [replaceNameWithLogo, setReplaceNameWithLogo] = useState(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   // Advanced distribution toggles
@@ -110,6 +116,8 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
           setShowSignatures(s.showSignatures ?? false);
           setShowThankYouMessage(s.showThankYouMessage ?? false);
           setThankYouMessage(s.thankYouMessage || 'Merci pour votre confiance');
+          setShowLogo(s.showLogo ?? true);
+          setReplaceNameWithLogo(s.replaceNameWithLogo ?? false);
         }
       } catch { /* use defaults */ }
       setSettingsLoaded(true);
@@ -123,6 +131,8 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
       showThankYouMessage,
       thankYouMessage,
       useClassicLayout,
+      showLogo,
+      replaceNameWithLogo,
       ...partial,
     };
     try {
@@ -143,6 +153,8 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
   const handleSignaturesToggle = (v: boolean) => { setShowSignatures(v); saveSettings({ showSignatures: v }); };
   const handleThankYouToggle = (v: boolean) => { setShowThankYouMessage(v); saveSettings({ showThankYouMessage: v }); };
   const handleThankYouMessageChange = (v: string) => { setThankYouMessage(v); saveSettings({ thankYouMessage: v }); };
+  const handleLogoToggle = (v: boolean) => { setShowLogo(v); saveSettings({ showLogo: v }); };
+  const handleReplaceNameToggle = (v: boolean) => { setReplaceNameWithLogo(v); saveSettings({ replaceNameWithLogo: v }); };
 
   const advancedOptions: AdvancedReceiptOptions = {
     showWorkerStockBeforeAfter: showStockBeforeAfter,
@@ -185,6 +197,8 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
     nextCollectionTime: receiptData.nextCollectionTime,
     advancedOptions,
     classicLayout: useClassicLayout,
+    showLogo,
+    replaceNameWithLogo,
   };
 
   const previewHtml = formatReceiptForPreview(receiptDataForFormatter);
@@ -277,6 +291,18 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
               <ChevronDown className={`w-4 h-4 mr-auto transition-transform ${advancedOpen ? 'rotate-180' : ''}`} />
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-3 pb-3 border rounded-lg p-3 bg-muted/30">
+              {/* Logo */}
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">طباعة اللوقو</Label>
+                <Switch checked={showLogo} onCheckedChange={handleLogoToggle} />
+              </div>
+              {showLogo && (
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">استبدال اسم الشركة باللوقو</Label>
+                  <Switch checked={replaceNameWithLogo} onCheckedChange={handleReplaceNameToggle} />
+                </div>
+              )}
+
               {/* Signatures */}
               <div className="flex items-center justify-between">
                 <Label className="text-xs">إمضاء البائع والعميل</Label>
