@@ -15,6 +15,7 @@ interface OfferTierCardProps {
   tier: ProductOfferTier;
   tierIndex: number;
   products: Product[];
+  selectedProduct?: Product | null;
   onUpdate: (index: number, updates: Partial<ProductOfferTier>) => void;
   onDelete: (index: number) => void;
   canDelete: boolean;
@@ -25,6 +26,7 @@ const OfferTierCard: React.FC<OfferTierCardProps> = ({
   tier,
   tierIndex,
   products,
+  selectedProduct,
   onUpdate,
   onDelete,
   canDelete,
@@ -216,31 +218,60 @@ const OfferTierCard: React.FC<OfferTierCardProps> = ({
             </div>
           )}
 
-          {tier.gift_type === 'price_discount' && (
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">مبلغ التخفيض لكل وحدة (DA)</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  value={tier.discount_amount || ''}
-                  onChange={(e) => onUpdate(tierIndex, { discount_amount: e.target.value ? parseFloat(e.target.value) : null })}
-                  className="flex-1 h-8 text-sm"
-                  placeholder="مبلغ التخفيض..."
-                />
-                <span className="text-sm text-muted-foreground">DA / وحدة</span>
+          {tier.gift_type === 'price_discount' && (() => {
+            // Get the original price from product (use price_gros as reference)
+            const originalPrice = selectedProduct?.price_gros || 0;
+            const currentDiscount = tier.discount_amount || 0;
+            const salePrice = originalPrice > 0 ? originalPrice - currentDiscount : '';
+            
+            const handleSalePriceChange = (newSalePrice: string) => {
+              if (!newSalePrice || !originalPrice) {
+                onUpdate(tierIndex, { discount_amount: null });
+                return;
+              }
+              const salePriceNum = parseFloat(newSalePrice);
+              const discountVal = originalPrice - salePriceNum;
+              onUpdate(tierIndex, { discount_amount: discountVal > 0 ? discountVal : 0 });
+            };
+
+            return (
+              <div className="space-y-2">
+                {originalPrice > 0 && (
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">السعر الأصلي:</span>
+                    <Badge variant="outline">{originalPrice} DA</Badge>
+                  </div>
+                )}
+                <Label className="text-xs text-muted-foreground">سعر البيع بعد التخفيض (DA)</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={salePrice}
+                    onChange={(e) => handleSalePriceChange(e.target.value)}
+                    className="flex-1 h-8 text-sm"
+                    placeholder="سعر البيع..."
+                  />
+                  <span className="text-sm text-muted-foreground">DA</span>
+                </div>
+                {currentDiscount > 0 && (
+                  <div className="flex items-center justify-between text-xs bg-green-50 dark:bg-green-950/30 rounded p-1.5">
+                    <span className="text-green-700 dark:text-green-400">قيمة التخفيض:</span>
+                    <span className="font-medium text-green-700 dark:text-green-400">-{currentDiscount} DA</span>
+                  </div>
+                )}
+                <div className="bg-accent/50 rounded p-2 space-y-1">
+                  <p className="text-[10px] text-muted-foreground">
+                    ⬆️ الحد الأدنى للكمية محدد أعلاه — يتفعّل التخفيض عند بلوغ تلك الكمية
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    💡 أضف شرائح إضافية لتخفيضات تصاعدية حسب الكمية
+                  </p>
+                </div>
               </div>
-              <div className="bg-accent/50 rounded p-2 space-y-1">
-                <p className="text-[10px] text-muted-foreground">
-                  ⬆️ الحد الأدنى للكمية محدد أعلاه — يتفعّل التخفيض عند بلوغ تلك الكمية
-                </p>
-                <p className="text-[10px] text-muted-foreground">
-                  💡 أضف شرائح إضافية لتخفيضات تصاعدية (مثلاً: 10 صناديق = -5 DA، 20 صندوق = -10 DA)
-                </p>
-              </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
 
         {/* Worker Reward */}

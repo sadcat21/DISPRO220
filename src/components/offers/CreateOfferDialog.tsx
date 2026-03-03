@@ -403,6 +403,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                       tier={tier}
                       tierIndex={index}
                       products={products}
+                      selectedProduct={products.find(p => p.id === formData.product_id) || null}
                       onUpdate={updateTier}
                       onDelete={deleteTier}
                       canDelete={tiers.length > 1}
