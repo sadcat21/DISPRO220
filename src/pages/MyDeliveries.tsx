@@ -35,6 +35,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import ReceiptDialog from '@/components/printing/ReceiptDialog';
 import { ReceiptItem, ReceiptType } from '@/types/receipt';
 import { useWorkerPrintInfo } from '@/hooks/useWorkerPrintInfo';
+import { useProductOffers } from '@/hooks/useProductOffers';
 
 type TabStatus = 'all' | OrderStatus;
 type DeliveryType = 'orders' | 'direct_sales';
@@ -43,6 +44,7 @@ const MyDeliveries: React.FC = () => {
   const { t, language, loadPrintSettingsFromDB } = useLanguage();
   const { workerId, user } = useAuth();
   const { data: workerPrintInfo } = useWorkerPrintInfo(workerId);
+  const { activeOffers } = useProductOffers();
   
   const [activeTab, setActiveTab] = useState<TabStatus>('assigned');
   const [deliveryType, setDeliveryType] = useState<DeliveryType>('orders');
@@ -104,6 +106,80 @@ const MyDeliveries: React.FC = () => {
       default: return ar;
     }
   };
+
+  const recalcGiftForItem = useCallback((productId: string, paidQty: number, piecesPerBox: number) => {
+    const offersForProduct = activeOffers.filter(offer => offer.product_id === productId);
+    if (offersForProduct.length === 0 || paidQty <= 0) {
+      return { giftBoxes: 0, giftPieces: 0 };
+    }
+
+    const safePiecesPerBox = piecesPerBox > 0 ? piecesPerBox : 1;
+    let totalGiftPieces = 0;
+
+    for (const offer of offersForProduct) {
+      const tiers = offer.tiers && offer.tiers.length > 0 ? offer.tiers : null;
+
+      if (tiers) {
+        if (offer.condition_type === 'multiplier') {
+          const sortedTiers = [...tiers].sort((a, b) => b.min_quantity - a.min_quantity);
+          let remaining = paidQty;
+
+          for (const tier of sortedTiers) {
+            if (remaining < tier.min_quantity) continue;
+            const timesApplied = Math.floor(remaining / tier.min_quantity);
+            remaining = remaining % tier.min_quantity;
+            const giftUnit = tier.gift_quantity_unit || 'piece';
+            const giftAmount = timesApplied * tier.gift_quantity;
+            totalGiftPieces += giftUnit === 'box' ? giftAmount * safePiecesPerBox : giftAmount;
+          }
+        } else {
+          for (const tier of [...tiers].sort((a, b) => b.min_quantity - a.min_quantity)) {
+            if (paidQty >= tier.min_quantity && (tier.max_quantity === null || paidQty <= tier.max_quantity)) {
+              const giftUnit = tier.gift_quantity_unit || 'piece';
+              totalGiftPieces += giftUnit === 'box' ? tier.gift_quantity * safePiecesPerBox : tier.gift_quantity;
+              break;
+            }
+          }
+        }
+      } else {
+        if (paidQty < offer.min_quantity) continue;
+        const timesApplied = offer.condition_type === 'multiplier' ? Math.floor(paidQty / offer.min_quantity) : 1;
+        const giftAmount = (offer.gift_quantity || 0) * timesApplied;
+        totalGiftPieces += offer.gift_quantity_unit === 'box' ? giftAmount * safePiecesPerBox : giftAmount;
+      }
+    }
+
+    return {
+      giftBoxes: Math.floor(totalGiftPieces / safePiecesPerBox),
+      giftPieces: totalGiftPieces % safePiecesPerBox,
+    };
+  }, [activeOffers]);
+
+  const resolveGiftForItem = useCallback((item: any) => {
+    const piecesPerBox = (item as any).pieces_per_box ?? item.product?.pieces_per_box ?? 1;
+    const storedGiftQty = Number(item.gift_quantity || 0);
+    const storedGiftPcs = Number((item as any).gift_pieces || 0);
+    const quantity = Number(item.quantity || 0);
+    const unitPrice = Number(item.unit_price || 0);
+    const totalPrice = Number(item.total_price || 0);
+
+    const paidQtyFromTotal = unitPrice > 0 ? Number((totalPrice / unitPrice).toFixed(3)) : null;
+    const paidQty = paidQtyFromTotal !== null && !Number.isNaN(paidQtyFromTotal)
+      ? Math.max(0, paidQtyFromTotal)
+      : Math.max(0, quantity - storedGiftQty);
+
+    const recalculated = recalcGiftForItem(item.product_id, paidQty, piecesPerBox);
+    const totalStoredPieces = storedGiftQty * piecesPerBox + storedGiftPcs;
+    const totalRecalculatedPieces = recalculated.giftBoxes * piecesPerBox + recalculated.giftPieces;
+    const useRecalculated = totalRecalculatedPieces > totalStoredPieces;
+
+    return {
+      giftQuantity: useRecalculated ? recalculated.giftBoxes : storedGiftQty,
+      giftPieces: useRecalculated ? recalculated.giftPieces : storedGiftPcs,
+      paidQuantity: paidQty,
+      piecesPerBox,
+    };
+  }, [recalcGiftForItem]);
 
   const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; icon: React.ElementType; tabColor: string }> = {
     pending: { label: t('orders.pending'), color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: Clock, tabColor: 'text-yellow-600' },
@@ -176,6 +252,7 @@ const MyDeliveries: React.FC = () => {
       }
 
       const receiptItems: ReceiptItem[] = items.map(item => {
+        const giftState = resolveGiftForItem(item);
         const rawPricingUnit = (item as any).pricing_unit;
         const rawWeightPerBox = (item as any).weight_per_box;
         const rawPiecesPerBox = (item as any).pieces_per_box;
@@ -189,10 +266,11 @@ const MyDeliveries: React.FC = () => {
         return {
           productId: item.product_id,
           productName: item.product?.name || 'منتج',
-          quantity: item.quantity,
+          quantity: giftState.paidQuantity + giftState.giftQuantity,
           unitPrice: Number(item.unit_price || 0),
           totalPrice: Number(item.total_price || 0),
-          giftQuantity: item.gift_quantity || 0,
+          giftQuantity: giftState.giftQuantity || 0,
+          giftPieces: giftState.giftPieces > 0 ? giftState.giftPieces : undefined,
           pricingUnit: fallbackToProductUnit
             ? productPricingUnit
             : (rawPricingUnit || productPricingUnit || 'box'),
@@ -675,27 +753,33 @@ const MyDeliveries: React.FC = () => {
             {/* Products first */}
             <div className="space-y-2">
               <p className="font-bold">{t('nav.products')}:</p>
-              {selectedOrderItems?.map((item) => (
+              {selectedOrderItems?.map((item) => {
+                const giftState = resolveGiftForItem(item);
+
+                return (
                 <div key={item.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <div className="flex-1 min-w-0">
                     <span className="font-medium">
                       {item.product?.name}
-                      {item.gift_quantity > 0 && (
+                      {(giftState.giftQuantity > 0 || giftState.giftPieces > 0) && (
                         <Badge variant="outline" className="ms-1 text-[10px] px-1 py-0 border-green-500 text-green-600">
                           <Gift className="w-3 h-3 ms-0.5" />
-                          {item.gift_quantity} {t('offers.unit_box')} {t('common.free')}
+                          {giftState.giftQuantity > 0 ? `${giftState.giftQuantity} ${t('offers.unit_box')}` : ''}
+                          {giftState.giftQuantity > 0 && giftState.giftPieces > 0 ? ' + ' : ''}
+                          {giftState.giftPieces > 0 ? `${giftState.giftPieces} ${t('offers.unit_piece')}` : ''}
+                          {' '}{t('common.free')}
                         </Badge>
                       )}
                     </span>
                     {(item.unit_price || 0) > 0 && (
                       <p className="text-xs text-muted-foreground">
-                        {Number(item.unit_price).toLocaleString()} دج × {item.quantity - (item.gift_quantity || 0)} = {Number(item.total_price || 0).toLocaleString()} دج
+                        {Number(item.unit_price).toLocaleString()} دج × {giftState.paidQuantity} = {Number(item.total_price || 0).toLocaleString()} دج
                       </p>
                     )}
                   </div>
-                  <Badge variant="secondary">{item.quantity} {t('common.box')}</Badge>
+                  <Badge variant="secondary">{giftState.paidQuantity + giftState.giftQuantity} {t('common.box')}</Badge>
                 </div>
-              ))}
+              )})}
               {selectedOrder?.total_amount && Number(selectedOrder.total_amount) > 0 && (
                 <>
                   <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg font-bold">
