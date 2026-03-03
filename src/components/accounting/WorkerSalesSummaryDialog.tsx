@@ -125,15 +125,22 @@ const ExpandedCarousel: React.FC<{
         </div>
 
         {/* Footer */}
-        <div className="px-3 py-2 bg-card flex items-center justify-between">
-          <span className="font-bold text-base text-primary">{item.quantity}</span>
-          <span className="text-xs text-muted-foreground">{item.totalAmount.toLocaleString('ar-DZ')} د.ج</span>
-        </div>
-        {item.giftQuantity > 0 && (
-          <div className="px-3 pb-1.5 bg-card text-center">
-            <span className="text-xs text-muted-foreground">هدايا: {item.giftQuantity}</span>
+        <div className="px-2 py-2 bg-card flex flex-col gap-1.5">
+          <div className="flex items-center gap-1.5">
+            <div className="flex-1 flex items-center justify-center gap-1 rounded-md bg-primary/10 text-primary py-1.5 text-sm font-bold">
+              <Package className="w-3.5 h-3.5" />
+              {item.quantity}
+            </div>
+            {item.giftQuantity > 0 && (
+              <div className="flex items-center justify-center gap-1 rounded-md bg-secondary py-1.5 px-2 text-xs font-semibold text-secondary-foreground">
+                🎁 {item.giftQuantity}
+              </div>
+            )}
           </div>
-        )}
+          <div className="flex items-center justify-center rounded-md bg-muted py-1.5 text-xs font-semibold text-muted-foreground">
+            {item.totalAmount.toLocaleString('ar-DZ')} د.ج
+          </div>
+        </div>
       </div>
     </div>
   );
