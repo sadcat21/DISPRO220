@@ -491,6 +491,16 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
                   ? `فائض من تعديل طلبية بعد التوصيل (تم خصم ${debtDeducted.toLocaleString()} دج من ديون العميل)`
                   : 'فائض من تعديل طلبية بعد التوصيل',
               });
+              // Also record in surplus/deficit treasury
+              await supabase.from('manager_treasury').insert({
+                manager_id: workerId!,
+                branch_id: order.branch_id || null,
+                source_type: 'customer_surplus',
+                payment_method: 'cash',
+                amount: remainingRefund,
+                customer_name: order.customer?.name || '',
+                notes: `فائض عميل من تعديل طلبية ${order.id.slice(0, 8)}`,
+              });
             }
           }
         }

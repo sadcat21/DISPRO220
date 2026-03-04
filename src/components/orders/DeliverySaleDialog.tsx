@@ -782,6 +782,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
         orderInvoicePaymentMethod: order.invoice_payment_method || undefined,
         stampAmount: totals.stampAmount > 0 ? totals.stampAmount : undefined,
         stampPercentage: totals.stampPercentage > 0 ? totals.stampPercentage : undefined,
+        customerSurplusAmount: paymentData.overpaymentAction === 'credit' && paymentData.overpaymentAmount ? paymentData.overpaymentAmount : undefined,
       });
       setShowReceiptDialog(true);
       onOpenChange(false);

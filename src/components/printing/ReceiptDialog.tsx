@@ -66,6 +66,7 @@ interface ReceiptDialogProps {
     collectorName?: string;
     nextCollectionDate?: string | null;
     nextCollectionTime?: string | null;
+    customerSurplusAmount?: number;
   };
 }
 
@@ -195,6 +196,7 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
     collectorName: receiptData.collectorName,
     nextCollectionDate: receiptData.nextCollectionDate,
     nextCollectionTime: receiptData.nextCollectionTime,
+    customerSurplusAmount: receiptData.customerSurplusAmount,
     advancedOptions,
     classicLayout: useClassicLayout,
     showLogo,
