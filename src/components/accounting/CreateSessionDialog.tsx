@@ -570,23 +570,17 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                     <StepSection step={9} title="ملخص شامل حسب المنتج" color="primary" badge="A">
                       <ProductStockSummary workerId={selectedWorkerId} branchId={activeBranch?.id} periodStart={periodStart} periodEnd={periodEnd} viewByProduct promoTracking={calc?.promoTracking} />
                     </StepSection>
-                    <StepSection step={9} title="تفاصيل مراجعة الشاحنة" color="primary" badge="B">
-                      <TruckReviewSection workerId={selectedWorkerId} />
-                    </StepSection>
                   </>
                 ) : (
                   <>
                     <StepSection step={9} title={t('accounting.truck_stock') || 'تتبع المنتجات'} color="primary" badge="A">
                       <ProductStockSummary workerId={selectedWorkerId} branchId={activeBranch?.id} periodStart={periodStart} periodEnd={periodEnd} />
                     </StepSection>
-                    <StepSection step={9} title="تفاصيل مراجعة الشاحنة" color="primary" badge="B">
-                      <TruckReviewSection workerId={selectedWorkerId} />
-                    </StepSection>
-                    <StepSection step={9} title={t('accounting.sales_details')} color="primary" badge="C">
+                    <StepSection step={9} title={t('accounting.sales_details')} color="primary" badge="B">
                       <SalesDetailsSummary workerId={selectedWorkerId} periodStart={periodStart} periodEnd={periodEnd} />
                     </StepSection>
                     {calc && calc.promoTracking.length > 0 && (
-                      <StepSection step={9} title="تتبع العروض" color="purple" badge="D">
+                      <StepSection step={9} title="تتبع العروض" color="purple" badge="C">
                         <PromoTrackingSummary items={calc.promoTracking} totalGiftValue={calc.giftOfferValue} />
                       </StepSection>
                     )}

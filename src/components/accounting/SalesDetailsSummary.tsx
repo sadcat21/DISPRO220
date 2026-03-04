@@ -314,48 +314,6 @@ const SalesDetailsSummary: React.FC<SalesDetailsSummaryProps> = ({ workerId, per
         </Badge>
       </div>
 
-      {/* Product Price Breakdown - Collapsible */}
-      {Object.keys(productPriceBreakdown).length > 0 && (
-        <div className="space-y-2">
-          <p className="font-semibold text-sm flex items-center gap-1.5">📊 تفصيل المبيعات حسب التسعير</p>
-          {Object.entries(productPriceBreakdown).sort((a, b) => {
-            const totalA = a[1].reduce((s, e) => s + e.total, 0);
-            const totalB = b[1].reduce((s, e) => s + e.total, 0);
-            return totalB - totalA;
-          }).map(([productName, entries]) => {
-            const totalQty = entries.reduce((s, e) => s + e.quantity, 0);
-            const totalVal = entries.reduce((s, e) => s + e.total, 0);
-            const hasMultiplePrices = entries.length > 1;
-            return (
-              <Collapsible key={productName}>
-                <div className="border rounded-lg overflow-hidden">
-                  <CollapsibleTrigger className="w-full flex items-center justify-between p-2.5 hover:bg-muted/30 transition-colors">
-                    <span className="font-medium text-sm">{productName}</span>
-                    <span className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">{totalQty} صندوق • {totalVal.toLocaleString()} DA</span>
-                      {hasMultiplePrices && <ChevronDown className="w-3.5 h-3.5 text-muted-foreground transition-transform [[data-state=open]_&]:rotate-180" />}
-                    </span>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <div className="border-t space-y-0.5 p-1.5">
-                      {entries.sort((a, b) => b.quantity - a.quantity).map((entry, idx) => (
-                        <div key={idx} className="flex items-center justify-between text-xs bg-muted/30 rounded px-2 py-1">
-                          <span className="flex items-center gap-1.5">
-                            <Badge variant="secondary" className="text-[9px] px-1.5">{subtypeLabels[entry.subtype] || entry.subtype}</Badge>
-                            <span className="text-muted-foreground">{entry.quantity} صندوق</span>
-                          </span>
-                          <span className="font-medium">{entry.unitPrice.toLocaleString()} DA/صندوق = {entry.total.toLocaleString()} DA</span>
-                        </div>
-                      ))}
-                    </div>
-                  </CollapsibleContent>
-                </div>
-              </Collapsible>
-            );
-          })}
-        </div>
-      )}
-
       {/* Customer Buttons */}
       <div className="space-y-1.5">
         {customerSummaries.map(customer => (
