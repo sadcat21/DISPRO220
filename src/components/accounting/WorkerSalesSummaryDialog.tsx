@@ -9,6 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { ShoppingBag, Package, User, Clock, Calendar, ChevronLeft, ChevronRight, ChevronDown, TrendingUp } from 'lucide-react';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { inferPricingSubtype } from '@/utils/pricingSubtype';
+import { buildPricingGroups } from './PricingGroupsSummary';
+import PricingGroupsSummary from './PricingGroupsSummary';
 /** Format quantity as boxes.pieces (e.g. 1.05 = 1 box + 5 pieces) */
 const formatBoxPieces = (qty: number, piecesPerBox: number | null): string => {
   if (!piecesPerBox || piecesPerBox <= 0) return String(qty);
@@ -559,6 +561,7 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
             <TabsList className="w-full shrink-0">
               <TabsTrigger value="products" className="flex-1 text-xs">المنتجات</TabsTrigger>
               <TabsTrigger value="pricing" className="flex-1 text-xs">المتابعة السعرية</TabsTrigger>
+              <TabsTrigger value="groups" className="flex-1 text-xs">مجموعات التسعير</TabsTrigger>
             </TabsList>
 
             <TabsContent value="products" className="flex-1 min-h-0 mt-1">
@@ -609,6 +612,16 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
             <TabsContent value="pricing" className="flex-1 min-h-0 mt-1">
               <ScrollArea className="h-full max-h-[55vh]">
                 <PriceTrackingTab priceTracking={salesData.priceTracking || []} />
+              </ScrollArea>
+            </TabsContent>
+
+            <TabsContent value="groups" className="flex-1 min-h-0 mt-1">
+              <ScrollArea className="h-full max-h-[55vh]">
+                <PricingGroupsSummary
+                  workerId={workerId!}
+                  periodStart={lastAccounting || new Date().toISOString().split('T')[0]}
+                  periodEnd={new Date().toISOString()}
+                />
               </ScrollArea>
             </TabsContent>
           </Tabs>

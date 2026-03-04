@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Calendar, User, Receipt, Banknote, ArrowDownCircle, ArrowUpCircle, Wallet, CreditCard, TrendingDown, Coins, AlertTriangle, Pencil, Package, ShoppingBag, Calculator, Gift, Tag, HandCoins, ChevronDown, FileCheck2 } from 'lucide-react';
+import { Loader2, Calendar, User, Receipt, Banknote, ArrowDownCircle, ArrowUpCircle, Wallet, CreditCard, TrendingDown, Coins, AlertTriangle, Pencil, Package, ShoppingBag, Calculator, Gift, Tag, HandCoins, ChevronDown, FileCheck2, Layers } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useSessionItems, AccountingSession, AccountingSessionItem } from '@/hooks/useAccountingSessions';
 import { useCreateWorkerDebt } from '@/hooks/useWorkerDebts';
@@ -16,6 +16,7 @@ import ProductStockSummary from './ProductStockSummary';
 import SalesDetailsSummary from './SalesDetailsSummary';
 import PromoTrackingSummary from './PromoTrackingSummary';
 import CreateSessionDialog from './CreateSessionDialog';
+import PricingGroupsSummary from './PricingGroupsSummary';
 import DebtCollectionsSummary from './DebtCollectionsSummary';
 import DocumentCollectionsSummary from './DocumentCollectionsSummary';
 import { useSessionCalculations } from '@/hooks/useSessionCalculations';
@@ -421,6 +422,18 @@ const SessionDetailsDialog: React.FC<SessionDetailsDialogProps> = ({ open, onOpe
               title="مبيعات العملاء"
             >
               <SalesDetailsSummary
+                workerId={session.worker_id}
+                periodStart={session.period_start}
+                periodEnd={session.period_end}
+              />
+            </CollapsibleSection>
+
+            {/* Pricing Groups Section */}
+            <CollapsibleSection
+              icon={<Layers className="w-4 h-4 text-primary" />}
+              title="مجموعات التسعير"
+            >
+              <PricingGroupsSummary
                 workerId={session.worker_id}
                 periodStart={session.period_start}
                 periodEnd={session.period_end}
