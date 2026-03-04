@@ -38,18 +38,17 @@ const SummaryRow: React.FC<SummaryRowProps> = ({ icon, label, value, color = '',
   </div>
 );
 
-const extractDate = (v: string): string => v.replace('T', ' ').substring(0, 10);
-
 const WorkerHandoverSummary: React.FC<WorkerHandoverSummaryProps> = ({
   workerId, periodStart, periodEnd, calc, coinAmount,
 }) => {
   const { data: stats } = useQuery({
     queryKey: ['worker-handover-stats', workerId, periodStart, periodEnd],
     queryFn: async () => {
-      const startDate = extractDate(periodStart);
-      const endDate = extractDate(periodEnd);
-      const startTz = startDate + 'T00:00:00+01:00';
-      const endTz = endDate + 'T23:59:59+01:00';
+      // Use exact timestamps from periodStart/periodEnd to avoid showing old data
+      const startTz = periodStart;
+      const endTz = periodEnd;
+      const startDate = periodStart.substring(0, 10);
+      const endDate = periodEnd.substring(0, 10);
 
       // Delivery orders
       const { data: deliveryOrders } = await supabase
