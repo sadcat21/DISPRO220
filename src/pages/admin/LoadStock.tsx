@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Loader2, Trash2, Truck, AlertTriangle, Package, CheckCircle, PackageX, User, ChevronDown, Gift, Save, History, X, CalendarIcon, Search, RefreshCw, UserCheck } from 'lucide-react';
+import { Plus, Loader2, Trash2, Truck, AlertTriangle, Package, CheckCircle, PackageX, User, ChevronDown, Gift, Save, History, X, CalendarIcon, Search, RefreshCw, UserCheck, ShoppingCart } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -29,6 +29,7 @@ import { useCreateDiscrepancy } from '@/hooks/useStockDiscrepancies';
 import StockVerificationDialog from '@/components/stock/StockVerificationDialog';
 import ExchangeSessionDialog from '@/components/stock/ExchangeSessionDialog';
 import CustomerPickerDialog from '@/components/orders/CustomerPickerDialog';
+import PartialLoadFromOrdersDialog from '@/components/stock/PartialLoadFromOrdersDialog';
 import { Customer, Sector } from '@/types/database';
 
 interface EmptyTruckItem {
@@ -101,6 +102,7 @@ const LoadStock: React.FC = () => {
   const [showProductPicker, setShowProductPicker] = useState(false);
   const [showEmptyDialog, setShowEmptyDialog] = useState(false);
   const [showSessionHistory, setShowSessionHistory] = useState(false);
+  const [showPartialLoadDialog, setShowPartialLoadDialog] = useState(false);
   const [viewSessionId, setViewSessionId] = useState<string | null>(null);
   const [viewSessionItems, setViewSessionItems] = useState<any[]>([]);
   const [viewReviewDiscrepancies, setViewReviewDiscrepancies] = useState<any[]>([]);
@@ -857,6 +859,94 @@ const LoadStock: React.FC = () => {
     finally { setIsEditSaving(false); }
   };
 
+  // Handle partial load from orders - bulk add products to active session
+  const handlePartialLoadConfirm = async (aggregatedProducts: { productId: string; productName: string; quantity: number; piecesPerBox: number }[]) => {
+    if (!activeSessionId || aggregatedProducts.length === 0) return;
+    setIsSaving(true);
+    try {
+      for (const p of aggregatedProducts) {
+        const piecesPerBox = p.piecesPerBox || 20;
+        const totalLoadQty = p.quantity;
+
+        // Check warehouse availability
+        const warehouseItem = warehouseStock.find(s => s.product_id === p.productId);
+        if (!warehouseItem) {
+          toast.error(`الكمية المتاحة من ${p.productName} غير كافية — تم تخطيه`);
+          continue;
+        }
+        const warehousePieces = customToTotalPieces(warehouseItem.quantity, piecesPerBox);
+        const loadPieces = customToTotalPieces(totalLoadQty, piecesPerBox);
+        if (warehousePieces < loadPieces) {
+          toast.error(`الكمية المتاحة من ${p.productName} غير كافية — تم تخطيه`);
+          continue;
+        }
+
+        // Deduct from warehouse
+        const newWarehouseQty = subtractCustomQty(warehouseItem.quantity, totalLoadQty, piecesPerBox);
+        await supabase.from('warehouse_stock').update({ quantity: newWarehouseQty }).eq('id', warehouseItem.id);
+        // Update local ref for next iteration
+        warehouseItem.quantity = newWarehouseQty;
+
+        // Add to worker stock
+        const { data: existingWS } = await supabase
+          .from('worker_stock')
+          .select('id, quantity')
+          .eq('worker_id', selectedWorker)
+          .eq('product_id', p.productId)
+          .maybeSingle();
+
+        const previousWorkerQty = existingWS ? existingWS.quantity : 0;
+
+        if (existingWS) {
+          const newWorkerQty = addCustomQty(existingWS.quantity, totalLoadQty, piecesPerBox);
+          await supabase.from('worker_stock').update({ quantity: newWorkerQty }).eq('id', existingWS.id);
+        } else {
+          await supabase.from('worker_stock').insert({
+            worker_id: selectedWorker,
+            product_id: p.productId,
+            branch_id: branchId,
+            quantity: totalLoadQty,
+          });
+        }
+
+        // Stock movement record
+        await supabase.from('stock_movements').insert({
+          product_id: p.productId,
+          branch_id: branchId,
+          quantity: totalLoadQty,
+          movement_type: 'load',
+          status: 'approved',
+          created_by: currentWorkerId,
+          worker_id: selectedWorker,
+          notes: `شحن جزئي من الطلبيات - ${p.productName}`,
+        });
+
+        // Save to session
+        await addSessionItem.mutateAsync({
+          sessionId: activeSessionId,
+          productId: p.productId,
+          quantity: p.quantity,
+          giftQuantity: 0,
+          giftUnit: 'piece',
+          notes: `شحن من طلبيات - ${p.productName}`,
+          previousQuantity: previousWorkerQty,
+        });
+      }
+
+      // Refresh session items
+      const { data } = await sessionItemsQuery(activeSessionId);
+      setSessionItems(data || []);
+      queryClient.invalidateQueries({ queryKey: ['worker-load-suggestions'] });
+      queryClient.invalidateQueries({ queryKey: ['my-worker-stock'] });
+      queryClient.invalidateQueries({ queryKey: ['worker-truck-stock'] });
+      toast.success(`تم شحن ${aggregatedProducts.length} منتج من الطلبيات بنجاح`);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleCompleteSession = async () => {
     const sessionToComplete = activeSessionId || sessions.find(s => s.status === 'open')?.id;
     if (!sessionToComplete) { toast.error('لا توجد جلسة شحن مفتوحة'); return; }
@@ -1302,10 +1392,21 @@ const LoadStock: React.FC = () => {
             </>
           ) : (
             <>
-              <Button onClick={handleOpenAddProduct} className="w-full">
-                <Plus className="w-4 h-4 me-1" />
-                إضافة منتج
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={handleOpenAddProduct} className="flex-1">
+                  <Plus className="w-4 h-4 me-1" />
+                  إضافة منتج
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 border-primary/30 text-primary hover:bg-primary/5"
+                  onClick={() => setShowPartialLoadDialog(true)}
+                  disabled={isSaving}
+                >
+                  <ShoppingCart className="w-4 h-4 me-1" />
+                  شحن من الطلبيات
+                </Button>
+              </div>
               <div className="flex gap-2">
                 <Button
                   variant="default"
@@ -2077,6 +2178,16 @@ const LoadStock: React.FC = () => {
               refetchSessions(),
             ]);
           }}
+        />
+      )}
+      {selectedWorker && activeSessionId && (
+        <PartialLoadFromOrdersDialog
+          open={showPartialLoadDialog}
+          onOpenChange={setShowPartialLoadDialog}
+          workerId={selectedWorker}
+          workerName={workers.find(w => w.id === selectedWorker)?.full_name || ''}
+          branchId={branchId}
+          onConfirm={handlePartialLoadConfirm}
         />
       )}
     </div>
