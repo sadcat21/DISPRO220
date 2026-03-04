@@ -81,15 +81,15 @@ const WorkerHandoverSummary: React.FC<WorkerHandoverSummaryProps> = ({
         else if (method === 'transfer' || method === 'virement') virementCount++;
       }
 
-      // Pending doc collections
+      // Pending doc collections (align with DocumentCollectionsSummary source-of-truth)
       const { data: pendingCollections } = await supabase
         .from('document_collections')
         .select('id, order:orders!document_collections_order_id_fkey(invoice_payment_method)')
         .eq('worker_id', workerId)
         .eq('action', 'collected')
         .neq('status', 'rejected')
-        .gte('collection_date', startDate)
-        .lte('collection_date', endDate);
+        .gte('created_at', startTz)
+        .lte('created_at', endTz);
 
       for (const c of (pendingCollections || [])) {
         const method = String((c.order as any)?.invoice_payment_method || '').toLowerCase();
