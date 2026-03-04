@@ -298,7 +298,7 @@ const SalesDetailsSummary: React.FC<SalesDetailsSummaryProps> = ({ workerId, per
     <div className="space-y-3">
       <div className="flex items-center gap-2 mb-2">
         <ShoppingBag className="w-4 h-4 text-primary" />
-        <span className="font-semibold text-sm">{t('accounting.sales_details')}</span>
+        <span className="font-semibold text-sm">مبيعات العملاء</span>
       </div>
 
       {/* Summary badges */}
@@ -314,35 +314,43 @@ const SalesDetailsSummary: React.FC<SalesDetailsSummaryProps> = ({ workerId, per
         </Badge>
       </div>
 
-      {/* Customer Buttons */}
-      <div className="space-y-1.5">
-        {customerSummaries.map(customer => (
-          <button
-            key={customer.customer_id}
-            className="w-full flex items-center gap-3 p-2.5 rounded-lg border hover:bg-muted/50 transition-colors text-start active:scale-[0.99]"
-            onClick={() => setSelectedCustomer(customer)}
-          >
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <User className="w-4 h-4 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm text-wrap">{customer.customer_name}</p>
-              <p className="text-xs text-muted-foreground">
-                {customer.order_count} {t('accounting.orders_count')} • {customer.orders.reduce((s, o) => s + o.items.length, 0)} {t('accounting.products_count')}
-              </p>
-            </div>
-            <div className="text-end shrink-0">
-              <p className="font-bold text-sm">{customer.total_amount.toLocaleString()} DA</p>
-              {customer.has_debt && (
-                <Badge variant="destructive" className="text-[10px] px-1.5">
-                  {t('accounting.has_debt')}
-                </Badge>
-              )}
-            </div>
-            <ChevronLeft className="w-4 h-4 text-muted-foreground shrink-0" />
-          </button>
-        ))}
-      </div>
+      {/* Collapsible Customer List */}
+      <Collapsible>
+        <CollapsibleTrigger className="w-full flex items-center justify-between p-2 rounded-lg border hover:bg-muted/50 transition-colors text-sm font-medium">
+          <span>عرض قائمة العملاء ({totalCustomersCount})</span>
+          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="space-y-1.5 mt-2">
+            {customerSummaries.map(customer => (
+              <button
+                key={customer.customer_id}
+                className="w-full flex items-center gap-3 p-2.5 rounded-lg border hover:bg-muted/50 transition-colors text-start active:scale-[0.99]"
+                onClick={() => setSelectedCustomer(customer)}
+              >
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <User className="w-4 h-4 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm text-wrap">{customer.customer_name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {customer.order_count} {t('accounting.orders_count')} • {customer.orders.reduce((s, o) => s + o.items.length, 0)} {t('accounting.products_count')}
+                  </p>
+                </div>
+                <div className="text-end shrink-0">
+                  <p className="font-bold text-sm">{customer.total_amount.toLocaleString()} DA</p>
+                  {customer.has_debt && (
+                    <Badge variant="destructive" className="text-[10px] px-1.5">
+                      {t('accounting.has_debt')}
+                    </Badge>
+                  )}
+                </div>
+                <ChevronLeft className="w-4 h-4 text-muted-foreground shrink-0" />
+              </button>
+            ))}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
 
       {/* Totals */}
       <div className="border-2 border-primary/20 rounded-lg p-2.5 bg-primary/5">
