@@ -18,6 +18,21 @@ const LoginForm: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showQuickLogin, setShowQuickLogin] = useState(false);
+  const [tapCount, setTapCount] = useState(0);
+  const tapTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleSecretTap = () => {
+    const newCount = tapCount + 1;
+    setTapCount(newCount);
+    if (tapTimer.current) clearTimeout(tapTimer.current);
+    if (newCount >= 3) {
+      setShowQuickLogin(prev => !prev);
+      setTapCount(0);
+      return;
+    }
+    tapTimer.current = setTimeout(() => setTapCount(0), 800);
+  };
 
   const doLogin = async (user: string, pass: string) => {
     setIsLoading(true);
@@ -47,8 +62,8 @@ const LoginForm: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center p-4 bg-secondary" dir={dir}>
       <Card className="w-full max-w-sm glass-card">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-28 h-28">
-            <img src={logo} alt="Laser Food Logo" className="w-full h-full object-contain" />
+          <div className="mx-auto w-28 h-28 cursor-pointer select-none" onClick={handleSecretTap}>
+            <img src={logo} alt="Laser Food Logo" className="w-full h-full object-contain" draggable={false} />
           </div>
           <div>
             <CardTitle className="text-2xl font-bold">{t('app.name')}</CardTitle>
@@ -108,7 +123,7 @@ const LoginForm: React.FC = () => {
             </Button>
           </form>
 
-          <div className="mt-4 pt-4 border-t border-border space-y-2">
+          {showQuickLogin && <div className="mt-4 pt-4 border-t border-border space-y-2">
             <p className="text-xs text-muted-foreground text-center mb-2">دخول سريع</p>
             <div className="flex flex-col gap-2">
               <Button
@@ -141,7 +156,7 @@ const LoginForm: React.FC = () => {
                 </Button>
               </div>
             </div>
-          </div>
+          </div>}
         </CardContent>
       </Card>
 
