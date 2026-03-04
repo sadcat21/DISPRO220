@@ -18,6 +18,8 @@ interface OrderItem {
   quantity: number;
   unit_price: number;
   total_price: number;
+  price_subtype: string | null;
+  gift_quantity: number;
 }
 
 interface OrderDetail {
@@ -90,30 +92,24 @@ const SalesDetailsSummary: React.FC<SalesDetailsSummaryProps> = ({ workerId, per
 
       const orderIds = deliveredOrders.map(o => o.id);
 
-      // Fetch products from stock_movements (delivery) instead of order_items
-      const { data: movements } = await supabase
-        .from('stock_movements')
-        .select('order_id, quantity, product:products(name, price_gros, price_super_gros, price_invoice, price_retail, pricing_unit, weight_per_box, pieces_per_box)')
-        .eq('movement_type', 'delivery')
+      // Fetch order_items with actual unit_price and price_subtype
+      const { data: orderItemsData } = await supabase
+        .from('order_items')
+        .select('order_id, quantity, unit_price, total_price, price_subtype, gift_quantity, product:products(name)')
         .in('order_id', orderIds);
 
       const itemsByOrder: Record<string, OrderItem[]> = {};
-      movements?.forEach(m => {
-        const orderId = (m as any).order_id;
+      orderItemsData?.forEach(item => {
+        const orderId = (item as any).order_id;
         if (!orderId) return;
         if (!itemsByOrder[orderId]) itemsByOrder[orderId] = [];
-        const product = (m as any).product;
-        const rawPrice = Number(product?.price_gros || product?.price_super_gros || product?.price_retail || product?.price_invoice || 0);
-        const pricingUnit = product?.pricing_unit || 'box';
-        let boxPrice = rawPrice;
-        if (pricingUnit === 'kg') boxPrice = rawPrice * Number(product?.weight_per_box || 0);
-        else if (pricingUnit === 'unit') boxPrice = rawPrice * Number(product?.pieces_per_box || 1);
-        
         itemsByOrder[orderId].push({
-          product_name: product?.name || '',
-          quantity: Number(m.quantity || 0),
-          unit_price: rawPrice,
-          total_price: Number(m.quantity || 0) * boxPrice,
+          product_name: (item as any).product?.name || '',
+          quantity: Number(item.quantity || 0),
+          unit_price: Number(item.unit_price || 0),
+          total_price: Number(item.total_price || 0),
+          price_subtype: (item as any).price_subtype || null,
+          gift_quantity: Number(item.gift_quantity || 0),
         });
       });
 
@@ -209,6 +205,27 @@ const SalesDetailsSummary: React.FC<SalesDetailsSummaryProps> = ({ workerId, per
   })));
   const totalProductsCount = allProductNames.size;
 
+  // Build product price breakdown by price_subtype
+  const productPriceBreakdown: Record<string, { subtype: string; quantity: number; unitPrice: number; total: number }[]> = {};
+  customerSummaries.forEach(c => c.orders.forEach(o => o.items.forEach(item => {
+    if (!item.product_name) return;
+    if (!productPriceBreakdown[item.product_name]) productPriceBreakdown[item.product_name] = [];
+    const paidQty = Math.max(0, item.quantity - (item.gift_quantity || 0));
+    if (paidQty <= 0) return;
+    const subtype = item.price_subtype || o.price_subtype || (o.payment_type === 'with_invoice' ? 'invoice' : 'gros');
+    const existing = productPriceBreakdown[item.product_name].find(e => e.subtype === subtype && Math.abs(e.unitPrice - item.unit_price) < 0.01);
+    if (existing) {
+      existing.quantity += paidQty;
+      existing.total += paidQty * item.unit_price;
+    } else {
+      productPriceBreakdown[item.product_name].push({ subtype, quantity: paidQty, unitPrice: item.unit_price, total: paidQty * item.unit_price });
+    }
+  })));
+
+  const subtypeLabels: Record<string, string> = {
+    retail: 'تجزئة', gros: 'جملة', super_gros: 'سوبر جملة', invoice: 'فاتورة 1',
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 mb-2">
@@ -228,6 +245,40 @@ const SalesDetailsSummary: React.FC<SalesDetailsSummaryProps> = ({ workerId, per
           🏷️ {totalProductsCount} {t('accounting.products_count')}
         </Badge>
       </div>
+
+      {/* Product Price Breakdown */}
+      {Object.keys(productPriceBreakdown).length > 0 && (
+        <div className="space-y-2">
+          <p className="font-semibold text-sm flex items-center gap-1.5">📊 تفصيل المبيعات حسب التسعير</p>
+          {Object.entries(productPriceBreakdown).sort((a, b) => {
+            const totalA = a[1].reduce((s, e) => s + e.total, 0);
+            const totalB = b[1].reduce((s, e) => s + e.total, 0);
+            return totalB - totalA;
+          }).map(([productName, entries]) => {
+            const totalQty = entries.reduce((s, e) => s + e.quantity, 0);
+            const totalVal = entries.reduce((s, e) => s + e.total, 0);
+            return (
+              <div key={productName} className="border rounded-lg p-2.5 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-sm">{productName}</span>
+                  <span className="text-xs text-muted-foreground">{totalQty} صندوق • {totalVal.toLocaleString()} DA</span>
+                </div>
+                <div className="space-y-0.5">
+                  {entries.sort((a, b) => b.quantity - a.quantity).map((entry, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-xs bg-muted/30 rounded px-2 py-1">
+                      <span className="flex items-center gap-1.5">
+                        <Badge variant="secondary" className="text-[9px] px-1.5">{subtypeLabels[entry.subtype] || entry.subtype}</Badge>
+                        <span className="text-muted-foreground">{entry.quantity} صندوق</span>
+                      </span>
+                      <span className="font-medium">{entry.unitPrice.toLocaleString()} DA/صندوق = {entry.total.toLocaleString()} DA</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Customer Buttons */}
       <div className="space-y-1.5">
