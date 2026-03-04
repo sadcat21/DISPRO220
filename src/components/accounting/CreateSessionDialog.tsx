@@ -315,8 +315,8 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
           </div>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(90vh-6rem)]">
-          <div className="px-3 py-3 space-y-3">
+        <ScrollArea className="max-h-[calc(90vh-6rem)] [&_[data-radix-scroll-area-viewport]]:[scrollbar-gutter:stable] [&_[data-radix-scroll-area-viewport]]:px-3 [&_[data-radix-scroll-area-viewport]]:py-3 [&_[data-radix-scroll-area-scrollbar]]:w-2 [&_[data-radix-scroll-area-thumb]]:bg-muted-foreground/40">
+          <div className="space-y-3">
 
             {/* ━━━ Step 1: Period ━━━ */}
             <StepSection step={1} title={t('accounting.period') || 'الفترة'} color="primary">
