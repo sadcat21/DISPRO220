@@ -565,17 +565,11 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
             {/* ━━━ Step 9: Stock & Sales Tracking ━━━ */}
             {selectedWorkerId && periodStart && periodEnd && (
               <>
-                {viewByProduct ? (
+                <StepSection step={9} title={t('accounting.truck_stock') || 'تتبع المنتجات'} color="primary" badge="A">
+                  <ProductStockSummary workerId={selectedWorkerId} branchId={activeBranch?.id} periodStart={periodStart} periodEnd={periodEnd} viewByProduct={viewByProduct} promoTracking={viewByProduct ? calc?.promoTracking : undefined} />
+                </StepSection>
+                {!viewByProduct && (
                   <>
-                    <StepSection step={9} title="ملخص شامل حسب المنتج" color="primary" badge="A">
-                      <ProductStockSummary workerId={selectedWorkerId} branchId={activeBranch?.id} periodStart={periodStart} periodEnd={periodEnd} viewByProduct promoTracking={calc?.promoTracking} />
-                    </StepSection>
-                  </>
-                ) : (
-                  <>
-                    <StepSection step={9} title={t('accounting.truck_stock') || 'تتبع المنتجات'} color="primary" badge="A">
-                      <ProductStockSummary workerId={selectedWorkerId} branchId={activeBranch?.id} periodStart={periodStart} periodEnd={periodEnd} />
-                    </StepSection>
                     <StepSection step={9} title={t('accounting.sales_details')} color="primary" badge="B">
                       <SalesDetailsSummary workerId={selectedWorkerId} periodStart={periodStart} periodEnd={periodEnd} />
                     </StepSection>
