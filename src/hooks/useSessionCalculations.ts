@@ -26,6 +26,7 @@ export interface DebtCollectionBreakdown {
 export interface PromoCustomerDetail {
   customerId: string;
   customerName: string;
+  customerStoreName: string;
   customerPhone: string;
   customerAddress: string;
   quantitySold: number;
@@ -93,7 +94,7 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
       if (deliveryOrderIds.length > 0) {
         const { data: ordersData } = await supabase
           .from('orders')
-          .select('id, total_amount, payment_status, payment_type, invoice_payment_method, partial_amount, customer_id, document_verification, customer:customers(name, phone, address), updated_at, order_items(quantity, unit_price, total_price, gift_quantity, gift_offer_id, product_id, product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box))')
+          .select('id, total_amount, payment_status, payment_type, invoice_payment_method, partial_amount, customer_id, document_verification, customer:customers(name, store_name, phone, address), updated_at, order_items(quantity, unit_price, total_price, gift_quantity, gift_offer_id, product_id, pieces_per_box, product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box))')
           .in('id', deliveryOrderIds)
           .eq('assigned_worker_id', workerId)
           .eq('status', 'delivered');
@@ -130,7 +131,7 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
       // 4. Fetch promos from promos table (fallback/complement to order_items gift data)
       const { data: promosData } = await supabase
         .from('promos')
-        .select('product_id, vente_quantity, gratuite_quantity, promo_date, customer_id, customer:customers(name, phone, address), product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box)')
+        .select('product_id, vente_quantity, gratuite_quantity, promo_date, customer_id, customer:customers(name, store_name, phone, address), product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box)')
         .eq('worker_id', workerId)
         .gte('promo_date', periodStartTz)
         .lte('promo_date', periodEndTz);
@@ -226,7 +227,7 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
           const giftQty = Number(item.gift_quantity || 0);
           if (giftQty > 0) {
             const boxPrice = calcBoxPrice(item.product);
-            const piecesPerBox = Number((item as any).product?.pieces_per_box || 1);
+            const piecesPerBox = Number((item as any).pieces_per_box || (item as any).product?.pieces_per_box || 1);
             // gift_quantity is stored as pieces, calculate piece price
             const piecePrice = piecesPerBox > 0 ? boxPrice / piecesPerBox : boxPrice;
             giftOfferValue += giftQty * piecePrice;
@@ -248,9 +249,11 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
             promoMap[key].giftQuantity += giftQty;
             // Add customer detail
             const customerName = (order as any).customer?.name || '';
+            const customerStoreName = (order as any).customer?.store_name || '';
             promoMap[key].customerDetails.push({
               customerId: (order as any).customer_id || '',
               customerName,
+              customerStoreName,
               customerPhone: (order as any).customer?.phone || '',
               customerAddress: (order as any).customer?.address || '',
               quantitySold: Number(item.quantity || 0),
@@ -315,6 +318,7 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
         promosByProduct[promo.product_id].customers.push({
           customerId: (promo as any).customer_id || '',
           customerName: (promo as any).customer?.name || '',
+          customerStoreName: (promo as any).customer?.store_name || '',
           customerPhone: (promo as any).customer?.phone || '',
           customerAddress: (promo as any).customer?.address || '',
           quantitySold: Number(promo.vente_quantity || 0),

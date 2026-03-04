@@ -127,7 +127,12 @@ const PromoTrackingSummary: React.FC<PromoTrackingSummaryProps> = ({ items, tota
                     <div key={cdIdx} className="grid grid-cols-12 gap-1 text-[11px] px-3 py-1.5 border-b border-dashed border-border/30 last:border-0 items-center">
                       <div className="col-span-4 flex items-center gap-1">
                         <User className="w-3 h-3 text-muted-foreground shrink-0" />
-                        <span className="truncate">{cd.customerName || '-'}</span>
+                        <div className="truncate">
+                          {cd.customerStoreName && (
+                            <span className="font-bold text-[11px]">{cd.customerStoreName} - </span>
+                          )}
+                          <span className="text-muted-foreground">{cd.customerName || '-'}</span>
+                        </div>
                       </div>
                       <span className="col-span-2 text-center font-semibold">{cd.quantitySold}</span>
                       <div className="col-span-3 text-center">

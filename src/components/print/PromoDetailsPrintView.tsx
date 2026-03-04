@@ -91,7 +91,7 @@ const PromoDetailsPrintView = forwardRef<HTMLDivElement, PromoDetailsPrintViewPr
           <thead>
             <tr>
               <th style={{ width: '35px' }}>رقم</th>
-              <th>اسم العميل</th>
+              <th>المحل / العميل</th>
               <th style={{ width: '100px' }}>الهاتف</th>
               <th>العنوان</th>
               <th style={{ width: '70px' }}>الكمية المشتراة</th>
@@ -103,7 +103,11 @@ const PromoDetailsPrintView = forwardRef<HTMLDivElement, PromoDetailsPrintViewPr
             {customerDetails.map((cd, index) => (
               <tr key={index}>
                 <td className="center">{index + 1}</td>
-                <td>{cd.customerName || '-'}</td>
+                <td>
+                  {cd.customerStoreName && <strong>{cd.customerStoreName}</strong>}
+                  {cd.customerStoreName && cd.customerName ? ' - ' : ''}
+                  {cd.customerName || '-'}
+                </td>
                 <td className="ltr-text">{cd.customerPhone || '-'}</td>
                 <td className="small-text">{cd.customerAddress || '-'}</td>
                 <td className="center bold">{cd.quantitySold}</td>
