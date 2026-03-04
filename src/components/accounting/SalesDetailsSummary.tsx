@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Loader2, ShoppingBag, User, ChevronLeft } from 'lucide-react';
+import { Loader2, ShoppingBag, User, ChevronLeft, ChevronDown, ChevronUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface SalesDetailsSummaryProps {
   workerId: string;
@@ -246,7 +247,7 @@ const SalesDetailsSummary: React.FC<SalesDetailsSummaryProps> = ({ workerId, per
         </Badge>
       </div>
 
-      {/* Product Price Breakdown */}
+      {/* Product Price Breakdown - Collapsible */}
       {Object.keys(productPriceBreakdown).length > 0 && (
         <div className="space-y-2">
           <p className="font-semibold text-sm flex items-center gap-1.5">📊 تفصيل المبيعات حسب التسعير</p>
@@ -257,24 +258,32 @@ const SalesDetailsSummary: React.FC<SalesDetailsSummaryProps> = ({ workerId, per
           }).map(([productName, entries]) => {
             const totalQty = entries.reduce((s, e) => s + e.quantity, 0);
             const totalVal = entries.reduce((s, e) => s + e.total, 0);
+            const hasMultiplePrices = entries.length > 1;
             return (
-              <div key={productName} className="border rounded-lg p-2.5 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm">{productName}</span>
-                  <span className="text-xs text-muted-foreground">{totalQty} صندوق • {totalVal.toLocaleString()} DA</span>
-                </div>
-                <div className="space-y-0.5">
-                  {entries.sort((a, b) => b.quantity - a.quantity).map((entry, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-xs bg-muted/30 rounded px-2 py-1">
-                      <span className="flex items-center gap-1.5">
-                        <Badge variant="secondary" className="text-[9px] px-1.5">{subtypeLabels[entry.subtype] || entry.subtype}</Badge>
-                        <span className="text-muted-foreground">{entry.quantity} صندوق</span>
-                      </span>
-                      <span className="font-medium">{entry.unitPrice.toLocaleString()} DA/صندوق = {entry.total.toLocaleString()} DA</span>
+              <Collapsible key={productName}>
+                <div className="border rounded-lg overflow-hidden">
+                  <CollapsibleTrigger className="w-full flex items-center justify-between p-2.5 hover:bg-muted/30 transition-colors">
+                    <span className="font-medium text-sm">{productName}</span>
+                    <span className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">{totalQty} صندوق • {totalVal.toLocaleString()} DA</span>
+                      {hasMultiplePrices && <ChevronDown className="w-3.5 h-3.5 text-muted-foreground transition-transform [[data-state=open]_&]:rotate-180" />}
+                    </span>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="border-t space-y-0.5 p-1.5">
+                      {entries.sort((a, b) => b.quantity - a.quantity).map((entry, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-xs bg-muted/30 rounded px-2 py-1">
+                          <span className="flex items-center gap-1.5">
+                            <Badge variant="secondary" className="text-[9px] px-1.5">{subtypeLabels[entry.subtype] || entry.subtype}</Badge>
+                            <span className="text-muted-foreground">{entry.quantity} صندوق</span>
+                          </span>
+                          <span className="font-medium">{entry.unitPrice.toLocaleString()} DA/صندوق = {entry.total.toLocaleString()} DA</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </CollapsibleContent>
                 </div>
-              </div>
+              </Collapsible>
             );
           })}
         </div>
