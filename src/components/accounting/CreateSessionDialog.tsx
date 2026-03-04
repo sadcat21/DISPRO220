@@ -46,6 +46,7 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
   const updateSession = useUpdateFullSession();
   const createWorkerDebt = useCreateWorkerDebt();
   const [registerDeficit, setRegisterDeficit] = useState(false);
+  const [viewByProduct, setViewByProduct] = useState(false);
   const [registerDeficitTreasury, setRegisterDeficitTreasury] = useState(false);
   const [registerSurplus, setRegisterSurplus] = useState(false);
   const nowLocal = () => {
@@ -296,15 +297,21 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] p-0 gap-0 overflow-hidden" dir={dir}>
         <DialogHeader className="p-4 pb-3 border-b bg-muted/30">
-          <DialogTitle className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Calculator className="w-5 h-5 text-primary" />
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Calculator className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex flex-col">
+                <span>{isEditMode ? (t('accounting.edit_session') || 'تعديل الجلسة') : t('accounting.new_session')}</span>
+                {workerName && <span className="text-xs font-normal text-muted-foreground">{workerName}</span>}
+              </div>
+            </DialogTitle>
+            <div className="flex items-center gap-1.5">
+              <Label className="text-[10px] text-muted-foreground">حسب المنتج</Label>
+              <Switch checked={viewByProduct} onCheckedChange={setViewByProduct} />
             </div>
-            <div className="flex flex-col">
-              <span>{isEditMode ? (t('accounting.edit_session') || 'تعديل الجلسة') : t('accounting.new_session')}</span>
-              {workerName && <span className="text-xs font-normal text-muted-foreground">{workerName}</span>}
-            </div>
-          </DialogTitle>
+          </div>
         </DialogHeader>
 
         <ScrollArea className="max-h-[calc(90vh-6rem)] px-4 py-3">
@@ -603,52 +610,81 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
 
             {/* Product & Sales Tracking */}
             {selectedWorkerId && periodStart && periodEnd && (
-              <>
-                <div className="border-2 rounded-xl p-3.5">
-                  <SectionDividerWithIcon
-                    icon={<Package className="w-4 h-4 text-primary" />}
-                    label={t('accounting.truck_stock') || 'تتبع المنتجات'}
-                  />
-                  <ProductStockSummary
-                    workerId={selectedWorkerId}
-                    branchId={activeBranch?.id}
-                    periodStart={periodStart}
-                    periodEnd={periodEnd}
-                  />
-                </div>
-                {/* Truck Review Section - right after truck stock */}
-                <div className="border-2 rounded-xl p-3.5">
-                  <SectionDividerWithIcon
-                    icon={<Truck className="w-4 h-4 text-primary" />}
-                    label="تفاصيل مراجعة الشاحنة"
-                  />
-                  <TruckReviewSection workerId={selectedWorkerId} />
-                </div>
-                <div className="border-2 rounded-xl p-3.5">
-                  <SectionDividerWithIcon
-                    icon={<ShoppingBag className="w-4 h-4 text-primary" />}
-                    label={t('accounting.sales_details')}
-                  />
-                  <SalesDetailsSummary
-                    workerId={selectedWorkerId}
-                    periodStart={periodStart}
-                    periodEnd={periodEnd}
-                  />
-                </div>
-                {/* Promo Tracking */}
-                {calc && calc.promoTracking.length > 0 && (
-                  <div className="border-2 rounded-xl p-3.5">
+               <>
+                {viewByProduct ? (
+                  /* === Product-Centric View === */
+                  <div className="border-2 rounded-xl p-3.5 space-y-3">
                     <SectionDividerWithIcon
-                      icon={<Tag className="w-4 h-4 text-purple-600" />}
-                      label="تتبع العروض"
+                      icon={<Package className="w-4 h-4 text-primary" />}
+                      label="ملخص شامل حسب المنتج"
                     />
-                    <PromoTrackingSummary
-                      items={calc.promoTracking}
-                      totalGiftValue={calc.giftOfferValue}
+                    <ProductStockSummary
+                      workerId={selectedWorkerId}
+                      branchId={activeBranch?.id}
+                      periodStart={periodStart}
+                      periodEnd={periodEnd}
+                      viewByProduct
+                      promoTracking={calc?.promoTracking}
                     />
+                    {/* Truck Review Section */}
+                    <div className="border-t pt-3 mt-3">
+                      <SectionDividerWithIcon
+                        icon={<Truck className="w-4 h-4 text-primary" />}
+                        label="تفاصيل مراجعة الشاحنة"
+                      />
+                      <TruckReviewSection workerId={selectedWorkerId} />
+                    </div>
                   </div>
+                ) : (
+                  /* === Section-Based View (Default) === */
+                  <>
+                    <div className="border-2 rounded-xl p-3.5">
+                      <SectionDividerWithIcon
+                        icon={<Package className="w-4 h-4 text-primary" />}
+                        label={t('accounting.truck_stock') || 'تتبع المنتجات'}
+                      />
+                      <ProductStockSummary
+                        workerId={selectedWorkerId}
+                        branchId={activeBranch?.id}
+                        periodStart={periodStart}
+                        periodEnd={periodEnd}
+                      />
+                    </div>
+                    {/* Truck Review Section */}
+                    <div className="border-2 rounded-xl p-3.5">
+                      <SectionDividerWithIcon
+                        icon={<Truck className="w-4 h-4 text-primary" />}
+                        label="تفاصيل مراجعة الشاحنة"
+                      />
+                      <TruckReviewSection workerId={selectedWorkerId} />
+                    </div>
+                    <div className="border-2 rounded-xl p-3.5">
+                      <SectionDividerWithIcon
+                        icon={<ShoppingBag className="w-4 h-4 text-primary" />}
+                        label={t('accounting.sales_details')}
+                      />
+                      <SalesDetailsSummary
+                        workerId={selectedWorkerId}
+                        periodStart={periodStart}
+                        periodEnd={periodEnd}
+                      />
+                    </div>
+                    {/* Promo Tracking */}
+                    {calc && calc.promoTracking.length > 0 && (
+                      <div className="border-2 rounded-xl p-3.5">
+                        <SectionDividerWithIcon
+                          icon={<Tag className="w-4 h-4 text-purple-600" />}
+                          label="تتبع العروض"
+                        />
+                        <PromoTrackingSummary
+                          items={calc.promoTracking}
+                          totalGiftValue={calc.giftOfferValue}
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
-                {/* Debt Collections Detail */}
+                {/* Debt Collections Detail - always visible */}
                 <div className="border-2 rounded-xl p-3.5">
                   <SectionDividerWithIcon
                     icon={<HandCoins className="w-4 h-4 text-orange-600" />}
@@ -660,7 +696,7 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                     periodEnd={periodEnd}
                   />
                 </div>
-                {/* Collected Documents */}
+                {/* Collected Documents - always visible */}
                 <div className="border-2 rounded-xl p-3.5">
                   <SectionDividerWithIcon
                     icon={<FileText className="w-4 h-4 text-blue-600" />}

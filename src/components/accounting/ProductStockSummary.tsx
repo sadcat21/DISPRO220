@@ -2,18 +2,21 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Loader2, Package, Truck, ShoppingBag, PackageX, CheckCircle, AlertTriangle, TrendingUp, ChevronDown } from 'lucide-react';
+import { Loader2, Package, Truck, ShoppingBag, PackageX, CheckCircle, AlertTriangle, TrendingUp, ChevronDown, Gift } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import EmptyTruckDialog from './EmptyTruckDialog';
 import { inferPricingSubtype } from '@/utils/pricingSubtype';
+import type { PromoTrackingItem } from '@/hooks/useSessionCalculations';
 
 interface ProductStockSummaryProps {
   workerId: string;
   branchId?: string;
   periodStart: string;
   periodEnd: string;
+  viewByProduct?: boolean;
+  promoTracking?: PromoTrackingItem[];
 }
 
 interface SoldProductPricingRow {
@@ -72,7 +75,7 @@ const calcBoxPrice = (p: any): number => {
 };
 
 const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
-  workerId, branchId, periodStart, periodEnd,
+  workerId, branchId, periodStart, periodEnd, viewByProduct, promoTracking,
 }) => {
   const { t } = useLanguage();
   const [showEmptyTruck, setShowEmptyTruck] = useState(false);
@@ -628,6 +631,20 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
                           </div>
                         );
                       })}
+                    {/* Promo info inline when viewByProduct */}
+                    {viewByProduct && (() => {
+                      const promo = promoTracking?.find(p => p.productName === row.product_name);
+                      if (!promo || promo.giftQuantity <= 0) return null;
+                      return (
+                        <div className="border-t p-1.5 bg-purple-50/50 dark:bg-purple-900/10">
+                          <div className="flex items-center gap-1.5 text-[10px] text-purple-700 dark:text-purple-400">
+                            <Gift className="w-3 h-3" />
+                            <span className="font-semibold">هدايا: {promo.giftQuantity} قطعة</span>
+                            {promo.offerName && <Badge variant="outline" className="text-[9px] px-1 py-0">{promo.offerName}</Badge>}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </CollapsibleContent>
               </div>
