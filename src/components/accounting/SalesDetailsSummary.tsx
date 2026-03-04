@@ -228,18 +228,26 @@ const SalesDetailsSummary: React.FC<SalesDetailsSummaryProps> = ({ workerId, per
   customerSummaries.forEach(c => c.orders.forEach(o => o.items.forEach(item => {
     if (!item.product_name) return;
     if (!productPriceBreakdown[item.product_name]) productPriceBreakdown[item.product_name] = [];
-    const paidQty = Math.max(0, item.quantity - (item.gift_quantity || 0));
-    if (paidQty <= 0) return;
-    
+    const unitPrice = Number(item.unit_price || 0);
+    const totalPrice = Number(item.total_price || 0);
+    const rawQty = Number(item.quantity || 0);
+    const giftQty = Number(item.gift_quantity || 0);
+
+    const paidQtyByDiff = rawQty - giftQty;
+    const paidQtyByAmount = unitPrice > 0 ? totalPrice / unitPrice : 0;
+    const resolvedPaidQty = Number(Math.max(0, paidQtyByDiff > 0 ? paidQtyByDiff : paidQtyByAmount).toFixed(3));
+    if (resolvedPaidQty <= 0) return;
+
     const rawSubtype = item.price_subtype || (o.price_subtype || c.default_price_subtype || 'gros');
     const isInvoice = (item.payment_type || o.payment_type) === 'with_invoice';
     const subtype = isInvoice ? 'invoice' : rawSubtype;
-    const existing = productPriceBreakdown[item.product_name].find(e => e.subtype === subtype && Math.abs(e.unitPrice - item.unit_price) < 0.01);
+    const lineTotal = totalPrice > 0 ? totalPrice : resolvedPaidQty * unitPrice;
+    const existing = productPriceBreakdown[item.product_name].find(e => e.subtype === subtype && Math.abs(e.unitPrice - unitPrice) < 0.01);
     if (existing) {
-      existing.quantity += paidQty;
-      existing.total += paidQty * item.unit_price;
+      existing.quantity += resolvedPaidQty;
+      existing.total += lineTotal;
     } else {
-      productPriceBreakdown[item.product_name].push({ subtype, quantity: paidQty, unitPrice: item.unit_price, total: paidQty * item.unit_price });
+      productPriceBreakdown[item.product_name].push({ subtype, quantity: resolvedPaidQty, unitPrice, total: lineTotal });
     }
   })));
 

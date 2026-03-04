@@ -133,10 +133,16 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
 
         trackedOrderIds.add(orderId);
 
-        const paidQty = Math.max(0, Number(item.quantity || 0) - Number(item.gift_quantity || 0));
+        const rawQty = Number(item.quantity || 0);
+        const giftQty = Number(item.gift_quantity || 0);
+        const unitPrice = Number(item.unit_price || 0);
+        const totalPrice = Number(item.total_price || 0);
+
+        const paidQtyByDiff = rawQty - giftQty;
+        const paidQtyByAmount = unitPrice > 0 ? totalPrice / unitPrice : 0;
+        const paidQty = Number(Math.max(0, paidQtyByDiff > 0 ? paidQtyByDiff : paidQtyByAmount).toFixed(3));
         if (paidQty <= 0) continue;
 
-        const unitPrice = Number(item.unit_price || 0);
         const orderPaymentType = orderPaymentTypeMap.get(orderId) || '';
         const itemPaymentType = (item as any).payment_type || orderPaymentType;
         const rawSubtype = item.price_subtype || orderCustomerSubtypeMap.get(orderId) || 'gros';
@@ -145,6 +151,7 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
         const itemPricingUnit = (item as any).pricing_unit || 'box';
         const itemWeightPerBox = Number((item as any).weight_per_box || 0);
         const itemPiecesPerBox = Number((item as any).pieces_per_box || 0);
+        const lineTotal = totalPrice > 0 ? totalPrice : paidQty * unitPrice;
 
         if (!productMap[productName]) {
           productMap[productName] = {
@@ -156,7 +163,7 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
         }
 
         productMap[productName].quantity += paidQty;
-        productMap[productName].total_value += paidQty * unitPrice;
+        productMap[productName].total_value += lineTotal;
 
         const pricingRow = productMap[productName].pricing_rows.find(
           (r) =>
@@ -169,13 +176,13 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
 
         if (pricingRow) {
           pricingRow.quantity += paidQty;
-          pricingRow.total_value += paidQty * unitPrice;
+          pricingRow.total_value += lineTotal;
         } else {
           productMap[productName].pricing_rows.push({
             subtype,
             quantity: paidQty,
             unit_price: unitPrice,
-            total_value: paidQty * unitPrice,
+            total_value: lineTotal,
             pricing_unit: itemPricingUnit,
             weight_per_box: itemWeightPerBox > 0 ? itemWeightPerBox : null,
             pieces_per_box: itemPiecesPerBox > 0 ? itemPiecesPerBox : null,
