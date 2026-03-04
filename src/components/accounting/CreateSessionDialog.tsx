@@ -296,8 +296,8 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[92vw] sm:max-w-lg max-h-[90vh] p-0 gap-0 overflow-hidden rounded-xl" dir={dir}>
-        <DialogHeader className="p-4 pb-3 border-b bg-muted/30">
+      <DialogContent className="w-[92vw] sm:w-full sm:max-w-lg max-h-[90vh] p-0 gap-0 rounded-xl" dir={dir}>
+        <DialogHeader className="px-3 py-3 border-b bg-muted/30">
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -315,8 +315,8 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
           </div>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(90vh-6rem)] px-4 py-3">
-          <div className="space-y-3">
+        <ScrollArea className="max-h-[calc(90vh-6rem)]">
+          <div className="px-3 py-3 space-y-3">
 
             {/* ━━━ Step 1: Period ━━━ */}
             <StepSection step={1} title={t('accounting.period') || 'الفترة'} color="primary">
