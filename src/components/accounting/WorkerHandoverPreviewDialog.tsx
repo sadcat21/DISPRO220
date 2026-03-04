@@ -24,9 +24,27 @@ const WorkerHandoverPreviewDialog: React.FC<WorkerHandoverPreviewDialogProps> = 
   const { workerId, activeBranch } = useAuth();
   const effectiveWorkerId = targetWorkerId || workerId;
 
-  const today = new Date().toISOString().split('T')[0];
-  const periodStart = today + 'T00:00:00+01:00';
-  const periodEnd = today + 'T23:59:59+01:00';
+  // Fetch the last completed accounting session to use as cutoff
+  const { data: lastSessionEnd } = useQuery({
+    queryKey: ['last-completed-session-end', effectiveWorkerId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('accounting_sessions')
+        .select('period_end')
+        .eq('worker_id', effectiveWorkerId!)
+        .eq('status', 'completed')
+        .order('period_end', { ascending: false })
+        .limit(1)
+        .single();
+      return data?.period_end || null;
+    },
+    enabled: open && !!effectiveWorkerId,
+  });
+
+  // Use last session end as start, or fallback to today start
+  const now = new Date();
+  const periodEnd = now.toISOString();
+  const periodStart = lastSessionEnd || (now.toISOString().split('T')[0] + 'T00:00:00+01:00');
 
   const { data: calc, isLoading } = useSessionCalculations(
     open && effectiveWorkerId ? { workerId: effectiveWorkerId, branchId: activeBranch?.id || undefined, periodStart, periodEnd } : null
@@ -36,7 +54,6 @@ const WorkerHandoverPreviewDialog: React.FC<WorkerHandoverPreviewDialogProps> = 
   const { data: reviewInfo, isLoading: isCheckingReview } = useQuery({
     queryKey: ['last-review-session-info', effectiveWorkerId],
     queryFn: async () => {
-      // Find the last review session
       const { data: lastReview } = await supabase
         .from('loading_sessions')
         .select('id, status, created_at')
@@ -50,7 +67,6 @@ const WorkerHandoverPreviewDialog: React.FC<WorkerHandoverPreviewDialogProps> = 
         return { hasReview: false, sessionsAfterReview: 0, lastReviewDate: null };
       }
 
-      // Check for loading/unloading sessions AFTER the last review
       const { count } = await supabase
         .from('loading_sessions')
         .select('id', { count: 'exact', head: true })
