@@ -20,6 +20,9 @@ interface SoldProductPricingRow {
   quantity: number;
   unit_price: number;
   total_value: number;
+  pricing_unit: string | null;
+  weight_per_box: number | null;
+  pieces_per_box: number | null;
 }
 
 interface SoldProductRow {
@@ -114,7 +117,7 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
 
       const { data: orderItems } = await supabase
         .from('order_items')
-        .select('order_id, quantity, gift_quantity, unit_price, total_price, price_subtype, payment_type, product:products(name)')
+        .select('order_id, quantity, gift_quantity, unit_price, total_price, price_subtype, payment_type, pricing_unit, weight_per_box, pieces_per_box, product:products(name)')
         .in('order_id', orderIds);
 
       const productMap: Record<string, SoldProductRow> = {};
@@ -136,6 +139,9 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
         const orderPaymentType = orderPaymentTypeMap.get(orderId) || '';
         const itemPaymentType = (item as any).payment_type || orderPaymentType;
         const subtype = item.price_subtype || (itemPaymentType === 'with_invoice' ? 'invoice' : 'gros');
+        const itemPricingUnit = (item as any).pricing_unit || 'box';
+        const itemWeightPerBox = Number((item as any).weight_per_box || 0);
+        const itemPiecesPerBox = Number((item as any).pieces_per_box || 0);
 
         if (!productMap[productName]) {
           productMap[productName] = {
@@ -150,7 +156,12 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
         productMap[productName].total_value += paidQty * unitPrice;
 
         const pricingRow = productMap[productName].pricing_rows.find(
-          (r) => r.subtype === subtype && Math.abs(r.unit_price - unitPrice) < 0.01,
+          (r) =>
+            r.subtype === subtype &&
+            Math.abs(r.unit_price - unitPrice) < 0.01 &&
+            (r.pricing_unit || 'box') === itemPricingUnit &&
+            Math.abs(Number(r.weight_per_box || 0) - itemWeightPerBox) < 0.001 &&
+            Number(r.pieces_per_box || 0) === itemPiecesPerBox,
         );
 
         if (pricingRow) {
@@ -162,6 +173,9 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
             quantity: paidQty,
             unit_price: unitPrice,
             total_value: paidQty * unitPrice,
+            pricing_unit: itemPricingUnit,
+            weight_per_box: itemWeightPerBox > 0 ? itemWeightPerBox : null,
+            pieces_per_box: itemPiecesPerBox > 0 ? itemPiecesPerBox : null,
           });
         }
       }
@@ -371,6 +385,22 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
     invoice: 'فاتورة 1',
   };
 
+  const getUnitSalePrice = (row: SoldProductPricingRow): number | null => {
+    if (row.pricing_unit === 'kg' && row.weight_per_box && row.weight_per_box > 0) {
+      return row.unit_price / row.weight_per_box;
+    }
+    if (row.pricing_unit === 'unit' && row.pieces_per_box && row.pieces_per_box > 0) {
+      return row.unit_price / row.pieces_per_box;
+    }
+    return null;
+  };
+
+  const getUnitSaleLabel = (row: SoldProductPricingRow): string => {
+    if (row.pricing_unit === 'kg') return 'دج/كغ';
+    if (row.pricing_unit === 'unit') return 'دج/قطعة';
+    return '-';
+  };
+
   if (soldLoading && truckLoading) {
     return (
       <div className="flex justify-center py-4">
@@ -525,27 +555,38 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
 
                 <CollapsibleContent>
                   <div className="border-t p-1.5 space-y-1">
-                    <div className="grid grid-cols-4 gap-1 text-[10px] text-muted-foreground text-center font-medium border-b pb-1">
+                    <div className="grid grid-cols-5 gap-1 text-[10px] text-muted-foreground text-center font-medium border-b pb-1">
                       <span className="text-start">التسعير</span>
                       <span>{t('stock.quantity')}</span>
-                      <span>{t('accounting.unit_price')}</span>
+                      <span>سعر الصندوق</span>
+                      <span>سعر الوحدة</span>
                       <span>{t('accounting.total_value')}</span>
                     </div>
 
                     {row.pricing_rows
                       .sort((a, b) => b.quantity - a.quantity)
-                      .map((pricingRow, idx) => (
-                        <div key={`${row.product_name}-${idx}`} className="grid grid-cols-4 gap-1 text-xs text-center items-center py-1 border-b border-dashed last:border-0">
-                          <span className="text-start">
-                            <Badge variant="secondary" className="text-[10px] px-1.5">
-                              {subtypeLabels[pricingRow.subtype] || pricingRow.subtype}
-                            </Badge>
-                          </span>
-                          <span className="font-bold">{fmtQty(pricingRow.quantity)}</span>
-                          <span className="text-muted-foreground">{pricingRow.unit_price.toLocaleString()}</span>
-                          <span className="font-semibold">{pricingRow.total_value.toLocaleString()}</span>
-                        </div>
-                      ))}
+                      .map((pricingRow, idx) => {
+                        const unitSalePrice = getUnitSalePrice(pricingRow);
+                        const unitSaleLabel = getUnitSaleLabel(pricingRow);
+
+                        return (
+                          <div key={`${row.product_name}-${idx}`} className="grid grid-cols-5 gap-1 text-xs text-center items-center py-1 border-b border-dashed last:border-0">
+                            <span className="text-start">
+                              <Badge variant="secondary" className="text-[10px] px-1.5">
+                                {subtypeLabels[pricingRow.subtype] || pricingRow.subtype}
+                              </Badge>
+                            </span>
+                            <span className="font-bold">{fmtQty(pricingRow.quantity)}</span>
+                            <span className="text-muted-foreground">{pricingRow.unit_price.toLocaleString()}</span>
+                            <span className="text-muted-foreground">
+                              {unitSalePrice !== null
+                                ? `${unitSalePrice.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${unitSaleLabel}`
+                                : '-'}
+                            </span>
+                            <span className="font-semibold">{pricingRow.total_value.toLocaleString()}</span>
+                          </div>
+                        );
+                      })}
                   </div>
                 </CollapsibleContent>
               </div>
