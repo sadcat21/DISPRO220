@@ -161,7 +161,7 @@ const WorkerLoadRequestDialog: React.FC<WorkerLoadRequestDialogProps> = ({ open,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Truck className="w-5 h-5 text-primary" />
@@ -197,7 +197,7 @@ const WorkerLoadRequestDialog: React.FC<WorkerLoadRequestDialogProps> = ({ open,
               )}
             </div>
 
-            <ScrollArea className="flex-1 max-h-[35vh]">
+            <ScrollArea className="flex-1" style={{ maxHeight: '45vh' }}>
               <div className="space-y-2 px-1 pb-2">
                 {orders.map(order => {
                   const isSelected = selectedOrderIds.has(order.id);
