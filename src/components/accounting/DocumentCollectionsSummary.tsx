@@ -251,13 +251,12 @@ const DocumentCollectionsSummary: React.FC<DocumentCollectionsSummaryProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {onReceivedDocsChange && (
-              <Checkbox
-                checked={isReceived}
-                onCheckedChange={(checked) => {
-                  onReceivedDocsChange({ ...receivedDocs, [docKey]: !!checked });
-                }}
-                className="shrink-0"
-              />
+              <button
+                onClick={() => onReceivedDocsChange({ ...receivedDocs, [docKey]: !isReceived })}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${isReceived ? 'bg-green-100 dark:bg-green-900/30 text-green-600' : 'bg-destructive/10 text-destructive'}`}
+              >
+                {isReceived ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+              </button>
             )}
             <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
               <FileCheck2 className="w-3.5 h-3.5 text-primary" />
@@ -381,13 +380,12 @@ const DocumentCollectionsSummary: React.FC<DocumentCollectionsSummaryProps> = ({
               <div key={inv.orderId} className={`border rounded-lg p-2.5 flex items-center justify-between gap-2 ${!isStampReceived ? 'border-destructive/40 bg-destructive/5' : ''}`}>
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                   {onReceivedDocsChange && (
-                    <Checkbox
-                      checked={isStampReceived}
-                      onCheckedChange={(checked) => {
-                        onReceivedDocsChange({ ...receivedDocs, [stampKey]: !!checked });
-                      }}
-                      className="shrink-0"
-                    />
+                    <button
+                      onClick={() => onReceivedDocsChange({ ...receivedDocs, [stampKey]: !isStampReceived })}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${isStampReceived ? 'bg-green-100 dark:bg-green-900/30 text-green-600' : 'bg-destructive/10 text-destructive'}`}
+                    >
+                      {isStampReceived ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                    </button>
                   )}
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${inv.received ? 'bg-green-100 dark:bg-green-900/30' : 'bg-destructive/10'}`}>
                     {inv.received ? <CheckCircle className="w-3.5 h-3.5 text-green-600" /> : <XCircle className="w-3.5 h-3.5 text-destructive" />}
