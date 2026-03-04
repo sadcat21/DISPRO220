@@ -21,6 +21,7 @@ import StockVerificationDialog from '@/components/stock/StockVerificationDialog'
 import WorkerAttendanceLogDialog from '@/components/attendance/WorkerAttendanceLogDialog';
 import WorkerSalesSummaryDialog from '@/components/accounting/WorkerSalesSummaryDialog';
 import EditWorkerProfileDialog from '@/components/workers/EditWorkerProfileDialog';
+import WorkerAchievementsDialog from '@/components/workers/WorkerAchievementsDialog';
 
 const workerActions = [
   { key: 'worker_profile', icon: Settings, path: '', labelKey: 'إعدادات البيانات', color: 'bg-gray-50 border-gray-200 text-gray-700', isDialog: true },
@@ -44,6 +45,7 @@ const workerActions = [
   { key: 'today_customers', icon: MapPin, path: '', labelKey: 'عملاء اليوم', color: 'bg-sky-50 border-sky-200 text-sky-700', isDialog: true },
   { key: 'attendance_log', icon: CalendarDays, path: '', labelKey: 'سجل المداومة', color: 'bg-teal-50 border-teal-200 text-teal-700', isDialog: true },
   { key: 'sales_summary', icon: ShoppingBag, path: '', labelKey: 'تجميع المبيعات', color: 'bg-amber-50 border-amber-200 text-amber-700', isDialog: true },
+  { key: 'achievements', icon: Trophy, path: '', labelKey: 'المنجزات', color: 'bg-emerald-50 border-emerald-200 text-emerald-700', isDialog: true },
 ];
 
 const WorkerActions: React.FC = () => {
@@ -63,6 +65,7 @@ const WorkerActions: React.FC = () => {
   const [attendanceLogOpen, setAttendanceLogOpen] = useState(false);
   const [salesSummaryOpen, setSalesSummaryOpen] = useState(false);
   const [workerProfileOpen, setWorkerProfileOpen] = useState(false);
+  const [achievementsOpen, setAchievementsOpen] = useState(false);
 
   useRealtimeSubscription(
     `worker-actions-realtime-${selectedWorker?.id || 'none'}`,
@@ -289,6 +292,8 @@ const WorkerActions: React.FC = () => {
         setSalesSummaryOpen(true);
       } else if (action.key === 'worker_profile') {
         setWorkerProfileOpen(true);
+      } else if (action.key === 'achievements') {
+        setAchievementsOpen(true);
       }
       return;
     }
@@ -483,6 +488,12 @@ const WorkerActions: React.FC = () => {
       <EditWorkerProfileDialog
         open={workerProfileOpen}
         onOpenChange={setWorkerProfileOpen}
+        workerId={selectedWorker?.id}
+        workerName={selectedWorker?.full_name}
+      />
+      <WorkerAchievementsDialog
+        open={achievementsOpen}
+        onOpenChange={setAchievementsOpen}
         workerId={selectedWorker?.id}
         workerName={selectedWorker?.full_name}
       />

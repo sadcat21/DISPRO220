@@ -1389,10 +1389,35 @@ const LoadStock: React.FC = () => {
                       <Gift className="w-3.5 h-3.5 text-destructive shrink-0" />
                       <span>عرض: <strong>{offer.giftQty} {offer.giftUnit === 'piece' ? 'قطعة' : 'صندوق'}</strong> لكل <strong>{offer.minQty}</strong></span>
                     </div>
+                    {suggestedGiftQty > 0 && addProductGiftQty === 0 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full border-green-500 text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
+                        onClick={() => {
+                          setAddProductGiftQty(suggestedGiftQty);
+                          setAddProductGiftUnit(suggestedGiftUnit);
+                        }}
+                      >
+                        <Gift className="w-4 h-4 me-2 text-green-600" />
+                        إضافة الهدايا المقترحة ({suggestedGiftQty} {suggestedGiftUnit === 'piece' ? 'قطعة' : 'صندوق'})
+                      </Button>
+                    )}
                     {addProductGiftQty > 0 && (
-                      <div className="flex items-center justify-center gap-2 text-sm bg-primary/10 border border-primary/20 rounded-md p-2.5">
-                        <Gift className="w-4 h-4 text-primary shrink-0" />
-                        <span>هدايا: <strong className="text-primary text-base">{addProductGiftQty}</strong> {addProductGiftUnit === 'piece' ? 'قطعة' : 'صندوق'}</span>
+                      <div className="flex items-center justify-between gap-2 text-sm bg-primary/10 border border-primary/20 rounded-md p-2.5">
+                        <div className="flex items-center gap-2">
+                          <Gift className="w-4 h-4 text-primary shrink-0" />
+                          <span>هدايا: <strong className="text-primary text-base">{addProductGiftQty}</strong> {addProductGiftUnit === 'piece' ? 'قطعة' : 'صندوق'}</span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs text-destructive hover:text-destructive"
+                          onClick={() => { setAddProductGiftQty(0); setAddProductGiftUnit('piece'); }}
+                        >
+                          إزالة
+                        </Button>
                       </div>
                     )}
                   </div>
