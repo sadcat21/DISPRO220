@@ -240,7 +240,8 @@ const WorkerActions: React.FC = () => {
     }
     for (const item of (truckSoldData || [])) {
       if (!stats[item.product_id]) stats[item.product_id] = { loaded: 0, totalLoad: 0, sold: 0, giftQty: 0, giftUnit: 'piece' };
-      stats[item.product_id].sold += item.quantity;
+      // Subtract gift quantities from sold to show only paid sales
+      stats[item.product_id].sold += item.quantity - (item.gift_quantity || 0);
       if ((item.gift_quantity || 0) > 0) {
         stats[item.product_id].giftQty += item.gift_quantity;
         stats[item.product_id].giftUnit = (item as any).gift_unit || 'piece';

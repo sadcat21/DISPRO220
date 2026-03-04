@@ -171,7 +171,8 @@ const MyStock: React.FC = () => {
     }
     for (const item of (soldData || [])) {
       if (!stats[item.product_id]) stats[item.product_id] = { loaded: 0, totalLoad: 0, sold: 0 };
-      stats[item.product_id].sold += item.quantity;
+      // Subtract gift quantities from sold to show only paid sales
+      stats[item.product_id].sold += item.quantity - (item.gift_quantity || 0);
     }
     return stats;
   }, [loadedData, soldData]);
