@@ -127,39 +127,30 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
     <div className="min-h-screen bg-background flex flex-col" dir={dir}>
       {/* Header */}
       <header className="sticky top-0 z-50 bg-secondary text-secondary-foreground safe-top">
-        <div className="flex items-center justify-between px-3 py-2">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <div className="w-8 h-8 shrink-0">
+        {/* Top row: branding + settings */}
+        <div className="flex items-center justify-between px-3 pt-2 pb-1">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <div className="w-9 h-9 shrink-0 rounded-xl bg-primary/10 p-1.5">
               <img src={icon} alt="Laser Food Icon" className="w-full h-full object-contain" />
             </div>
             <div className="min-w-0">
-              <h1 className="font-bold text-sm leading-tight">Laser Food</h1>
-              <p className="text-[10px] text-muted-foreground truncate">
+              <h1 className="font-bold text-sm leading-tight tracking-wide">Laser Food</h1>
+              <p className="text-[10px] text-muted-foreground truncate leading-tight">
                 {user?.full_name}
               </p>
               {getRoleDisplayText() && (
-                <p className="text-[10px] text-primary font-medium truncate">
+                <p className="text-[10px] text-primary font-semibold truncate leading-tight">
                   {getRoleDisplayText()}
                 </p>
               )}
             </div>
           </div>
           
+          {/* Chat + Settings */}
           <div className="flex items-center gap-1 shrink-0">
-            {(role === 'worker' || role === 'supervisor') && <AttendanceButton />}
-            <WorkerRequestsPopover />
-            <TasksPopover />
-            <SectorCustomersPopover />
-            
-            <ReceiptModificationsNotification />
-            <StockAlertsNotification />
-            <OffersNotification />
-            <DocumentCollectionsPopover />
-            
-            {/* Chat icon */}
             <Link
               to="/chat"
-              className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors"
+              className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-primary/10 hover:bg-primary/20 transition-colors"
             >
               <MessageCircle className="w-4 h-4 text-primary" />
               {totalUnread > 0 && (
@@ -169,15 +160,13 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
               )}
             </Link>
             
-            {/* More actions dropdown: Language, Branch, Logout */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors">
+                <button className="flex items-center justify-center w-8 h-8 rounded-xl bg-primary/10 hover:bg-primary/20 transition-colors">
                   <MoreHorizontal className="w-4 h-4 text-primary" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-44">
-                {/* Language options */}
                 {LANGUAGES.map((lang) => (
                   <DropdownMenuItem
                     key={lang.code}
@@ -191,7 +180,6 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                     <span className="text-sm">{lang.label}</span>
                   </DropdownMenuItem>
                 ))}
-                {/* Printer connection */}
                 <DropdownMenuSeparator />
                 {isConnected ? (
                   <>
@@ -218,8 +206,6 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
-                
-                {/* Branch selector for admin */}
                 {role === 'admin' && (
                   <DropdownMenuItem
                     onClick={switchBranch}
@@ -233,7 +219,6 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                     <span className="text-sm">{activeBranch ? activeBranch.name : t('branches.all_branches')}</span>
                   </DropdownMenuItem>
                 )}
-                
                 <DropdownMenuItem
                   onClick={logout}
                   className="flex items-center gap-2 cursor-pointer text-destructive"
@@ -244,6 +229,18 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+        </div>
+
+        {/* Action icons row */}
+        <div className="flex items-center gap-1.5 px-3 pb-2 overflow-x-auto scrollbar-hide">
+          {(role === 'worker' || role === 'supervisor') && <AttendanceButton />}
+          <WorkerRequestsPopover />
+          <TasksPopover />
+          <SectorCustomersPopover />
+          <ReceiptModificationsNotification />
+          <StockAlertsNotification />
+          <OffersNotification />
+          <DocumentCollectionsPopover />
         </div>
       </header>
 
