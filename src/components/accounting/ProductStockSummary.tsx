@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Loader2, Package, Truck, ShoppingBag, PackageX, CheckCircle, AlertTriangle, TrendingUp } from 'lucide-react';
+import { Loader2, Package, Truck, ShoppingBag, PackageX, CheckCircle, AlertTriangle, TrendingUp, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import EmptyTruckDialog from './EmptyTruckDialog';
 
 interface ProductStockSummaryProps {
@@ -14,13 +15,18 @@ interface ProductStockSummaryProps {
   periodEnd: string;
 }
 
+interface SoldProductPricingRow {
+  subtype: string;
+  quantity: number;
+  unit_price: number;
+  total_value: number;
+}
+
 interface SoldProductRow {
   product_name: string;
   quantity: number;
-  unit_price: number;
-  box_price: number;
   total_value: number;
-  selling_unit: string;
+  pricing_rows: SoldProductPricingRow[];
 }
 
 
@@ -74,7 +80,7 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
     return isEnd ? v + 'T23:59:59+01:00' : v + 'T00:00:00+01:00';
   };
 
-  // Fetch sold products
+  // Fetch sold products with real pricing snapshot from order_items
   const { data: salesData, isLoading: soldLoading } = useQuery({
     queryKey: ['sold-products-summary', workerId, periodStart, periodEnd],
     queryFn: async () => {
@@ -83,7 +89,7 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
 
       const { data: orders } = await supabase
         .from('orders')
-        .select('id, total_amount')
+        .select('id, total_amount, payment_type')
         .eq('assigned_worker_id', workerId)
         .eq('status', 'delivered')
         .gte('updated_at', periodStartTz)
@@ -91,38 +97,71 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
 
       const ordersTotalSales = orders?.reduce((s, o) => s + Number(o.total_amount || 0), 0) || 0;
       const orderIds = orders?.map(o => o.id) || [];
+      const orderPaymentTypeMap = new Map((orders || []).map(o => [o.id, o.payment_type || '']));
 
-      const { data: movements } = await supabase
-        .from('stock_movements')
-        .select('order_id, quantity, product:products(name, price_gros, price_super_gros, price_invoice, price_retail, pricing_unit, weight_per_box, pieces_per_box)')
-        .eq('worker_id', workerId)
-        .eq('movement_type', 'delivery')
-        .gte('created_at', periodStartTz)
-        .lte('created_at', periodEndTz);
+      if (orderIds.length === 0) {
+        return { soldProducts: [] as SoldProductRow[], ordersTotalSales: 0, trackedTotal: 0, untrackedCount: 0 };
+      }
+
+      const { data: orderItems } = await supabase
+        .from('order_items')
+        .select('order_id, quantity, gift_quantity, unit_price, total_price, price_subtype, product:products(name)')
+        .in('order_id', orderIds);
 
       const productMap: Record<string, SoldProductRow> = {};
       const trackedOrderIds = new Set<string>();
-      for (const item of (movements || [])) {
-        const product = (item as any).product;
-        const name = product?.name || '';
-        const boxPrice = calcBoxPrice(product);
-        const rawPrice = getRawUnitPrice(product);
-        const pricingUnit = product?.pricing_unit || 'box';
-        if ((item as any).order_id) trackedOrderIds.add((item as any).order_id);
 
-        if (!productMap[name]) {
-          productMap[name] = {
-            product_name: name, quantity: 0, unit_price: rawPrice,
-            box_price: boxPrice, total_value: 0, selling_unit: pricingUnit,
+      for (const item of (orderItems || [])) {
+        const orderId = (item as any).order_id as string | undefined;
+        if (!orderId) continue;
+
+        const productName = (item as any).product?.name || '';
+        if (!productName) continue;
+
+        trackedOrderIds.add(orderId);
+
+        const paidQty = Math.max(0, Number(item.quantity || 0) - Number(item.gift_quantity || 0));
+        if (paidQty <= 0) continue;
+
+        const unitPrice = Number(item.unit_price || 0);
+        const paymentType = orderPaymentTypeMap.get(orderId) || '';
+        const subtype = item.price_subtype || (paymentType === 'with_invoice' ? 'invoice' : 'gros');
+
+        if (!productMap[productName]) {
+          productMap[productName] = {
+            product_name: productName,
+            quantity: 0,
+            total_value: 0,
+            pricing_rows: [],
           };
         }
-        productMap[name].quantity += Number(item.quantity || 0);
-        productMap[name].total_value += Number(item.quantity || 0) * boxPrice;
+
+        productMap[productName].quantity += paidQty;
+        productMap[productName].total_value += paidQty * unitPrice;
+
+        const pricingRow = productMap[productName].pricing_rows.find(
+          (r) => r.subtype === subtype && Math.abs(r.unit_price - unitPrice) < 0.01,
+        );
+
+        if (pricingRow) {
+          pricingRow.quantity += paidQty;
+          pricingRow.total_value += paidQty * unitPrice;
+        } else {
+          productMap[productName].pricing_rows.push({
+            subtype,
+            quantity: paidQty,
+            unit_price: unitPrice,
+            total_value: paidQty * unitPrice,
+          });
+        }
       }
 
-      const soldProducts = Object.values(productMap).filter(r => r.quantity > 0).sort((a, b) => b.total_value - a.total_value);
+      const soldProducts = Object.values(productMap)
+        .filter((r) => r.quantity > 0)
+        .sort((a, b) => b.total_value - a.total_value);
+
       const trackedTotal = soldProducts.reduce((s, r) => s + r.total_value, 0);
-      const untrackedCount = orderIds.filter(id => !trackedOrderIds.has(id)).length;
+      const untrackedCount = orderIds.filter((id) => !trackedOrderIds.has(id)).length;
 
       return { soldProducts, ordersTotalSales, trackedTotal, untrackedCount };
     },
@@ -315,6 +354,13 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
   const totalSoldQty = soldProducts.reduce((s, r) => s + r.quantity, 0);
   const untrackedCount = salesData?.untrackedCount || 0;
 
+  const subtypeLabels: Record<string, string> = {
+    retail: 'تجزئة',
+    gros: 'جملة',
+    super_gros: 'سوبر جملة',
+    invoice: 'فاتورة 1',
+  };
+
   if (soldLoading && truckLoading) {
     return (
       <div className="flex justify-center py-4">
@@ -447,7 +493,7 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
         </p>
       )}
 
-      {/* Sales Tracking (only sold products) */}
+      {/* Sales Tracking (with pricing breakdown per product) */}
       {soldProducts && soldProducts.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center gap-2 mb-2">
@@ -455,29 +501,49 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
             <span className="font-semibold text-sm">{t('accounting.sales_tracking')}</span>
           </div>
 
-          <div className="grid grid-cols-5 gap-1 text-xs text-muted-foreground text-center font-medium border-b pb-1">
-            <span className="text-start">{t('stock.product')}</span>
-            <span>{t('stock.quantity')}</span>
-            <span>{t('accounting.unit_price')}</span>
-            <span>{t('accounting.box_price')}</span>
-            <span>{t('accounting.total_value')}</span>
-          </div>
-
           {soldProducts.map((row) => (
-            <div key={row.product_name} className="grid grid-cols-5 gap-1 text-xs text-center items-center py-1 border-b border-dashed last:border-0">
-              <span className="text-start font-medium text-wrap">{row.product_name}</span>
-              <span className="font-bold">{row.quantity}</span>
-              <span className="text-muted-foreground">{row.unit_price.toLocaleString()}</span>
-              <span>{row.box_price.toLocaleString()}</span>
-              <span className="font-bold">{row.total_value.toLocaleString()}</span>
-            </div>
+            <Collapsible key={row.product_name} defaultOpen>
+              <div className="border rounded-lg overflow-hidden">
+                <CollapsibleTrigger className="w-full flex items-center justify-between p-2 text-start hover:bg-muted/30 transition-colors">
+                  <span className="font-medium text-sm text-wrap">{row.product_name}</span>
+                  <span className="flex items-center gap-1.5 shrink-0 ms-2">
+                    <span className="text-xs text-muted-foreground">{fmtQty(row.quantity)} صندوق</span>
+                    <span className="text-xs font-bold">{row.total_value.toLocaleString()} DA</span>
+                    <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                  </span>
+                </CollapsibleTrigger>
+
+                <CollapsibleContent>
+                  <div className="border-t p-1.5 space-y-1">
+                    <div className="grid grid-cols-4 gap-1 text-[10px] text-muted-foreground text-center font-medium border-b pb-1">
+                      <span className="text-start">التسعير</span>
+                      <span>{t('stock.quantity')}</span>
+                      <span>{t('accounting.unit_price')}</span>
+                      <span>{t('accounting.total_value')}</span>
+                    </div>
+
+                    {row.pricing_rows
+                      .sort((a, b) => b.quantity - a.quantity)
+                      .map((pricingRow, idx) => (
+                        <div key={`${row.product_name}-${idx}`} className="grid grid-cols-4 gap-1 text-xs text-center items-center py-1 border-b border-dashed last:border-0">
+                          <span className="text-start">
+                            <Badge variant="secondary" className="text-[10px] px-1.5">
+                              {subtypeLabels[pricingRow.subtype] || pricingRow.subtype}
+                            </Badge>
+                          </span>
+                          <span className="font-bold">{fmtQty(pricingRow.quantity)}</span>
+                          <span className="text-muted-foreground">{pricingRow.unit_price.toLocaleString()}</span>
+                          <span className="font-semibold">{pricingRow.total_value.toLocaleString()}</span>
+                        </div>
+                      ))}
+                  </div>
+                </CollapsibleContent>
+              </div>
+            </Collapsible>
           ))}
 
-          <div className="grid grid-cols-5 gap-1 text-xs text-center font-bold border-t-2 pt-1 bg-primary/5 rounded p-1.5">
-            <span className="text-start">{t('common.total')}</span>
-            <span>{totalSoldQty}</span>
-            <span>-</span>
-            <span>-</span>
+          <div className="grid grid-cols-2 gap-2 text-xs text-center font-bold border-t-2 pt-1 bg-primary/5 rounded p-1.5">
+            <span className="text-start">{t('common.total')}: {fmtQty(totalSoldQty)} صندوق</span>
             <span className="text-primary">{trackedSoldValue.toLocaleString()} DA</span>
           </div>
 
