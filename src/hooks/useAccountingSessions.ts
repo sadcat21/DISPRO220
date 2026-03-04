@@ -133,6 +133,8 @@ export const useCreateSession = () => {
         // Map session item types to treasury payment methods
         if (item.item_type === 'invoice1_espace_cash') {
           treasuryEntries.push({ payment_method: 'cash', amount: item.actual_amount, item_type: item.item_type });
+        } else if (item.item_type === 'invoice1_versement_cash') {
+          treasuryEntries.push({ payment_method: 'cash', amount: item.actual_amount, item_type: item.item_type });
         } else if (item.item_type === 'invoice2_cash') {
           treasuryEntries.push({ payment_method: 'cash', amount: item.actual_amount, item_type: item.item_type });
         } else if (item.item_type === 'invoice1_check' || item.item_type === 'debt_collections_check') {

@@ -1348,6 +1348,7 @@ export const translations: Translations = {
   'treasury.item.invoice1_transfer': { ar: 'فاتورة 1 - Virement', fr: 'Facture 1 - Virement', en: 'Invoice 1 - Transfer' },
   'treasury.item.invoice1_receipt': { ar: 'فاتورة 1 - Versement', fr: 'Facture 1 - Versement', en: 'Invoice 1 - Deposit' },
   'treasury.item.invoice1_espace_cash': { ar: 'فاتورة 1 - كاش', fr: 'Facture 1 - Espèces', en: 'Invoice 1 - Cash' },
+  'treasury.item.invoice1_versement_cash': { ar: 'فاتورة 1 - Versement (cache)', fr: 'Facture 1 - Versement (cache)', en: 'Invoice 1 - Versement (cash)' },
   'treasury.item.invoice2_cash': { ar: 'فاتورة 2 - كاش', fr: 'Facture 2 - Espèces', en: 'Invoice 2 - Cash' },
   'treasury.item.debt_collections_total': { ar: 'تحصيل ديون - الإجمالي', fr: 'Recouvrement - Total', en: 'Debt Collection - Total' },
   'treasury.item.debt_collections_cash': { ar: 'تحصيل ديون - كاش', fr: 'Recouvrement - Espèces', en: 'Debt Collection - Cash' },

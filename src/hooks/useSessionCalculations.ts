@@ -47,7 +47,7 @@ export interface SessionCalculations {
   totalSales: number;
   totalPaid: number;
   newDebts: number;
-  invoice1: PaymentMethodBreakdown & { total: number };
+  invoice1: PaymentMethodBreakdown & { total: number; versementCash: number };
   invoice2: { total: number; cash: number };
   debtCollections: DebtCollectionBreakdown;
   physicalCash: number;
@@ -88,7 +88,7 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
       // 1. Fetch delivered orders with items
       const { data: orders } = await supabase
         .from('orders')
-        .select('id, total_amount, payment_status, payment_type, invoice_payment_method, partial_amount, customer_id, customer:customers(name, phone, address), updated_at, order_items(quantity, unit_price, total_price, gift_quantity, gift_offer_id, product_id, product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box))')
+        .select('id, total_amount, payment_status, payment_type, invoice_payment_method, partial_amount, customer_id, document_verification, customer:customers(name, phone, address), updated_at, order_items(quantity, unit_price, total_price, gift_quantity, gift_offer_id, product_id, product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box))')
         .eq('assigned_worker_id', workerId)
         .eq('status', 'delivered')
         .gte('updated_at', periodStartTz)
@@ -193,8 +193,8 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
       let newDebts = 0;
       let giftOfferValue = 0;
 
-      const invoice1: PaymentMethodBreakdown & { total: number } = {
-        total: 0, check: 0, transfer: 0, receipt: 0, espaceCash: 0,
+      const invoice1: PaymentMethodBreakdown & { total: number; versementCash: number } = {
+        total: 0, check: 0, transfer: 0, receipt: 0, espaceCash: 0, versementCash: 0,
       };
       const invoice2 = { total: 0, cash: 0 };
 
@@ -263,8 +263,15 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
 
         if (paymentType === 'with_invoice') {
           invoice1.total += paidAmount;
+          // Check if versement/transfer was paid by cash
+          const docVerification = (order as any).document_verification;
+          const paidByCash = docVerification && typeof docVerification === 'object' && docVerification.paid_by_cash === true;
+          
           if (paymentStatus === 'check' || invoiceMethod === 'check') {
             invoice1.check += paidAmount;
+          } else if ((invoiceMethod === 'receipt' || invoiceMethod === 'transfer') && paidByCash) {
+            // Versement/Virement paid by cash - track separately
+            invoice1.versementCash += paidAmount;
           } else if (invoiceMethod === 'transfer') {
             invoice1.transfer += paidAmount;
           } else if (invoiceMethod === 'receipt') {
@@ -385,7 +392,7 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
 
       const customerSurplusCash = (customerSurplusData || []).reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
-      const physicalCash = invoice2.cash + invoice1.espaceCash + debtCollections.cash - cashExpenses + customerSurplusCash;
+      const physicalCash = invoice2.cash + invoice1.espaceCash + invoice1.versementCash + debtCollections.cash - cashExpenses + customerSurplusCash;
 
       return {
         totalSales,
@@ -413,7 +420,7 @@ function getEmptyCalculations(): SessionCalculations {
     totalSales: 0,
     totalPaid: 0,
     newDebts: 0,
-    invoice1: { total: 0, check: 0, transfer: 0, receipt: 0, espaceCash: 0 },
+    invoice1: { total: 0, check: 0, transfer: 0, receipt: 0, espaceCash: 0, versementCash: 0 },
     invoice2: { total: 0, cash: 0 },
     debtCollections: { total: 0, cash: 0, check: 0, transfer: 0, receipt: 0 },
     physicalCash: 0,

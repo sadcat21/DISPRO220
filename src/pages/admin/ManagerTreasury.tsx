@@ -241,7 +241,7 @@ const ManagerTreasury = () => {
           const amt = Number(item.actual_amount || 0);
           if (amt <= 0) continue;
           let pm: string | null = null;
-          if (item.item_type === 'invoice1_espace_cash' || item.item_type === 'invoice2_cash' || item.item_type === 'debt_collections_cash') pm = 'cash';
+          if (item.item_type === 'invoice1_espace_cash' || item.item_type === 'invoice1_versement_cash' || item.item_type === 'invoice2_cash' || item.item_type === 'debt_collections_cash') pm = 'cash';
           else if (item.item_type === 'invoice1_check' || item.item_type === 'debt_collections_check') pm = 'check';
           else if (item.item_type === 'invoice1_receipt' || item.item_type === 'debt_collections_receipt') pm = 'bank_receipt';
           else if (item.item_type === 'invoice1_transfer' || item.item_type === 'debt_collections_transfer') pm = 'bank_transfer';

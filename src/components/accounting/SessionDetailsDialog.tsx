@@ -95,6 +95,7 @@ const SessionDetailsDialog: React.FC<SessionDetailsDialogProps> = ({ open, onOpe
     const inv1Transfer = getItemValue(items, 'invoice1_transfer');
     const inv1Receipt = getItemValue(items, 'invoice1_receipt');
     const inv1EspaceCash = getItemValue(items, 'invoice1_espace_cash');
+    const inv1VersementCash = getItemValue(items, 'invoice1_versement_cash');
     const inv2Cash = getItemValue(items, 'invoice2_cash');
     const dcTotal = getItemValue(items, 'debt_collections_total');
     const dcCash = getItemValue(items, 'debt_collections_cash');
@@ -132,6 +133,7 @@ const SessionDetailsDialog: React.FC<SessionDetailsDialogProps> = ({ open, onOpe
             <DetailRow label={t('accounting.method_transfer')} value={inv1Transfer.expected} />
             <DetailRow label={t('accounting.method_receipt')} value={inv1Receipt.expected} />
             <DetailRow label={t('accounting.method_espace_cash')} value={inv1EspaceCash.expected} highlight />
+            <DetailRow label="Versement (cache)" value={inv1VersementCash.expected} highlight />
           </div>
         </div>
 
@@ -180,6 +182,10 @@ const SessionDetailsDialog: React.FC<SessionDetailsDialogProps> = ({ open, onOpe
             <div className="flex justify-between text-muted-foreground">
               <span>{t('accounting.invoice1')} ({t('accounting.method_espace_cash')})</span>
               <span>{fmt(inv1EspaceCash.expected)} DA</span>
+            </div>
+            <div className="flex justify-between text-muted-foreground">
+              <span>Versement (cache)</span>
+              <span>{fmt(inv1VersementCash.expected)} DA</span>
             </div>
             <div className="flex justify-between text-muted-foreground">
               <span>{t('accounting.debt_collections')} ({t('accounting.method_cash')})</span>

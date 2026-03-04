@@ -190,6 +190,7 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
         { item_type: 'invoice1_transfer', expected_amount: calc.invoice1.transfer, actual_amount: calc.invoice1.transfer },
         { item_type: 'invoice1_receipt', expected_amount: calc.invoice1.receipt, actual_amount: calc.invoice1.receipt },
         { item_type: 'invoice1_espace_cash', expected_amount: calc.invoice1.espaceCash, actual_amount: calc.invoice1.espaceCash },
+        { item_type: 'invoice1_versement_cash', expected_amount: calc.invoice1.versementCash, actual_amount: calc.invoice1.versementCash },
         { item_type: 'invoice2_cash', expected_amount: calc.invoice2.cash, actual_amount: calc.invoice2.cash },
         { item_type: 'debt_collections_total', expected_amount: calc.debtCollections.total, actual_amount: calc.debtCollections.total },
         { item_type: 'debt_collections_cash', expected_amount: calc.debtCollections.cash, actual_amount: calc.debtCollections.cash },
@@ -398,6 +399,7 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                     <PaymentRow label={t('accounting.method_transfer')} value={calc.invoice1.transfer} />
                     <PaymentRow label={t('accounting.method_receipt')} value={calc.invoice1.receipt} />
                     <PaymentRow label={t('accounting.method_espace_cash')} value={calc.invoice1.espaceCash} highlight />
+                    <PaymentRow label="Versement (cache)" value={calc.invoice1.versementCash} highlight />
                   </div>
                 </div>
 
@@ -447,6 +449,10 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                     <div className="flex justify-between text-muted-foreground">
                       <span>{t('accounting.invoice1')} ({t('accounting.method_espace_cash')})</span>
                       <span>{fmt(calc.invoice1.espaceCash)} DA</span>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Versement (cache)</span>
+                      <span>{fmt(calc.invoice1.versementCash)} DA</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
                       <span>{t('accounting.debt_collections')} ({t('accounting.method_cash')})</span>
