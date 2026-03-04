@@ -127,112 +127,13 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
     <div className="min-h-screen bg-background flex flex-col" dir={dir}>
       {/* Header */}
       <header className="sticky top-0 z-50 bg-secondary text-secondary-foreground safe-top">
-        {/* Top row: branding + settings */}
-        <div className="flex items-center justify-between px-3 pt-2 pb-1">
-          <div className="flex items-center gap-2.5 min-w-0 flex-1">
-            <div className="w-9 h-9 shrink-0 rounded-xl bg-primary/10 p-1.5">
-              <img src={icon} alt="Laser Food Icon" className="w-full h-full object-contain" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="font-bold text-sm leading-tight tracking-wide">Laser Food</h1>
-              <p className="text-[10px] text-muted-foreground truncate leading-tight">
-                {user?.full_name}
-              </p>
-              {getRoleDisplayText() && (
-                <p className="text-[10px] text-primary font-semibold truncate leading-tight">
-                  {getRoleDisplayText()}
-                </p>
-              )}
-            </div>
+        <div className="flex items-center gap-2 px-3 py-2 overflow-x-auto scrollbar-hide">
+          {/* Branding icon only */}
+          <div className="w-8 h-8 shrink-0 rounded-lg bg-primary/10 p-1">
+            <img src={icon} alt="Laser Food" className="w-full h-full object-contain" />
           </div>
-          
-          {/* Chat + Settings */}
-          <div className="flex items-center gap-1 shrink-0">
-            <Link
-              to="/chat"
-              className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-primary/10 hover:bg-primary/20 transition-colors"
-            >
-              <MessageCircle className="w-4 h-4 text-primary" />
-              {totalUnread > 0 && (
-                <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
-                  {totalUnread > 9 ? '9+' : totalUnread}
-                </span>
-              )}
-            </Link>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center justify-center w-8 h-8 rounded-xl bg-primary/10 hover:bg-primary/20 transition-colors">
-                  <MoreHorizontal className="w-4 h-4 text-primary" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                {LANGUAGES.map((lang) => (
-                  <DropdownMenuItem
-                    key={lang.code}
-                    onClick={() => setLanguage(lang.code)}
-                    className={cn(
-                      'flex items-center gap-2 cursor-pointer',
-                      language === lang.code && 'bg-primary/10 text-primary font-semibold'
-                    )}
-                  >
-                    <span>{lang.flag}</span>
-                    <span className="text-sm">{lang.label}</span>
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                {isConnected ? (
-                  <>
-                    <DropdownMenuItem className="flex items-center gap-2 text-green-600 cursor-default">
-                      <Printer className="w-4 h-4" />
-                      <span className="text-sm truncate">{deviceName || 'طابعة متصلة'}</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={disconnect}
-                      className="flex items-center gap-2 cursor-pointer text-destructive"
-                    >
-                      <BluetoothOff className="w-4 h-4" />
-                      <span className="text-sm">قطع الاتصال</span>
-                    </DropdownMenuItem>
-                  </>
-                ) : (
-                  <DropdownMenuItem
-                    onClick={scanAndConnect}
-                    className="flex items-center gap-2 cursor-pointer"
-                    disabled={printerStatus === 'connecting'}
-                  >
-                    <Bluetooth className="w-4 h-4" />
-                    <span className="text-sm">{printerStatus === 'connecting' ? 'جاري الاتصال...' : 'ربط الطابعة'}</span>
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                {role === 'admin' && (
-                  <DropdownMenuItem
-                    onClick={switchBranch}
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <span className="text-sm font-bold text-primary">
-                      {activeBranch 
-                        ? ALGERIAN_WILAYAS.find(w => w.name === activeBranch.wilaya)?.code || '∞'
-                        : '∞'}
-                    </span>
-                    <span className="text-sm">{activeBranch ? activeBranch.name : t('branches.all_branches')}</span>
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem
-                  onClick={logout}
-                  className="flex items-center gap-2 cursor-pointer text-destructive"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span className="text-sm">{t('auth.logout')}</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
 
-        {/* Action icons row */}
-        <div className="flex items-center gap-1.5 px-3 pb-2 overflow-x-auto scrollbar-hide">
+          {/* Action icons */}
           {(role === 'worker' || role === 'supervisor') && <AttendanceButton />}
           <WorkerRequestsPopover />
           <TasksPopover />
@@ -241,6 +142,96 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
           <StockAlertsNotification />
           <OffersNotification />
           <DocumentCollectionsPopover />
+
+          {/* Chat */}
+          <Link
+            to="/chat"
+            className="relative flex items-center justify-center w-8 h-8 shrink-0 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors"
+          >
+            <MessageCircle className="w-4 h-4 text-primary" />
+            {totalUnread > 0 && (
+              <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                {totalUnread > 9 ? '9+' : totalUnread}
+              </span>
+            )}
+          </Link>
+
+          {/* Settings dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center justify-center w-8 h-8 shrink-0 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors">
+                <MoreHorizontal className="w-4 h-4 text-primary" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              {/* User info inside dropdown */}
+              <div className="px-3 py-2 border-b border-border">
+                <p className="text-sm font-bold truncate">{user?.full_name}</p>
+                {getRoleDisplayText() && (
+                  <p className="text-[11px] text-primary font-semibold truncate">{getRoleDisplayText()}</p>
+                )}
+              </div>
+              {LANGUAGES.map((lang) => (
+                <DropdownMenuItem
+                  key={lang.code}
+                  onClick={() => setLanguage(lang.code)}
+                  className={cn(
+                    'flex items-center gap-2 cursor-pointer',
+                    language === lang.code && 'bg-primary/10 text-primary font-semibold'
+                  )}
+                >
+                  <span>{lang.flag}</span>
+                  <span className="text-sm">{lang.label}</span>
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              {isConnected ? (
+                <>
+                  <DropdownMenuItem className="flex items-center gap-2 text-green-600 cursor-default">
+                    <Printer className="w-4 h-4" />
+                    <span className="text-sm truncate">{deviceName || 'طابعة متصلة'}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={disconnect}
+                    className="flex items-center gap-2 cursor-pointer text-destructive"
+                  >
+                    <BluetoothOff className="w-4 h-4" />
+                    <span className="text-sm">قطع الاتصال</span>
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <DropdownMenuItem
+                  onClick={scanAndConnect}
+                  className="flex items-center gap-2 cursor-pointer"
+                  disabled={printerStatus === 'connecting'}
+                >
+                  <Bluetooth className="w-4 h-4" />
+                  <span className="text-sm">{printerStatus === 'connecting' ? 'جاري الاتصال...' : 'ربط الطابعة'}</span>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              {role === 'admin' && (
+                <DropdownMenuItem
+                  onClick={switchBranch}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <span className="text-sm font-bold text-primary">
+                    {activeBranch 
+                      ? ALGERIAN_WILAYAS.find(w => w.name === activeBranch.wilaya)?.code || '∞'
+                      : '∞'}
+                  </span>
+                  <span className="text-sm">{activeBranch ? activeBranch.name : t('branches.all_branches')}</span>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem
+                onClick={logout}
+                className="flex items-center gap-2 cursor-pointer text-destructive"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="text-sm">{t('auth.logout')}</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
