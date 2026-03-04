@@ -2,11 +2,13 @@ import React, { useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { ShoppingBag, Package, User, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShoppingBag, Package, User, Clock, Calendar, ChevronLeft, ChevronRight, ChevronDown, TrendingUp } from 'lucide-react';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
-
+import { inferPricingSubtype } from '@/utils/pricingSubtype';
 /** Format quantity as boxes.pieces (e.g. 1.05 = 1 box + 5 pieces) */
 const formatBoxPieces = (qty: number, piecesPerBox: number | null): string => {
   if (!piecesPerBox || piecesPerBox <= 0) return String(qty);
@@ -184,8 +186,113 @@ const ExpandedCarousel: React.FC<{
   );
 };
 
+interface PriceTrackingRow { subtype: string; quantity: number; unitPrice: number; total: number; pricingUnit: string | null; weightPerBox: number | null; piecesPerBox: number | null; }
+interface PriceTrackedProduct { productName: string; quantity: number; totalValue: number; pricingRows: PriceTrackingRow[]; }
+
+const fmtQty = (v: number): string => {
+  const rounded = Math.round(v * 100) / 100;
+  if (rounded === Math.floor(rounded)) return rounded.toString();
+  return rounded.toFixed(2).replace(/0+$/, '');
+};
+
+const subtypeLabelsMap: Record<string, string> = {
+  retail: 'تجزئة', gros: 'جملة', super_gros: 'سوبر جملة', invoice: 'فاتورة 1',
+};
+const subtypeAbbrMap: Record<string, string> = { retail: 'D', gros: 'G', super_gros: 'SG', invoice: 'F1' };
+const subtypeColorMap: Record<string, string> = {
+  retail: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  gros: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  super_gros: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+  invoice: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+};
+
+const PriceTrackingTab: React.FC<{ priceTracking: PriceTrackedProduct[] }> = ({ priceTracking }) => {
+  if (!priceTracking.length) {
+    return <p className="text-center text-muted-foreground py-6 text-sm">لا توجد بيانات</p>;
+  }
+
+  const totalQty = priceTracking.reduce((s, r) => s + r.quantity, 0);
+  const totalValue = priceTracking.reduce((s, r) => s + r.totalValue, 0);
+
+  const getUnitPrice = (row: PriceTrackingRow): { price: number | null; label: string } => {
+    if (row.pricingUnit === 'kg' && row.weightPerBox && row.weightPerBox > 0)
+      return { price: row.unitPrice / row.weightPerBox, label: 'DA/kg' };
+    if (row.pricingUnit === 'unit' && row.piecesPerBox && row.piecesPerBox > 0)
+      return { price: row.unitPrice / row.piecesPerBox, label: 'DA/pcs' };
+    return { price: null, label: '' };
+  };
+
+  return (
+    <div className="space-y-2 pb-2">
+      {priceTracking.map((product) => (
+        <Collapsible key={product.productName}>
+          <div className="border rounded-lg overflow-hidden">
+            <CollapsibleTrigger className="w-full flex flex-col gap-1 p-2 text-start hover:bg-muted/30 transition-colors">
+              <div className="flex items-center justify-between w-full">
+                <span className="font-medium text-sm text-wrap">{product.productName}</span>
+                <span className="flex items-center gap-1.5 shrink-0 ms-2">
+                  <span className="text-xs text-muted-foreground">{fmtQty(product.quantity)} صندوق</span>
+                  <span className="text-xs font-bold">{product.totalValue.toLocaleString()} DA</span>
+                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {(() => {
+                  const grouped: Record<string, number> = {};
+                  product.pricingRows.forEach(pr => { grouped[pr.subtype] = (grouped[pr.subtype] || 0) + pr.quantity; });
+                  return Object.entries(grouped).map(([subtype, qty]) => (
+                    <span key={subtype} className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${subtypeColorMap[subtype] || 'bg-muted text-muted-foreground'}`}>
+                      {subtypeAbbrMap[subtype] || subtype} ({fmtQty(qty)})
+                    </span>
+                  ));
+                })()}
+              </div>
+            </CollapsibleTrigger>
+
+            <CollapsibleContent>
+              <div className="border-t p-1.5 space-y-1">
+                <div className="grid grid-cols-5 gap-1 text-[10px] text-muted-foreground text-center font-medium border-b pb-1">
+                  <span className="text-start">التسعير</span>
+                  <span>الكمية</span>
+                  <span>سعر الصندوق</span>
+                  <span>سعر الوحدة</span>
+                  <span>القيمة الإجمالية</span>
+                </div>
+                {product.pricingRows.sort((a, b) => b.quantity - a.quantity).map((row, idx) => {
+                  const unit = getUnitPrice(row);
+                  return (
+                    <div key={idx} className="grid grid-cols-5 gap-1 text-xs text-center items-center py-1 border-b border-dashed last:border-0">
+                      <span className="text-start">
+                        <Badge variant="secondary" className="text-[10px] px-1.5">
+                          {subtypeLabelsMap[row.subtype] || row.subtype}
+                        </Badge>
+                      </span>
+                      <span className="font-bold">{fmtQty(row.quantity)}</span>
+                      <span className="text-muted-foreground">{row.unitPrice.toLocaleString()}</span>
+                      <span className="text-muted-foreground">
+                        {unit.price !== null ? `${unit.price.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${unit.label}` : '-'}
+                      </span>
+                      <span className="font-semibold">{row.total.toLocaleString()}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </CollapsibleContent>
+          </div>
+        </Collapsible>
+      ))}
+
+      <div className="grid grid-cols-2 gap-2 text-xs text-center font-bold border-t-2 pt-1 bg-primary/5 rounded p-1.5">
+        <span className="text-start">الإجمالي: {fmtQty(totalQty)} صندوق</span>
+        <span className="text-primary">{totalValue.toLocaleString()} DA</span>
+      </div>
+    </div>
+  );
+};
+
 const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerId, workerName }) => {
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('products');
 
   useRealtimeSubscription(
     `worker-sales-realtime-${workerId}`,
@@ -218,7 +325,7 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
     queryFn: async () => {
       let ordersQuery = supabase
         .from('orders')
-        .select('id, status, payment_type, created_at, updated_at, customer_id')
+        .select('id, status, payment_type, created_at, updated_at, customer_id, customer:customers(default_price_subtype)')
         .in('status', ['delivered', 'completed', 'confirmed'])
         .or(`assigned_worker_id.eq.${workerId!},created_by.eq.${workerId!}`);
 
@@ -236,18 +343,25 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
 
       const { data: items, error: itemsError } = await supabase
         .from('order_items')
-        .select('order_id, product_id, quantity, gift_quantity, unit_price, total_price')
+        .select('order_id, product_id, quantity, gift_quantity, unit_price, total_price, price_subtype, payment_type, pricing_unit, weight_per_box, pieces_per_box, product:products(name, pieces_per_box, image_url, pricing_unit, weight_per_box, price_retail, price_gros, price_super_gros, price_invoice)')
         .in('order_id', orderIds);
 
       if (itemsError) throw itemsError;
 
-      const productIds = [...new Set((items || []).map(i => i.product_id))];
-      const { data: products } = await supabase
-        .from('products')
-        .select('id, name, pieces_per_box, image_url')
-        .in('id', productIds);
+      const productInfoMap: Record<string, { name: string; pieces_per_box: number | null; image_url: string | null }> = {};
+      for (const item of (items || [])) {
+        const prod = (item as any).product;
+        if (prod?.name && !productInfoMap[item.product_id]) {
+          productInfoMap[item.product_id] = {
+            name: prod.name,
+            pieces_per_box: prod.pieces_per_box || null,
+            image_url: prod.image_url || null,
+          };
+        }
+      }
 
-      const productMap = new Map((products || []).map(p => [p.id, p]));
+      const orderPaymentTypeMap = new Map(orders.map(o => [o.id, o.payment_type || '']));
+      const orderCustomerSubtypeMap = new Map(orders.map(o => [o.id, (o as any).customer?.default_price_subtype || 'gros']));
 
       const customerIds = [...new Set(orders.map(o => o.customer_id).filter(Boolean))];
       const { data: customers } = customerIds.length > 0
@@ -262,7 +376,7 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
       for (const item of (items || [])) {
         const customerId = orderCustomerMap.get(item.order_id) || 'unknown';
         if (!agg[item.product_id]) {
-          const product = productMap.get(item.product_id);
+          const product = productInfoMap[item.product_id];
           agg[item.product_id] = {
             productId: item.product_id,
             name: product?.name || 'منتج غير معروف',
@@ -310,11 +424,67 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
       const firstOrderTime = createdTimes.length ? new Date(Math.min(...createdTimes)).toISOString() : null;
       const lastOrderTime = updatedTimes.length ? new Date(Math.max(...updatedTimes)).toISOString() : null;
 
+      // Build price tracking data
+      const priceMap: Record<string, PriceTrackedProduct> = {};
+
+      for (const item of (items || [])) {
+        const prod = (item as any).product;
+        const productName = prod?.name || '';
+        if (!productName) continue;
+
+        const rawQty = Number(item.quantity || 0);
+        const giftQty = Number(item.gift_quantity || 0);
+        const unitPrice = Number(item.unit_price || 0);
+        const totalPrice = Number(item.total_price || 0);
+        const paidQtyByDiff = rawQty - giftQty;
+        const paidQtyByAmount = unitPrice > 0 ? totalPrice / unitPrice : 0;
+        const paidQty = Number(Math.max(0, paidQtyByDiff > 0 ? paidQtyByDiff : paidQtyByAmount).toFixed(3));
+        if (paidQty <= 0) continue;
+
+        const orderPaymentType = orderPaymentTypeMap.get(item.order_id) || '';
+        const itemPaymentType = (item as any).payment_type || orderPaymentType;
+        const itemPricingUnit = (item as any).pricing_unit || 'box';
+        const itemWeightPerBox = Number((item as any).weight_per_box || 0);
+        const itemPiecesPerBox = Number((item as any).pieces_per_box || 0);
+
+        const subtype = inferPricingSubtype({
+          itemPaymentType,
+          unitPrice,
+          explicitSubtype: (item as any).price_subtype || null,
+          fallbackSubtype: orderCustomerSubtypeMap.get(item.order_id) || 'gros',
+          product: prod || null,
+          pricingUnit: itemPricingUnit,
+          weightPerBox: itemWeightPerBox > 0 ? itemWeightPerBox : null,
+          piecesPerBox: itemPiecesPerBox > 0 ? itemPiecesPerBox : null,
+        });
+        const lineTotal = totalPrice > 0 ? totalPrice : paidQty * unitPrice;
+
+        if (!priceMap[productName]) {
+          priceMap[productName] = { productName, quantity: 0, totalValue: 0, pricingRows: [] };
+        }
+        priceMap[productName].quantity += paidQty;
+        priceMap[productName].totalValue += lineTotal;
+
+        const existingRow = priceMap[productName].pricingRows.find(r => r.subtype === subtype && Math.abs(r.unitPrice - unitPrice) < 0.01);
+        if (existingRow) {
+          existingRow.quantity += paidQty;
+          existingRow.total += lineTotal;
+        } else {
+          priceMap[productName].pricingRows.push({
+            subtype, quantity: paidQty, unitPrice, total: lineTotal,
+            pricingUnit: itemPricingUnit, weightPerBox: itemWeightPerBox > 0 ? itemWeightPerBox : null, piecesPerBox: itemPiecesPerBox > 0 ? itemPiecesPerBox : null,
+          });
+        }
+      }
+
+      const priceTracking = Object.values(priceMap).filter(r => r.quantity > 0).sort((a, b) => b.totalValue - a.totalValue);
+
       return {
         items: Object.values(agg).sort((a, b) => b.quantity - a.quantity),
         orderCount: orders.length,
         firstOrderTime,
         lastOrderTime,
+        priceTracking,
       };
     },
     enabled: open && !!workerId,
@@ -384,66 +554,85 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
           </div>
         )}
 
-        <ScrollArea className="flex-1">
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-            </div>
-          ) : !salesData?.items.length ? (
-            <div className="py-10 text-center text-muted-foreground">
-              <ShoppingBag className="w-10 h-10 mx-auto mb-2 opacity-40" />
-              <p>لا توجد مبيعات في هذه الفترة</p>
-            </div>
-          ) : expandedProduct ? (
-            <ExpandedCarousel
-              items={salesData.items}
-              expandedProduct={expandedProduct}
-              onNavigate={setExpandedProduct}
-              onClose={() => setExpandedProduct(null)}
-            />
-          ) : (
-            <div className="grid grid-cols-3 gap-2 pb-2">
-              {salesData.items.map((item) => (
-                <div
-                  key={item.productId}
-                  className="flex flex-col rounded-2xl overflow-hidden shadow-lg border-2 border-border hover:border-primary/50 cursor-pointer active:scale-[0.97] transition-all"
-                  onClick={() => setExpandedProduct(item.productId)}
-                >
-                  <div className="px-2 py-1.5 border-b text-center bg-muted border-border">
-                    <span className="font-bold text-xs leading-tight block truncate text-foreground">
-                      {item.name}
-                    </span>
-                  </div>
-                  <div className="w-full aspect-square bg-muted overflow-hidden">
-                    {item.imageUrl ? (
-                      <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Package className="w-10 h-10 text-primary/30" />
+        {!expandedProduct && salesData?.items?.length ? (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+            <TabsList className="w-full shrink-0">
+              <TabsTrigger value="products" className="flex-1 text-xs">المنتجات</TabsTrigger>
+              <TabsTrigger value="pricing" className="flex-1 text-xs">المتابعة السعرية</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="products" className="flex-1 min-h-0 mt-1">
+              <ScrollArea className="h-full max-h-[55vh]">
+                <div className="grid grid-cols-3 gap-2 pb-2">
+                  {salesData.items.map((item) => (
+                    <div
+                      key={item.productId}
+                      className="flex flex-col rounded-2xl overflow-hidden shadow-lg border-2 border-border hover:border-primary/50 cursor-pointer active:scale-[0.97] transition-all"
+                      onClick={() => setExpandedProduct(item.productId)}
+                    >
+                      <div className="px-2 py-1.5 border-b text-center bg-muted border-border">
+                        <span className="font-bold text-xs leading-tight block truncate text-foreground">
+                          {item.name}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                  <div className="px-1.5 py-1.5 bg-card flex flex-col gap-1">
-                    <div className="flex items-center gap-1">
-                      <div className="flex-1 flex items-center justify-center gap-1 rounded-md bg-primary/10 text-primary py-1 text-xs font-bold">
-                        <Package className="w-3 h-3" />
-                        {item.quantity}
+                      <div className="w-full aspect-square bg-muted overflow-hidden">
+                        {item.imageUrl ? (
+                          <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="w-10 h-10 text-primary/30" />
+                          </div>
+                        )}
                       </div>
-                      {item.giftQuantity > 0 && (
-                        <div className="flex items-center justify-center gap-0.5 rounded-md bg-secondary py-1 px-1.5 text-[10px] font-semibold text-secondary-foreground">
-                          🎁 {formatBoxPieces(item.giftQuantity, item.piecesPerBox)}
+                      <div className="px-1.5 py-1.5 bg-card flex flex-col gap-1">
+                        <div className="flex items-center gap-1">
+                          <div className="flex-1 flex items-center justify-center gap-1 rounded-md bg-primary/10 text-primary py-1 text-xs font-bold">
+                            <Package className="w-3 h-3" />
+                            {item.quantity}
+                          </div>
+                          {item.giftQuantity > 0 && (
+                            <div className="flex items-center justify-center gap-0.5 rounded-md bg-secondary py-1 px-1.5 text-[10px] font-semibold text-secondary-foreground">
+                              🎁 {formatBoxPieces(item.giftQuantity, item.piecesPerBox)}
+                            </div>
+                          )}
                         </div>
-                      )}
+                        <div className="flex items-center justify-center rounded-md bg-muted py-1 text-[10px] font-semibold text-muted-foreground">
+                          {item.totalAmount.toLocaleString('ar-DZ')} د.ج
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-center rounded-md bg-muted py-1 text-[10px] font-semibold text-muted-foreground">
-                      {item.totalAmount.toLocaleString('ar-DZ')} د.ج
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </ScrollArea>
+              </ScrollArea>
+            </TabsContent>
+
+            <TabsContent value="pricing" className="flex-1 min-h-0 mt-1">
+              <ScrollArea className="h-full max-h-[55vh]">
+                <PriceTrackingTab priceTracking={salesData.priceTracking || []} />
+              </ScrollArea>
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <ScrollArea className="flex-1">
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+              </div>
+            ) : !salesData?.items?.length && !expandedProduct ? (
+              <div className="py-10 text-center text-muted-foreground">
+                <ShoppingBag className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                <p>لا توجد مبيعات في هذه الفترة</p>
+              </div>
+            ) : expandedProduct ? (
+              <ExpandedCarousel
+                items={salesData!.items}
+                expandedProduct={expandedProduct}
+                onNavigate={setExpandedProduct}
+                onClose={() => setExpandedProduct(null)}
+              />
+            ) : null}
+          </ScrollArea>
+        )}
       </DialogContent>
     </Dialog>
   );
