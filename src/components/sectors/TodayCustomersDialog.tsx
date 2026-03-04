@@ -152,7 +152,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
       // Include if: customer's sector matches today's delivery sector, OR order has delivery_date = today
       const matchesSector = customer?.sector_id && deliverySectorIds.has(customer.sector_id);
       const matchesDate = o.delivery_date && o.delivery_date.startsWith(todayDateStr);
-      if (matchesSector || matchesDate || deliverySectors.length === 0) {
+      if (matchesSector || matchesDate) {
         ids.add(o.customer_id);
       }
     });
