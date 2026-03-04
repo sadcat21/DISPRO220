@@ -22,6 +22,7 @@ import PromoTrackingSummary from './PromoTrackingSummary';
 import StockDiscrepancySection from './StockDiscrepancySection';
 import DebtCollectionsSummary from './DebtCollectionsSummary';
 import DocumentCollectionsSummary from './DocumentCollectionsSummary';
+import ExceptionalActionsSummary from './ExceptionalActionsSummary';
 import WorkerHandoverSummary from './WorkerHandoverSummary';
 import { usePendingDiscrepancies } from '@/hooks/useStockDiscrepancies';
 import TruckReviewSection from './TruckReviewSection';
@@ -710,6 +711,12 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                     onReceivedDocsChange={setReceivedDocs}
                   />
                 </div>
+                {/* Exceptional Actions - component self-hides when empty */}
+                <ExceptionalActionsSummary
+                  workerId={selectedWorkerId}
+                  periodStart={periodStart}
+                  periodEnd={periodEnd}
+                />
                 {pendingDiscrepancies.length > 0 && (
                   <div className="border-2 border-destructive/20 rounded-xl p-3.5">
                     <SectionDividerWithIcon

@@ -32,6 +32,7 @@ interface ModifiedItem {
   new_quantity: number;
   unit_price: number;
   gift_quantity: number;
+  original_gift_quantity: number;
   pieces_per_box: number;
 }
 
@@ -66,6 +67,7 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
         new_quantity: item.quantity,
         unit_price: Number(item.unit_price || 0),
         gift_quantity: Number(item.gift_quantity || 0),
+        original_gift_quantity: Number(item.gift_quantity || 0),
         pieces_per_box: Number(item.product?.pieces_per_box || 1),
       })));
       setAssignedWorkerId(order.assigned_worker_id || '');
@@ -192,6 +194,7 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
       new_quantity: recalculated.total_quantity,
       unit_price: unitPrice,
       gift_quantity: recalculated.gift_quantity,
+      original_gift_quantity: 0,
       pieces_per_box: Number(product.pieces_per_box || 1),
     }]);
     setNewProductId('');
@@ -275,8 +278,10 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
             await supabase.from('order_items').delete().eq('id', item.id);
             changes.push({
               منتج: item.product_name,
-              من: item.original_quantity,
-              إلى: 0,
+              كمية_سابقة: item.original_quantity,
+              كمية_جديدة: 0,
+              هدية_سابقة: item.original_gift_quantity || 0,
+              هدية_جديدة: 0,
               عملية: 'حذف',
             });
           } else {
@@ -292,10 +297,11 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
               .eq('id', item.id);
             changes.push({
               منتج: item.product_name,
-              من: item.original_quantity,
-              إلى: item.new_quantity,
-              هدية: item.gift_quantity || 0,
-              عملية: item.new_quantity > item.original_quantity ? 'زيادة' : 'تقليص',
+              كمية_سابقة: item.original_quantity,
+              كمية_جديدة: item.new_quantity,
+              هدية_سابقة: item.original_gift_quantity || 0,
+              هدية_جديدة: item.gift_quantity || 0,
+              عملية: 'تعديل كمية',
             });
           }
         } else if (!item.id && item.new_quantity > 0) {
