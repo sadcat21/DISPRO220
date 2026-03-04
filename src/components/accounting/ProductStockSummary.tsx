@@ -138,7 +138,9 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
         const unitPrice = Number(item.unit_price || 0);
         const orderPaymentType = orderPaymentTypeMap.get(orderId) || '';
         const itemPaymentType = (item as any).payment_type || orderPaymentType;
-        const subtype = item.price_subtype || (itemPaymentType === 'with_invoice' ? 'invoice' : 'gros');
+        const rawSubtype = item.price_subtype || 'gros';
+        const isInvoice = itemPaymentType === 'with_invoice';
+        const subtype = isInvoice ? `invoice_${rawSubtype}` : rawSubtype;
         const itemPricingUnit = (item as any).pricing_unit || 'box';
         const itemWeightPerBox = Number((item as any).weight_per_box || 0);
         const itemPiecesPerBox = Number((item as any).pieces_per_box || 0);
@@ -382,6 +384,9 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
     retail: 'تجزئة',
     gros: 'جملة',
     super_gros: 'سوبر جملة',
+    invoice_gros: 'فاتورة 1 (جملة)',
+    invoice_retail: 'فاتورة 1 (تجزئة)',
+    invoice_super_gros: 'فاتورة 1 (سوبر جملة)',
     invoice: 'فاتورة 1',
   };
 

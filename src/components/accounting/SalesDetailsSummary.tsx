@@ -227,8 +227,10 @@ const SalesDetailsSummary: React.FC<SalesDetailsSummaryProps> = ({ workerId, per
     if (!productPriceBreakdown[item.product_name]) productPriceBreakdown[item.product_name] = [];
     const paidQty = Math.max(0, item.quantity - (item.gift_quantity || 0));
     if (paidQty <= 0) return;
-    const itemPaymentType = item.payment_type || o.payment_type;
-    const subtype = item.price_subtype || (itemPaymentType === 'with_invoice' ? 'invoice' : (o.price_subtype || 'gros'));
+    
+    const rawSubtype = item.price_subtype || (o.price_subtype || 'gros');
+    const isInvoice = (item.payment_type || o.payment_type) === 'with_invoice';
+    const subtype = isInvoice ? `invoice_${rawSubtype}` : rawSubtype;
     const existing = productPriceBreakdown[item.product_name].find(e => e.subtype === subtype && Math.abs(e.unitPrice - item.unit_price) < 0.01);
     if (existing) {
       existing.quantity += paidQty;
@@ -239,7 +241,9 @@ const SalesDetailsSummary: React.FC<SalesDetailsSummaryProps> = ({ workerId, per
   })));
 
   const subtypeLabels: Record<string, string> = {
-    retail: 'تجزئة', gros: 'جملة', super_gros: 'سوبر جملة', invoice: 'فاتورة 1',
+    retail: 'تجزئة', gros: 'جملة', super_gros: 'سوبر جملة',
+    invoice_gros: 'فاتورة 1 (جملة)', invoice_retail: 'فاتورة 1 (تجزئة)',
+    invoice_super_gros: 'فاتورة 1 (سوبر جملة)', invoice: 'فاتورة 1',
   };
 
   return (
