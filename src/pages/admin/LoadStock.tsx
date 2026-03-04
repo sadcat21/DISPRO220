@@ -182,36 +182,25 @@ const LoadStock: React.FC = () => {
     deleteSessionItem, sessionItemsQuery, refetch: refetchSessions,
   } = useLoadingSessions(selectedWorker || null);
 
-  // Fetch total loaded quantities from loading sessions since last accounting for the selected worker
+  // Fetch total loaded quantities from the LAST loading session for the selected worker
   const { data: workerLoadedData } = useQuery({
-    queryKey: ['worker-loaded-since-accounting', selectedWorker],
+    queryKey: ['worker-last-session-loaded', selectedWorker],
     queryFn: async () => {
-      // Get last completed accounting session date
-      const { data: lastAccounting } = await supabase
-        .from('accounting_sessions')
-        .select('completed_at')
-        .eq('worker_id', selectedWorker!)
-        .eq('status', 'completed')
-        .order('completed_at', { ascending: false })
-        .limit(1)
-        .single();
-      const sinceDate = lastAccounting?.completed_at || null;
-
-      // Get loading sessions (completed or open, exclude review)
-      let sessionsQuery = supabase
+      // Get the last completed/open loading session (exclude review)
+      const { data: lastSession } = await supabase
         .from('loading_sessions')
         .select('id')
         .eq('worker_id', selectedWorker!)
-        .in('status', ['completed', 'open']);
-      if (sinceDate) sessionsQuery = sessionsQuery.gte('created_at', sinceDate);
-      const { data: loadSessions } = await sessionsQuery;
-      if (!loadSessions || loadSessions.length === 0) return {};
+        .in('status', ['completed', 'open'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      if (!lastSession) return {};
 
-      const sessionIds = loadSessions.map(s => s.id);
       const { data: items } = await supabase
         .from('loading_session_items')
         .select('product_id, quantity, gift_quantity')
-        .in('session_id', sessionIds);
+        .eq('session_id', lastSession.id);
 
       const totals: Record<string, number> = {};
       for (const item of (items || [])) {
@@ -1086,7 +1075,7 @@ const LoadStock: React.FC = () => {
                         </div>
                         <div className={`grid ${hasGifts ? 'grid-cols-7' : 'grid-cols-6'} gap-1 text-xs`}>
                           <div className="bg-muted/50 rounded p-1 text-center">
-                            <div className="text-muted-foreground text-[10px]">سابق</div>
+                            <div className="text-muted-foreground text-[10px]">المتبقي</div>
                             <div className="font-bold">{fmtQty(oldStock)}</div>
                           </div>
                           <div className="bg-blue-50 dark:bg-blue-950/30 rounded p-1 text-center">
