@@ -77,14 +77,28 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
       const periodStartTz = toTimestampTz(periodStart, false);
       const periodEndTz = toTimestampTz(periodEnd, true);
 
-      // 1. Fetch delivered orders with items
-      const { data: orders } = await supabase
-        .from('orders')
-        .select('id, total_amount, payment_status, payment_type, invoice_payment_method, partial_amount, customer_id, document_verification, customer:customers(name, phone, address), updated_at, order_items(quantity, unit_price, total_price, gift_quantity, gift_offer_id, product_id, product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box))')
-        .eq('assigned_worker_id', workerId)
-        .eq('status', 'delivered')
-        .gte('updated_at', periodStartTz)
-        .lte('updated_at', periodEndTz);
+      // 1. Fetch delivered orders using stock_movements (reliable delivery timestamp)
+      const { data: stockMovements } = await supabase
+        .from('stock_movements')
+        .select('order_id')
+        .eq('worker_id', workerId)
+        .eq('movement_type', 'delivery')
+        .eq('status', 'approved')
+        .gte('created_at', periodStartTz)
+        .lte('created_at', periodEndTz);
+
+      const deliveryOrderIds = Array.from(new Set((stockMovements || []).map((m: any) => m.order_id).filter(Boolean)));
+
+      let orders: any[] = [];
+      if (deliveryOrderIds.length > 0) {
+        const { data: ordersData } = await supabase
+          .from('orders')
+          .select('id, total_amount, payment_status, payment_type, invoice_payment_method, partial_amount, customer_id, document_verification, customer:customers(name, phone, address), updated_at, order_items(quantity, unit_price, total_price, gift_quantity, gift_offer_id, product_id, product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box))')
+          .in('id', deliveryOrderIds)
+          .eq('assigned_worker_id', workerId)
+          .eq('status', 'delivered');
+        orders = ordersData || [];
+      }
 
       // 2. Fetch debt payments (use exact period timestamps)
       const { data: debtPayments } = await supabase
