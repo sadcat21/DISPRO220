@@ -233,12 +233,10 @@ const MyStock: React.FC = () => {
                       <TrendingUp className="w-3 h-3 text-blue-500" />
                       شحن: {loaded}
                     </span>
-                    {totalLoad > 0 && (
-                      <span className="flex items-center gap-0.5">
-                        <Package className="w-3 h-3 text-purple-500" />
-                        رصيد: {totalLoad}
-                      </span>
-                    )}
+                    <span className="flex items-center gap-0.5">
+                      <Package className="w-3 h-3 text-purple-500" />
+                      رصيد: {totalLoad > 0 ? totalLoad : item.quantity}
+                    </span>
                     <span className="flex items-center gap-0.5">
                       <TrendingDown className="w-3 h-3 text-green-500" />
                       مباع: {sold}
