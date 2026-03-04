@@ -515,22 +515,13 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                 </StepSection>
 
                 {/* ━━━ Step 6: Expenses & Gifts ━━━ */}
-                <StepSection step={6} title="المصاريف والهدايا" color="muted">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="rounded-lg border p-2.5 text-center">
-                      <div className="flex items-center justify-center gap-1.5 mb-1">
-                        <CreditCard className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span className="text-[10px] text-muted-foreground">{t('accounting.expenses')}</span>
-                      </div>
-                      <p className="font-bold text-lg">{fmt(calc.expenses)} DA</p>
+                <StepSection step={6} title="المصاريف" color="muted">
+                  <div className="rounded-lg border p-2.5 text-center">
+                    <div className="flex items-center justify-center gap-1.5 mb-1">
+                      <CreditCard className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-[10px] text-muted-foreground">{t('accounting.expenses')}</span>
                     </div>
-                    <div className="rounded-lg border p-2.5 text-center">
-                      <div className="flex items-center justify-center gap-1.5 mb-1">
-                        <Gift className="w-3.5 h-3.5 text-purple-600" />
-                        <span className="text-[10px] text-muted-foreground">هدايا العروض</span>
-                      </div>
-                      <p className="font-bold text-lg text-purple-600">{fmt(calc.giftOfferValue)} DA</p>
-                    </div>
+                    <p className="font-bold text-lg">{fmt(calc.expenses)} DA</p>
                   </div>
                 </StepSection>
 
@@ -575,7 +566,7 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                     </StepSection>
                     {calc && calc.promoTracking.length > 0 && (
                       <StepSection step={9} title="تتبع العروض" color="purple" badge="C">
-                        <PromoTrackingSummary items={calc.promoTracking} totalGiftValue={calc.giftOfferValue} />
+                        <PromoTrackingSummary items={calc.promoTracking} />
                       </StepSection>
                     )}
                   </>

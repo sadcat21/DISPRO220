@@ -7,7 +7,7 @@ import PromoDetailsPrintView from '@/components/print/PromoDetailsPrintView';
 
 interface PromoTrackingSummaryProps {
   items: PromoTrackingItem[];
-  totalGiftValue: number;
+  totalGiftValue?: number;
   workerName?: string;
 }
 
@@ -60,17 +60,6 @@ const PromoTrackingSummary: React.FC<PromoTrackingSummaryProps> = ({ items, tota
 
   return (
     <div className="space-y-2">
-      {/* Gift value summary */}
-      <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Gift className="w-4 h-4 text-purple-600" />
-          <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">
-            القيمة المالية للهدايا
-          </span>
-        </div>
-        <span className="font-bold text-purple-600">{totalGiftValue.toLocaleString()} DA</span>
-      </div>
-
       {/* Promo items table */}
       <div className="bg-muted/30 rounded-lg overflow-hidden">
         <div className="grid grid-cols-12 gap-1 text-[10px] text-muted-foreground font-medium p-2 border-b">
