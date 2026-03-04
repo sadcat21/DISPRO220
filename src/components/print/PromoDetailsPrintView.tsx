@@ -104,6 +104,7 @@ const PromoDetailsPrintView = forwardRef<HTMLDivElement, PromoDetailsPrintViewPr
               <tr key={index}>
                 <td className="center">{index + 1}</td>
                 <td>
+                  {cd.customerSectorName && <em style={{ fontSize: '9px', color: '#888' }}>{cd.customerSectorName}<br/></em>}
                   {cd.customerStoreName && <strong>{cd.customerStoreName}</strong>}
                   {cd.customerStoreName && cd.customerName ? ' - ' : ''}
                   {cd.customerName || '-'}
