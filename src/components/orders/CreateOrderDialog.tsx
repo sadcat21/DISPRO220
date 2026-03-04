@@ -129,8 +129,29 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
       if (selectedCustomer.default_price_subtype) {
         setPriceSubType(selectedCustomer.default_price_subtype as PriceSubType);
       }
+
+      // Auto-suggest delivery date based on sector's visit_day_delivery
+      if (selectedCustomer.sector_id) {
+        const sector = sectors.find(s => s.id === selectedCustomer.sector_id);
+        if (sector?.visit_day_delivery) {
+          const dayMap: Record<string, number> = {
+            sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
+            thursday: 4, friday: 5, saturday: 6,
+          };
+          const targetDayIndex = dayMap[sector.visit_day_delivery.toLowerCase()];
+          if (targetDayIndex !== undefined) {
+            const today = new Date();
+            const todayDayIndex = today.getDay();
+            let daysAhead = targetDayIndex - todayDayIndex;
+            if (daysAhead < 0) daysAhead += 7;
+            // If today is the delivery day, suggest today (daysAhead = 0)
+            const suggestedDate = addDays(today, daysAhead);
+            setDeliveryDate(format(suggestedDate, 'yyyy-MM-dd'));
+          }
+        }
+      }
     }
-  }, [selectedCustomer]);
+  }, [selectedCustomer, sectors]);
 
   const fetchData = async () => {
     setIsLoadingData(true);
