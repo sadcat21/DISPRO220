@@ -304,6 +304,17 @@ const MyDeliveries: React.FC = () => {
         orderInvoicePaymentMethod: order.invoice_payment_method,
       });
       setShowReprintReceipt(true);
+      // Log reprint activity
+      logActivity.mutateAsync({
+        actionType: 'reprint',
+        entityType: 'order',
+        entityId: order.id,
+        details: {
+          العميل: order.customer?.name,
+          المبلغ: totalAmount,
+          ملاحظة: 'إعادة طباعة وصل التوصيل',
+        },
+      }).catch(() => {});
     } catch {
       toast.error('خطأ في تحضير الوصل');
     }
