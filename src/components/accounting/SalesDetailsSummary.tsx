@@ -384,7 +384,11 @@ const SalesDetailsSummary: React.FC<SalesDetailsSummaryProps> = ({ workerId, per
                     <div key={order.id} className="border rounded-lg p-3 space-y-2">
                       <div className="flex items-center justify-between">
                         <Badge className={`text-[10px] ${paymentStatusColor[order.payment_status] || ''}`}>
-                          {t(`orders.payment_${order.payment_status}`)}
+                          {order.payment_status === 'cash' ? '💰 كاش' :
+                           order.payment_status === 'credit' ? '📋 دين' :
+                           order.payment_status === 'check' ? '🏦 شيك' :
+                           order.payment_status === 'partial' ? '💳 جزئي' :
+                           order.payment_status || '—'}
                         </Badge>
                         {/* Payment type: Invoice 1 or 2 */}
                         <Badge variant="outline" className="text-[10px]">
