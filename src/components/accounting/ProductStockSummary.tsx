@@ -560,7 +560,7 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
           </div>
 
           {soldProducts.map((row) => (
-            <Collapsible key={row.product_name} defaultOpen>
+            <Collapsible key={row.product_name}>
               <div className="border rounded-lg overflow-hidden">
                 <CollapsibleTrigger className="w-full flex items-center justify-between p-2 text-start hover:bg-muted/30 transition-colors">
                   <span className="font-medium text-sm text-wrap">{row.product_name}</span>
