@@ -1138,7 +1138,7 @@ export const translations: Translations = {
   'accounting.actual_cash_received': { ar: 'المبلغ المسلّم فعلياً', fr: 'Montant réellement remis', en: 'Actually Received Amount' },
   'accounting.coin_amount': { ar: 'العملات المعدنية (الصرف)', fr: 'Monnaie (pièces)', en: 'Coins (Change)' },
   'accounting.grand_summary': { ar: 'الملخص العام', fr: 'Résumé général', en: 'Grand Summary' },
-  'accounting.sales_tracking': { ar: 'تتبع المبيعات', fr: 'Suivi des ventes', en: 'Sales Tracking' },
+  'accounting.sales_tracking': { ar: 'المتابعة السعرية', fr: 'Suivi des prix', en: 'Price Tracking' },
   'accounting.customer_sales': { ar: 'مبيعات حسب التاجر', fr: 'Ventes par client', en: 'Sales by Customer' },
   'accounting.no_sales': { ar: 'لا توجد مبيعات', fr: 'Aucune vente', en: 'No sales' },
   'accounting.untracked_orders': { ar: 'بدون تفاصيل منتجات', fr: 'sans détails produits', en: 'without product details' },
