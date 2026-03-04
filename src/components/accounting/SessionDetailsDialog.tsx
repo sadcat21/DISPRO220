@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Calendar, User, Receipt, Banknote, ArrowDownCircle, ArrowUpCircle, Wallet, CreditCard, TrendingDown, Coins, AlertTriangle, Pencil, Package, ShoppingBag, Calculator, Gift, Tag, HandCoins } from 'lucide-react';
+import { Loader2, Calendar, User, Receipt, Banknote, ArrowDownCircle, ArrowUpCircle, Wallet, CreditCard, TrendingDown, Coins, AlertTriangle, Pencil, Package, ShoppingBag, Calculator, Gift, Tag, HandCoins, ChevronDown } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useSessionItems, AccountingSession, AccountingSessionItem } from '@/hooks/useAccountingSessions';
 import { useCreateWorkerDebt } from '@/hooks/useWorkerDebts';
@@ -31,14 +32,24 @@ const getItemValue = (items: AccountingSessionItem[], type: string): { expected:
   return { expected: Number(item?.expected_amount || 0), actual: Number(item?.actual_amount || 0) };
 };
 
-const SectionHeader: React.FC<{ icon: React.ReactNode; title: string; className?: string }> = ({ icon, title, className = '' }) => (
-  <div className={`flex items-center gap-2.5 mb-3 ${className}`}>
-    <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-      {icon}
+const CollapsibleSection: React.FC<{ icon: React.ReactNode; title: string; summary?: string; children: React.ReactNode; className?: string }> = ({ icon, title, summary, children, className = '' }) => (
+  <Collapsible>
+    <div className={`border-2 rounded-xl overflow-hidden ${className}`}>
+      <CollapsibleTrigger className="w-full flex items-center gap-2.5 p-3.5 hover:bg-muted/30 transition-colors">
+        <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+          {icon}
+        </div>
+        <h3 className="font-bold text-sm flex-1 text-start">{title}</h3>
+        {summary && <span className="text-xs text-muted-foreground shrink-0">{summary}</span>}
+        <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0 transition-transform [[data-state=open]>&]:rotate-180" />
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="px-3.5 pb-3.5">
+          {children}
+        </div>
+      </CollapsibleContent>
     </div>
-    <h3 className="font-bold text-sm">{title}</h3>
-    <div className="h-px flex-1 bg-border" />
-  </div>
+  </Collapsible>
 );
 
 const SessionDetailsDialog: React.FC<SessionDetailsDialogProps> = ({ open, onOpenChange, session }) => {
@@ -410,58 +421,55 @@ const SessionDetailsDialog: React.FC<SessionDetailsDialogProps> = ({ open, onOpe
             )}
 
             {/* Sales Details Section */}
-            <div className="border-2 rounded-xl p-3.5">
-              <SectionHeader
-                icon={<ShoppingBag className="w-4 h-4 text-primary" />}
-                title={t('accounting.sales_details')}
-              />
+            <CollapsibleSection
+              icon={<ShoppingBag className="w-4 h-4 text-primary" />}
+              title="مبيعات العملاء"
+            >
               <SalesDetailsSummary
                 workerId={session.worker_id}
                 periodStart={session.period_start}
                 periodEnd={session.period_end}
               />
-            </div>
+            </CollapsibleSection>
 
             {/* Product Stock Section */}
-            <div className="border-2 rounded-xl p-3.5">
-              <SectionHeader
-                icon={<Package className="w-4 h-4 text-primary" />}
-                title={t('accounting.truck_stock') || 'تتبع المنتجات'}
-              />
+            <CollapsibleSection
+              icon={<Package className="w-4 h-4 text-primary" />}
+              title={t('accounting.truck_stock') || 'تتبع المنتجات'}
+            >
               <ProductStockSummary
                 workerId={session.worker_id}
                 branchId={session.branch_id || undefined}
                 periodStart={session.period_start}
                 periodEnd={session.period_end}
               />
-            </div>
+            </CollapsibleSection>
 
             {/* Debt Collections Detail Section */}
-            <div className="border-2 rounded-xl p-3.5">
-              <SectionHeader
-                icon={<HandCoins className="w-4 h-4 text-orange-600" />}
-                title="تفاصيل الديون المحصلة"
-              />
+            <CollapsibleSection
+              icon={<HandCoins className="w-4 h-4 text-orange-600" />}
+              title="تفاصيل الديون المحصلة"
+            >
               <DebtCollectionsSummary
                 workerId={session.worker_id}
                 periodStart={session.period_start}
                 periodEnd={session.period_end}
               />
-            </div>
+            </CollapsibleSection>
 
             {/* Promo Tracking Section */}
             {liveCalc && liveCalc.promoTracking.length > 0 && (
-              <div className="border-2 rounded-xl p-3.5">
-                <SectionHeader
-                  icon={<Tag className="w-4 h-4 text-purple-600" />}
-                  title="تتبع العروض"
-                />
+              <CollapsibleSection
+                icon={<Tag className="w-4 h-4 text-purple-600" />}
+                title="تتبع العروض"
+                summary={`${fmt(liveCalc.giftOfferValue)} DA`}
+              >
                 <PromoTrackingSummary
                   items={liveCalc.promoTracking}
                   totalGiftValue={liveCalc.giftOfferValue}
                   workerName={session.worker?.full_name}
                 />
-              </div>
+              </CollapsibleSection>
             )}
           </div>
         </ScrollArea>
