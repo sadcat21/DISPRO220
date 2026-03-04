@@ -1389,6 +1389,21 @@ const LoadStock: React.FC = () => {
                       <Gift className="w-3.5 h-3.5 text-destructive shrink-0" />
                       <span>عرض: <strong>{offer.giftQty} {offer.giftUnit === 'piece' ? 'قطعة' : 'صندوق'}</strong> لكل <strong>{offer.minQty}</strong></span>
                     </div>
+                    {suggestedGiftQty > 0 && (
+                      <div className="flex items-center justify-center gap-2 text-xs bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-md p-2">
+                        <Truck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span>الشحن المقترح: <strong className="text-blue-700 dark:text-blue-300">
+                          {(() => {
+                            const product = products.find(p => p.id === addProductId);
+                            const piecesPerBox = product?.pieces_per_box || 20;
+                            const giftInCustom = suggestedGiftUnit === 'piece'
+                              ? totalPiecesToCustom(suggestedGiftQty, piecesPerBox)
+                              : suggestedGiftQty;
+                            return fmtQty(addCustomQty(addProductQty, giftInCustom, piecesPerBox));
+                          })()}
+                        </strong> ({addProductQty} + {suggestedGiftQty} {suggestedGiftUnit === 'piece' ? 'قطعة' : 'صندوق'} هدية)</span>
+                      </div>
+                    )}
                     {suggestedGiftQty > 0 && addProductGiftQty === 0 && (
                       <Button
                         type="button"
