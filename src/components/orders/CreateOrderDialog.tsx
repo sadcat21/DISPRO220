@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { addDays, format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -83,6 +84,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
   const [orderItems, setOrderItems] = useState<OrderItemWithPrice[]>([]);
   const [notes, setNotes] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
+  const [deliveryTime, setDeliveryTime] = useState('');
   const [paymentType, setPaymentType] = useState<PaymentType>('with_invoice');
   const [priceSubType, setPriceSubType] = useState<PriceSubType>('gros');
   const [prepaidAmount, setPrepaidAmount] = useState('');
@@ -197,6 +199,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
     setOrderItems([]);
     setNotes('');
     setDeliveryDate('');
+    setDeliveryTime('');
     setPrepaidAmount('');
     setPaymentType('with_invoice');
     setPriceSubType('gros');
@@ -508,7 +511,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
         customerId: selectedCustomerId,
         items: orderItems,
         notes: notes || undefined,
-        deliveryDate: deliveryDate || undefined,
+        deliveryDate: deliveryDate ? (deliveryTime ? `${deliveryDate}T${deliveryTime}` : deliveryDate) : undefined,
         paymentType,
         invoicePaymentMethod: paymentType === 'with_invoice' ? invoicePaymentMethod : undefined,
         totalAmount: orderTotals.totalAmount > 0 ? orderTotals.totalAmount : undefined,
@@ -972,13 +975,79 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
               {/* Delivery Worker - removed, now shown after save */}
 
               {/* Delivery Date */}
-              <section className="space-y-2">
+              <section className="space-y-3">
                 <Label>{t('orders.delivery_date')} ({t('common.optional')})</Label>
-                <Input
-                  type="date"
-                  value={deliveryDate}
-                  onChange={(e) => setDeliveryDate(e.target.value)}
-                />
+                
+                {/* Quick select: اليوم / غداً */}
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={deliveryDate === format(new Date(), 'yyyy-MM-dd') ? 'default' : 'outline'}
+                    onClick={() => {
+                      const today = format(new Date(), 'yyyy-MM-dd');
+                      setDeliveryDate(deliveryDate === today ? '' : today);
+                    }}
+                    className="flex-1"
+                  >
+                    اليوم
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={deliveryDate === format(addDays(new Date(), 1), 'yyyy-MM-dd') ? 'default' : 'outline'}
+                    onClick={() => {
+                      const tomorrow = format(addDays(new Date(), 1), 'yyyy-MM-dd');
+                      setDeliveryDate(deliveryDate === tomorrow ? '' : tomorrow);
+                    }}
+                    className="flex-1"
+                  >
+                    غداً
+                  </Button>
+                </div>
+
+                {/* Week day buttons */}
+                <div className="grid grid-cols-4 gap-2">
+                  {Array.from({ length: 7 }, (_, i) => {
+                    const d = addDays(new Date(), i);
+                    const dateStr = format(d, 'yyyy-MM-dd');
+                    const dayName = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'][d.getDay()];
+                    const isSelected = deliveryDate === dateStr;
+                    return (
+                      <Button
+                        key={dateStr}
+                        type="button"
+                        size="sm"
+                        variant={isSelected ? 'default' : 'outline'}
+                        onClick={() => setDeliveryDate(isSelected ? '' : dateStr)}
+                        className="flex flex-col items-center h-auto py-1.5 text-xs"
+                      >
+                        <span className="font-bold">{dayName}</span>
+                        <span className="text-[10px] opacity-80">{format(d, 'dd/MM')}</span>
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                {/* Date + Time inputs */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">التاريخ</Label>
+                    <Input
+                      type="date"
+                      value={deliveryDate}
+                      onChange={(e) => setDeliveryDate(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">الوقت</Label>
+                    <Input
+                      type="time"
+                      value={deliveryTime}
+                      onChange={(e) => setDeliveryTime(e.target.value)}
+                    />
+                  </div>
+                </div>
               </section>
 
               {/* Prepaid Amount Toggle */}
