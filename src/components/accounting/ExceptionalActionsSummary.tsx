@@ -154,7 +154,7 @@ const ExceptionalActionsSummary: React.FC<ExceptionalActionsSummaryProps> = ({
     );
   });
 
-  if (isLoading || !actions || actions.length === 0) return null;
+  const isEmpty = !actions || actions.length === 0;
 
   return (
     <div className="border-2 border-amber-200 dark:border-amber-800 rounded-xl p-3.5 space-y-2">
@@ -170,39 +170,43 @@ const ExceptionalActionsSummary: React.FC<ExceptionalActionsSummaryProps> = ({
         )}
       </div>
 
-      <div className="space-y-1.5">
-        {actions.map(action => {
-          const changeLines = formatChanges(action.details);
-          return (
-            <div
-              key={action.id}
-              className={`rounded-lg border p-2.5 space-y-1 ${getActionColor(action)}`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  {getActionIcon(action)}
-                  <span className="text-xs font-semibold">{getActionLabel(action)}</span>
+      {isEmpty ? (
+        <p className="text-xs text-muted-foreground">لا توجد إجراءات استثنائية خلال هذه الفترة ✓</p>
+      ) : (
+        <div className="space-y-1.5">
+          {actions!.map(action => {
+            const changeLines = formatChanges(action.details);
+            return (
+              <div
+                key={action.id}
+                className={`rounded-lg border p-2.5 space-y-1 ${getActionColor(action)}`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    {getActionIcon(action)}
+                    <span className="text-xs font-semibold">{getActionLabel(action)}</span>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground">
+                    {format(new Date(action.created_at), 'HH:mm', { locale: ar })}
+                  </span>
                 </div>
-                <span className="text-[10px] text-muted-foreground">
-                  {format(new Date(action.created_at), 'HH:mm', { locale: ar })}
-                </span>
+                {action.entity_id && (
+                  <p className="text-[10px] text-muted-foreground font-mono">
+                    #{action.entity_id.slice(0, 8)}
+                  </p>
+                )}
+                {changeLines.length > 0 && (
+                  <div className="space-y-0.5 pt-0.5">
+                    {changeLines.map((line, idx) => (
+                      <p key={idx} className="text-[11px] text-foreground/80 leading-tight">{line}</p>
+                    ))}
+                  </div>
+                )}
               </div>
-              {action.entity_id && (
-                <p className="text-[10px] text-muted-foreground font-mono">
-                  #{action.entity_id.slice(0, 8)}
-                </p>
-              )}
-              {changeLines.length > 0 && (
-                <div className="space-y-0.5 pt-0.5">
-                  {changeLines.map((line, idx) => (
-                    <p key={idx} className="text-[11px] text-foreground/80 leading-tight">{line}</p>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
