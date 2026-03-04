@@ -320,37 +320,22 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
 
             {/* ━━━ Step 1: Period ━━━ */}
             <StepSection step={1} title={t('accounting.period') || 'الفترة'} color="primary">
-              <div className="space-y-2" dir="rtl">
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1 bg-muted/30 rounded-lg p-2">
-                    <Label className="text-[10px] font-semibold text-muted-foreground block text-right">من</Label>
-                    <Input 
-                      type="datetime-local" 
-                      value={periodStart} 
-                      onChange={e => setPeriodStart(e.target.value)} 
-                      className="text-[11px] h-8 rounded-lg border-muted text-right [direction:ltr]" 
-                    />
-                  </div>
-                  <div className="space-y-1 bg-muted/30 rounded-lg p-2">
-                    <div className="flex items-center justify-between">
-                      <Button type="button" variant="ghost" size="sm" className="h-4 px-1 text-[9px] text-primary hover:text-primary/80 gap-0.5" onClick={() => setPeriodEnd(nowLocal())}>
-                        <RefreshCw className="w-2.5 h-2.5" />
-                        الآن
-                      </Button>
-                      <Label className="text-[10px] font-semibold text-muted-foreground">إلى</Label>
-                    </div>
-                    <Input 
-                      type="datetime-local" 
-                      value={periodEnd} 
-                      onChange={e => setPeriodEnd(e.target.value)} 
-                      className="text-[11px] h-8 rounded-lg border-muted text-right [direction:ltr]" 
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center justify-between bg-muted/20 rounded-lg px-2.5 py-1.5">
-                  <Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} className="scale-90" />
-                  <Label className="text-[10px] font-medium text-muted-foreground">تحديث تلقائي للبيانات</Label>
-                </div>
+              <div className="flex items-center gap-1.5" dir="rtl">
+                <Input 
+                  type="datetime-local" 
+                  value={periodStart} 
+                  onChange={e => setPeriodStart(e.target.value)} 
+                  className="text-[11px] h-8 rounded-lg border-muted flex-1 [direction:ltr]" 
+                />
+                <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-primary hover:text-primary/80" onClick={() => setPeriodEnd(nowLocal())}>
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </Button>
+                <Input 
+                  type="datetime-local" 
+                  value={periodEnd} 
+                  onChange={e => setPeriodEnd(e.target.value)} 
+                  className="text-[11px] h-8 rounded-lg border-muted flex-1 [direction:ltr]" 
+                />
               </div>
             </StepSection>
 
