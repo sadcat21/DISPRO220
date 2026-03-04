@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Calendar, User, Receipt, Banknote, ArrowDownCircle, ArrowUpCircle, Wallet, CreditCard, TrendingDown, Coins, AlertTriangle, Pencil, Package, ShoppingBag, Calculator, Gift, Tag, HandCoins, ChevronDown } from 'lucide-react';
+import { Loader2, Calendar, User, Receipt, Banknote, ArrowDownCircle, ArrowUpCircle, Wallet, CreditCard, TrendingDown, Coins, AlertTriangle, Pencil, Package, ShoppingBag, Calculator, Gift, Tag, HandCoins, ChevronDown, FileCheck2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useSessionItems, AccountingSession, AccountingSessionItem } from '@/hooks/useAccountingSessions';
 import { useCreateWorkerDebt } from '@/hooks/useWorkerDebts';
@@ -17,6 +17,7 @@ import SalesDetailsSummary from './SalesDetailsSummary';
 import PromoTrackingSummary from './PromoTrackingSummary';
 import CreateSessionDialog from './CreateSessionDialog';
 import DebtCollectionsSummary from './DebtCollectionsSummary';
+import DocumentCollectionsSummary from './DocumentCollectionsSummary';
 import { useSessionCalculations } from '@/hooks/useSessionCalculations';
 
 interface SessionDetailsDialogProps {
@@ -62,6 +63,7 @@ const SessionDetailsDialog: React.FC<SessionDetailsDialogProps> = ({ open, onOpe
   const [deficitAdded, setDeficitAdded] = useState(false);
   const [surplusAdded, setSurplusAdded] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+  const [receivedDocs, setReceivedDocs] = useState<Record<string, boolean>>({});
   
   // Fetch live calculations for promo tracking
   const { data: liveCalc } = useSessionCalculations({
@@ -460,7 +462,20 @@ const SessionDetailsDialog: React.FC<SessionDetailsDialogProps> = ({ open, onOpe
               />
             </CollapsibleSection>
 
-            {/* Promo Tracking Section */}
+            {/* Document Collections Section */}
+            <CollapsibleSection
+              icon={<FileCheck2 className="w-4 h-4 text-blue-600" />}
+              title="استلام المستندات"
+            >
+              <DocumentCollectionsSummary
+                workerId={session.worker_id}
+                periodStart={session.period_start}
+                periodEnd={session.period_end}
+                receivedDocs={receivedDocs}
+                onReceivedDocsChange={setReceivedDocs}
+              />
+            </CollapsibleSection>
+
             {liveCalc && liveCalc.promoTracking.length > 0 && (
               <CollapsibleSection
                 icon={<Tag className="w-4 h-4 text-purple-600" />}
