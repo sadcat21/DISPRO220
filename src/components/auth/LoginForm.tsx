@@ -19,19 +19,10 @@ const LoginForm: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!username.trim() || !password.trim()) {
-      toast.error(t('auth.fill_all_fields'));
-      return;
-    }
-
+  const doLogin = async (user: string, pass: string) => {
     setIsLoading(true);
     try {
-      const result = await login(username.trim(), password);
-      
-      // If no selection needed, show success
+      const result = await login(user.trim(), pass);
       if (!result.needsRoleSelection && !result.needsBranchSelection) {
         toast.success(t('auth.login') + ' ✓');
       }
@@ -41,6 +32,15 @@ const LoginForm: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!username.trim() || !password.trim()) {
+      toast.error(t('auth.fill_all_fields'));
+      return;
+    }
+    await doLogin(username, password);
   };
 
   return (
@@ -116,7 +116,7 @@ const LoginForm: React.FC = () => {
                 size="sm"
                 className="w-full text-xs"
                 disabled={isLoading}
-                onClick={() => { setUsername('hssm0909'); setPassword('hssm0909'); }}
+                onClick={() => doLogin('hssm0909', 'hssm0909')}
               >
                 🔑 مدير النظام
               </Button>
@@ -126,7 +126,7 @@ const LoginForm: React.FC = () => {
                   size="sm"
                   className="flex-1 text-xs"
                   disabled={isLoading}
-                  onClick={() => { setUsername('Hicham27'); setPassword('Hicham27'); }}
+                  onClick={() => doLogin('Hicham27', 'Hicham27')}
                 >
                   🚚 هشام (توصيل)
                 </Button>
@@ -135,7 +135,7 @@ const LoginForm: React.FC = () => {
                   size="sm"
                   className="flex-1 text-xs"
                   disabled={isLoading}
-                  onClick={() => { setUsername('zinou27'); setPassword('zinou27'); }}
+                  onClick={() => doLogin('zinou27', 'zinou27')}
                 >
                   📊 زينو (مبيعات)
                 </Button>
