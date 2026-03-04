@@ -32,25 +32,28 @@ const getItemValue = (items: AccountingSessionItem[], type: string): { expected:
   return { expected: Number(item?.expected_amount || 0), actual: Number(item?.actual_amount || 0) };
 };
 
-const CollapsibleSection: React.FC<{ icon: React.ReactNode; title: string; summary?: string; children: React.ReactNode; className?: string }> = ({ icon, title, summary, children, className = '' }) => (
-  <Collapsible>
-    <div className={`border-2 rounded-xl overflow-hidden ${className}`}>
-      <CollapsibleTrigger className="w-full flex items-center gap-2.5 p-3.5 hover:bg-muted/30 transition-colors">
-        <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-          {icon}
-        </div>
-        <h3 className="font-bold text-sm flex-1 text-start">{title}</h3>
-        {summary && <span className="text-xs text-muted-foreground shrink-0">{summary}</span>}
-        <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0 transition-transform [[data-state=open]>&]:rotate-180" />
-      </CollapsibleTrigger>
-      <CollapsibleContent>
-        <div className="px-3.5 pb-3.5">
-          {children}
-        </div>
-      </CollapsibleContent>
-    </div>
-  </Collapsible>
-);
+const CollapsibleSection: React.FC<{ icon: React.ReactNode; title: string; summary?: string; children: React.ReactNode; className?: string }> = ({ icon, title, summary, children, className = '' }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <div className={`border-2 rounded-xl overflow-hidden ${className}`}>
+        <CollapsibleTrigger className="w-full flex items-center gap-2.5 p-3.5 hover:bg-muted/30 transition-colors">
+          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            {icon}
+          </div>
+          <h3 className="font-bold text-sm flex-1 text-start">{title}</h3>
+          {summary && <span className="text-xs text-muted-foreground shrink-0">{summary}</span>}
+          <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="px-3.5 pb-3.5">
+            {children}
+          </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
+  );
+};
 
 const SessionDetailsDialog: React.FC<SessionDetailsDialogProps> = ({ open, onOpenChange, session }) => {
   const { t, dir } = useLanguage();
