@@ -194,6 +194,8 @@ export interface ReceiptData {
   collectorName?: string;
   nextCollectionDate?: string | null;
   nextCollectionTime?: string | null;
+  // Customer surplus (overpayment)
+  customerSurplusAmount?: number;
   // Advanced distribution features (optional toggles)
   advancedOptions?: AdvancedReceiptOptions;
   // Classic single-line layout toggle
@@ -448,6 +450,10 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
     addText(padRight('PAYE', LINE_WIDTH - paidVal.length) + paidVal);
     const restVal = `${formatAmount(data.remainingAmount)} DA`;
     addText(padRight('RESTANT', LINE_WIDTH - restVal.length) + restVal);
+    if (data.customerSurplusAmount && data.customerSurplusAmount > 0) {
+      const surplusVal = `${formatAmount(data.customerSurplusAmount)} DA`;
+      addText(padRight('SURPLUS CLIENT', LINE_WIDTH - surplusVal.length) + surplusVal);
+    }
   }
 
   // ═══════ ADVANCED DISTRIBUTION SECTION ═══════
@@ -733,6 +739,7 @@ export function formatReceiptForPreview(data: ReceiptData): string {
         </div>
         <div style="display:flex;justify-content:space-between;font-size:10px;padding:2px 0;"><span>MONTANT PAYÉ</span><span>${formatAmount(data.paidAmount)} DA</span></div>
         <div style="display:flex;justify-content:space-between;font-size:10px;font-weight:bold;padding:2px 0;${data.remainingAmount > 0 ? 'color:#dc2626;' : ''}"><span>RESTANT</span><span>${formatAmount(data.remainingAmount)} DA</span></div>
+        ${data.customerSurplusAmount && data.customerSurplusAmount > 0 ? `<div style="display:flex;justify-content:space-between;font-size:10px;font-weight:bold;padding:2px 0;color:#16a34a;"><span>SURPLUS CLIENT</span><span>${formatAmount(data.customerSurplusAmount)} DA</span></div>` : ''}
       </div>
 
       ${data.paymentMethod && !payLabel ? `<div style="text-align:center;font-size:10px;padding:2px 0;">Mode: ${{ cash: 'Espèces', check: 'Chèque', transfer: 'Virement', receipt: 'Versement' }[data.paymentMethod] || data.paymentMethod}</div>` : ''}
