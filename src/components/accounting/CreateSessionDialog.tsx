@@ -315,7 +315,7 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
           </div>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(90vh-6rem)] [&_[data-radix-scroll-area-viewport]]:[scrollbar-gutter:stable] [&_[data-radix-scroll-area-viewport]]:px-3 [&_[data-radix-scroll-area-viewport]]:py-3 [&_[data-radix-scroll-area-scrollbar]]:w-2 [&_[data-radix-scroll-area-thumb]]:bg-muted-foreground/40">
+        <ScrollArea className="max-h-[calc(90vh-6rem)] px-3 py-3 [&_[data-radix-scroll-area-viewport]]:[scrollbar-gutter:stable] [&_[data-radix-scroll-area-scrollbar]]:w-2 [&_[data-radix-scroll-area-thumb]]:bg-muted-foreground/40">
           <div className="space-y-3">
 
             {/* ━━━ Step 1: Period ━━━ */}
@@ -524,7 +524,7 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
 
                 {/* ━━━ Step 7: Grand Summary ━━━ */}
                 <StepSection step={7} title={t('accounting.grand_summary')} color="primary" important>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="grid grid-cols-2 gap-2 text-xs min-w-0">
                     <SummaryItem label={t('accounting.total_sales')} value={calc.totalSales} />
                     <SummaryItem label={t('accounting.total_paid')} value={calc.totalPaid} color="green" />
                     <SummaryItem label={t('accounting.new_debts')} value={calc.newDebts} color="red" />
@@ -757,9 +757,9 @@ const PaymentRow: React.FC<{ label: string; value: number; highlight?: boolean }
 );
 
 const SummaryItem: React.FC<{ label: string; value: number; color?: string }> = ({ label, value, color }) => (
-  <div className="text-center p-2 bg-background rounded-lg">
-    <p className="text-muted-foreground text-[10px]">{label}</p>
-    <p className={`font-bold text-sm ${
+  <div className="min-w-0 text-center p-2 bg-background rounded-lg">
+    <p className="text-muted-foreground text-[10px] truncate">{label}</p>
+    <p className={`font-bold text-sm truncate ${
       color === 'green' ? 'text-green-600' :
       color === 'red' ? 'text-destructive' :
       color === 'orange' ? 'text-orange-600' :
