@@ -316,10 +316,10 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
         </DialogHeader>
 
         <ScrollArea className="max-h-[calc(90vh-6rem)] px-4 py-3">
-          <div className="space-y-4">
-            {/* Period */}
-            <div className="space-y-2">
-              <SectionDivider label={t('accounting.period') || 'الفترة'} />
+          <div className="space-y-3">
+
+            {/* ━━━ Step 1: Period ━━━ */}
+            <StepSection step={1} title={t('accounting.period') || 'الفترة'} color="primary">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold">{t('accounting.period_start')}</Label>
@@ -328,13 +328,7 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-semibold">{t('accounting.period_end')}</Label>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-5 px-1.5 text-[10px] text-primary hover:text-primary/80 gap-1"
-                      onClick={() => setPeriodEnd(nowLocal())}
-                    >
+                    <Button type="button" variant="ghost" size="sm" className="h-5 px-1.5 text-[10px] text-primary hover:text-primary/80 gap-1" onClick={() => setPeriodEnd(nowLocal())}>
                       <RefreshCw className="w-3 h-3" />
                       {t('common.refresh') || 'تحديث'}
                     </Button>
@@ -342,11 +336,11 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                   <Input type="datetime-local" value={periodEnd} onChange={e => setPeriodEnd(e.target.value)} className="text-xs rounded-lg" />
                 </div>
               </div>
-              <div className="flex items-center justify-between bg-muted/40 rounded-lg px-3 py-2">
+              <div className="flex items-center justify-between bg-muted/40 rounded-lg px-3 py-2 mt-2">
                 <Label className="text-xs font-medium text-muted-foreground">تحديث تلقائي للبيانات</Label>
                 <Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} />
               </div>
-            </div>
+            </StepSection>
 
             {/* Warning: sessions after last review */}
             {(postReviewInfo?.count || 0) > 0 && (
@@ -366,90 +360,75 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
             )}
 
             {calc && (
-              <div className="space-y-4">
-                {/* === Section 1: Total Sales === */}
-                <SectionCard
-                  icon={<ArrowUpCircle className="w-4 h-4 text-primary" />}
-                  title={t('accounting.total_sales')}
-                  value={calc.totalSales}
-                  highlight
-                />
-
-                {/* === Section 2: Paid vs Debts === */}
-                <div className="grid grid-cols-2 gap-2.5">
-                  <SectionCard
-                    icon={<Banknote className="w-3.5 h-3.5 text-green-600" />}
-                    title={t('accounting.total_paid')}
-                    value={calc.totalPaid}
-                    color="green"
-                    small
-                  />
-                  <SectionCard
-                    icon={<TrendingDown className="w-3.5 h-3.5 text-destructive" />}
-                    title={t('accounting.new_debts')}
-                    value={calc.newDebts}
-                    color="red"
-                    small
-                  />
-                </div>
-
-                {/* === Section 3: Invoice 1 === */}
-                <div className="border-2 rounded-xl p-3.5 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                      <Receipt className="w-4 h-4 text-blue-600" />
+              <>
+                {/* ━━━ Step 2: Sales Overview ━━━ */}
+                <StepSection step={2} title="ملخص المبيعات" color="primary">
+                  <div className="bg-primary/5 rounded-xl p-3 mb-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <ArrowUpCircle className="w-5 h-5 text-primary" />
+                        <span className="font-bold text-sm">{t('accounting.total_sales')}</span>
+                      </div>
+                      <span className="text-xl font-bold text-primary">{fmt(calc.totalSales)} DA</span>
                     </div>
-                    <span className="font-bold text-sm">{t('accounting.invoice1')}</span>
-                    <span className="ms-auto font-bold text-sm text-blue-600">{fmt(calc.invoice1.total)} DA</span>
                   </div>
-                  <div className="space-y-0.5">
-                    <PaymentRow label={t('accounting.method_check')} value={calc.invoice1.check} />
-                    <PaymentRow label={t('accounting.method_transfer')} value={calc.invoice1.transfer} />
-                    <PaymentRow label={t('accounting.method_receipt')} value={calc.invoice1.receipt} />
-                    <PaymentRow label={t('accounting.method_espace_cash')} value={calc.invoice1.espaceCash} highlight />
-                    <PaymentRow label="Versement (cache)" value={calc.invoice1.versementCash} highlight />
-                  </div>
-                </div>
-
-                {/* === Section 4: Invoice 2 === */}
-                <div className="border-2 rounded-xl p-3.5 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                      <Banknote className="w-4 h-4 text-emerald-600" />
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-green-50 dark:bg-green-900/10 rounded-lg p-2.5 text-center">
+                      <p className="text-[10px] text-muted-foreground">{t('accounting.total_paid')}</p>
+                      <p className="font-bold text-lg text-green-600">{fmt(calc.totalPaid)} DA</p>
                     </div>
-                    <span className="font-bold text-sm">{t('accounting.invoice2')}</span>
-                    <span className="ms-auto font-bold text-sm text-emerald-600">{fmt(calc.invoice2.total)} DA</span>
-                  </div>
-                  <PaymentRow label={t('accounting.method_direct_cash')} value={calc.invoice2.cash} highlight />
-                </div>
-
-                {/* === Section 5: Debt Collections === */}
-                <div className="border-2 rounded-xl p-3.5 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                      <ArrowDownCircle className="w-4 h-4 text-orange-600" />
+                    <div className="bg-destructive/5 rounded-lg p-2.5 text-center">
+                      <p className="text-[10px] text-muted-foreground">{t('accounting.new_debts')}</p>
+                      <p className="font-bold text-lg text-destructive">{fmt(calc.newDebts)} DA</p>
                     </div>
-                    <span className="font-bold text-sm">{t('accounting.debt_collections')}</span>
-                    <span className="ms-auto font-bold text-sm text-orange-600">{fmt(calc.debtCollections.total)} DA</span>
                   </div>
+                </StepSection>
+
+                {/* ━━━ Step 3: Payment Breakdown ━━━ */}
+                <StepSection step={3} title="تفاصيل المدفوعات" color="blue">
+                  {/* Invoice 1 */}
+                  <div className="rounded-lg border p-3 space-y-1.5 mb-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Receipt className="w-3.5 h-3.5 text-blue-600" />
+                        <span className="font-bold text-xs">{t('accounting.invoice1')}</span>
+                      </div>
+                      <span className="font-bold text-xs text-blue-600">{fmt(calc.invoice1.total)} DA</span>
+                    </div>
+                    <div className="space-y-0.5">
+                      <PaymentRow label={t('accounting.method_check')} value={calc.invoice1.check} />
+                      <PaymentRow label={t('accounting.method_transfer')} value={calc.invoice1.transfer} />
+                      <PaymentRow label={t('accounting.method_receipt')} value={calc.invoice1.receipt} />
+                      <PaymentRow label={t('accounting.method_espace_cash')} value={calc.invoice1.espaceCash} highlight />
+                      <PaymentRow label="Versement (cache)" value={calc.invoice1.versementCash} highlight />
+                    </div>
+                  </div>
+                  {/* Invoice 2 */}
+                  <div className="rounded-lg border p-3 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Banknote className="w-3.5 h-3.5 text-emerald-600" />
+                        <span className="font-bold text-xs">{t('accounting.invoice2')}</span>
+                      </div>
+                      <span className="font-bold text-xs text-emerald-600">{fmt(calc.invoice2.total)} DA</span>
+                    </div>
+                    <PaymentRow label={t('accounting.method_direct_cash')} value={calc.invoice2.cash} highlight />
+                  </div>
+                </StepSection>
+
+                {/* ━━━ Step 4: Debt Collections ━━━ */}
+                <StepSection step={4} title={t('accounting.debt_collections')} color="orange" badge={`${fmt(calc.debtCollections.total)} DA`}>
                   <div className="space-y-0.5">
                     <PaymentRow label={t('accounting.method_cash')} value={calc.debtCollections.cash} highlight />
                     <PaymentRow label={t('accounting.method_check')} value={calc.debtCollections.check} />
                     <PaymentRow label={t('accounting.method_transfer')} value={calc.debtCollections.transfer} />
                     <PaymentRow label={t('accounting.method_receipt')} value={calc.debtCollections.receipt} />
                   </div>
-                </div>
+                </StepSection>
 
-                {/* === Section 6: Physical Cash === */}
-                <div className="border-2 border-primary rounded-xl p-3.5 space-y-3 bg-primary/5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-                      <Wallet className="w-5 h-5 text-primary" />
-                    </div>
-                    <span className="font-bold text-sm">{t('accounting.physical_cash')}</span>
-                  </div>
-
-                  <div className="space-y-1 text-xs bg-background/60 rounded-lg p-2.5">
+                {/* ━━━ Step 5: Physical Cash (Key Input) ━━━ */}
+                <StepSection step={5} title={t('accounting.physical_cash')} color="primary" important>
+                  <div className="space-y-1 text-xs bg-muted/40 rounded-lg p-2.5">
                     <div className="flex justify-between text-muted-foreground">
                       <span>{t('accounting.invoice2')} ({t('accounting.method_direct_cash')})</span>
                       <span>{fmt(calc.invoice2.cash)} DA</span>
@@ -480,19 +459,13 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
+                  <div className="space-y-1.5 mt-3">
                     <Label className="text-xs font-semibold">{t('accounting.actual_cash_received')}</Label>
-                    <Input
-                      type="number"
-                      value={actualCash}
-                      onChange={e => setActualCash(e.target.value)}
-                      className="h-11 text-lg font-bold text-center rounded-lg"
-                      placeholder="0"
-                    />
+                    <Input type="number" value={actualCash} onChange={e => setActualCash(e.target.value)} className="h-11 text-lg font-bold text-center rounded-lg" placeholder="0" />
                   </div>
 
                   {actualCash !== '' && (
-                    <div className={`rounded-xl p-3 text-center ${cashDifference >= 0 ? 'bg-green-100 dark:bg-green-900/20' : 'bg-destructive/10'}`}>
+                    <div className={`rounded-xl p-3 text-center mt-2 ${cashDifference >= 0 ? 'bg-green-100 dark:bg-green-900/20' : 'bg-destructive/10'}`}>
                       <p className="text-xs text-muted-foreground mb-0.5">{t('accounting.difference')}</p>
                       <p className={`text-xl font-bold ${cashDifference >= 0 ? 'text-green-600' : 'text-destructive'}`}>
                         {cashDifference >= 0 ? '+' : ''}{fmt(cashDifference)} DA
@@ -500,91 +473,69 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                     </div>
                   )}
 
-                   {actualCash !== '' && cashDifference < 0 && (
-                     <div className="space-y-2 mt-2">
-                       <div className="flex items-center gap-2 p-2 rounded-lg bg-destructive/10">
-                         <Checkbox
-                           id="register-deficit"
-                           checked={registerDeficit}
-                           onCheckedChange={(v) => {
-                             setRegisterDeficit(!!v);
-                             if (!!v) setRegisterDeficitTreasury(false);
-                           }}
-                         />
-                         <label htmlFor="register-deficit" className="text-xs font-medium text-destructive cursor-pointer">
-                           تسجيل العجز كدين على العامل + في خزينة الفائض والعجز ({fmt(Math.abs(cashDifference))} DA)
-                         </label>
-                       </div>
-                       <div className="flex items-center gap-2 p-2 rounded-lg bg-orange-100 dark:bg-orange-900/20">
-                         <Checkbox
-                           id="register-deficit-treasury"
-                           checked={registerDeficitTreasury}
-                           onCheckedChange={(v) => {
-                             setRegisterDeficitTreasury(!!v);
-                             if (!!v) setRegisterDeficit(false);
-                           }}
-                         />
-                         <label htmlFor="register-deficit-treasury" className="text-xs font-medium text-orange-700 dark:text-orange-400 cursor-pointer">
-                           تسجيل العجز فقط في خزينة الفائض والعجز ({fmt(Math.abs(cashDifference))} DA)
-                         </label>
-                       </div>
-                     </div>
-                   )}
+                  {actualCash !== '' && cashDifference < 0 && (
+                    <div className="space-y-2 mt-2">
+                      <div className="flex items-center gap-2 p-2 rounded-lg bg-destructive/10">
+                        <Checkbox id="register-deficit" checked={registerDeficit} onCheckedChange={(v) => { setRegisterDeficit(!!v); if (!!v) setRegisterDeficitTreasury(false); }} />
+                        <label htmlFor="register-deficit" className="text-xs font-medium text-destructive cursor-pointer">
+                          تسجيل العجز كدين على العامل + في خزينة الفائض والعجز ({fmt(Math.abs(cashDifference))} DA)
+                        </label>
+                      </div>
+                      <div className="flex items-center gap-2 p-2 rounded-lg bg-orange-100 dark:bg-orange-900/20">
+                        <Checkbox id="register-deficit-treasury" checked={registerDeficitTreasury} onCheckedChange={(v) => { setRegisterDeficitTreasury(!!v); if (!!v) setRegisterDeficit(false); }} />
+                        <label htmlFor="register-deficit-treasury" className="text-xs font-medium text-orange-700 dark:text-orange-400 cursor-pointer">
+                          تسجيل العجز فقط في خزينة الفائض والعجز ({fmt(Math.abs(cashDifference))} DA)
+                        </label>
+                      </div>
+                    </div>
+                  )}
 
-                   {actualCash !== '' && cashDifference > 0 && (
-                     <div className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-green-100 dark:bg-green-900/20">
-                       <Checkbox
-                         id="register-surplus"
-                         checked={registerSurplus}
-                         onCheckedChange={(v) => setRegisterSurplus(!!v)}
-                       />
-                       <label htmlFor="register-surplus" className="text-xs font-medium text-green-700 dark:text-green-400 cursor-pointer">
-                         تسجيل الفائض في الخزينة ({fmt(cashDifference)} DA)
-                       </label>
-                     </div>
-                   )}
+                  {actualCash !== '' && cashDifference > 0 && (
+                    <div className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-green-100 dark:bg-green-900/20">
+                      <Checkbox id="register-surplus" checked={registerSurplus} onCheckedChange={(v) => setRegisterSurplus(!!v)} />
+                      <label htmlFor="register-surplus" className="text-xs font-medium text-green-700 dark:text-green-400 cursor-pointer">
+                        تسجيل الفائض في الخزينة ({fmt(cashDifference)} DA)
+                      </label>
+                    </div>
+                  )}
+
                   {/* Coin amount */}
-                  <div className="space-y-1.5 border-t pt-3">
+                  <div className="space-y-1.5 border-t pt-3 mt-3">
                     <div className="flex items-center gap-2">
                       <Coins className="w-4 h-4 text-muted-foreground" />
                       <Label className="text-xs font-semibold">{t('accounting.coin_amount')}</Label>
                     </div>
-                    <Input
-                      type="number"
-                      value={coinAmount}
-                      onChange={e => setCoinAmount(e.target.value)}
-                      onFocus={e => e.target.select()}
-                      className="h-9 text-center rounded-lg"
-                      placeholder="0"
-                    />
+                    <Input type="number" value={coinAmount} onChange={e => setCoinAmount(e.target.value)} onFocus={e => e.target.select()} className="h-9 text-center rounded-lg" placeholder="0" />
                     {coinAmount && Number(coinAmount) > 0 && actualCash !== '' && (
                       <p className="text-xs text-muted-foreground text-center">
                         {t('accounting.coin_amount')}: {fmt(Number(coinAmount))} DA — {t('accounting.method_cash')}: {fmt(Number(actualCash || 0) - Number(coinAmount))} DA
                       </p>
                     )}
                   </div>
-                </div>
+                </StepSection>
 
-                {/* === Section 7: Gift Offer Value === */}
-                <SectionCard
-                  icon={<Gift className="w-4 h-4 text-purple-600" />}
-                  title="القيمة المالية لهدايا العروض"
-                  value={calc.giftOfferValue}
-                  color="purple"
-                  small
-                />
+                {/* ━━━ Step 6: Expenses & Gifts ━━━ */}
+                <StepSection step={6} title="المصاريف والهدايا" color="muted">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-lg border p-2.5 text-center">
+                      <div className="flex items-center justify-center gap-1.5 mb-1">
+                        <CreditCard className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span className="text-[10px] text-muted-foreground">{t('accounting.expenses')}</span>
+                      </div>
+                      <p className="font-bold text-lg">{fmt(calc.expenses)} DA</p>
+                    </div>
+                    <div className="rounded-lg border p-2.5 text-center">
+                      <div className="flex items-center justify-center gap-1.5 mb-1">
+                        <Gift className="w-3.5 h-3.5 text-purple-600" />
+                        <span className="text-[10px] text-muted-foreground">هدايا العروض</span>
+                      </div>
+                      <p className="font-bold text-lg text-purple-600">{fmt(calc.giftOfferValue)} DA</p>
+                    </div>
+                  </div>
+                </StepSection>
 
-                {/* === Section 8: Expenses === */}
-                <SectionCard
-                  icon={<CreditCard className="w-4 h-4 text-muted-foreground" />}
-                  title={t('accounting.expenses')}
-                  value={calc.expenses}
-                  small
-                />
-
-                {/* === Grand Summary === */}
-                <div className="border-2 rounded-xl p-3.5 space-y-2.5 bg-muted/30">
-                  <p className="font-bold text-sm text-center">{t('accounting.grand_summary')}</p>
+                {/* ━━━ Step 7: Grand Summary ━━━ */}
+                <StepSection step={7} title={t('accounting.grand_summary')} color="primary" important>
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <SummaryItem label={t('accounting.total_sales')} value={calc.totalSales} />
                     <SummaryItem label={t('accounting.total_paid')} value={calc.totalPaid} color="green" />
@@ -594,137 +545,79 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                     <SummaryItem label={t('accounting.expenses')} value={calc.expenses} />
                     <SummaryItem label={t('accounting.coin_amount')} value={Number(coinAmount || 0)} />
                   </div>
-                </div>
-              </div>
+                </StepSection>
+              </>
             )}
 
-            {/* Worker Handover Summary */}
+            {/* ━━━ Step 8: Worker Handover ━━━ */}
             {selectedWorkerId && periodStart && periodEnd && calc && (
-              <WorkerHandoverSummary
-                workerId={selectedWorkerId}
-                periodStart={periodStart}
-                periodEnd={periodEnd}
-                calc={calc}
-                coinAmount={Number(coinAmount || 0)}
-              />
-            )}
-
-            {/* Product & Sales Tracking */}
-            {selectedWorkerId && periodStart && periodEnd && (
-               <>
-                {viewByProduct ? (
-                  /* === Product-Centric View === */
-                  <div className="border-2 rounded-xl p-3.5 space-y-3">
-                    <SectionDividerWithIcon
-                      icon={<Package className="w-4 h-4 text-primary" />}
-                      label="ملخص شامل حسب المنتج"
-                    />
-                    <ProductStockSummary
-                      workerId={selectedWorkerId}
-                      branchId={activeBranch?.id}
-                      periodStart={periodStart}
-                      periodEnd={periodEnd}
-                      viewByProduct
-                      promoTracking={calc?.promoTracking}
-                    />
-                    {/* Truck Review Section */}
-                    <div className="border-t pt-3 mt-3">
-                      <SectionDividerWithIcon
-                        icon={<Truck className="w-4 h-4 text-primary" />}
-                        label="تفاصيل مراجعة الشاحنة"
-                      />
-                      <TruckReviewSection workerId={selectedWorkerId} />
-                    </div>
-                  </div>
-                ) : (
-                  /* === Section-Based View (Default) === */
-                  <>
-                    <div className="border-2 rounded-xl p-3.5">
-                      <SectionDividerWithIcon
-                        icon={<Package className="w-4 h-4 text-primary" />}
-                        label={t('accounting.truck_stock') || 'تتبع المنتجات'}
-                      />
-                      <ProductStockSummary
-                        workerId={selectedWorkerId}
-                        branchId={activeBranch?.id}
-                        periodStart={periodStart}
-                        periodEnd={periodEnd}
-                      />
-                    </div>
-                    {/* Truck Review Section */}
-                    <div className="border-2 rounded-xl p-3.5">
-                      <SectionDividerWithIcon
-                        icon={<Truck className="w-4 h-4 text-primary" />}
-                        label="تفاصيل مراجعة الشاحنة"
-                      />
-                      <TruckReviewSection workerId={selectedWorkerId} />
-                    </div>
-                    <div className="border-2 rounded-xl p-3.5">
-                      <SectionDividerWithIcon
-                        icon={<ShoppingBag className="w-4 h-4 text-primary" />}
-                        label={t('accounting.sales_details')}
-                      />
-                      <SalesDetailsSummary
-                        workerId={selectedWorkerId}
-                        periodStart={periodStart}
-                        periodEnd={periodEnd}
-                      />
-                    </div>
-                    {/* Promo Tracking */}
-                    {calc && calc.promoTracking.length > 0 && (
-                      <div className="border-2 rounded-xl p-3.5">
-                        <SectionDividerWithIcon
-                          icon={<Tag className="w-4 h-4 text-purple-600" />}
-                          label="تتبع العروض"
-                        />
-                        <PromoTrackingSummary
-                          items={calc.promoTracking}
-                          totalGiftValue={calc.giftOfferValue}
-                        />
-                      </div>
-                    )}
-                  </>
-                )}
-                {/* Debt Collections Detail - always visible */}
-                <div className="border-2 rounded-xl p-3.5">
-                  <SectionDividerWithIcon
-                    icon={<HandCoins className="w-4 h-4 text-orange-600" />}
-                    label="تفاصيل الديون المحصلة"
-                  />
-                  <DebtCollectionsSummary
-                    workerId={selectedWorkerId}
-                    periodStart={periodStart}
-                    periodEnd={periodEnd}
-                  />
-                </div>
-                {/* Collected Documents - always visible */}
-                <div className="border-2 rounded-xl p-3.5">
-                  <SectionDividerWithIcon
-                    icon={<FileText className="w-4 h-4 text-blue-600" />}
-                    label="المستندات المحصلة (شيكات / وصولات)"
-                  />
-                  <DocumentCollectionsSummary
-                    workerId={selectedWorkerId}
-                    periodStart={periodStart}
-                    periodEnd={periodEnd}
-                    receivedDocs={receivedDocs}
-                    onReceivedDocsChange={setReceivedDocs}
-                  />
-                </div>
-                {/* Exceptional Actions - component self-hides when empty */}
-                <ExceptionalActionsSummary
+              <StepSection step={8} title="تسليم العامل" color="primary">
+                <WorkerHandoverSummary
                   workerId={selectedWorkerId}
                   periodStart={periodStart}
                   periodEnd={periodEnd}
+                  calc={calc}
+                  coinAmount={Number(coinAmount || 0)}
                 />
+              </StepSection>
+            )}
+
+            {/* ━━━ Step 9: Stock & Sales Tracking ━━━ */}
+            {selectedWorkerId && periodStart && periodEnd && (
+              <>
+                <StepSection step={9} title="تتبع المخزون والمبيعات" color="primary">
+                  {viewByProduct ? (
+                    <div className="space-y-3">
+                      <ProductStockSummary workerId={selectedWorkerId} branchId={activeBranch?.id} periodStart={periodStart} periodEnd={periodEnd} viewByProduct promoTracking={calc?.promoTracking} />
+                      <div className="border-t pt-3">
+                        <SectionDividerWithIcon icon={<Truck className="w-4 h-4 text-primary" />} label="تفاصيل مراجعة الشاحنة" />
+                        <TruckReviewSection workerId={selectedWorkerId} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div>
+                        <SectionDividerWithIcon icon={<Package className="w-4 h-4 text-primary" />} label={t('accounting.truck_stock') || 'تتبع المنتجات'} />
+                        <ProductStockSummary workerId={selectedWorkerId} branchId={activeBranch?.id} periodStart={periodStart} periodEnd={periodEnd} />
+                      </div>
+                      <div className="border-t pt-3">
+                        <SectionDividerWithIcon icon={<Truck className="w-4 h-4 text-primary" />} label="تفاصيل مراجعة الشاحنة" />
+                        <TruckReviewSection workerId={selectedWorkerId} />
+                      </div>
+                      <div className="border-t pt-3">
+                        <SectionDividerWithIcon icon={<ShoppingBag className="w-4 h-4 text-primary" />} label={t('accounting.sales_details')} />
+                        <SalesDetailsSummary workerId={selectedWorkerId} periodStart={periodStart} periodEnd={periodEnd} />
+                      </div>
+                      {calc && calc.promoTracking.length > 0 && (
+                        <div className="border-t pt-3">
+                          <SectionDividerWithIcon icon={<Tag className="w-4 h-4 text-purple-600" />} label="تتبع العروض" />
+                          <PromoTrackingSummary items={calc.promoTracking} totalGiftValue={calc.giftOfferValue} />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </StepSection>
+
+                {/* ━━━ Step 10: Debt Collections Detail ━━━ */}
+                <StepSection step={10} title="تفاصيل الديون المحصلة" color="orange">
+                  <DebtCollectionsSummary workerId={selectedWorkerId} periodStart={periodStart} periodEnd={periodEnd} />
+                </StepSection>
+
+                {/* ━━━ Step 11: Document Collections ━━━ */}
+                <StepSection step={11} title="المستندات المحصلة (شيكات / وصولات)" color="blue">
+                  <DocumentCollectionsSummary workerId={selectedWorkerId} periodStart={periodStart} periodEnd={periodEnd} receivedDocs={receivedDocs} onReceivedDocsChange={setReceivedDocs} />
+                </StepSection>
+
+                {/* ━━━ Step 12: Exceptional Actions ━━━ */}
+                <StepSection step={12} title="إجراءات استثنائية" color="amber">
+                  <ExceptionalActionsSummary workerId={selectedWorkerId} periodStart={periodStart} periodEnd={periodEnd} />
+                </StepSection>
+
+                {/* ━━━ Step 13: Stock Discrepancies ━━━ */}
                 {pendingDiscrepancies.length > 0 && (
-                  <div className="border-2 border-destructive/20 rounded-xl p-3.5">
-                    <SectionDividerWithIcon
-                      icon={<AlertTriangle className="w-4 h-4 text-destructive" />}
-                      label="فوارق المخزون (فائض / عجز)"
-                    />
+                  <StepSection step={13} title="فوارق المخزون (فائض / عجز)" color="red">
                     <StockDiscrepancySection discrepancies={pendingDiscrepancies} />
-                  </div>
+                  </StepSection>
                 )}
               </>
             )}
@@ -802,6 +695,40 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
         </DialogContent>
       </Dialog>
     </Dialog>
+  );
+};
+
+// === Step Section Component ===
+const stepColors: Record<string, string> = {
+  primary: 'border-primary/30 text-primary bg-primary/10',
+  blue: 'border-blue-300 dark:border-blue-800 text-blue-600 bg-blue-50 dark:bg-blue-900/20',
+  orange: 'border-orange-300 dark:border-orange-800 text-orange-600 bg-orange-50 dark:bg-orange-900/20',
+  amber: 'border-amber-300 dark:border-amber-800 text-amber-600 bg-amber-50 dark:bg-amber-900/20',
+  red: 'border-destructive/30 text-destructive bg-destructive/5',
+  muted: 'border-border text-muted-foreground bg-muted/30',
+  green: 'border-green-300 dark:border-green-800 text-green-600 bg-green-50 dark:bg-green-900/20',
+};
+
+const StepSection: React.FC<{
+  step: number;
+  title: string;
+  color?: string;
+  badge?: string;
+  important?: boolean;
+  children: React.ReactNode;
+}> = ({ step, title, color = 'primary', badge, important, children }) => {
+  const colorClass = stepColors[color] || stepColors.primary;
+  return (
+    <div className={`rounded-xl border-2 p-3.5 space-y-2.5 ${important ? 'border-primary bg-primary/5' : 'border-border'}`}>
+      <div className="flex items-center gap-2.5">
+        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${colorClass}`}>
+          {step}
+        </div>
+        <h3 className="font-bold text-sm flex-1">{title}</h3>
+        {badge && <span className={`text-xs font-bold ${colorClass.split(' ').find(c => c.startsWith('text-'))}`}>{badge}</span>}
+      </div>
+      {children}
+    </div>
   );
 };
 

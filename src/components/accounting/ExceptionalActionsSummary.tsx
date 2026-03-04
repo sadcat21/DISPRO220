@@ -157,18 +157,13 @@ const ExceptionalActionsSummary: React.FC<ExceptionalActionsSummaryProps> = ({
   const isEmpty = !actions || actions.length === 0;
 
   return (
-    <div className="border-2 border-amber-200 dark:border-amber-800 rounded-xl p-3.5 space-y-2">
-      <div className="flex items-center gap-2 mb-1">
-        <AlertTriangle className="w-4 h-4 text-amber-600" />
-        <span className="font-semibold text-sm">إجراءات استثنائية</span>
-        <Badge variant="outline" className="text-xs">{actions.length}</Badge>
-        {giftReversals.length > 0 && (
-          <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 text-[10px]">
-            <RotateCcw className="w-3 h-3 ml-1" />
-            {giftReversals.length} تراجع هدايا
-          </Badge>
-        )}
-      </div>
+    <div className="space-y-2">
+      {giftReversals.length > 0 && (
+        <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 text-[10px]">
+          <RotateCcw className="w-3 h-3 ml-1" />
+          {giftReversals.length} تراجع هدايا
+        </Badge>
+      )}
 
       {isEmpty ? (
         <p className="text-xs text-muted-foreground">لا توجد إجراءات استثنائية خلال هذه الفترة ✓</p>
