@@ -82,8 +82,14 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   });
 
   // Orders assigned to this worker (pending delivery) - fetch full details
+  // Include orders matching today's delivery sectors OR with delivery scheduled for today
+  const todayDateStr = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }, []);
+
   const { data: assignedOrders = [] } = useQuery({
-    queryKey: ['today-cust-assigned-orders-full', effectiveWorkerId],
+    queryKey: ['today-cust-assigned-orders-full', effectiveWorkerId, todayDateStr],
     queryFn: async () => {
       const { data } = await supabase
         .from('orders')
@@ -138,10 +144,21 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
 
   const deliveryCustomerIds = useMemo(() => {
     const ids = new Set<string>();
-    assignedOrders.forEach(o => { if (o.customer_id) ids.add(o.customer_id); });
+    const deliverySectorIds = new Set(deliverySectors.map(s => s.id));
+    
+    assignedOrders.forEach(o => {
+      if (!o.customer_id) return;
+      const customer = customers.find(c => c.id === o.customer_id);
+      // Include if: customer's sector matches today's delivery sector, OR order has delivery_date = today
+      const matchesSector = customer?.sector_id && deliverySectorIds.has(customer.sector_id);
+      const matchesDate = o.delivery_date && o.delivery_date.startsWith(todayDateStr);
+      if (matchesSector || matchesDate || deliverySectors.length === 0) {
+        ids.add(o.customer_id);
+      }
+    });
     deliveredOrders.forEach(o => { if (o.customer_id) ids.add(o.customer_id); });
     return ids;
-  }, [assignedOrders, deliveredOrders]);
+  }, [assignedOrders, deliveredOrders, deliverySectors, customers, todayDateStr]);
 
   const deliveryCustomers = useMemo(() => {
     return customers.filter(c => deliveryCustomerIds.has(c.id));

@@ -198,12 +198,12 @@ const LoadStock: React.FC = () => {
 
       const { data: items } = await supabase
         .from('loading_session_items')
-        .select('product_id, quantity, gift_quantity')
+        .select('product_id, quantity, gift_quantity, previous_quantity')
         .eq('session_id', lastSession.id);
 
       const totals: Record<string, number> = {};
       for (const item of (items || [])) {
-        totals[item.product_id] = (totals[item.product_id] || 0) + item.quantity + (item.gift_quantity || 0);
+        totals[item.product_id] = (totals[item.product_id] || 0) + (item.previous_quantity || 0) + item.quantity + (item.gift_quantity || 0);
       }
       return totals;
     },
@@ -246,6 +246,22 @@ const LoadStock: React.FC = () => {
         totals[item.product_id] = (totals[item.product_id] || 0) + item.quantity + (item.gift_quantity || 0);
       }
       return totals;
+    },
+    enabled: !!selectedWorker,
+  });
+
+  // Fetch accounting sessions for this worker (for red badge separator in history)
+  const { data: accountingSessions = [] } = useQuery({
+    queryKey: ['worker-accounting-sessions-history', selectedWorker],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('accounting_sessions')
+        .select('completed_at')
+        .eq('worker_id', selectedWorker!)
+        .eq('status', 'completed')
+        .order('completed_at', { ascending: false })
+        .limit(50);
+      return (data || []).filter(a => a.completed_at);
     },
     enabled: !!selectedWorker,
   });
@@ -1503,10 +1519,27 @@ const LoadStock: React.FC = () => {
             <div className="space-y-2">
               {filteredSessions.length === 0 ? (
                 <p className="text-center text-muted-foreground py-6 text-sm">لا توجد جلسات سابقة</p>
-              ) : filteredSessions.map(session => {
+              ) : filteredSessions.map((session, idx) => {
                 const reviewCounts = sessionDiscrepancyMap[session.id] || { deficit: 0, surplus: 0 };
+                
+                // Check if there's an accounting session between this session and the previous one
+                const prevSession = filteredSessions[idx - 1];
+                const hasAccountingBetween = prevSession && accountingSessions.some(a => {
+                  const aDate = new Date(a.completed_at).getTime();
+                  const thisDate = new Date(session.created_at).getTime();
+                  const prevDate = new Date(prevSession.created_at).getTime();
+                  return aDate > thisDate && aDate <= prevDate;
+                });
 
                 return (
+                  <React.Fragment key={session.id}>
+                  {hasAccountingBetween && (
+                    <div className="flex items-center gap-2 py-1">
+                      <div className="flex-1 h-px bg-destructive/50" />
+                      <Badge variant="destructive" className="text-[10px] px-2 py-0.5">جلسة محاسبة</Badge>
+                      <div className="flex-1 h-px bg-destructive/50" />
+                    </div>
+                  )}
                   <Card
                     key={session.id}
                     className={`border cursor-pointer hover:bg-accent/50 transition-colors ${session.status === 'open' ? 'border-primary/30' : ''}`}
@@ -1562,6 +1595,7 @@ const LoadStock: React.FC = () => {
                       </div>
                     </CardContent>
                   </Card>
+                  </React.Fragment>
                 );
               })}
             </div>
