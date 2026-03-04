@@ -12,7 +12,7 @@ interface PromoTrackingSummaryProps {
 }
 
 const formatGiftDisplay = (giftPieces: number, piecesPerBox: number): string => {
-  if (piecesPerBox <= 0) return `${giftPieces} قطعة`;
+  if (piecesPerBox <= 1) return `${giftPieces}`;
   const boxes = Math.floor(giftPieces / piecesPerBox);
   const remainingPieces = giftPieces % piecesPerBox;
   const piecesStr = remainingPieces.toString().padStart(2, '0');
@@ -128,10 +128,14 @@ const PromoTrackingSummary: React.FC<PromoTrackingSummaryProps> = ({ items, tota
                       <div className="col-span-4 flex items-center gap-1">
                         <User className="w-3 h-3 text-muted-foreground shrink-0" />
                         <div className="truncate">
-                          {cd.customerStoreName && (
-                            <span className="font-bold text-[11px]">{cd.customerStoreName} - </span>
+                          {cd.customerSectorName && (
+                            <span className="text-[9px] text-primary font-medium block">{cd.customerSectorName}</span>
                           )}
-                          <span className="text-muted-foreground">{cd.customerName || '-'}</span>
+                          {cd.customerStoreName && (
+                            <span className="font-bold text-[11px]">{cd.customerStoreName}</span>
+                          )}
+                          {cd.customerStoreName && cd.customerName && <span className="text-muted-foreground"> - </span>}
+                          <span className="text-muted-foreground text-[10px]">{cd.customerName || '-'}</span>
                         </div>
                       </div>
                       <span className="col-span-2 text-center font-semibold">{cd.quantitySold}</span>
