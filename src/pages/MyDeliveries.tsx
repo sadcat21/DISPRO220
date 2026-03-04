@@ -13,6 +13,7 @@ import {
   Receipt, Banknote, Route, Gift, Trash2, ListFilter, Map, AlertTriangle, FileCheck, Printer
 } from 'lucide-react';
 import { toast } from 'sonner';
+import WorkerLoadRequestDialog from '@/components/stock/WorkerLoadRequestDialog';
 import { useAssignedOrders, useOrderItems, useUpdateOrderStatus, useCancelOrder } from '@/hooks/useOrders';
 import { useLogActivity } from '@/hooks/useActivityLogs';
 import { useLocationThreshold } from '@/hooks/useLocationSettings';
@@ -71,6 +72,7 @@ const MyDeliveries: React.FC = () => {
   const [customerDebts, setCustomerDebts] = useState<Record<string, boolean>>({});
   const [showReprintReceipt, setShowReprintReceipt] = useState(false);
   const [reprintReceiptData, setReprintReceiptData] = useState<any>(null);
+  const [showLoadRequestDialog, setShowLoadRequestDialog] = useState(false);
 
   // UI override checks
   const isSearchHidden = useIsElementHidden('button', 'deliveries_search');
@@ -699,11 +701,17 @@ const MyDeliveries: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">{t('deliveries.title')}</h2>
-        {!isSearchHidden && (
-          <Button variant="outline" size="sm" onClick={() => setShowSearchDialog(true)}>
-            <Search className="w-4 h-4" />
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="border-primary/30 text-primary" onClick={() => setShowLoadRequestDialog(true)}>
+            <Truck className="w-4 h-4 me-1" />
+            طلب شحن
           </Button>
-        )}
+          {!isSearchHidden && (
+            <Button variant="outline" size="sm" onClick={() => setShowSearchDialog(true)}>
+              <Search className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Delivery Type Tabs (Orders vs Direct Sales) */}
@@ -1040,6 +1048,9 @@ const MyDeliveries: React.FC = () => {
           receiptData={reprintReceiptData}
         />
       )}
+
+      {/* Worker Load Request Dialog */}
+      <WorkerLoadRequestDialog open={showLoadRequestDialog} onOpenChange={setShowLoadRequestDialog} />
     </div>
   );
 };

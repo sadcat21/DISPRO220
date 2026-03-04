@@ -30,6 +30,7 @@ import StockVerificationDialog from '@/components/stock/StockVerificationDialog'
 import ExchangeSessionDialog from '@/components/stock/ExchangeSessionDialog';
 import CustomerPickerDialog from '@/components/orders/CustomerPickerDialog';
 import PartialLoadFromOrdersDialog from '@/components/stock/PartialLoadFromOrdersDialog';
+import WorkerLoadRequestBanner from '@/components/stock/WorkerLoadRequestBanner';
 import { Customer, Sector } from '@/types/database';
 
 interface EmptyTruckItem {
@@ -1279,6 +1280,15 @@ const LoadStock: React.FC = () => {
               {totalSessionQty > 0 && <Badge>{totalSessionQty} صندوق</Badge>}
             </div>
           </div>
+        )}
+
+        {/* Worker Load Request Banner */}
+        {selectedWorker && (
+          <WorkerLoadRequestBanner
+            workerId={selectedWorker}
+            activeSessionId={activeSessionId}
+            onLoadProducts={(products) => handlePartialLoadConfirm(products)}
+          />
         )}
       </div>
 
