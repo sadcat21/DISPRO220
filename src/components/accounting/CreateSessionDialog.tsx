@@ -296,7 +296,7 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] p-0 gap-0 overflow-hidden" dir={dir}>
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-lg max-h-[90vh] p-0 gap-0 overflow-hidden mx-auto" dir={dir}>
         <DialogHeader className="p-4 pb-3 border-b bg-muted/30">
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2.5">
