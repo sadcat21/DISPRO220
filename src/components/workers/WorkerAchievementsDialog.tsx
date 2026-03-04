@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { ShoppingCart, Truck, MapPin, UserPlus, Edit2, Banknote, Eye, Package, Loader2 } from 'lucide-react';
+import { ShoppingCart, Truck, MapPin, UserPlus, Edit2, Banknote, Eye, Package, Loader2, X, Clock, User, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { getOperationLabel, type OperationType } from '@/hooks/useVisitTracking';
+import { Button } from '@/components/ui/button';
 
 interface WorkerAchievementsDialogProps {
   open: boolean;
@@ -44,6 +44,7 @@ const WorkerAchievementsDialog: React.FC<WorkerAchievementsDialogProps> = ({
 }) => {
   const today = format(new Date(), 'yyyy-MM-dd');
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [selectedVisit, setSelectedVisit] = useState<any | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['worker-achievements', workerId, today],
@@ -95,89 +96,161 @@ const WorkerAchievementsDialog: React.FC<WorkerAchievementsDialogProps> = ({
   }, [visits, activeFilter]);
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) setActiveFilter(null); }}>
-      <DialogContent className="max-w-md max-h-[85vh] flex flex-col" dir="rtl">
-        <DialogHeader className="shrink-0">
-          <DialogTitle className="flex items-center gap-2">
-            <Package className="w-5 h-5 text-primary" />
-            منجزات اليوم - {workerName}
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) setActiveFilter(null); }}>
+        <DialogContent className="max-w-md p-0 flex flex-col" style={{ maxHeight: '85vh' }} dir="rtl">
+          <DialogHeader className="shrink-0 p-4 pb-2">
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="w-5 h-5 text-primary" />
+              منجزات اليوم - {workerName}
+            </DialogTitle>
+          </DialogHeader>
 
-        {isLoading ? (
-          <div className="py-8 flex justify-center">
-            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : totalOps === 0 ? (
-          <div className="py-8 text-center text-muted-foreground">
-            <MapPin className="w-10 h-10 mx-auto mb-2 opacity-40" />
-            <p>لا توجد عمليات مسجلة اليوم</p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3 min-h-0 flex-1">
-            {/* Filter buttons */}
-            <div className="flex flex-wrap gap-1.5 shrink-0">
-              <button
-                onClick={() => setActiveFilter(null)}
-                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-colors border ${
-                  !activeFilter
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-muted/60 hover:bg-muted text-foreground border-border'
-                }`}
-              >
-                الكل
-                <span className="font-bold">{totalOps}</span>
-              </button>
-              {Object.entries(counts).map(([type, count]) => (
+          {isLoading ? (
+            <div className="py-8 flex justify-center">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : totalOps === 0 ? (
+            <div className="py-8 text-center text-muted-foreground">
+              <MapPin className="w-10 h-10 mx-auto mb-2 opacity-40" />
+              <p>لا توجد عمليات مسجلة اليوم</p>
+            </div>
+          ) : (
+            <div className="flex flex-col min-h-0 flex-1">
+              {/* Filter buttons */}
+              <div className="flex flex-wrap gap-1.5 shrink-0 px-4 pb-2">
                 <button
-                  key={type}
-                  onClick={() => setActiveFilter(activeFilter === type ? null : type)}
-                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium transition-colors border ${
-                    activeFilter === type
+                  onClick={() => setActiveFilter(null)}
+                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-colors border ${
+                    !activeFilter
                       ? 'bg-primary text-primary-foreground border-primary'
-                      : OPERATION_COLORS[type] || 'border-border'
+                      : 'bg-muted/60 hover:bg-muted text-foreground border-border'
                   }`}
                 >
-                  {OPERATION_ICONS[type]}
-                  <span>{getOperationLabel(type as OperationType)}</span>
-                  <span className="font-bold">{count}</span>
+                  الكل
+                  <span className="font-bold">{totalOps}</span>
                 </button>
-              ))}
-            </div>
-
-            {/* Timeline with scroll */}
-            <ScrollArea className="flex-1 min-h-0" style={{ maxHeight: 'calc(85vh - 200px)' }}>
-              <div className="space-y-2 pe-1">
-                {filteredVisits.map((v: any) => (
-                  <div key={v.id} className={`flex items-start gap-3 p-2.5 rounded-lg border ${OPERATION_COLORS[v.operation_type] || 'border-border'}`}>
-                    <div className="mt-0.5">
-                      {OPERATION_ICONS[v.operation_type] || <MapPin className="w-4 h-4" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{getOperationLabel(v.operation_type as OperationType)}</span>
-                        <span className="text-[10px] text-muted-foreground" dir="ltr">
-                          {format(new Date(v.created_at), 'HH:mm')}
-                        </span>
-                      </div>
-                      {v.customer_name && (
-                        <p className="text-xs text-muted-foreground truncate">{v.customer_name}</p>
-                      )}
-                      {v.notes && (
-                        <p className="text-xs text-muted-foreground mt-0.5 truncate">{v.notes}</p>
-                      )}
-                    </div>
-                  </div>
+                {Object.entries(counts).map(([type, count]) => (
+                  <button
+                    key={type}
+                    onClick={() => setActiveFilter(activeFilter === type ? null : type)}
+                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium transition-colors border ${
+                      activeFilter === type
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : OPERATION_COLORS[type] || 'border-border'
+                    }`}
+                  >
+                    {OPERATION_ICONS[type]}
+                    <span>{getOperationLabel(type as OperationType)}</span>
+                    <span className="font-bold">{count}</span>
+                  </button>
                 ))}
-                {filteredVisits.length === 0 && (
-                  <p className="text-center text-sm text-muted-foreground py-4">لا توجد عمليات من هذا النوع</p>
+              </div>
+
+              {/* Scrollable list */}
+              <div className="flex-1 overflow-y-auto px-4 pb-4">
+                <div className="space-y-2">
+                  {filteredVisits.map((v: any) => (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => setSelectedVisit(v)}
+                      className={`w-full text-start flex items-start gap-3 p-2.5 rounded-lg border cursor-pointer hover:shadow-md transition-shadow ${OPERATION_COLORS[v.operation_type] || 'border-border'}`}
+                    >
+                      <div className="mt-0.5">
+                        {OPERATION_ICONS[v.operation_type] || <MapPin className="w-4 h-4" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">{getOperationLabel(v.operation_type as OperationType)}</span>
+                          <span className="text-[10px] text-muted-foreground" dir="ltr">
+                            {format(new Date(v.created_at), 'HH:mm')}
+                          </span>
+                        </div>
+                        {v.customer_name && (
+                          <p className="text-xs text-muted-foreground truncate">{v.customer_name}</p>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                  {filteredVisits.length === 0 && (
+                    <p className="text-center text-sm text-muted-foreground py-4">لا توجد عمليات من هذا النوع</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Achievement Detail Dialog */}
+      <Dialog open={!!selectedVisit} onOpenChange={(o) => { if (!o) setSelectedVisit(null); }}>
+        <DialogContent className="max-w-sm" dir="rtl">
+          {selectedVisit && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  {OPERATION_ICONS[selectedVisit.operation_type] || <MapPin className="w-5 h-5" />}
+                  تفاصيل الإنجاز
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 mt-2">
+                <div className={`p-3 rounded-lg border ${OPERATION_COLORS[selectedVisit.operation_type] || 'border-border'}`}>
+                  <p className="font-bold text-sm">{getOperationLabel(selectedVisit.operation_type as OperationType)}</p>
+                </div>
+
+                {selectedVisit.customer_name && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <User className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <span className="font-medium">العميل:</span>
+                    <span>{selectedVisit.customer_name}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 text-sm">
+                  <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <span className="font-medium">التوقيت:</span>
+                  <span dir="ltr">{format(new Date(selectedVisit.created_at), 'HH:mm:ss')}</span>
+                </div>
+
+                {selectedVisit.notes && (
+                  <div className="flex items-start gap-2 text-sm">
+                    <FileText className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <span className="font-medium">ملاحظات:</span>
+                    <span className="text-muted-foreground">{selectedVisit.notes}</span>
+                  </div>
+                )}
+
+                {selectedVisit.latitude && selectedVisit.longitude && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <span className="font-medium">الموقع:</span>
+                    <span dir="ltr" className="text-xs text-muted-foreground">
+                      {Number(selectedVisit.latitude).toFixed(5)}, {Number(selectedVisit.longitude).toFixed(5)}
+                    </span>
+                  </div>
+                )}
+
+                {selectedVisit.entity_id && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Package className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <span className="font-medium">المرجع:</span>
+                    <span className="text-xs text-muted-foreground font-mono" dir="ltr">
+                      {selectedVisit.entity_id.substring(0, 8)}...
+                    </span>
+                  </div>
                 )}
               </div>
-            </ScrollArea>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+              <div className="mt-4">
+                <Button variant="outline" className="w-full" onClick={() => setSelectedVisit(null)}>
+                  إغلاق
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
