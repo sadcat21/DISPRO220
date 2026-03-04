@@ -74,8 +74,7 @@ const DocumentCollectionsPopover: React.FC = () => {
   const approveCollection = useApproveDocCollection();
 
   const [selectedOrder, setSelectedOrder] = useState<PendingDocOrder | null>(null);
-  const [showCollect, setShowCollect] = useState(false);
-  const [showVisit, setShowVisit] = useState(false);
+  const [dialogMode, setDialogMode] = useState<'collect' | 'visit' | null>(null);
 
   const isAdmin = role === 'admin' || role === 'branch_admin';
   const totalCount = todayOrders.length + (isAdmin ? pendingCollections.length : 0);
@@ -174,7 +173,7 @@ const DocumentCollectionsPopover: React.FC = () => {
               <TabsContent value="due" className="m-0 flex-1">
                 {dayButtons}
                 <p className="text-[10px] text-muted-foreground text-center py-1">{selectedDateLabel}</p>
-                <PendingDocList orders={pendingOrders} onSelect={setSelectedOrder} />
+                <PendingDocList orders={pendingOrders} onCollect={(o) => { setSelectedOrder(o); setDialogMode('collect'); }} onVisit={(o) => { setSelectedOrder(o); setDialogMode('visit'); }} />
               </TabsContent>
               <TabsContent value="pending" className="m-0 flex-1">
                 <PendingDocCollectionsList
@@ -190,61 +189,23 @@ const DocumentCollectionsPopover: React.FC = () => {
               <div className="p-3 border-b font-bold text-sm">مستندات معلقة للتحصيل</div>
               {dayButtons}
               <p className="text-[10px] text-muted-foreground text-center py-1">{selectedDateLabel}</p>
-              <PendingDocList orders={pendingOrders} onSelect={setSelectedOrder} />
+              <PendingDocList orders={pendingOrders} onCollect={(o) => { setSelectedOrder(o); setDialogMode('collect'); }} onVisit={(o) => { setSelectedOrder(o); setDialogMode('visit'); }} />
             </>
           )}
         </PopoverContent>
       </Popover>
 
-      {/* Order Info Dialog */}
-      {selectedOrder && (
-        <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
-          <DialogContent className="max-w-[95vw] sm:max-w-sm p-4 gap-3" dir="rtl">
-            <DialogHeader className="pb-0">
-              <DialogTitle className="text-base truncate">
-                {selectedOrder.customer?.store_name || selectedOrder.customer?.name || '—'}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
-              <div className="bg-muted/50 rounded-md p-2 text-center space-y-1">
-                <p className="text-xs text-muted-foreground">نوع المستند</p>
-                <Badge className={`text-sm ${getDocColor(selectedOrder.invoice_payment_method)}`}>
-                  {getDocLabel(selectedOrder.invoice_payment_method)}
-                </Badge>
-                <p className="text-lg font-bold">{Number(selectedOrder.total_amount).toLocaleString()} DA</p>
-                {selectedOrder.doc_due_date && (
-                  <p className="text-xs text-muted-foreground">
-                    موعد التحصيل: {format(new Date(selectedOrder.doc_due_date + 'T00:00:00'), 'dd/MM/yyyy')}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex gap-2">
-                <Button size="sm" className="flex-1" onClick={() => setShowCollect(true)}>
-                  <FileCheck className="w-4 h-4 ml-1" />
-                  تم التحصيل
-                </Button>
-                <Button size="sm" variant="outline" className="flex-1" onClick={() => setShowVisit(true)}>
-                  <Eye className="w-4 h-4 ml-1" />
-                  زيارة بدون تحصيل
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {selectedOrder && (
+      {/* CheckVerificationDialog — opens directly when clicking collect */}
+      {selectedOrder && dialogMode === 'collect' && (
         <CheckVerificationDialog
-          open={showCollect}
-          onOpenChange={(open) => { setShowCollect(open); if (!open) setSelectedOrder(null); }}
+          open={true}
+          onOpenChange={(open) => { if (!open) { setDialogMode(null); setSelectedOrder(null); } }}
           orderTotal={Number(selectedOrder.total_amount)}
           customerName={selectedOrder.customer?.store_name || selectedOrder.customer?.name || '—'}
           documentType={selectedOrder.invoice_payment_method as 'check' | 'receipt' | 'transfer'}
           initialVerification={(selectedOrder as any).document_verification}
           onConfirm={async (data) => {
             if (!workerId) return;
-            // Save verification data to the order
             await supabase
               .from('orders')
               .update({
@@ -252,7 +213,6 @@ const DocumentCollectionsPopover: React.FC = () => {
                 document_status: data.checkReceived ? 'received' : 'pending',
               })
               .eq('id', selectedOrder.id);
-            // Create collection record
             await createCollection.mutateAsync({
               orderId: selectedOrder.id,
               workerId,
@@ -260,16 +220,16 @@ const DocumentCollectionsPopover: React.FC = () => {
               notes: `تم تحصيل ${getDocLabel(selectedOrder.invoice_payment_method)}`,
             });
             toast.success('تم تحصيل المستند والتحقق منه بنجاح');
-            setShowCollect(false);
+            setDialogMode(null);
             setSelectedOrder(null);
           }}
         />
       )}
 
-      {selectedOrder && (
+      {selectedOrder && dialogMode === 'visit' && (
         <DocVisitNoCollectionDialog
-          open={showVisit}
-          onOpenChange={(open) => { setShowVisit(open); if (!open) setSelectedOrder(null); }}
+          open={true}
+          onOpenChange={(open) => { if (!open) { setDialogMode(null); setSelectedOrder(null); } }}
           orderId={selectedOrder.id}
           customerName={selectedOrder.customer?.name || '—'}
           documentType={selectedOrder.invoice_payment_method}
@@ -281,7 +241,7 @@ const DocumentCollectionsPopover: React.FC = () => {
   );
 };
 
-const PendingDocList: React.FC<{ orders: PendingDocOrder[]; onSelect: (o: PendingDocOrder) => void }> = ({ orders, onSelect }) => {
+const PendingDocList: React.FC<{ orders: PendingDocOrder[]; onCollect: (o: PendingDocOrder) => void; onVisit: (o: PendingDocOrder) => void }> = ({ orders, onCollect, onVisit }) => {
   if (orders.length === 0) {
     return <div className="p-6 text-center text-sm text-muted-foreground">لا توجد مستندات معلقة</div>;
   }
@@ -290,18 +250,14 @@ const PendingDocList: React.FC<{ orders: PendingDocOrder[]; onSelect: (o: Pendin
     <ScrollArea className="max-h-[50vh]">
       <div className="divide-y">
         {orders.map(order => (
-          <button
-            key={order.id}
-            className="w-full p-3 text-right hover:bg-muted/50 transition-colors"
-            onClick={() => onSelect(order)}
-          >
+          <div key={order.id} className="p-3 space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-bold text-sm">{order.customer?.store_name || order.customer?.name || '—'}</span>
               <Badge className={`text-[10px] ${getDocColor(order.invoice_payment_method)}`}>
                 {getDocLabel(order.invoice_payment_method)}
               </Badge>
             </div>
-            <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span className="font-bold">{Number(order.total_amount).toLocaleString()} DA</span>
               {order.doc_due_date && (
                 <>
@@ -309,9 +265,18 @@ const PendingDocList: React.FC<{ orders: PendingDocOrder[]; onSelect: (o: Pendin
                   <span>{format(new Date(order.doc_due_date + 'T00:00:00'), 'dd/MM/yyyy')}</span>
                 </>
               )}
-              {order.customer?.phone && <span>• {order.customer.phone}</span>}
             </div>
-          </button>
+            <div className="flex gap-2">
+              <Button size="sm" className="flex-1 h-8 text-xs" onClick={() => onCollect(order)}>
+                <FileCheck className="w-3.5 h-3.5 me-1" />
+                تم التحصيل
+              </Button>
+              <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={() => onVisit(order)}>
+                <Eye className="w-3.5 h-3.5 me-1" />
+                زيارة بدون تحصيل
+              </Button>
+            </div>
+          </div>
         ))}
       </div>
     </ScrollArea>
