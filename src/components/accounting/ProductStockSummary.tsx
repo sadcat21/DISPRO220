@@ -414,8 +414,8 @@ const ProductStockSummary: React.FC<ProductStockSummaryProps> = ({
   };
 
   const getUnitSaleLabel = (row: SoldProductPricingRow): string => {
-    if (row.pricing_unit === 'kg') return 'دج/كغ';
-    if (row.pricing_unit === 'unit') return 'دج/قطعة';
+    if (row.pricing_unit === 'kg') return 'DA/kg';
+    if (row.pricing_unit === 'unit') return 'DA/pcs';
     return '-';
   };
 
