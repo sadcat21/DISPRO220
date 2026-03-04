@@ -95,7 +95,7 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
       if (deliveryOrderIds.length > 0) {
         const { data: ordersData } = await supabase
           .from('orders')
-          .select('id, total_amount, payment_status, payment_type, invoice_payment_method, partial_amount, customer_id, document_verification, customer:customers(name, store_name, phone, address, sector:sectors(name)), updated_at, order_items(quantity, unit_price, total_price, gift_quantity, gift_offer_id, product_id, pieces_per_box, product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box))')
+          .select('id, total_amount, payment_status, payment_type, invoice_payment_method, partial_amount, customer_id, document_verification, customer:customers(name, store_name, phone, address, sector:sectors(name)), updated_at, notes, order_items(quantity, unit_price, total_price, gift_quantity, gift_offer_id, product_id, pieces_per_box, product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box))')
           .in('id', deliveryOrderIds)
           .eq('assigned_worker_id', workerId)
           .eq('status', 'delivered');
@@ -132,7 +132,7 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
       // 4. Fetch promos from promos table (fallback/complement to order_items gift data)
       const { data: promosData } = await supabase
         .from('promos')
-        .select('product_id, vente_quantity, gratuite_quantity, promo_date, customer_id, customer:customers(name, store_name, phone, address, sector:sectors(name)), product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box)')
+        .select('product_id, vente_quantity, gratuite_quantity, notes, promo_date, customer_id, customer:customers(name, store_name, phone, address, sector:sectors(name)), product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box)')
         .eq('worker_id', workerId)
         .gte('promo_date', periodStartTz)
         .lte('promo_date', periodEndTz);
@@ -193,6 +193,22 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
         }, 0);
       };
 
+      const normalizeOrderGiftToPieces = (order: any, item: any, piecesPerBox: number): number => {
+        const rawGift = Number(item.gift_quantity || 0);
+        if (rawGift <= 0) return 0;
+        const isDirectSale = String(order?.notes || '').includes('بيع مباشر');
+        if (isDirectSale || piecesPerBox <= 1) return rawGift;
+        return rawGift * piecesPerBox;
+      };
+
+      const normalizePromoGiftToPieces = (promo: any, giftUnit: string, piecesPerBox: number): number => {
+        const rawGift = Number(promo.gratuite_quantity || 0);
+        if (rawGift <= 0) return 0;
+        const isDirectSalePromo = String(promo?.notes || '').includes('بيع مباشر');
+        if (isDirectSalePromo || piecesPerBox <= 1) return rawGift;
+        return giftUnit === 'box' ? rawGift * piecesPerBox : rawGift;
+      };
+
       // === Calculate ===
       let totalSales = 0;
       let totalPaid = 0;
@@ -225,13 +241,16 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
 
         // Calculate gift value and promo tracking from items
         for (const item of (order.order_items || [])) {
-          const giftQty = Number(item.gift_quantity || 0);
-          if (giftQty > 0) {
+          const giftQtyRaw = Number(item.gift_quantity || 0);
+          if (giftQtyRaw > 0) {
             const boxPrice = calcBoxPrice(item.product);
             const piecesPerBox = Number((item as any).pieces_per_box || (item as any).product?.pieces_per_box || 1);
-            // gift_quantity is stored as pieces, calculate piece price
+            const giftPieces = normalizeOrderGiftToPieces(order, item, piecesPerBox);
+            const giftBoxesForSoldCalc = piecesPerBox > 0 ? giftPieces / piecesPerBox : 0;
+            const soldQuantity = Math.max(0, Number(item.quantity || 0) - giftBoxesForSoldCalc);
+
             const piecePrice = piecesPerBox > 0 ? boxPrice / piecesPerBox : boxPrice;
-            giftOfferValue += giftQty * piecePrice;
+            giftOfferValue += giftPieces * piecePrice;
 
             const offerId = item.gift_offer_id || 'unknown';
             const key = `${item.product_id}_${offerId}`;
@@ -246,8 +265,8 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
                 customerDetails: [],
               };
             }
-            promoMap[key].quantitySold += Number(item.quantity || 0);
-            promoMap[key].giftQuantity += giftQty;
+            promoMap[key].quantitySold += soldQuantity;
+            promoMap[key].giftQuantity += giftPieces;
             // Add customer detail
             const customerName = (order as any).customer?.name || '';
             const customerStoreName = (order as any).customer?.store_name || '';
@@ -259,8 +278,8 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
               customerSectorName,
               customerPhone: (order as any).customer?.phone || '',
               customerAddress: (order as any).customer?.address || '',
-              quantitySold: Number(item.quantity || 0),
-              giftPieces: giftQty,
+              quantitySold: soldQuantity,
+              giftPieces,
               date: (order as any).updated_at || '',
             });
           }
@@ -312,10 +331,10 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
         if (!promosByProduct[promo.product_id]) {
           promosByProduct[promo.product_id] = { totalGiftPieces: 0, totalVente: 0, product: promo.product, customers: [] };
         }
-        // Convert to pieces based on the offer's gift_quantity_unit
+        // Normalize promo gift quantity to pieces (direct sale rows are already in pieces)
         const giftUnit = offerUnitMap[promo.product_id] || 'piece';
         const piecesPerBox = Number((promo.product as any)?.pieces_per_box || 1);
-        const giftInPieces = giftUnit === 'box' ? giftQty * piecesPerBox : giftQty;
+        const giftInPieces = normalizePromoGiftToPieces(promo, giftUnit, piecesPerBox);
         promosByProduct[promo.product_id].totalGiftPieces += giftInPieces;
         promosByProduct[promo.product_id].totalVente += Number(promo.vente_quantity || 0);
         promosByProduct[promo.product_id].customers.push({
