@@ -540,7 +540,7 @@ const MyDeliveries: React.FC = () => {
                 
                 {order.status === 'pending' && (
                   <>
-                    {!isModifyHidden && (
+                    {!isModifyHidden && order.payment_type !== 'with_invoice' && (
                       <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => setModifyOrder(order)}>
                         <Edit2 className="w-4 h-4" />
                       </Button>
@@ -584,7 +584,7 @@ const MyDeliveries: React.FC = () => {
                         <Route className="w-4 h-4" />
                       </Button>
                     )}
-                    {!isModifyHidden && (
+                    {!isModifyHidden && order.payment_type !== 'with_invoice' && (
                       <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => setModifyOrder(order)}>
                         <Edit2 className="w-4 h-4" />
                       </Button>
@@ -628,7 +628,7 @@ const MyDeliveries: React.FC = () => {
                         <Route className="w-4 h-4" />
                       </Button>
                     )}
-                    {!isModifyHidden && (
+                    {!isModifyHidden && order.payment_type !== 'with_invoice' && (
                       <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => setModifyOrder(order)}>
                         <Edit2 className="w-4 h-4" />
                       </Button>
