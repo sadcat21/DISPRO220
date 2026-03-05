@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { MapPin, User, Truck, ShoppingCart, MapPinOff, Navigation, Loader2, Eye, EyeOff, CheckCircle, PackageX, PackageCheck, Landmark, Banknote, Clock, Check, X, DoorClosed, UserX, ShoppingBag } from 'lucide-react';
+import { MapPin, User, Truck, ShoppingCart, MapPinOff, Navigation, Loader2, Eye, EyeOff, CheckCircle, PackageX, PackageCheck, Landmark, Banknote, Clock, Check, X, DoorClosed, UserX, ShoppingBag, Printer, XCircle, Phone } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -9,7 +9,6 @@ import {
 } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
@@ -22,25 +21,17 @@ import { useDueDebts, usePendingCollections, useApproveCollection, DueDebt } fro
 import CollectDebtDialog from '@/components/debts/CollectDebtDialog';
 import VisitNoPaymentDialog from '@/components/debts/VisitNoPaymentDialog';
 import DeliverySaleDialog from '@/components/orders/DeliverySaleDialog';
+import DirectSaleDialog from '@/components/warehouse/DirectSaleDialog';
 import { format } from 'date-fns';
 import { OrderWithDetails } from '@/types/database';
 
 const DAY_NAMES: Record<string, string> = {
-  saturday: 'السبت',
-  sunday: 'الأحد',
-  monday: 'الإثنين',
-  tuesday: 'الثلاثاء',
-  wednesday: 'الأربعاء',
-  thursday: 'الخميس',
+  saturday: 'السبت', sunday: 'الأحد', monday: 'الإثنين',
+  tuesday: 'الثلاثاء', wednesday: 'الأربعاء', thursday: 'الخميس',
 };
 
 const JS_DAY_TO_NAME: Record<number, string> = {
-  6: 'saturday',
-  0: 'sunday',
-  1: 'monday',
-  2: 'tuesday',
-  3: 'wednesday',
-  4: 'thursday',
+  6: 'saturday', 0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday', 4: 'thursday',
 };
 
 const SectorCustomersPopover: React.FC = () => {
@@ -54,7 +45,6 @@ const SectorCustomersPopover: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [checkingLocationFor, setCheckingLocationFor] = useState<string | null>(null);
 
-  // Debt-related state
   const isAdmin = role === 'admin' || role === 'branch_admin';
   const { data: dueDebts = [] } = useDueDebts(undefined);
   const { data: allDebts = [] } = useDueDebts('__all__');
@@ -66,6 +56,9 @@ const SectorCustomersPopover: React.FC = () => {
   const [deliveryOrder, setDeliveryOrder] = useState<OrderWithDetails | null>(null);
   const [showDeliverySale, setShowDeliverySale] = useState(false);
   const [loadingDeliveryFor, setLoadingDeliveryFor] = useState<string | null>(null);
+  const [orderDetailsDialog, setOrderDetailsDialog] = useState<any>(null);
+  const [showDirectSale, setShowDirectSale] = useState(false);
+  const [directSaleCustomerId, setDirectSaleCustomerId] = useState<string | null>(null);
 
   const { data: sectors = [] } = useQuery({
     queryKey: ['sectors-with-customers', workerId, activeBranch?.id],
@@ -91,7 +84,6 @@ const SectorCustomersPopover: React.FC = () => {
     enabled: !!workerId,
   });
 
-  // Fetch today's visits for this worker
   const todayStart = useMemo(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
@@ -113,9 +105,6 @@ const SectorCustomersPopover: React.FC = () => {
     refetchInterval: 10000,
   });
 
-  // isAdmin already declared above
-
-  // Fetch today's orders by this worker (for sales categorization)
   const { data: todayOrders = [] } = useQuery({
     queryKey: ['today-orders-customers', workerId, todayStart],
     queryFn: async () => {
@@ -132,7 +121,6 @@ const SectorCustomersPopover: React.FC = () => {
     refetchInterval: 10000,
   });
 
-  // Fetch today's delivered orders (for delivery categorization)
   const { data: todayDeliveredOrders = [] } = useQuery({
     queryKey: ['today-delivered-orders', workerId, todayStart, isAdmin],
     queryFn: async () => {
@@ -152,7 +140,6 @@ const SectorCustomersPopover: React.FC = () => {
     refetchInterval: 10000,
   });
 
-  // Fetch orders assigned to this worker that are not yet delivered/cancelled (for delivery tab filtering)
   const { data: assignedOrderCustomerIds = [] } = useQuery({
     queryKey: ['assigned-order-customers', workerId, isAdmin, activeBranch?.id],
     queryFn: async () => {
@@ -173,85 +160,8 @@ const SectorCustomersPopover: React.FC = () => {
     refetchInterval: 10000,
   });
 
-  const mySectors = useMemo(() => {
-    if (isAdmin) return sectors;
-    return sectors.filter(s => 
-      s.delivery_worker_id === workerId || s.sales_worker_id === workerId
-    );
-  }, [sectors, workerId, isAdmin]);
-
-  const todayDeliverySectors = useMemo(() => {
-    if (isAdmin) return mySectors.filter(s => s.visit_day_delivery === todayName);
-    return mySectors.filter(s => s.visit_day_delivery === todayName && s.delivery_worker_id === workerId);
-  }, [mySectors, todayName, workerId, isAdmin]);
-
-  const todaySalesSectors = useMemo(() => {
-    if (isAdmin) return mySectors.filter(s => s.visit_day_sales === todayName);
-    return mySectors.filter(s => s.visit_day_sales === todayName && s.sales_worker_id === workerId);
-  }, [mySectors, todayName, workerId, isAdmin]);
-
-  // Delivery tab: only show customers who have assigned orders OR were delivered today
-  const deliveryCustomerIdsWithOrders = useMemo(() => {
-    const ids = new Set<string>();
-    assignedOrderCustomerIds.forEach(o => { if (o.customer_id) ids.add(o.customer_id); });
-    todayDeliveredOrders.forEach(o => { if (o.customer_id) ids.add(o.customer_id); });
-    return ids;
-  }, [assignedOrderCustomerIds, todayDeliveredOrders]);
-
-  const deliveryCustomers = useMemo(() => {
-    return customers.filter(c => deliveryCustomerIdsWithOrders.has(c.id));
-  }, [customers, deliveryCustomerIdsWithOrders]);
-
-  const salesCustomers = useMemo(() => {
-    const sectorIds = new Set(todaySalesSectors.map(s => s.id));
-    return customers.filter(c => c.sector_id && sectorIds.has(c.sector_id));
-  }, [customers, todaySalesSectors]);
-
-  // Categorize sales customers into sub-tabs
-  const visitedCustomerIds = useMemo(() => {
-    return new Set(todayVisits.filter(v => v.operation_type === 'visit').map(v => v.customer_id).filter(Boolean));
-  }, [todayVisits]);
-
-  const orderedCustomerIds = useMemo(() => {
-    return new Set(todayOrders.map(o => o.customer_id).filter(Boolean));
-  }, [todayOrders]);
-
-  const salesNotVisited = useMemo(() => {
-    return salesCustomers.filter(c => !visitedCustomerIds.has(c.id) && !orderedCustomerIds.has(c.id));
-  }, [salesCustomers, visitedCustomerIds, orderedCustomerIds]);
-
-  const salesVisitedNoOrder = useMemo(() => {
-    return salesCustomers.filter(c => visitedCustomerIds.has(c.id) && !orderedCustomerIds.has(c.id));
-  }, [salesCustomers, visitedCustomerIds, orderedCustomerIds]);
-
-  const salesWithOrders = useMemo(() => {
-    return salesCustomers.filter(c => orderedCustomerIds.has(c.id));
-  }, [salesCustomers, orderedCustomerIds]);
-
-  // Categorize delivery customers into sub-tabs
-  const deliveredCustomerIds = useMemo(() => {
-    return new Set(todayDeliveredOrders.map(o => o.customer_id).filter(Boolean));
-  }, [todayDeliveredOrders]);
-
-  const deliveryVisitedCustomerIds = useMemo(() => {
-    return new Set(todayVisits.filter(v => v.operation_type === 'delivery_visit').map(v => v.customer_id).filter(Boolean));
-  }, [todayVisits]);
-
-  const deliveryNotDone = useMemo(() => {
-    return deliveryCustomers.filter(c => !deliveredCustomerIds.has(c.id) && !deliveryVisitedCustomerIds.has(c.id));
-  }, [deliveryCustomers, deliveredCustomerIds, deliveryVisitedCustomerIds]);
-
-  const deliveryNotReceived = useMemo(() => {
-    return deliveryCustomers.filter(c => deliveryVisitedCustomerIds.has(c.id) && !deliveredCustomerIds.has(c.id));
-  }, [deliveryCustomers, deliveryVisitedCustomerIds, deliveredCustomerIds]);
-
-  const deliveryReceived = useMemo(() => {
-    return deliveryCustomers.filter(c => deliveredCustomerIds.has(c.id));
-  }, [deliveryCustomers, deliveredCustomerIds]);
-
-  // Debt categorization: today's collection customers that have been collected vs not
   const todayStart2 = useMemo(() => new Date().toISOString().split('T')[0], []);
-  
+
   const { data: todayCollections = [] } = useQuery({
     queryKey: ['today-debt-collections', workerId, todayStart2],
     queryFn: async () => {
@@ -270,27 +180,6 @@ const SectorCustomersPopover: React.FC = () => {
     refetchInterval: 10000,
   });
 
-  const collectedDebtIds = useMemo(() => {
-    return new Set(todayCollections.filter(c => c.action !== 'no_payment').map(c => c.debt_id));
-  }, [todayCollections]);
-
-  const noPaymentDebtIds = useMemo(() => {
-    return new Set(todayCollections.filter(c => c.action === 'no_payment').map(c => c.debt_id));
-  }, [todayCollections]);
-
-  const debtsToCollectToday = useMemo(() => {
-    return dueDebts.filter(d => !collectedDebtIds.has(d.id) && !noPaymentDebtIds.has(d.id));
-  }, [dueDebts, collectedDebtIds, noPaymentDebtIds]);
-
-  const debtsCollectedToday = useMemo(() => {
-    return dueDebts.filter(d => collectedDebtIds.has(d.id));
-  }, [dueDebts, collectedDebtIds]);
-
-  const debtsNoPaymentToday = useMemo(() => {
-    return dueDebts.filter(d => noPaymentDebtIds.has(d.id));
-  }, [dueDebts, noPaymentDebtIds]);
-
-  // Recent negative visits for direct sale tab
   const sevenDaysAgo = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() - 7);
@@ -311,15 +200,115 @@ const SectorCustomersPopover: React.FC = () => {
     enabled: !!workerId && isOpen,
   });
 
-  // Direct sale customers: delivery sector customers marked negatively by sales rep
+  // Worker stock for direct sale
+  const { data: workerStock = [] } = useQuery({
+    queryKey: ['my-worker-stock-popover', workerId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('worker_stock')
+        .select('id, product_id, quantity, product:products(*)')
+        .eq('worker_id', workerId!)
+        .gt('quantity', 0);
+      return data || [];
+    },
+    enabled: !!workerId && isOpen,
+  });
+
+  // Today's direct sales
+  const { data: todayDirectSales = [] } = useQuery({
+    queryKey: ['today-direct-sales-popover', workerId, todayStart],
+    queryFn: async () => {
+      let query = supabase
+        .from('receipts')
+        .select('customer_id, items, total_amount, customer_name, created_at')
+        .eq('receipt_type', 'direct_sale')
+        .gte('created_at', todayStart);
+      if (!isAdmin) {
+        query = query.eq('worker_id', workerId!);
+      }
+      const { data } = await query;
+      return data || [];
+    },
+    enabled: !!workerId && isOpen,
+    refetchInterval: 10000,
+  });
+
+  // Today's direct sale visits (بدون بيع)
+  const { data: todayDirectSaleVisits = [] } = useQuery({
+    queryKey: ['today-direct-sale-visits-popover', workerId, todayStart],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('visit_tracking')
+        .select('customer_id, notes')
+        .eq('worker_id', workerId!)
+        .gte('created_at', todayStart)
+        .or('notes.ilike.%بدون بيع%,notes.ilike.%مغلق (بيع مباشر)%,notes.ilike.%غير متاح (بيع مباشر)%');
+      return data || [];
+    },
+    enabled: !!workerId && isOpen,
+    refetchInterval: 10000,
+  });
+
+  // Computed
+  const mySectors = useMemo(() => {
+    if (isAdmin) return sectors;
+    return sectors.filter(s => s.delivery_worker_id === workerId || s.sales_worker_id === workerId);
+  }, [sectors, workerId, isAdmin]);
+
+  const todayDeliverySectors = useMemo(() => {
+    if (isAdmin) return mySectors.filter(s => s.visit_day_delivery === todayName);
+    return mySectors.filter(s => s.visit_day_delivery === todayName && s.delivery_worker_id === workerId);
+  }, [mySectors, todayName, workerId, isAdmin]);
+
+  const todaySalesSectors = useMemo(() => {
+    if (isAdmin) return mySectors.filter(s => s.visit_day_sales === todayName);
+    return mySectors.filter(s => s.visit_day_sales === todayName && s.sales_worker_id === workerId);
+  }, [mySectors, todayName, workerId, isAdmin]);
+
+  const deliveryCustomerIdsWithOrders = useMemo(() => {
+    const ids = new Set<string>();
+    assignedOrderCustomerIds.forEach(o => { if (o.customer_id) ids.add(o.customer_id); });
+    todayDeliveredOrders.forEach(o => { if (o.customer_id) ids.add(o.customer_id); });
+    return ids;
+  }, [assignedOrderCustomerIds, todayDeliveredOrders]);
+
+  const deliveryCustomers = useMemo(() => customers.filter(c => deliveryCustomerIdsWithOrders.has(c.id)), [customers, deliveryCustomerIdsWithOrders]);
+  const salesCustomers = useMemo(() => {
+    const sectorIds = new Set(todaySalesSectors.map(s => s.id));
+    return customers.filter(c => c.sector_id && sectorIds.has(c.sector_id));
+  }, [customers, todaySalesSectors]);
+
+  const visitedCustomerIds = useMemo(() => new Set(todayVisits.filter(v => v.operation_type === 'visit').map(v => v.customer_id).filter(Boolean)), [todayVisits]);
+  const orderedCustomerIds = useMemo(() => new Set(todayOrders.map(o => o.customer_id).filter(Boolean)), [todayOrders]);
+  const salesNotVisited = useMemo(() => salesCustomers.filter(c => !visitedCustomerIds.has(c.id) && !orderedCustomerIds.has(c.id)), [salesCustomers, visitedCustomerIds, orderedCustomerIds]);
+  const salesVisitedNoOrder = useMemo(() => salesCustomers.filter(c => visitedCustomerIds.has(c.id) && !orderedCustomerIds.has(c.id)), [salesCustomers, visitedCustomerIds, orderedCustomerIds]);
+  const salesWithOrders = useMemo(() => salesCustomers.filter(c => orderedCustomerIds.has(c.id)), [salesCustomers, orderedCustomerIds]);
+
+  const deliveredCustomerIds = useMemo(() => new Set(todayDeliveredOrders.map(o => o.customer_id).filter(Boolean)), [todayDeliveredOrders]);
+  const deliveryVisitedCustomerIds = useMemo(() => new Set(todayVisits.filter(v => v.operation_type === 'delivery_visit').map(v => v.customer_id).filter(Boolean)), [todayVisits]);
+  const deliveryNotDone = useMemo(() => deliveryCustomers.filter(c => !deliveredCustomerIds.has(c.id) && !deliveryVisitedCustomerIds.has(c.id)), [deliveryCustomers, deliveredCustomerIds, deliveryVisitedCustomerIds]);
+  const deliveryNotReceived = useMemo(() => deliveryCustomers.filter(c => deliveryVisitedCustomerIds.has(c.id) && !deliveredCustomerIds.has(c.id)), [deliveryCustomers, deliveryVisitedCustomerIds, deliveredCustomerIds]);
+  const deliveryReceived = useMemo(() => deliveryCustomers.filter(c => deliveredCustomerIds.has(c.id)), [deliveryCustomers, deliveredCustomerIds]);
+
+  const collectedDebtIds = useMemo(() => new Set(todayCollections.filter(c => c.action !== 'no_payment').map(c => c.debt_id)), [todayCollections]);
+  const noPaymentDebtIds = useMemo(() => new Set(todayCollections.filter(c => c.action === 'no_payment').map(c => c.debt_id)), [todayCollections]);
+  const debtsToCollectToday = useMemo(() => dueDebts.filter(d => !collectedDebtIds.has(d.id) && !noPaymentDebtIds.has(d.id)), [dueDebts, collectedDebtIds, noPaymentDebtIds]);
+  const debtsCollectedToday = useMemo(() => dueDebts.filter(d => collectedDebtIds.has(d.id)), [dueDebts, collectedDebtIds]);
+  const debtsNoPaymentToday = useMemo(() => dueDebts.filter(d => noPaymentDebtIds.has(d.id)), [dueDebts, noPaymentDebtIds]);
+
+  // Direct sale
   const directSaleCustomers = useMemo(() => {
     const deliverySectorIds = new Set(todayDeliverySectors.map(s => s.id));
     const customersInDeliverySectors = customers.filter(c => c.sector_id && deliverySectorIds.has(c.sector_id));
     const negativeCustomerIds = new Set(recentNegativeVisits.map(v => v.customer_id).filter(Boolean));
-    return customersInDeliverySectors.filter(c =>
-      negativeCustomerIds.has(c.id) && !deliveredCustomerIds.has(c.id)
-    );
+    return customersInDeliverySectors.filter(c => negativeCustomerIds.has(c.id) && !deliveredCustomerIds.has(c.id));
   }, [todayDeliverySectors, customers, recentNegativeVisits, deliveredCustomerIds]);
+
+  const directSoldCustomerIds = useMemo(() => new Set(todayDirectSales.map(s => s.customer_id).filter(Boolean)), [todayDirectSales]);
+  const directNoSaleCustomerIds = useMemo(() => new Set(todayDirectSaleVisits.map(v => v.customer_id).filter(Boolean)), [todayDirectSaleVisits]);
+  const directSalePending = useMemo(() => directSaleCustomers.filter(c => !directSoldCustomerIds.has(c.id) && !directNoSaleCustomerIds.has(c.id)), [directSaleCustomers, directSoldCustomerIds, directNoSaleCustomerIds]);
+  const directSaleSold = useMemo(() => directSaleCustomers.filter(c => directSoldCustomerIds.has(c.id)), [directSaleCustomers, directSoldCustomerIds]);
+  const directSaleNoSale = useMemo(() => directSaleCustomers.filter(c => directNoSaleCustomerIds.has(c.id) && !directSoldCustomerIds.has(c.id)), [directSaleCustomers, directNoSaleCustomerIds, directSoldCustomerIds]);
 
   const totalCount = deliveryCustomers.length + salesCustomers.length;
   const debtBadgeCount = dueDebts.length;
@@ -330,82 +319,19 @@ const SectorCustomersPopover: React.FC = () => {
     try {
       await approveCollection.mutateAsync({ collectionId, approved: true });
       toast.success('تمت الموافقة');
-    } catch (e: any) {
-      toast.error(e.message);
-    }
+    } catch (e: any) { toast.error(e.message); }
   };
 
   const handleRejectCollection = async (collectionId: string) => {
     try {
       await approveCollection.mutateAsync({ collectionId, approved: false, rejectionReason: 'مرفوض' });
       toast.success('تم الرفض');
-    } catch (e: any) {
-      toast.error(e.message);
-    }
-  };
-
-  const handleCustomerClick = async (customer: any, tab: 'delivery' | 'sales') => {
-    if (tab === 'sales') {
-      setIsOpen(false);
-      navigate('/orders', { state: { customerId: customer.id } });
-    } else {
-      // Fetch the assigned order for this customer and open DeliverySaleDialog directly
-      setLoadingDeliveryFor(customer.id);
-      try {
-        let query = supabase
-          .from('orders')
-          .select(`
-            *,
-            customer:customers(*, sector:sectors(id, name, name_fr), zone:sector_zones(id, name, name_fr)),
-            created_by_worker:workers!orders_created_by_fkey(id, full_name, username)
-          `)
-          .eq('customer_id', customer.id)
-          .in('status', ['pending', 'assigned', 'in_progress'])
-          .order('created_at', { ascending: false })
-          .limit(1);
-        
-        if (!isAdmin) {
-          query = query.eq('assigned_worker_id', workerId!);
-        }
-
-        const { data, error } = await query;
-        if (error) throw error;
-        
-        if (data && data.length > 0) {
-          setDeliveryOrder(data[0] as OrderWithDetails);
-          setIsOpen(false);
-          setShowDeliverySale(true);
-        } else {
-          toast.error('لا توجد طلبية معينة لهذا العميل');
-        }
-      } catch (e) {
-        console.error('Error fetching delivery order:', e);
-        toast.error('خطأ في جلب بيانات الطلبية');
-      } finally {
-        setLoadingDeliveryFor(null);
-      }
-    }
-  };
-
-  const handleDeliveryVisitWithoutDelivery = async (customer: any) => {
-    const allowed = await checkLocationBeforeAction(customer);
-    if (!allowed) return;
-    try {
-      await trackVisit({
-        customerId: customer.id,
-        operationType: 'delivery_visit',
-        notes: `زيارة توصيل بدون تسليم - ${customer.store_name || customer.name}`,
-      });
-      toast.success(`تم تسجيل زيارة بدون تسليم لـ ${customer.store_name || customer.name}`);
-    } catch {
-      toast.error('فشل في تسجيل الزيارة');
-    }
+    } catch (e: any) { toast.error(e.message); }
   };
 
   const checkLocationBeforeAction = async (customer: any): Promise<boolean> => {
     if (canBypassLocation) return true;
     if (!customer.latitude || !customer.longitude) return true;
-
     const threshold = locationThreshold ?? 100;
     setCheckingLocationFor(customer.id);
     try {
@@ -418,12 +344,8 @@ const SectorCustomersPopover: React.FC = () => {
       const distanceKm = calculateDistance(position.coords.latitude, position.coords.longitude, customer.latitude, customer.longitude);
       const distanceMeters = distanceKm * 1000;
       if (distanceMeters > threshold) {
-        const formattedDistance = distanceMeters >= 1000 
-          ? `${(distanceMeters / 1000).toFixed(1)} كم` 
-          : `${Math.round(distanceMeters)} متر`;
-        toast.error(`📍 أنت بعيد عن العميل بمسافة ${formattedDistance}`, {
-          description: `يجب أن تكون على بُعد ${threshold} متر أو أقل من موقع العميل`,
-        });
+        const formattedDistance = distanceMeters >= 1000 ? `${(distanceMeters / 1000).toFixed(1)} كم` : `${Math.round(distanceMeters)} متر`;
+        toast.error(`📍 أنت بعيد عن العميل بمسافة ${formattedDistance}`, { description: `يجب أن تكون على بُعد ${threshold} متر أو أقل` });
         return false;
       }
       return true;
@@ -435,19 +357,102 @@ const SectorCustomersPopover: React.FC = () => {
     }
   };
 
+  const handleCustomerClick = async (customer: any, tab: 'delivery' | 'sales') => {
+    if (tab === 'sales') {
+      setIsOpen(false);
+      navigate('/orders', { state: { customerId: customer.id } });
+    } else {
+      setLoadingDeliveryFor(customer.id);
+      try {
+        let query = supabase
+          .from('orders')
+          .select('*, customer:customers(*, sector:sectors(id, name, name_fr), zone:sector_zones(id, name, name_fr)), created_by_worker:workers!orders_created_by_fkey(id, full_name, username)')
+          .eq('customer_id', customer.id)
+          .in('status', ['pending', 'assigned', 'in_progress'])
+          .order('created_at', { ascending: false })
+          .limit(1);
+        if (!isAdmin) query = query.eq('assigned_worker_id', workerId!);
+        const { data, error } = await query;
+        if (error) throw error;
+        if (data && data.length > 0) {
+          setDeliveryOrder(data[0] as OrderWithDetails);
+          setIsOpen(false);
+          setShowDeliverySale(true);
+        } else {
+          toast.error('لا توجد طلبية معينة لهذا العميل');
+        }
+      } catch {
+        toast.error('خطأ في جلب بيانات الطلبية');
+      } finally {
+        setLoadingDeliveryFor(null);
+      }
+    }
+  };
+
+  const handleShowDeliveredOrderDetails = async (customer: any) => {
+    try {
+      const { data } = await supabase
+        .from('orders')
+        .select('*, customer:customers(*), items:order_items(*, product:products(*))')
+        .eq('customer_id', customer.id)
+        .eq('status', 'delivered')
+        .gte('updated_at', todayStart)
+        .order('updated_at', { ascending: false })
+        .limit(1);
+      if (data && data.length > 0) {
+        setOrderDetailsDialog(data[0]);
+      } else {
+        toast.error('لم يتم العثور على تفاصيل الطلبية');
+      }
+    } catch {
+      toast.error('خطأ في جلب التفاصيل');
+    }
+  };
+
+  const handleShowOrderDetails = async (customer: any) => {
+    try {
+      const { data } = await supabase
+        .from('orders')
+        .select('*, customer:customers(*), items:order_items(*, product:products(*))')
+        .eq('customer_id', customer.id)
+        .eq('created_by', workerId!)
+        .gte('created_at', todayStart)
+        .not('status', 'eq', 'cancelled')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (data && data.length > 0) {
+        setOrderDetailsDialog(data[0]);
+      } else {
+        toast.error('لم يتم العثور على تفاصيل الطلبية');
+      }
+    } catch {
+      toast.error('خطأ في جلب التفاصيل');
+    }
+  };
+
+  const handleShowDirectSaleDetails = (customer: any) => {
+    const sale = todayDirectSales.find(s => s.customer_id === customer.id);
+    if (sale) {
+      setOrderDetailsDialog({ ...sale, _isDirectSale: true, customer });
+    }
+  };
+
+  const handleDeliveryVisitWithoutDelivery = async (customer: any) => {
+    const allowed = await checkLocationBeforeAction(customer);
+    if (!allowed) return;
+    try {
+      await trackVisit({ customerId: customer.id, operationType: 'delivery_visit', notes: `زيارة توصيل بدون تسليم - ${customer.store_name || customer.name}` });
+      toast.success(`تم تسجيل زيارة بدون تسليم لـ ${customer.store_name || customer.name}`);
+    } catch { toast.error('فشل في تسجيل الزيارة'); }
+  };
+
   const handleVisitWithoutOrder = async (customer: any) => {
     const allowed = await checkLocationBeforeAction(customer);
     if (!allowed) return;
     try {
-      await trackVisit({
-        customerId: customer.id,
-        operationType: 'visit',
-        notes: `زيارة بدون طلبية - ${customer.name}`,
-      });
+      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `زيارة بدون طلبية - ${customer.name}` });
       toast.success(`تم تسجيل زيارة ${customer.name} بنجاح`);
-    } catch {
-      toast.error('فشل في تسجيل الزيارة');
-    }
+    } catch { toast.error('فشل في تسجيل الزيارة'); }
   };
 
   const handleCustomerClosed = async (customer: any) => {
@@ -466,6 +471,39 @@ const SectorCustomersPopover: React.FC = () => {
       await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `غير متاح - ${customer.store_name || customer.name}` });
       toast.success(`تم تسجيل "${customer.store_name || customer.name}" كغير متاح`);
     } catch { toast.error('فشل في تسجيل الحالة'); }
+  };
+
+  const handleDirectSaleClosed = async (customer: any) => {
+    const allowed = await checkLocationBeforeAction(customer);
+    if (!allowed) return;
+    try {
+      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `مغلق (بيع مباشر) - ${customer.store_name || customer.name}` });
+      toast.success(`تم تسجيل "${customer.store_name || customer.name}" كمغلق`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
+  };
+
+  const handleDirectSaleUnavailable = async (customer: any) => {
+    const allowed = await checkLocationBeforeAction(customer);
+    if (!allowed) return;
+    try {
+      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `غير متاح (بيع مباشر) - ${customer.store_name || customer.name}` });
+      toast.success(`تم تسجيل "${customer.store_name || customer.name}" كغير متاح`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
+  };
+
+  const handleDirectSaleNoSale = async (customer: any) => {
+    const allowed = await checkLocationBeforeAction(customer);
+    if (!allowed) return;
+    try {
+      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `بدون بيع - ${customer.store_name || customer.name}` });
+      toast.success(`تم تسجيل "${customer.store_name || customer.name}" بدون بيع`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
+  };
+
+  const handleDirectSaleClick = (customer: any) => {
+    setDirectSaleCustomerId(customer.id);
+    setIsOpen(false);
+    setShowDirectSale(true);
   };
 
   const handleDebtCustomerClosed = async (debt: DueDebt) => {
@@ -494,10 +532,7 @@ const SectorCustomersPopover: React.FC = () => {
     <>
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <button
-          className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 transition-colors"
-          title="عملاء اليوم"
-        >
+        <button className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 transition-colors" title="عملاء اليوم">
           <MapPin className="w-4 h-4 text-blue-500" />
           {(totalCount + debtBadgeCount) > 0 && (
             <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
@@ -536,6 +571,7 @@ const SectorCustomersPopover: React.FC = () => {
             </TabsTrigger>
           </TabsList>
 
+          {/* Delivery Tab */}
           <TabsContent value="delivery" className="m-0 flex-1 min-h-0">
             <Tabs defaultValue="not-delivered" className="flex flex-col h-full min-h-0">
               <TabsList className="w-full rounded-none border-b shrink-0 h-auto p-0.5 gap-0.5">
@@ -546,7 +582,7 @@ const SectorCustomersPopover: React.FC = () => {
                 </TabsTrigger>
                 <TabsTrigger value="not-received" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-amber-100 data-[state=active]:text-amber-700">
                   <PackageX className="w-3 h-3" />
-                  لم يتم الاستلام
+                  بدون تسليم
                   {deliveryNotReceived.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-amber-500">{deliveryNotReceived.length}</Badge>}
                 </TabsTrigger>
                 <TabsTrigger value="received" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-green-100 data-[state=active]:text-green-700">
@@ -557,48 +593,18 @@ const SectorCustomersPopover: React.FC = () => {
               </TabsList>
 
               <TabsContent value="not-delivered" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
-                <CustomerList
-                  customers={deliveryNotDone}
-                  emptyMessage="تم توصيل جميع العملاء ✓"
-                  onCustomerClick={(c) => handleCustomerClick(c, 'delivery')}
-                  onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery}
-                  onClosed={handleCustomerClosed}
-                  onUnavailable={handleCustomerUnavailable}
-                  showVisitButton={true}
-                  visitButtonLabel="بدون تسليم"
-                  checkingLocationFor={checkingLocationFor}
-                  loadingFor={loadingDeliveryFor}
-                />
+                <CustomerList customers={deliveryNotDone} emptyMessage="تم توصيل جميع العملاء ✓" onCustomerClick={(c) => handleCustomerClick(c, 'delivery')} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} showVisitButton visitButtonLabel="بدون تسليم" showActionButtons checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} />
               </TabsContent>
               <TabsContent value="not-received" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
-                <CustomerList
-                  customers={deliveryNotReceived}
-                  emptyMessage="لا توجد زيارات بدون تسليم"
-                  onCustomerClick={(c) => handleCustomerClick(c, 'delivery')}
-                  onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery}
-                  onClosed={handleCustomerClosed}
-                  onUnavailable={handleCustomerUnavailable}
-                  showVisitButton={false}
-                  checkingLocationFor={checkingLocationFor}
-                  loadingFor={loadingDeliveryFor}
-                />
+                <CustomerList customers={deliveryNotReceived} emptyMessage="لا توجد زيارات بدون تسليم" onCustomerClick={(c) => handleCustomerClick(c, 'delivery')} showActionButtons onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} />
               </TabsContent>
               <TabsContent value="received" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
-                <CustomerList
-                  customers={deliveryReceived}
-                  emptyMessage="لا توجد توصيلات بعد"
-                  onCustomerClick={(c) => handleCustomerClick(c, 'delivery')}
-                  onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery}
-                  onClosed={handleCustomerClosed}
-                  onUnavailable={handleCustomerUnavailable}
-                  showVisitButton={false}
-                  checkingLocationFor={checkingLocationFor}
-                  loadingFor={loadingDeliveryFor}
-                />
+                <CustomerList customers={deliveryReceived} emptyMessage="لا توجد توصيلات بعد" onCustomerClick={handleShowDeliveredOrderDetails} showPrintButton checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} />
               </TabsContent>
             </Tabs>
           </TabsContent>
 
+          {/* Sales Tab */}
           <TabsContent value="sales" className="m-0 flex-1 min-h-0">
             <Tabs defaultValue="not-visited" className="flex flex-col h-full min-h-0">
               <TabsList className="w-full rounded-none border-b shrink-0 h-auto p-0.5 gap-0.5">
@@ -614,62 +620,54 @@ const SectorCustomersPopover: React.FC = () => {
                 </TabsTrigger>
                 <TabsTrigger value="with-orders" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-green-100 data-[state=active]:text-green-700">
                   <CheckCircle className="w-3 h-3" />
-                  بطلبيات
+                  تم الطلب
                   {salesWithOrders.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-green-500">{salesWithOrders.length}</Badge>}
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="not-visited" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
-                  <CustomerList
-                    customers={salesNotVisited}
-                    emptyMessage="تمت زيارة جميع العملاء ✓"
-                    onCustomerClick={(c) => handleCustomerClick(c, 'sales')}
-                    onVisitWithoutOrder={handleVisitWithoutOrder}
-                    onClosed={handleCustomerClosed}
-                    onUnavailable={handleCustomerUnavailable}
-                    showVisitButton={true}
-                    checkingLocationFor={checkingLocationFor}
-                  />
+                <CustomerList customers={salesNotVisited} emptyMessage="تمت زيارة جميع العملاء ✓" onCustomerClick={(c) => handleCustomerClick(c, 'sales')} onVisitWithoutOrder={handleVisitWithoutOrder} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} showVisitButton showActionButtons checkingLocationFor={checkingLocationFor} />
               </TabsContent>
               <TabsContent value="visited-no-order" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
-                  <CustomerList
-                    customers={salesVisitedNoOrder}
-                    emptyMessage="لا توجد زيارات بدون طلبيات"
-                    onCustomerClick={(c) => handleCustomerClick(c, 'sales')}
-                    onVisitWithoutOrder={handleVisitWithoutOrder}
-                    onClosed={handleCustomerClosed}
-                    onUnavailable={handleCustomerUnavailable}
-                    showVisitButton={false}
-                    checkingLocationFor={checkingLocationFor}
-                  />
+                <CustomerList customers={salesVisitedNoOrder} emptyMessage="لا توجد زيارات بدون طلبيات" onCustomerClick={(c) => handleCustomerClick(c, 'sales')} showActionButtons onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} checkingLocationFor={checkingLocationFor} />
               </TabsContent>
               <TabsContent value="with-orders" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
-                  <CustomerList
-                    customers={salesWithOrders}
-                    emptyMessage="لا توجد طلبيات بعد"
-                    onCustomerClick={(c) => handleCustomerClick(c, 'sales')}
-                    onVisitWithoutOrder={handleVisitWithoutOrder}
-                    onClosed={handleCustomerClosed}
-                    onUnavailable={handleCustomerUnavailable}
-                    showVisitButton={false}
-                    checkingLocationFor={checkingLocationFor}
-                  />
+                <CustomerList customers={salesWithOrders} emptyMessage="لا توجد طلبيات بعد" onCustomerClick={handleShowOrderDetails} checkingLocationFor={checkingLocationFor} />
               </TabsContent>
             </Tabs>
           </TabsContent>
 
           {/* Direct Sale Tab */}
-          <TabsContent value="direct-sale" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
-            <CustomerList
-              customers={directSaleCustomers}
-              emptyMessage="لا توجد محلات متاحة للبيع المباشر"
-              onCustomerClick={(c) => handleCustomerClick(c, 'sales')}
-              onVisitWithoutOrder={handleVisitWithoutOrder}
-              onClosed={handleCustomerClosed}
-              onUnavailable={handleCustomerUnavailable}
-              showVisitButton={false}
-              checkingLocationFor={checkingLocationFor}
-            />
+          <TabsContent value="direct-sale" className="m-0 flex-1 min-h-0">
+            <Tabs defaultValue="pending" className="flex flex-col h-full min-h-0">
+              <TabsList className="w-full rounded-none border-b shrink-0 h-auto p-0.5 gap-0.5">
+                <TabsTrigger value="pending" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-orange-100 data-[state=active]:text-orange-700">
+                  <ShoppingBag className="w-3 h-3" />
+                  العملاء
+                  {directSalePending.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-orange-500">{directSalePending.length}</Badge>}
+                </TabsTrigger>
+                <TabsTrigger value="sold" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-green-100 data-[state=active]:text-green-700">
+                  <CheckCircle className="w-3 h-3" />
+                  تم البيع
+                  {directSaleSold.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-green-500">{directSaleSold.length}</Badge>}
+                </TabsTrigger>
+                <TabsTrigger value="no-sale" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-amber-100 data-[state=active]:text-amber-700">
+                  <XCircle className="w-3 h-3" />
+                  بدون بيع
+                  {directSaleNoSale.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-amber-500">{directSaleNoSale.length}</Badge>}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="pending" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
+                <CustomerList customers={directSalePending} emptyMessage="لا توجد محلات متاحة للبيع المباشر" onCustomerClick={handleDirectSaleClick} onClosed={handleDirectSaleClosed} onUnavailable={handleDirectSaleUnavailable} onNoSale={handleDirectSaleNoSale} showActionButtons showNoSaleButton checkingLocationFor={checkingLocationFor} />
+              </TabsContent>
+              <TabsContent value="sold" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
+                <CustomerList customers={directSaleSold} emptyMessage="لا توجد مبيعات بعد" onCustomerClick={handleShowDirectSaleDetails} showPrintButton checkingLocationFor={checkingLocationFor} />
+              </TabsContent>
+              <TabsContent value="no-sale" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
+                <CustomerList customers={directSaleNoSale} emptyMessage="لا توجد زيارات بدون بيع" onCustomerClick={handleDirectSaleClick} checkingLocationFor={checkingLocationFor} />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           {/* Debts Tab */}
@@ -716,8 +714,13 @@ const SectorCustomersPopover: React.FC = () => {
       </PopoverContent>
     </Popover>
 
+    {/* Order Details Dialog */}
+    {orderDetailsDialog && (
+      <OrderDetailsPopoverDialog order={orderDetailsDialog} onClose={() => setOrderDetailsDialog(null)} />
+    )}
+
     {/* Debt Info Dialog */}
-    {selectedDebt && (
+    {selectedDebt && !showCollect && !showVisit && (
       <Dialog open={!!selectedDebt} onOpenChange={(open) => !open && setSelectedDebt(null)}>
         <DialogContent className="max-w-[95vw] sm:max-w-sm p-4 gap-3" dir="rtl">
           <DialogHeader className="pb-0">
@@ -781,14 +784,96 @@ const SectorCustomersPopover: React.FC = () => {
     {deliveryOrder && (
       <DeliverySaleDialog
         open={showDeliverySale}
-        onOpenChange={(open) => {
-          setShowDeliverySale(open);
-          if (!open) setDeliveryOrder(null);
-        }}
+        onOpenChange={(open) => { setShowDeliverySale(open); if (!open) setDeliveryOrder(null); }}
         order={deliveryOrder}
       />
     )}
+
+    <DirectSaleDialog
+      open={showDirectSale}
+      onOpenChange={(o) => { setShowDirectSale(o); if (!o) setDirectSaleCustomerId(null); }}
+      stockItems={workerStock}
+      initialCustomerId={directSaleCustomerId || undefined}
+    />
     </>
+  );
+};
+
+// Order Details Dialog for popover context
+const OrderDetailsPopoverDialog: React.FC<{ order: any; onClose: () => void }> = ({ order, onClose }) => {
+  const isDirectSale = order._isDirectSale;
+  const items = order.items || [];
+  const customer = order.customer;
+  const totalAmount = order.total_amount;
+
+  return (
+    <Dialog open={true} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-[95vw] sm:max-w-sm p-4 gap-3 max-h-[80vh] overflow-y-auto" dir="rtl">
+        <DialogHeader>
+          <DialogTitle className="text-base">
+            {isDirectSale ? '🛒 تفاصيل البيع المباشر' : '📦 تفاصيل الطلبية'}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4 text-primary" />
+              <span className="font-bold text-sm">{customer?.store_name || customer?.name || order.customer_name || '—'}</span>
+            </div>
+            {customer?.phone && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Phone className="w-3 h-3" />
+                <span>{customer.phone}</span>
+              </div>
+            )}
+            {order.created_at && (
+              <p className="text-xs text-muted-foreground">
+                التاريخ: {format(new Date(order.created_at), 'dd/MM/yyyy HH:mm')}
+              </p>
+            )}
+          </div>
+
+          <div className="border rounded-lg overflow-hidden">
+            <div className="bg-muted/30 px-3 py-2 text-xs font-bold border-b">المنتجات</div>
+            <div className="divide-y">
+              {items.map((item: any, idx: number) => {
+                const productName = isDirectSale ? (item.productName || '—') : (item.product?.name || '—');
+                const quantity = item.quantity;
+                const unitPrice = isDirectSale ? item.unitPrice : item.unit_price;
+                const itemTotal = isDirectSale ? item.totalPrice : item.total_price;
+                const giftQty = isDirectSale ? (item.giftQuantity || 0) : (item.gift_quantity || 0);
+
+                return (
+                  <div key={idx} className="px-3 py-2 space-y-0.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">{productName}</span>
+                      <span className="font-bold text-sm">{Number(itemTotal || 0).toLocaleString()} DA</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span>الكمية: {quantity}</span>
+                      <span>السعر: {Number(unitPrice || 0).toLocaleString()} DA</span>
+                      {giftQty > 0 && <span className="text-emerald-600">🎁 هدية: {giftQty}</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="bg-primary/5 rounded-lg p-3 flex items-center justify-between">
+            <span className="font-bold">المجموع</span>
+            <span className="font-bold text-lg text-primary">{Number(totalAmount || 0).toLocaleString()} DA</span>
+          </div>
+
+          {!isDirectSale && order.notes && (
+            <div className="text-xs text-muted-foreground bg-muted/30 rounded p-2">
+              ملاحظات: {order.notes}
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -796,14 +881,18 @@ const CustomerList: React.FC<{
   customers: any[];
   emptyMessage: string;
   onCustomerClick: (c: any) => void;
-  onVisitWithoutOrder: (c: any) => void;
-  onClosed: (c: any) => void;
-  onUnavailable: (c: any) => void;
-  showVisitButton: boolean;
+  onVisitWithoutOrder?: (c: any) => void;
+  onClosed?: (c: any) => void;
+  onUnavailable?: (c: any) => void;
+  onNoSale?: (c: any) => void;
+  showVisitButton?: boolean;
   visitButtonLabel?: string;
+  showActionButtons?: boolean;
+  showPrintButton?: boolean;
+  showNoSaleButton?: boolean;
   checkingLocationFor: string | null;
   loadingFor?: string | null;
-}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, onClosed, onUnavailable, showVisitButton, visitButtonLabel, checkingLocationFor, loadingFor }) => {
+}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, onClosed, onUnavailable, onNoSale, showVisitButton, visitButtonLabel, showActionButtons, showPrintButton, showNoSaleButton, checkingLocationFor, loadingFor }) => {
   if (customers.length === 0) {
     return <div className="p-6 text-center text-sm text-muted-foreground">{emptyMessage}</div>;
   }
@@ -812,11 +901,7 @@ const CustomerList: React.FC<{
     <div className="divide-y">
       {customers.map(c => (
         <div key={c.id} className="p-3 hover:bg-muted/50 transition-colors">
-          <button
-            className="w-full flex items-center gap-2 text-start"
-            onClick={() => onCustomerClick(c)}
-            disabled={loadingFor === c.id}
-          >
+          <button className="w-full flex items-center gap-2 text-start" onClick={() => onCustomerClick(c)} disabled={loadingFor === c.id}>
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
               {loadingFor === c.id ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <User className="w-4 h-4 text-primary" />}
             </div>
@@ -831,59 +916,47 @@ const CustomerList: React.FC<{
           </button>
           <div className="flex items-center gap-1 mt-1.5 justify-end flex-wrap">
             {c.latitude && c.longitude && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 text-[10px] px-1.5 gap-0.5"
-                onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.latitude},${c.longitude}`, '_blank')}
-              >
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.latitude},${c.longitude}`, '_blank')}>
                 <Navigation className="w-3 h-3" />
                 الموقع
               </Button>
             )}
-            {showVisitButton && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 text-[10px] px-1.5 gap-0.5 text-orange-600"
-                onClick={() => onVisitWithoutOrder(c)}
-                disabled={checkingLocationFor === c.id}
-              >
-                {checkingLocationFor === c.id ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <MapPinOff className="w-3 h-3" />
-                )}
+            {showPrintButton && (
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-blue-600" onClick={() => onCustomerClick(c)}>
+                <Printer className="w-3 h-3" />
+                عرض التفاصيل
+              </Button>
+            )}
+            {showVisitButton && onVisitWithoutOrder && (
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-orange-600" onClick={() => onVisitWithoutOrder(c)} disabled={checkingLocationFor === c.id}>
+                {checkingLocationFor === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <MapPinOff className="w-3 h-3" />}
                 {visitButtonLabel || 'زيارة بدون طلبية'}
               </Button>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-[10px] px-1.5 gap-0.5 text-red-600"
-              onClick={() => onClosed(c)}
-              disabled={checkingLocationFor === c.id}
-            >
-              <DoorClosed className="w-3 h-3" />
-              مغلق
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-[10px] px-1.5 gap-0.5 text-gray-600"
-              onClick={() => onUnavailable(c)}
-              disabled={checkingLocationFor === c.id}
-            >
-              <UserX className="w-3 h-3" />
-              غير متاح
-            </Button>
+            {showNoSaleButton && onNoSale && (
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-amber-600" onClick={() => onNoSale(c)} disabled={checkingLocationFor === c.id}>
+                {checkingLocationFor === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
+                بدون بيع
+              </Button>
+            )}
+            {showActionButtons && onClosed && (
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-red-600" onClick={() => onClosed(c)} disabled={checkingLocationFor === c.id}>
+                <DoorClosed className="w-3 h-3" />
+                مغلق
+              </Button>
+            )}
+            {showActionButtons && onUnavailable && (
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-gray-600" onClick={() => onUnavailable(c)} disabled={checkingLocationFor === c.id}>
+                <UserX className="w-3 h-3" />
+                غير متاح
+              </Button>
+            )}
           </div>
         </div>
       ))}
     </div>
   );
 };
-
 
 const DebtList: React.FC<{ debts: DueDebt[]; onSelect: (d: DueDebt) => void; onClosed: (d: DueDebt) => void; onUnavailable: (d: DueDebt) => void; emptyMessage: string }> = ({ debts, onSelect, onClosed, onUnavailable, emptyMessage }) => {
   if (debts.length === 0) {
@@ -894,10 +967,7 @@ const DebtList: React.FC<{ debts: DueDebt[]; onSelect: (d: DueDebt) => void; onC
     <div className="divide-y">
       {debts.map(debt => (
         <div key={debt.id} className="p-3 hover:bg-muted/50 transition-colors">
-          <button
-            className="w-full text-right"
-            onClick={() => onSelect(debt)}
-          >
+          <button className="w-full text-right" onClick={() => onSelect(debt)}>
             <div className="flex items-center justify-between">
               <span className="font-bold text-sm">{debt.customer?.store_name || debt.customer?.name || '—'}</span>
               <span className="text-destructive font-bold">{Number(debt.remaining_amount).toLocaleString()} DA</span>
@@ -909,21 +979,11 @@ const DebtList: React.FC<{ debts: DueDebt[]; onSelect: (d: DueDebt) => void; onC
             </div>
           </button>
           <div className="flex items-center gap-1 mt-1.5 justify-end flex-wrap">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-[10px] px-1.5 gap-0.5 text-red-600"
-              onClick={(e) => { e.stopPropagation(); onClosed(debt); }}
-            >
+            <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-red-600" onClick={(e) => { e.stopPropagation(); onClosed(debt); }}>
               <DoorClosed className="w-3 h-3" />
               مغلق
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-[10px] px-1.5 gap-0.5 text-gray-600"
-              onClick={(e) => { e.stopPropagation(); onUnavailable(debt); }}
-            >
+            <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-gray-600" onClick={(e) => { e.stopPropagation(); onUnavailable(debt); }}>
               <UserX className="w-3 h-3" />
               غير متاح
             </Button>

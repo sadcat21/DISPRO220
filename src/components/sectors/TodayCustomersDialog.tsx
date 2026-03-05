@@ -3,8 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MapPin, Truck, ShoppingCart, Landmark, User, Phone, Eye, EyeOff, CheckCircle, PackageX, PackageCheck, Navigation, Loader2, MapPinOff, Clock, Check, X, DoorClosed, UserX, ShoppingBag } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { MapPin, Truck, ShoppingCart, Landmark, User, Phone, Eye, EyeOff, CheckCircle, PackageX, PackageCheck, Navigation, Loader2, MapPinOff, Clock, Check, X, DoorClosed, UserX, ShoppingBag, Printer, XCircle } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDueDebts, DueDebt } from '@/hooks/useDebtCollections';
@@ -20,6 +20,7 @@ import DeliverySaleDialog from '@/components/orders/DeliverySaleDialog';
 import CreateOrderDialog from '@/components/orders/CreateOrderDialog';
 import VisitNoPaymentDialog from '@/components/debts/VisitNoPaymentDialog';
 import CollectDebtDialog from '@/components/debts/CollectDebtDialog';
+import DirectSaleDialog from '@/components/warehouse/DirectSaleDialog';
 
 const DAY_NAMES: Record<string, string> = {
   saturday: 'السبت', sunday: 'الأحد', monday: 'الإثنين',
@@ -68,6 +69,9 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   const [showCollectDebt, setShowCollectDebt] = useState(false);
   const [checkingLocationFor, setCheckingLocationFor] = useState<string | null>(null);
   const [loadingDeliveryFor, setLoadingDeliveryFor] = useState<string | null>(null);
+  const [orderDetailsDialog, setOrderDetailsDialog] = useState<any>(null);
+  const [showDirectSale, setShowDirectSale] = useState(false);
+  const [directSaleCustomerId, setDirectSaleCustomerId] = useState<string | null>(null);
 
   // Data queries
   const { data: sectors = [] } = useQuery({
@@ -92,7 +96,6 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     enabled: !!effectiveWorkerId && open,
   });
 
-  // Today's visits
   const { data: todayVisits = [] } = useQuery({
     queryKey: ['today-visits-dialog', effectiveWorkerId, todayStart],
     queryFn: async () => {
@@ -107,7 +110,6 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     refetchInterval: 10000,
   });
 
-  // Today's orders
   const { data: todayOrders = [] } = useQuery({
     queryKey: ['today-orders-dialog', effectiveWorkerId, todayStart],
     queryFn: async () => {
@@ -123,7 +125,6 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     refetchInterval: 10000,
   });
 
-  // Assigned orders (for delivery)
   const { data: assignedOrders = [] } = useQuery({
     queryKey: ['today-cust-assigned-orders-full', effectiveWorkerId, todayDateStr],
     queryFn: async () => {
@@ -142,7 +143,6 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     enabled: !!effectiveWorkerId && open,
   });
 
-  // Delivered orders today
   const { data: todayDeliveredOrders = [] } = useQuery({
     queryKey: ['today-delivered-dialog', effectiveWorkerId, todayStart, isAdmin],
     queryFn: async () => {
@@ -161,11 +161,9 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     refetchInterval: 10000,
   });
 
-  // Due debts
   const { data: dueDebts = [] } = useDueDebts(undefined);
   const { data: allDebts = [] } = useDueDebts('__all__');
 
-  // Today's debt collections
   const { data: todayCollections = [] } = useQuery({
     queryKey: ['today-debt-collections-dialog', effectiveWorkerId, todayDateStr],
     queryFn: async () => {
@@ -183,7 +181,6 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     refetchInterval: 10000,
   });
 
-  // Recent visits with negative status for direct sale tab
   const sevenDaysAgo = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() - 7);
@@ -204,11 +201,58 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     enabled: !!effectiveWorkerId && open,
   });
 
+  // Worker stock for direct sale
+  const { data: workerStock = [] } = useQuery({
+    queryKey: ['my-worker-stock', effectiveWorkerId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('worker_stock')
+        .select('id, product_id, quantity, product:products(*)')
+        .eq('worker_id', effectiveWorkerId!)
+        .gt('quantity', 0);
+      return data || [];
+    },
+    enabled: !!effectiveWorkerId && open,
+  });
+
+  // Today's direct sales (receipts of type direct_sale)
+  const { data: todayDirectSales = [] } = useQuery({
+    queryKey: ['today-direct-sales-dialog', effectiveWorkerId, todayStart],
+    queryFn: async () => {
+      let query = supabase
+        .from('receipts')
+        .select('customer_id, items, total_amount, customer_name, created_at')
+        .eq('receipt_type', 'direct_sale')
+        .gte('created_at', todayStart);
+      if (!isAdmin) {
+        query = query.eq('worker_id', effectiveWorkerId!);
+      }
+      const { data } = await query;
+      return data || [];
+    },
+    enabled: !!effectiveWorkerId && open,
+    refetchInterval: 10000,
+  });
+
+  // Today's direct sale visit tracking (for "بدون بيع")
+  const { data: todayDirectSaleVisits = [] } = useQuery({
+    queryKey: ['today-direct-sale-visits-dialog', effectiveWorkerId, todayStart],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('visit_tracking')
+        .select('customer_id, notes')
+        .eq('worker_id', effectiveWorkerId!)
+        .gte('created_at', todayStart)
+        .or('notes.ilike.%بدون بيع%,notes.ilike.%مغلق (بيع مباشر)%,notes.ilike.%غير متاح (بيع مباشر)%');
+      return data || [];
+    },
+    enabled: !!effectiveWorkerId && open,
+    refetchInterval: 10000,
+  });
+
   // Computed data
   const workerSectors = useMemo(() => {
-    if (targetWorkerId) {
-      return sectors.filter(s => s.delivery_worker_id === targetWorkerId || s.sales_worker_id === targetWorkerId);
-    }
+    if (targetWorkerId) return sectors.filter(s => s.delivery_worker_id === targetWorkerId || s.sales_worker_id === targetWorkerId);
     if (isAdmin) return sectors;
     return sectors.filter(s => s.delivery_worker_id === effectiveWorkerId || s.sales_worker_id === effectiveWorkerId);
   }, [sectors, targetWorkerId, effectiveWorkerId, isAdmin]);
@@ -223,7 +267,6 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     return workerSectors.filter(s => s.visit_day_delivery === todayName && s.delivery_worker_id === (targetWorkerId || effectiveWorkerId));
   }, [workerSectors, todayName, targetWorkerId, effectiveWorkerId, isAdmin]);
 
-  // Delivery customers
   const deliveryCustomerIdsWithOrders = useMemo(() => {
     const ids = new Set<string>();
     const deliverySectorIds = new Set(todayDeliverySectors.map(s => s.id));
@@ -239,36 +282,29 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   }, [assignedOrders, todayDeliveredOrders, todayDeliverySectors, customers, todayDateStr]);
 
   const deliveryCustomers = useMemo(() => customers.filter(c => deliveryCustomerIdsWithOrders.has(c.id)), [customers, deliveryCustomerIdsWithOrders]);
-
-  // Sales customers
   const salesCustomers = useMemo(() => {
     const sectorIds = new Set(todaySalesSectors.map(s => s.id));
     return customers.filter(c => c.sector_id && sectorIds.has(c.sector_id));
   }, [customers, todaySalesSectors]);
 
-  // Sub-categorization: Sales
   const visitedCustomerIds = useMemo(() => new Set(todayVisits.filter(v => v.operation_type === 'visit').map(v => v.customer_id).filter(Boolean)), [todayVisits]);
   const orderedCustomerIds = useMemo(() => new Set(todayOrders.map(o => o.customer_id).filter(Boolean)), [todayOrders]);
   const salesNotVisited = useMemo(() => salesCustomers.filter(c => !visitedCustomerIds.has(c.id) && !orderedCustomerIds.has(c.id)), [salesCustomers, visitedCustomerIds, orderedCustomerIds]);
   const salesVisitedNoOrder = useMemo(() => salesCustomers.filter(c => visitedCustomerIds.has(c.id) && !orderedCustomerIds.has(c.id)), [salesCustomers, visitedCustomerIds, orderedCustomerIds]);
   const salesWithOrders = useMemo(() => salesCustomers.filter(c => orderedCustomerIds.has(c.id)), [salesCustomers, orderedCustomerIds]);
 
-  // Sub-categorization: Delivery
   const deliveredCustomerIds = useMemo(() => new Set(todayDeliveredOrders.map(o => o.customer_id).filter(Boolean)), [todayDeliveredOrders]);
   const deliveryVisitedCustomerIds = useMemo(() => new Set(todayVisits.filter(v => v.operation_type === 'delivery_visit').map(v => v.customer_id).filter(Boolean)), [todayVisits]);
   const deliveryNotDone = useMemo(() => deliveryCustomers.filter(c => !deliveredCustomerIds.has(c.id) && !deliveryVisitedCustomerIds.has(c.id)), [deliveryCustomers, deliveredCustomerIds, deliveryVisitedCustomerIds]);
   const deliveryNotReceived = useMemo(() => deliveryCustomers.filter(c => deliveryVisitedCustomerIds.has(c.id) && !deliveredCustomerIds.has(c.id)), [deliveryCustomers, deliveryVisitedCustomerIds, deliveredCustomerIds]);
   const deliveryReceived = useMemo(() => deliveryCustomers.filter(c => deliveredCustomerIds.has(c.id)), [deliveryCustomers, deliveredCustomerIds]);
 
-  // Sub-categorization: Debts
   const collectedDebtIds = useMemo(() => new Set(todayCollections.filter(c => c.action !== 'no_payment').map(c => c.debt_id)), [todayCollections]);
   const noPaymentDebtIds = useMemo(() => new Set(todayCollections.filter(c => c.action === 'no_payment').map(c => c.debt_id)), [todayCollections]);
-
   const debtCustomers = useMemo(() => {
     if (targetWorkerId) return dueDebts.filter(d => d.worker_id === targetWorkerId);
     return dueDebts;
   }, [dueDebts, targetWorkerId]);
-
   const debtsToCollectToday = useMemo(() => debtCustomers.filter(d => !collectedDebtIds.has(d.id) && !noPaymentDebtIds.has(d.id)), [debtCustomers, collectedDebtIds, noPaymentDebtIds]);
   const debtsCollectedToday = useMemo(() => debtCustomers.filter(d => collectedDebtIds.has(d.id)), [debtCustomers, collectedDebtIds]);
   const debtsNoPaymentToday = useMemo(() => debtCustomers.filter(d => noPaymentDebtIds.has(d.id)), [debtCustomers, noPaymentDebtIds]);
@@ -277,15 +313,20 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     return allDebts;
   }, [allDebts, targetWorkerId]);
 
-  // Direct sale customers: customers in today's delivery sectors marked negatively by sales rep
+  // Direct sale customers
   const directSaleCustomers = useMemo(() => {
     const deliverySectorIds = new Set(todayDeliverySectors.map(s => s.id));
     const customersInDeliverySectors = customers.filter(c => c.sector_id && deliverySectorIds.has(c.sector_id));
     const negativeCustomerIds = new Set(recentNegativeVisits.map(v => v.customer_id).filter(Boolean));
-    return customersInDeliverySectors.filter(c =>
-      negativeCustomerIds.has(c.id) && !deliveredCustomerIds.has(c.id)
-    );
+    return customersInDeliverySectors.filter(c => negativeCustomerIds.has(c.id) && !deliveredCustomerIds.has(c.id));
   }, [todayDeliverySectors, customers, recentNegativeVisits, deliveredCustomerIds]);
+
+  // Direct sale sub-categorization
+  const directSoldCustomerIds = useMemo(() => new Set(todayDirectSales.map(s => s.customer_id).filter(Boolean)), [todayDirectSales]);
+  const directNoSaleCustomerIds = useMemo(() => new Set(todayDirectSaleVisits.map(v => v.customer_id).filter(Boolean)), [todayDirectSaleVisits]);
+  const directSalePending = useMemo(() => directSaleCustomers.filter(c => !directSoldCustomerIds.has(c.id) && !directNoSaleCustomerIds.has(c.id)), [directSaleCustomers, directSoldCustomerIds, directNoSaleCustomerIds]);
+  const directSaleSold = useMemo(() => directSaleCustomers.filter(c => directSoldCustomerIds.has(c.id)), [directSaleCustomers, directSoldCustomerIds]);
+  const directSaleNoSale = useMemo(() => directSaleCustomers.filter(c => directNoSaleCustomerIds.has(c.id) && !directSoldCustomerIds.has(c.id)), [directSaleCustomers, directNoSaleCustomerIds, directSoldCustomerIds]);
 
   // Location check
   const checkLocationBeforeAction = async (customer: any): Promise<boolean> => {
@@ -343,6 +384,54 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     }
   };
 
+  const handleShowDeliveredOrderDetails = async (customer: any) => {
+    try {
+      const { data } = await supabase
+        .from('orders')
+        .select('*, customer:customers(*), items:order_items(*, product:products(*))')
+        .eq('customer_id', customer.id)
+        .eq('status', 'delivered')
+        .gte('updated_at', todayStart)
+        .order('updated_at', { ascending: false })
+        .limit(1);
+      if (data && data.length > 0) {
+        setOrderDetailsDialog(data[0]);
+      } else {
+        toast.error('لم يتم العثور على تفاصيل الطلبية');
+      }
+    } catch {
+      toast.error('خطأ في جلب التفاصيل');
+    }
+  };
+
+  const handleShowOrderDetails = async (customer: any) => {
+    try {
+      const { data } = await supabase
+        .from('orders')
+        .select('*, customer:customers(*), items:order_items(*, product:products(*))')
+        .eq('customer_id', customer.id)
+        .eq('created_by', effectiveWorkerId!)
+        .gte('created_at', todayStart)
+        .not('status', 'eq', 'cancelled')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (data && data.length > 0) {
+        setOrderDetailsDialog(data[0]);
+      } else {
+        toast.error('لم يتم العثور على تفاصيل الطلبية');
+      }
+    } catch {
+      toast.error('خطأ في جلب التفاصيل');
+    }
+  };
+
+  const handleShowDirectSaleDetails = async (customer: any) => {
+    const sale = todayDirectSales.find(s => s.customer_id === customer.id);
+    if (sale) {
+      setOrderDetailsDialog({ ...sale, _isDirectSale: true, customer });
+    }
+  };
+
   const handleDeliveryVisitWithoutDelivery = async (customer: any) => {
     const allowed = await checkLocationBeforeAction(customer);
     if (!allowed) return;
@@ -377,6 +466,38 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
       await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `غير متاح - ${customer.store_name || customer.name}` });
       toast.success(`تم تسجيل "${customer.store_name || customer.name}" كغير متاح`);
     } catch { toast.error('فشل في تسجيل الحالة'); }
+  };
+
+  const handleDirectSaleClosed = async (customer: any) => {
+    const allowed = await checkLocationBeforeAction(customer);
+    if (!allowed) return;
+    try {
+      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `مغلق (بيع مباشر) - ${customer.store_name || customer.name}` });
+      toast.success(`تم تسجيل "${customer.store_name || customer.name}" كمغلق`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
+  };
+
+  const handleDirectSaleUnavailable = async (customer: any) => {
+    const allowed = await checkLocationBeforeAction(customer);
+    if (!allowed) return;
+    try {
+      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `غير متاح (بيع مباشر) - ${customer.store_name || customer.name}` });
+      toast.success(`تم تسجيل "${customer.store_name || customer.name}" كغير متاح`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
+  };
+
+  const handleDirectSaleNoSale = async (customer: any) => {
+    const allowed = await checkLocationBeforeAction(customer);
+    if (!allowed) return;
+    try {
+      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `بدون بيع - ${customer.store_name || customer.name}` });
+      toast.success(`تم تسجيل "${customer.store_name || customer.name}" بدون بيع`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
+  };
+
+  const handleDirectSaleClick = (customer: any) => {
+    setDirectSaleCustomerId(customer.id);
+    setShowDirectSale(true);
   };
 
   const handleDebtCustomerClosed = async (debt: any) => {
@@ -455,7 +576,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
               </TabsTrigger>
             </TabsList>
 
-            {/* Delivery Tab with sub-tabs */}
+            {/* Delivery Tab */}
             <TabsContent value="delivery" className="m-0 flex-1 min-h-0">
               <Tabs defaultValue="not-delivered" className="flex flex-col h-full min-h-0">
                 <TabsList className="w-full rounded-none border-b shrink-0 h-auto p-0.5 gap-0.5">
@@ -466,7 +587,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                   </TabsTrigger>
                   <TabsTrigger value="not-received" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-amber-100 data-[state=active]:text-amber-700">
                     <PackageX className="w-3 h-3" />
-                    لم يتم الاستلام
+                    بدون تسليم
                     {deliveryNotReceived.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-amber-500">{deliveryNotReceived.length}</Badge>}
                   </TabsTrigger>
                   <TabsTrigger value="received" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-green-100 data-[state=active]:text-green-700">
@@ -477,18 +598,18 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                 </TabsList>
 
                 <TabsContent value="not-delivered" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={deliveryNotDone} emptyMessage="تم توصيل جميع العملاء ✓" onCustomerClick={(c) => handleDeliveryCustomerClick(c)} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} showVisitButton visitButtonLabel="بدون تسليم" checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} />
+                  <CustomerList customers={deliveryNotDone} emptyMessage="تم توصيل جميع العملاء ✓" onCustomerClick={handleDeliveryCustomerClick} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} showVisitButton visitButtonLabel="بدون تسليم" showActionButtons checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} />
                 </TabsContent>
                 <TabsContent value="not-received" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={deliveryNotReceived} emptyMessage="لا توجد زيارات بدون تسليم" onCustomerClick={(c) => handleDeliveryCustomerClick(c)} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} showVisitButton={false} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} />
+                  <CustomerList customers={deliveryNotReceived} emptyMessage="لا توجد زيارات بدون تسليم" onCustomerClick={handleDeliveryCustomerClick} showActionButtons onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} />
                 </TabsContent>
                 <TabsContent value="received" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={deliveryReceived} emptyMessage="لا توجد توصيلات بعد" onCustomerClick={(c) => handleDeliveryCustomerClick(c)} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} showVisitButton={false} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} />
+                  <CustomerList customers={deliveryReceived} emptyMessage="لا توجد توصيلات بعد" onCustomerClick={handleShowDeliveredOrderDetails} showPrintButton checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} />
                 </TabsContent>
               </Tabs>
             </TabsContent>
 
-            {/* Sales Tab with sub-tabs */}
+            {/* Sales Tab */}
             <TabsContent value="sales" className="m-0 flex-1 min-h-0">
               <Tabs defaultValue="not-visited" className="flex flex-col h-full min-h-0">
                 <TabsList className="w-full rounded-none border-b shrink-0 h-auto p-0.5 gap-0.5">
@@ -504,38 +625,57 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                   </TabsTrigger>
                   <TabsTrigger value="with-orders" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-green-100 data-[state=active]:text-green-700">
                     <CheckCircle className="w-3 h-3" />
-                    بطلبيات
+                    تم الطلب
                     {salesWithOrders.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-green-500">{salesWithOrders.length}</Badge>}
                   </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="not-visited" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={salesNotVisited} emptyMessage="تمت زيارة جميع العملاء ✓" onCustomerClick={handleSalesCustomerClick} onVisitWithoutOrder={handleVisitWithoutOrder} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} showVisitButton checkingLocationFor={checkingLocationFor} />
+                  <CustomerList customers={salesNotVisited} emptyMessage="تمت زيارة جميع العملاء ✓" onCustomerClick={handleSalesCustomerClick} onVisitWithoutOrder={handleVisitWithoutOrder} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} showVisitButton showActionButtons checkingLocationFor={checkingLocationFor} />
                 </TabsContent>
                 <TabsContent value="visited-no-order" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={salesVisitedNoOrder} emptyMessage="لا توجد زيارات بدون طلبيات" onCustomerClick={handleSalesCustomerClick} onVisitWithoutOrder={handleVisitWithoutOrder} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} showVisitButton={false} checkingLocationFor={checkingLocationFor} />
+                  <CustomerList customers={salesVisitedNoOrder} emptyMessage="لا توجد زيارات بدون طلبيات" onCustomerClick={handleSalesCustomerClick} showActionButtons onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} checkingLocationFor={checkingLocationFor} />
                 </TabsContent>
                 <TabsContent value="with-orders" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={salesWithOrders} emptyMessage="لا توجد طلبيات بعد" onCustomerClick={handleSalesCustomerClick} onVisitWithoutOrder={handleVisitWithoutOrder} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} showVisitButton={false} checkingLocationFor={checkingLocationFor} />
+                  <CustomerList customers={salesWithOrders} emptyMessage="لا توجد طلبيات بعد" onCustomerClick={handleShowOrderDetails} checkingLocationFor={checkingLocationFor} />
                 </TabsContent>
               </Tabs>
             </TabsContent>
 
             {/* Direct Sale Tab */}
-            <TabsContent value="direct-sale" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-              <CustomerList
-                customers={directSaleCustomers}
-                emptyMessage="لا توجد محلات متاحة للبيع المباشر"
-                onCustomerClick={handleSalesCustomerClick}
-                onVisitWithoutOrder={handleVisitWithoutOrder}
-                onClosed={handleCustomerClosed}
-                onUnavailable={handleCustomerUnavailable}
-                showVisitButton={false}
-                checkingLocationFor={checkingLocationFor}
-              />
+            <TabsContent value="direct-sale" className="m-0 flex-1 min-h-0">
+              <Tabs defaultValue="pending" className="flex flex-col h-full min-h-0">
+                <TabsList className="w-full rounded-none border-b shrink-0 h-auto p-0.5 gap-0.5">
+                  <TabsTrigger value="pending" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-orange-100 data-[state=active]:text-orange-700">
+                    <ShoppingBag className="w-3 h-3" />
+                    العملاء
+                    {directSalePending.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-orange-500">{directSalePending.length}</Badge>}
+                  </TabsTrigger>
+                  <TabsTrigger value="sold" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-green-100 data-[state=active]:text-green-700">
+                    <CheckCircle className="w-3 h-3" />
+                    تم البيع
+                    {directSaleSold.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-green-500">{directSaleSold.length}</Badge>}
+                  </TabsTrigger>
+                  <TabsTrigger value="no-sale" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-amber-100 data-[state=active]:text-amber-700">
+                    <XCircle className="w-3 h-3" />
+                    بدون بيع
+                    {directSaleNoSale.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-amber-500">{directSaleNoSale.length}</Badge>}
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="pending" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
+                  <CustomerList customers={directSalePending} emptyMessage="لا توجد محلات متاحة للبيع المباشر" onCustomerClick={handleDirectSaleClick} onClosed={handleDirectSaleClosed} onUnavailable={handleDirectSaleUnavailable} onNoSale={handleDirectSaleNoSale} showActionButtons showNoSaleButton checkingLocationFor={checkingLocationFor} />
+                </TabsContent>
+                <TabsContent value="sold" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
+                  <CustomerList customers={directSaleSold} emptyMessage="لا توجد مبيعات بعد" onCustomerClick={handleShowDirectSaleDetails} showPrintButton checkingLocationFor={checkingLocationFor} />
+                </TabsContent>
+                <TabsContent value="no-sale" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
+                  <CustomerList customers={directSaleNoSale} emptyMessage="لا توجد زيارات بدون بيع" onCustomerClick={handleDirectSaleClick} checkingLocationFor={checkingLocationFor} />
+                </TabsContent>
+              </Tabs>
             </TabsContent>
 
-            {/* Debts Tab with sub-tabs */}
+            {/* Debts Tab */}
             <TabsContent value="debts" className="m-0 flex-1 min-h-0">
               <Tabs defaultValue="today-collection" className="flex flex-col h-full min-h-0">
                 <TabsList className="w-full rounded-none border-b shrink-0 h-auto p-0.5 gap-0.5">
@@ -579,6 +719,14 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         </DialogContent>
       </Dialog>
 
+      {/* Order Details Dialog */}
+      {orderDetailsDialog && (
+        <OrderDetailsDialog
+          order={orderDetailsDialog}
+          onClose={() => setOrderDetailsDialog(null)}
+        />
+      )}
+
       {/* Sub-dialogs */}
       {pendingDeliveryOrder && (
         <DeliverySaleDialog
@@ -592,6 +740,13 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         open={showCreateOrder}
         onOpenChange={setShowCreateOrder}
         initialCustomerId={selectedCustomerForOrder || undefined}
+      />
+
+      <DirectSaleDialog
+        open={showDirectSale}
+        onOpenChange={(o) => { setShowDirectSale(o); if (!o) setDirectSaleCustomerId(null); }}
+        stockItems={workerStock}
+        initialCustomerId={directSaleCustomerId || undefined}
       />
 
       {selectedDebt && (
@@ -627,19 +782,109 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   );
 };
 
-// Reusable CustomerList component (matches SectorCustomersPopover)
+// Order Details Dialog - shows order/sale details similar to receipt content
+const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void }> = ({ order, onClose }) => {
+  const isDirectSale = order._isDirectSale;
+  const items = isDirectSale ? (order.items || []) : (order.items || []);
+  const customer = isDirectSale ? order.customer : order.customer;
+  const totalAmount = isDirectSale ? order.total_amount : order.total_amount;
+
+  return (
+    <Dialog open={true} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-[95vw] sm:max-w-sm p-4 gap-3 max-h-[80vh] overflow-y-auto" dir="rtl">
+        <DialogHeader>
+          <DialogTitle className="text-base">
+            {isDirectSale ? '🛒 تفاصيل البيع المباشر' : '📦 تفاصيل الطلبية'}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          {/* Customer Info */}
+          <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4 text-primary" />
+              <span className="font-bold text-sm">{customer?.store_name || customer?.name || order.customer_name || '—'}</span>
+            </div>
+            {customer?.phone && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Phone className="w-3 h-3" />
+                <span>{customer.phone}</span>
+              </div>
+            )}
+            {!isDirectSale && order.created_at && (
+              <p className="text-xs text-muted-foreground">
+                التاريخ: {format(new Date(order.created_at), 'dd/MM/yyyy HH:mm')}
+              </p>
+            )}
+            {isDirectSale && order.created_at && (
+              <p className="text-xs text-muted-foreground">
+                التاريخ: {format(new Date(order.created_at), 'dd/MM/yyyy HH:mm')}
+              </p>
+            )}
+          </div>
+
+          {/* Items */}
+          <div className="border rounded-lg overflow-hidden">
+            <div className="bg-muted/30 px-3 py-2 text-xs font-bold border-b">المنتجات</div>
+            <div className="divide-y">
+              {items.map((item: any, idx: number) => {
+                const productName = isDirectSale ? (item.productName || '—') : (item.product?.name || '—');
+                const quantity = isDirectSale ? item.quantity : item.quantity;
+                const unitPrice = isDirectSale ? item.unitPrice : item.unit_price;
+                const itemTotal = isDirectSale ? item.totalPrice : item.total_price;
+                const giftQty = isDirectSale ? (item.giftQuantity || 0) : (item.gift_quantity || 0);
+
+                return (
+                  <div key={idx} className="px-3 py-2 space-y-0.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">{productName}</span>
+                      <span className="font-bold text-sm">{Number(itemTotal || 0).toLocaleString()} DA</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span>الكمية: {quantity}</span>
+                      <span>السعر: {Number(unitPrice || 0).toLocaleString()} DA</span>
+                      {giftQty > 0 && <span className="text-emerald-600">🎁 هدية: {giftQty}</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Total */}
+          <div className="bg-primary/5 rounded-lg p-3 flex items-center justify-between">
+            <span className="font-bold">المجموع</span>
+            <span className="font-bold text-lg text-primary">{Number(totalAmount || 0).toLocaleString()} DA</span>
+          </div>
+
+          {!isDirectSale && order.notes && (
+            <div className="text-xs text-muted-foreground bg-muted/30 rounded p-2">
+              ملاحظات: {order.notes}
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// Reusable CustomerList component
 const CustomerList: React.FC<{
   customers: any[];
   emptyMessage: string;
   onCustomerClick: (c: any) => void;
-  onVisitWithoutOrder: (c: any) => void;
-  onClosed: (c: any) => void;
-  onUnavailable: (c: any) => void;
-  showVisitButton: boolean;
+  onVisitWithoutOrder?: (c: any) => void;
+  onClosed?: (c: any) => void;
+  onUnavailable?: (c: any) => void;
+  onNoSale?: (c: any) => void;
+  showVisitButton?: boolean;
   visitButtonLabel?: string;
+  showActionButtons?: boolean;
+  showPrintButton?: boolean;
+  showNoSaleButton?: boolean;
   checkingLocationFor: string | null;
   loadingFor?: string | null;
-}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, onClosed, onUnavailable, showVisitButton, visitButtonLabel, checkingLocationFor, loadingFor }) => {
+}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, onClosed, onUnavailable, onNoSale, showVisitButton, visitButtonLabel, showActionButtons, showPrintButton, showNoSaleButton, checkingLocationFor, loadingFor }) => {
   if (customers.length === 0) {
     return <div className="p-6 text-center text-sm text-muted-foreground">{emptyMessage}</div>;
   }
@@ -667,52 +912,41 @@ const CustomerList: React.FC<{
           </button>
           <div className="flex items-center gap-1 mt-1.5 justify-end flex-wrap">
             {c.latitude && c.longitude && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 text-[10px] px-1.5 gap-0.5"
-                onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.latitude},${c.longitude}`, '_blank')}
-              >
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.latitude},${c.longitude}`, '_blank')}>
                 <Navigation className="w-3 h-3" />
                 الموقع
               </Button>
             )}
-            {showVisitButton && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 text-[10px] px-1.5 gap-0.5 text-orange-600"
-                onClick={() => onVisitWithoutOrder(c)}
-                disabled={checkingLocationFor === c.id}
-              >
-                {checkingLocationFor === c.id ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <MapPinOff className="w-3 h-3" />
-                )}
+            {showPrintButton && (
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-blue-600" onClick={() => onCustomerClick(c)}>
+                <Printer className="w-3 h-3" />
+                عرض التفاصيل
+              </Button>
+            )}
+            {showVisitButton && onVisitWithoutOrder && (
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-orange-600" onClick={() => onVisitWithoutOrder(c)} disabled={checkingLocationFor === c.id}>
+                {checkingLocationFor === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <MapPinOff className="w-3 h-3" />}
                 {visitButtonLabel || 'زيارة بدون طلبية'}
               </Button>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-[10px] px-1.5 gap-0.5 text-red-600"
-              onClick={() => onClosed(c)}
-              disabled={checkingLocationFor === c.id}
-            >
-              <DoorClosed className="w-3 h-3" />
-              مغلق
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-[10px] px-1.5 gap-0.5 text-gray-600"
-              onClick={() => onUnavailable(c)}
-              disabled={checkingLocationFor === c.id}
-            >
-              <UserX className="w-3 h-3" />
-              غير متاح
-            </Button>
+            {showNoSaleButton && onNoSale && (
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-amber-600" onClick={() => onNoSale(c)} disabled={checkingLocationFor === c.id}>
+                {checkingLocationFor === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
+                بدون بيع
+              </Button>
+            )}
+            {showActionButtons && onClosed && (
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-red-600" onClick={() => onClosed(c)} disabled={checkingLocationFor === c.id}>
+                <DoorClosed className="w-3 h-3" />
+                مغلق
+              </Button>
+            )}
+            {showActionButtons && onUnavailable && (
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-gray-600" onClick={() => onUnavailable(c)} disabled={checkingLocationFor === c.id}>
+                <UserX className="w-3 h-3" />
+                غير متاح
+              </Button>
+            )}
           </div>
         </div>
       ))}
@@ -720,7 +954,7 @@ const CustomerList: React.FC<{
   );
 };
 
-// Reusable DebtList component (matches SectorCustomersPopover)
+// Reusable DebtList component
 const DebtList: React.FC<{ debts: DueDebt[]; onCollect: (d: DueDebt) => void; onVisitNoPayment: (d: DueDebt) => void; onClosed: (d: DueDebt) => void; onUnavailable: (d: DueDebt) => void; emptyMessage: string }> = ({ debts, onCollect, onVisitNoPayment, onClosed, onUnavailable, emptyMessage }) => {
   if (debts.length === 0) {
     return <div className="p-6 text-center text-sm text-muted-foreground">{emptyMessage}</div>;
@@ -730,10 +964,7 @@ const DebtList: React.FC<{ debts: DueDebt[]; onCollect: (d: DueDebt) => void; on
     <div className="divide-y">
       {debts.map(debt => (
         <div key={debt.id} className="p-3 hover:bg-muted/50 transition-colors">
-          <button
-            className="w-full text-right"
-            onClick={() => onCollect(debt)}
-          >
+          <button className="w-full text-right" onClick={() => onCollect(debt)}>
             <div className="flex items-center justify-between">
               <span className="font-bold text-sm">{(debt.customer as any)?.store_name || (debt.customer as any)?.name || '—'}</span>
               <span className="text-destructive font-bold">{Number(debt.remaining_amount).toLocaleString()} DA</span>
@@ -745,39 +976,19 @@ const DebtList: React.FC<{ debts: DueDebt[]; onCollect: (d: DueDebt) => void; on
             </div>
           </button>
           <div className="flex items-center gap-1 mt-1.5 justify-end flex-wrap">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-[10px] px-1.5 gap-0.5 text-orange-600"
-              onClick={(e) => { e.stopPropagation(); onVisitNoPayment(debt); }}
-            >
+            <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-orange-600" onClick={(e) => { e.stopPropagation(); onVisitNoPayment(debt); }}>
               <Eye className="w-3 h-3" />
               زيارة بدون دفع
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-[10px] px-1.5 gap-0.5 text-green-600"
-              onClick={(e) => { e.stopPropagation(); onCollect(debt); }}
-            >
+            <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-green-600" onClick={(e) => { e.stopPropagation(); onCollect(debt); }}>
               <Landmark className="w-3 h-3" />
               تحصيل
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-[10px] px-1.5 gap-0.5 text-red-600"
-              onClick={(e) => { e.stopPropagation(); onClosed(debt); }}
-            >
+            <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-red-600" onClick={(e) => { e.stopPropagation(); onClosed(debt); }}>
               <DoorClosed className="w-3 h-3" />
               مغلق
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-[10px] px-1.5 gap-0.5 text-gray-600"
-              onClick={(e) => { e.stopPropagation(); onUnavailable(debt); }}
-            >
+            <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-gray-600" onClick={(e) => { e.stopPropagation(); onUnavailable(debt); }}>
               <UserX className="w-3 h-3" />
               غير متاح
             </Button>
