@@ -15,7 +15,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
-import { openSmsApp, buildDeliveryConfirmationSms } from '@/utils/smsHelper';
+import { sendSmsDirectly, buildDeliveryConfirmationSms } from '@/utils/smsHelper';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -798,9 +798,12 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
           remainingAmount: paymentData.remainingAmount,
           orderId: order.id,
         });
-        // تأخير قصير لإتمام العمليات قبل فتح تطبيق الرسائل
-        setTimeout(() => {
-          openSmsApp(customerPhone, smsMessage);
+        // إرسال SMS مباشرة من هاتف العامل بدون تدخل يدوي
+        setTimeout(async () => {
+          const sent = await sendSmsDirectly(customerPhone, smsMessage);
+          if (sent) {
+            toast.success('تم إرسال رسالة التأكيد للعميل');
+          }
         }, 1500);
       }
 
