@@ -35,6 +35,7 @@ import { cn } from '@/lib/utils';
 import CustomerDistanceIndicator from '@/components/orders/CustomerDistanceIndicator';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
+import { sendSmsDirectly, buildDeliveryConfirmationSms } from '@/utils/smsHelper';
 
 interface StockItem {
   id: string;
@@ -616,6 +617,25 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
 
       // Track direct sale visit GPS
       trackVisit({ customerId: selectedCustomerId, operationType: 'direct_sale', operationId: order.id });
+
+      // إرسال SMS تلقائي للعميل بعد البيع المباشر
+      const customerPhone = selectedCustomer?.phone;
+      if (customerPhone) {
+        const smsMessage = buildDeliveryConfirmationSms({
+          customerName: selectedCustomer?.name || '',
+          totalAmount: orderTotals.totalAmount,
+          paidAmount: paymentData.paidAmount,
+          remainingAmount: paymentData.remainingAmount,
+          orderId: order.id,
+          companyName: companyInfo?.company_name,
+        });
+        setTimeout(async () => {
+          const sent = await sendSmsDirectly(customerPhone, smsMessage);
+          if (sent) {
+            toast.success('تم إرسال رسالة التأكيد للعميل');
+          }
+        }, 500);
+      }
 
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['assigned-orders'] });
