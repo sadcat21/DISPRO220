@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { MapPin, User, Truck, ShoppingCart, MapPinOff, Navigation, Loader2, Eye, EyeOff, CheckCircle, PackageX, PackageCheck, Landmark, Banknote, Clock, Check, X } from 'lucide-react';
+import { MapPin, User, Truck, ShoppingCart, MapPinOff, Navigation, Loader2, Eye, EyeOff, CheckCircle, PackageX, PackageCheck, Landmark, Banknote, Clock, Check, X, DoorClosed, UserX } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -419,6 +419,46 @@ const SectorCustomersPopover: React.FC = () => {
     }
   };
 
+  const handleCustomerClosed = async (customer: any) => {
+    const allowed = await checkLocationBeforeAction(customer);
+    if (!allowed) return;
+    try {
+      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `مغلق - ${customer.store_name || customer.name}` });
+      toast.success(`تم تسجيل "${customer.store_name || customer.name}" كمغلق`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
+  };
+
+  const handleCustomerUnavailable = async (customer: any) => {
+    const allowed = await checkLocationBeforeAction(customer);
+    if (!allowed) return;
+    try {
+      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `غير متاح - ${customer.store_name || customer.name}` });
+      toast.success(`تم تسجيل "${customer.store_name || customer.name}" كغير متاح`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
+  };
+
+  const handleDebtCustomerClosed = async (debt: DueDebt) => {
+    const customer = debt.customer as any;
+    const customerObj = { id: debt.customer_id, latitude: customer?.latitude, longitude: customer?.longitude, store_name: customer?.store_name, name: customer?.name };
+    const allowed = await checkLocationBeforeAction(customerObj);
+    if (!allowed) return;
+    try {
+      await trackVisit({ customerId: debt.customer_id, operationType: 'visit', notes: `مغلق (تحصيل دين) - ${customer?.store_name || customer?.name}` });
+      toast.success(`تم تسجيل "${customer?.store_name || customer?.name}" كمغلق`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
+  };
+
+  const handleDebtCustomerUnavailable = async (debt: DueDebt) => {
+    const customer = debt.customer as any;
+    const customerObj = { id: debt.customer_id, latitude: customer?.latitude, longitude: customer?.longitude, store_name: customer?.store_name, name: customer?.name };
+    const allowed = await checkLocationBeforeAction(customerObj);
+    if (!allowed) return;
+    try {
+      await trackVisit({ customerId: debt.customer_id, operationType: 'visit', notes: `غير متاح (تحصيل دين) - ${customer?.store_name || customer?.name}` });
+      toast.success(`تم تسجيل "${customer?.store_name || customer?.name}" كغير متاح`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
+  };
+
   return (
     <>
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -486,6 +526,8 @@ const SectorCustomersPopover: React.FC = () => {
                   emptyMessage="تم توصيل جميع العملاء ✓"
                   onCustomerClick={(c) => handleCustomerClick(c, 'delivery')}
                   onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery}
+                  onClosed={handleCustomerClosed}
+                  onUnavailable={handleCustomerUnavailable}
                   showVisitButton={true}
                   visitButtonLabel="بدون تسليم"
                   checkingLocationFor={checkingLocationFor}
@@ -498,6 +540,8 @@ const SectorCustomersPopover: React.FC = () => {
                   emptyMessage="لا توجد زيارات بدون تسليم"
                   onCustomerClick={(c) => handleCustomerClick(c, 'delivery')}
                   onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery}
+                  onClosed={handleCustomerClosed}
+                  onUnavailable={handleCustomerUnavailable}
                   showVisitButton={false}
                   checkingLocationFor={checkingLocationFor}
                   loadingFor={loadingDeliveryFor}
@@ -509,6 +553,8 @@ const SectorCustomersPopover: React.FC = () => {
                   emptyMessage="لا توجد توصيلات بعد"
                   onCustomerClick={(c) => handleCustomerClick(c, 'delivery')}
                   onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery}
+                  onClosed={handleCustomerClosed}
+                  onUnavailable={handleCustomerUnavailable}
                   showVisitButton={false}
                   checkingLocationFor={checkingLocationFor}
                   loadingFor={loadingDeliveryFor}
@@ -543,6 +589,8 @@ const SectorCustomersPopover: React.FC = () => {
                     emptyMessage="تمت زيارة جميع العملاء ✓"
                     onCustomerClick={(c) => handleCustomerClick(c, 'sales')}
                     onVisitWithoutOrder={handleVisitWithoutOrder}
+                    onClosed={handleCustomerClosed}
+                    onUnavailable={handleCustomerUnavailable}
                     showVisitButton={true}
                     checkingLocationFor={checkingLocationFor}
                   />
@@ -553,6 +601,8 @@ const SectorCustomersPopover: React.FC = () => {
                     emptyMessage="لا توجد زيارات بدون طلبيات"
                     onCustomerClick={(c) => handleCustomerClick(c, 'sales')}
                     onVisitWithoutOrder={handleVisitWithoutOrder}
+                    onClosed={handleCustomerClosed}
+                    onUnavailable={handleCustomerUnavailable}
                     showVisitButton={false}
                     checkingLocationFor={checkingLocationFor}
                   />
@@ -563,6 +613,8 @@ const SectorCustomersPopover: React.FC = () => {
                     emptyMessage="لا توجد طلبيات بعد"
                     onCustomerClick={(c) => handleCustomerClick(c, 'sales')}
                     onVisitWithoutOrder={handleVisitWithoutOrder}
+                    onClosed={handleCustomerClosed}
+                    onUnavailable={handleCustomerUnavailable}
                     showVisitButton={false}
                     checkingLocationFor={checkingLocationFor}
                   />
@@ -597,16 +649,16 @@ const SectorCustomersPopover: React.FC = () => {
               </TabsList>
 
               <TabsContent value="today-collection" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
-                <DebtList debts={debtsToCollectToday} onSelect={setSelectedDebt} emptyMessage="لا توجد ديون مستحقة اليوم ✓" />
+                <DebtList debts={debtsToCollectToday} onSelect={setSelectedDebt} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} emptyMessage="لا توجد ديون مستحقة اليوم ✓" />
               </TabsContent>
               <TabsContent value="collected" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
-                <DebtList debts={debtsCollectedToday} onSelect={setSelectedDebt} emptyMessage="لا توجد تحصيلات بعد" />
+                <DebtList debts={debtsCollectedToday} onSelect={setSelectedDebt} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} emptyMessage="لا توجد تحصيلات بعد" />
               </TabsContent>
               <TabsContent value="no-payment" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
-                <DebtList debts={debtsNoPaymentToday} onSelect={setSelectedDebt} emptyMessage="لا توجد زيارات بدون دفع" />
+                <DebtList debts={debtsNoPaymentToday} onSelect={setSelectedDebt} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} emptyMessage="لا توجد زيارات بدون دفع" />
               </TabsContent>
               <TabsContent value="all-debts" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
-                <DebtList debts={allDebts} onSelect={setSelectedDebt} emptyMessage="لا توجد ديون مستحقة" />
+                <DebtList debts={allDebts} onSelect={setSelectedDebt} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} emptyMessage="لا توجد ديون مستحقة" />
               </TabsContent>
             </Tabs>
           </TabsContent>
@@ -695,11 +747,13 @@ const CustomerList: React.FC<{
   emptyMessage: string;
   onCustomerClick: (c: any) => void;
   onVisitWithoutOrder: (c: any) => void;
+  onClosed: (c: any) => void;
+  onUnavailable: (c: any) => void;
   showVisitButton: boolean;
   visitButtonLabel?: string;
   checkingLocationFor: string | null;
   loadingFor?: string | null;
-}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, showVisitButton, visitButtonLabel, checkingLocationFor, loadingFor }) => {
+}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, onClosed, onUnavailable, showVisitButton, visitButtonLabel, checkingLocationFor, loadingFor }) => {
   if (customers.length === 0) {
     return <div className="p-6 text-center text-sm text-muted-foreground">{emptyMessage}</div>;
   }
@@ -725,7 +779,7 @@ const CustomerList: React.FC<{
               </div>
             </div>
           </button>
-          <div className="flex items-center gap-1 mt-1.5 justify-end">
+          <div className="flex items-center gap-1 mt-1.5 justify-end flex-wrap">
             {c.latitude && c.longitude && (
               <Button
                 variant="ghost"
@@ -753,6 +807,26 @@ const CustomerList: React.FC<{
                 {visitButtonLabel || 'زيارة بدون طلبية'}
               </Button>
             )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 text-[10px] px-1.5 gap-0.5 text-red-600"
+              onClick={() => onClosed(c)}
+              disabled={checkingLocationFor === c.id}
+            >
+              <DoorClosed className="w-3 h-3" />
+              مغلق
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 text-[10px] px-1.5 gap-0.5 text-gray-600"
+              onClick={() => onUnavailable(c)}
+              disabled={checkingLocationFor === c.id}
+            >
+              <UserX className="w-3 h-3" />
+              غير متاح
+            </Button>
           </div>
         </div>
       ))}
@@ -761,7 +835,7 @@ const CustomerList: React.FC<{
 };
 
 
-const DebtList: React.FC<{ debts: DueDebt[]; onSelect: (d: DueDebt) => void; emptyMessage: string }> = ({ debts, onSelect, emptyMessage }) => {
+const DebtList: React.FC<{ debts: DueDebt[]; onSelect: (d: DueDebt) => void; onClosed: (d: DueDebt) => void; onUnavailable: (d: DueDebt) => void; emptyMessage: string }> = ({ debts, onSelect, onClosed, onUnavailable, emptyMessage }) => {
   if (debts.length === 0) {
     return <div className="p-6 text-center text-sm text-muted-foreground">{emptyMessage}</div>;
   }
@@ -769,21 +843,42 @@ const DebtList: React.FC<{ debts: DueDebt[]; onSelect: (d: DueDebt) => void; emp
   return (
     <div className="divide-y">
       {debts.map(debt => (
-        <button
-          key={debt.id}
-          className="w-full p-3 text-right hover:bg-muted/50 transition-colors"
-          onClick={() => onSelect(debt)}
-        >
-          <div className="flex items-center justify-between">
-            <span className="font-bold text-sm">{debt.customer?.store_name || debt.customer?.name || '—'}</span>
-            <span className="text-destructive font-bold">{Number(debt.remaining_amount).toLocaleString()} DA</span>
+        <div key={debt.id} className="p-3 hover:bg-muted/50 transition-colors">
+          <button
+            className="w-full text-right"
+            onClick={() => onSelect(debt)}
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-sm">{debt.customer?.store_name || debt.customer?.name || '—'}</span>
+              <span className="text-destructive font-bold">{Number(debt.remaining_amount).toLocaleString()} DA</span>
+            </div>
+            <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+              <Clock className="w-3 h-3" />
+              <span>{debt.due_date ? format(new Date(debt.due_date + 'T00:00:00'), 'dd/MM/yyyy') : '—'}</span>
+              {debt.customer?.phone && <span>• {debt.customer.phone}</span>}
+            </div>
+          </button>
+          <div className="flex items-center gap-1 mt-1.5 justify-end flex-wrap">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 text-[10px] px-1.5 gap-0.5 text-red-600"
+              onClick={(e) => { e.stopPropagation(); onClosed(debt); }}
+            >
+              <DoorClosed className="w-3 h-3" />
+              مغلق
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 text-[10px] px-1.5 gap-0.5 text-gray-600"
+              onClick={(e) => { e.stopPropagation(); onUnavailable(debt); }}
+            >
+              <UserX className="w-3 h-3" />
+              غير متاح
+            </Button>
           </div>
-          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-            <Clock className="w-3 h-3" />
-            <span>{debt.due_date ? format(new Date(debt.due_date + 'T00:00:00'), 'dd/MM/yyyy') : '—'}</span>
-            {debt.customer?.phone && <span>• {debt.customer.phone}</span>}
-          </div>
-        </button>
+        </div>
       ))}
     </div>
   );
