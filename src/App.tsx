@@ -9,6 +9,7 @@ import { FontSizeProvider } from "@/contexts/FontSizeContext";
 import { SelectedWorkerProvider } from "@/contexts/SelectedWorkerContext";
 import MobileLayout from "@/components/layout/MobileLayout";
 import GpsGuard from "@/components/auth/GpsGuard";
+import VersionGuard from "@/components/VersionGuard";
 import LoginForm from "@/components/auth/LoginForm";
 import Index from "./pages/Index";
 import MyPromos from "./pages/MyPromos";
@@ -370,15 +371,17 @@ const App = () => (
     <LanguageProvider>
       <FontSizeProvider>
         <TooltipProvider>
-          <AuthProvider>
-            <SelectedWorkerProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <AppRoutes />
-              </BrowserRouter>
-            </SelectedWorkerProvider>
-          </AuthProvider>
+          <VersionGuard>
+            <AuthProvider>
+              <SelectedWorkerProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <AppRoutes />
+                </BrowserRouter>
+              </SelectedWorkerProvider>
+            </AuthProvider>
+          </VersionGuard>
         </TooltipProvider>
       </FontSizeProvider>
     </LanguageProvider>
