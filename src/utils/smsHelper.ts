@@ -3,14 +3,14 @@ import { Capacitor } from '@capacitor/core';
 /**
  * إرسال رسالة SMS مباشرة من هاتف العامل بدون فتح تطبيق الرسائل
  * يعمل فقط على Android Native عبر capacitor-sms-sender
+ * البلجن يستخدم SmsManager.sendTextMessage() الذي لا يحتاج لتعيين التطبيق كـ Default SMS App
  */
 
 const isGranted = (status?: string) => status === 'granted';
 
 const hasRequiredSmsPermissions = (permissions: any): boolean => {
-  // مفاتيح الإذن الصحيحة للبلجن
-  const sendGranted = isGranted(permissions?.send_sms) || isGranted(permissions?.sms);
-  const phoneStateGranted = isGranted(permissions?.read_phone_state) || isGranted(permissions?.phone_state);
+  const sendGranted = isGranted(permissions?.send_sms);
+  const phoneStateGranted = isGranted(permissions?.read_phone_state);
   return sendGranted && phoneStateGranted;
 };
 
@@ -20,25 +20,26 @@ const hasRequiredSmsPermissions = (permissions: any): boolean => {
 export const sendSmsDirectly = async (phone: string, message: string): Promise<boolean> => {
   if (!phone || !message?.trim()) return false;
 
-  // منع أي سلوك غير Native Android لضمان عدم فتح تطبيق الرسائل
   if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') {
-    console.warn('Direct SMS is allowed only on Android native builds');
+    console.warn('[SMS] Direct SMS is allowed only on Android native builds');
     return false;
   }
 
-  // تنظيف رقم الهاتف
   const cleanPhone = phone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
   if (!cleanPhone) return false;
 
   try {
     const { SmsSender } = await import('capacitor-sms-sender');
 
-    // التحقق من الصلاحيات بالمفاتيح الصحيحة للبلجن
+    // التحقق من الصلاحيات
     const currentPerms = await SmsSender.checkPermissions();
+    console.log('[SMS] Current permissions:', JSON.stringify(currentPerms));
+
     if (!hasRequiredSmsPermissions(currentPerms)) {
       const requestedPerms = await SmsSender.requestPermissions();
+      console.log('[SMS] Requested permissions result:', JSON.stringify(requestedPerms));
       if (!hasRequiredSmsPermissions(requestedPerms)) {
-        console.warn('SMS permissions denied (SEND_SMS / READ_PHONE_STATE)');
+        console.warn('[SMS] Permissions denied');
         return false;
       }
     }
@@ -56,34 +57,37 @@ export const sendSmsDirectly = async (phone: string, message: string): Promise<b
     const finalize = async (sent: boolean) => {
       if (resolved) return;
       resolved = true;
-
       if (timeoutId) window.clearTimeout(timeoutId);
       if (listenerHandle) {
         await listenerHandle.remove();
         listenerHandle = null;
       }
-
       resolveStatus?.(sent);
     };
 
     listenerHandle = await SmsSender.addListener('smsSenderStatusUpdated', (result: any) => {
+      console.log('[SMS] Status update:', JSON.stringify(result));
       if (Number(result?.id) !== messageId || resolved) return;
 
       const status = String(result?.status || '').toUpperCase();
       if (status === 'SENT' || status === 'DELIVERED') {
         void finalize(true);
-        return;
-      }
-
-      if (status === 'FAILED') {
+      } else if (status === 'FAILED') {
+        console.warn('[SMS] Send failed, res_status:', result?.res_status);
         void finalize(false);
       }
     });
 
+    // Timeout بعد 15 ثانية
     timeoutId = window.setTimeout(() => {
+      console.warn('[SMS] Timeout - no status received after 15s');
       void finalize(false);
-    }, 12000);
+    }, 15000);
 
+    console.log('[SMS] Sending to:', cleanPhone, 'id:', messageId);
+
+    // ملاحظة: sim: 0 هو القيمة الافتراضية في البلجن
+    // إذا لم يعمل، يمكن تجربة sim: 1
     await SmsSender.send({
       id: messageId,
       sim: 0,
@@ -91,16 +95,18 @@ export const sendSmsDirectly = async (phone: string, message: string): Promise<b
       text: message.trim(),
     });
 
+    console.log('[SMS] send() resolved, waiting for status...');
+
     const sent = await statusPromise;
     if (!sent) {
-      console.warn('SMS was not confirmed as SENT/DELIVERED');
+      console.warn('[SMS] Not confirmed as SENT/DELIVERED');
       return false;
     }
 
-    console.log('SMS sent directly to:', cleanPhone);
+    console.log('[SMS] Successfully sent to:', cleanPhone);
     return true;
   } catch (error) {
-    console.warn('Direct SMS failed:', error);
+    console.error('[SMS] Error:', error);
     return false;
   }
 };
