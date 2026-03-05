@@ -39,16 +39,27 @@ const LoginForm: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showQuickLogin, setShowQuickLogin] = useState(false);
-  const [tapCount, setTapCount] = useState(0);
-  const tapTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  // Quick login: 'test' for test workers, 'real' for real workers
+  const [quickLoginMode, setQuickLoginMode] = useState<'none' | 'test' | 'real'>('none');
+  
+  // Tap counters for logo (real) and title (test)
+  const [logoTapCount, setLogoTapCount] = useState(0);
+  const logoTapTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [titleTapCount, setTitleTapCount] = useState(0);
+  const titleTapTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  
   const [testWorkers, setTestWorkers] = useState<TestWorkerQuick[]>([]);
+  const [realWorkers, setRealWorkers] = useState<TestWorkerQuick[]>([]);
 
   useEffect(() => {
-    if (showQuickLogin && testWorkers.length === 0) {
+    if (quickLoginMode === 'test' && testWorkers.length === 0) {
       fetchTestWorkers();
     }
-  }, [showQuickLogin]);
+    if (quickLoginMode === 'real' && realWorkers.length === 0) {
+      fetchRealWorkers();
+    }
+  }, [quickLoginMode]);
 
   const fetchTestWorkers = async () => {
     const { data } = await supabase
@@ -61,16 +72,41 @@ const LoginForm: React.FC = () => {
     if (data) setTestWorkers(data as TestWorkerQuick[]);
   };
 
-  const handleSecretTap = () => {
-    const newCount = tapCount + 1;
-    setTapCount(newCount);
-    if (tapTimer.current) clearTimeout(tapTimer.current);
+  const fetchRealWorkers = async () => {
+    const { data } = await supabase
+      .from('workers')
+      .select('username, full_name, role')
+      .eq('is_test', false)
+      .eq('is_active', true)
+      .order('role')
+      .order('full_name');
+    if (data) setRealWorkers(data as TestWorkerQuick[]);
+  };
+
+  // Logo tap → real workers
+  const handleLogoTap = () => {
+    const newCount = logoTapCount + 1;
+    setLogoTapCount(newCount);
+    if (logoTapTimer.current) clearTimeout(logoTapTimer.current);
     if (newCount >= 3) {
-      setShowQuickLogin(prev => !prev);
-      setTapCount(0);
+      setQuickLoginMode(prev => prev === 'real' ? 'none' : 'real');
+      setLogoTapCount(0);
       return;
     }
-    tapTimer.current = setTimeout(() => setTapCount(0), 800);
+    logoTapTimer.current = setTimeout(() => setLogoTapCount(0), 800);
+  };
+
+  // Title tap → test workers
+  const handleTitleTap = () => {
+    const newCount = titleTapCount + 1;
+    setTitleTapCount(newCount);
+    if (titleTapTimer.current) clearTimeout(titleTapTimer.current);
+    if (newCount >= 3) {
+      setQuickLoginMode(prev => prev === 'test' ? 'none' : 'test');
+      setTitleTapCount(0);
+      return;
+    }
+    titleTapTimer.current = setTimeout(() => setTitleTapCount(0), 800);
   };
 
   const doLogin = async (user: string, pass: string) => {
@@ -101,11 +137,11 @@ const LoginForm: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center p-4 bg-secondary" dir={dir}>
       <Card className="w-full max-w-sm glass-card">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-28 h-28 cursor-pointer select-none" onClick={handleSecretTap}>
+          <div className="mx-auto w-28 h-28 cursor-pointer select-none" onClick={handleLogoTap}>
             <img src={logo} alt="Laser Food Logo" className="w-full h-full object-contain" draggable={false} />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold">{t('app.name')}</CardTitle>
+            <CardTitle className="text-2xl font-bold cursor-pointer select-none" onClick={handleTitleTap}>{t('app.name')}</CardTitle>
             <CardDescription>{t('app.description')}</CardDescription>
           </div>
         </CardHeader>
@@ -162,7 +198,8 @@ const LoginForm: React.FC = () => {
             </Button>
           </form>
 
-          {showQuickLogin && <div className="mt-4 pt-4 border-t border-border space-y-2">
+          {/* Test workers quick login */}
+          {quickLoginMode === 'test' && <div className="mt-4 pt-4 border-t border-border space-y-2">
             <p className="text-xs text-muted-foreground text-center mb-2 flex items-center justify-center gap-1">
               <FlaskConical className="w-3 h-3" />
               دخول سريع (تجريبي)
@@ -189,6 +226,28 @@ const LoginForm: React.FC = () => {
                   لا يوجد عمال تجريبيون. أنشئهم من إدارة العمال.
                 </p>
               )}
+            </div>
+          </div>}
+
+          {/* Real workers quick login */}
+          {quickLoginMode === 'real' && <div className="mt-4 pt-4 border-t border-border space-y-2">
+            <p className="text-xs text-muted-foreground text-center mb-2">🔑 دخول سريع (حقيقي)</p>
+            <div className="flex flex-col gap-2 max-h-48 overflow-y-auto">
+              {realWorkers.map((tw) => (
+                <Button
+                  key={tw.username}
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs justify-start"
+                  disabled={isLoading}
+                  onClick={() => { setUsername(tw.username); }}
+                >
+                  {ROLE_EMOJI[tw.role] || '👤'} {tw.full_name}
+                  <span className="text-muted-foreground mr-auto text-[10px]">
+                    ({ROLE_LABEL_AR[tw.role] || tw.role})
+                  </span>
+                </Button>
+              ))}
             </div>
           </div>}
         </CardContent>
