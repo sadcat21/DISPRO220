@@ -56,16 +56,28 @@ export const useCustomerFieldSettings = () => {
   const saveMutation = useMutation({
     mutationFn: async (settings: CustomerFieldSettings) => {
       const normalized = normalizeCustomerFieldSettings(settings);
-      const { error } = await supabase.from('app_settings').upsert(
-        {
-          key: CUSTOMER_FIELD_SETTINGS_KEY,
-          value: JSON.stringify(normalized),
-          branch_id: activeBranch?.id ?? null,
-          updated_by: workerId ?? null,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'branch_id,key' },
-      );
+      const branchId = activeBranch?.id ?? null;
+
+      // Delete existing row first, then insert — avoids NULL unique constraint issues
+      let deleteQuery = supabase
+        .from('app_settings')
+        .delete()
+        .eq('key', CUSTOMER_FIELD_SETTINGS_KEY);
+
+      if (branchId) {
+        deleteQuery = deleteQuery.eq('branch_id', branchId);
+      } else {
+        deleteQuery = deleteQuery.is('branch_id', null);
+      }
+      await deleteQuery;
+
+      const { error } = await supabase.from('app_settings').insert({
+        key: CUSTOMER_FIELD_SETTINGS_KEY,
+        value: JSON.stringify(normalized),
+        branch_id: branchId,
+        updated_by: workerId ?? null,
+        updated_at: new Date().toISOString(),
+      });
 
       if (error) throw error;
       return normalized;
