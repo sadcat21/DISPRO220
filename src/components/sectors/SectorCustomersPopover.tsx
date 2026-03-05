@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { MapPin, User, Truck, ShoppingCart, MapPinOff, Navigation, Loader2, Eye, EyeOff, CheckCircle, PackageX, PackageCheck, Landmark, Banknote, Clock, Check, X, DoorClosed, UserX } from 'lucide-react';
+import { MapPin, User, Truck, ShoppingCart, MapPinOff, Navigation, Loader2, Eye, EyeOff, CheckCircle, PackageX, PackageCheck, Landmark, Banknote, Clock, Check, X, DoorClosed, UserX, ShoppingBag } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -290,6 +290,37 @@ const SectorCustomersPopover: React.FC = () => {
     return dueDebts.filter(d => noPaymentDebtIds.has(d.id));
   }, [dueDebts, noPaymentDebtIds]);
 
+  // Recent negative visits for direct sale tab
+  const sevenDaysAgo = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString();
+  }, []);
+
+  const { data: recentNegativeVisits = [] } = useQuery({
+    queryKey: ['recent-negative-visits-popover', workerId, sevenDaysAgo],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('visit_tracking')
+        .select('customer_id, notes, created_at')
+        .gte('created_at', sevenDaysAgo)
+        .or('notes.ilike.%مغلق%,notes.ilike.%غير متاح%,notes.ilike.%بدون طلبية%');
+      return data || [];
+    },
+    enabled: !!workerId && isOpen,
+  });
+
+  // Direct sale customers: delivery sector customers marked negatively by sales rep
+  const directSaleCustomers = useMemo(() => {
+    const deliverySectorIds = new Set(todayDeliverySectors.map(s => s.id));
+    const customersInDeliverySectors = customers.filter(c => c.sector_id && deliverySectorIds.has(c.sector_id));
+    const negativeCustomerIds = new Set(recentNegativeVisits.map(v => v.customer_id).filter(Boolean));
+    return customersInDeliverySectors.filter(c =>
+      negativeCustomerIds.has(c.id) && !deliveredCustomerIds.has(c.id)
+    );
+  }, [todayDeliverySectors, customers, recentNegativeVisits, deliveredCustomerIds]);
+
   const totalCount = deliveryCustomers.length + salesCustomers.length;
   const debtBadgeCount = dueDebts.length;
 
@@ -493,6 +524,11 @@ const SectorCustomersPopover: React.FC = () => {
               طلبات
               {salesCustomers.length > 0 && <Badge variant="secondary" className="text-[10px] px-1">{salesCustomers.length}</Badge>}
             </TabsTrigger>
+            <TabsTrigger value="direct-sale" className="flex-1 gap-1 text-xs">
+              <ShoppingBag className="w-3.5 h-3.5" />
+              بيع مباشر
+              {directSaleCustomers.length > 0 && <Badge className="text-[10px] px-1 bg-emerald-500">{directSaleCustomers.length}</Badge>}
+            </TabsTrigger>
             <TabsTrigger value="debts" className="flex-1 gap-1 text-xs">
               <Landmark className="w-3.5 h-3.5" />
               ديون
@@ -620,6 +656,20 @@ const SectorCustomersPopover: React.FC = () => {
                   />
               </TabsContent>
             </Tabs>
+          </TabsContent>
+
+          {/* Direct Sale Tab */}
+          <TabsContent value="direct-sale" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
+            <CustomerList
+              customers={directSaleCustomers}
+              emptyMessage="لا توجد محلات متاحة للبيع المباشر"
+              onCustomerClick={(c) => handleCustomerClick(c, 'sales')}
+              onVisitWithoutOrder={handleVisitWithoutOrder}
+              onClosed={handleCustomerClosed}
+              onUnavailable={handleCustomerUnavailable}
+              showVisitButton={false}
+              checkingLocationFor={checkingLocationFor}
+            />
           </TabsContent>
 
           {/* Debts Tab */}
