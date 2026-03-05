@@ -1,15 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, FlaskConical } from 'lucide-react';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
 import RoleSelectionDialog from './RoleSelectionDialog';
 import BranchSelectionDialog from './BranchSelectionDialog';
+import { supabase } from '@/integrations/supabase/client';
+
+interface TestWorkerQuick {
+  username: string;
+  full_name: string;
+  role: string;
+}
+
+const ROLE_EMOJI: Record<string, string> = {
+  admin: '🔑',
+  branch_admin: '🏢',
+  supervisor: '👁️',
+  worker: '🚚',
+};
+
+const ROLE_LABEL_AR: Record<string, string> = {
+  admin: 'مدير',
+  branch_admin: 'مدير فرع',
+  supervisor: 'مشرف',
+  worker: 'عامل',
+};
 
 const LoginForm: React.FC = () => {
   const { login, selectRole, selectBranch, showRoleSelection, showBranchSelection, availableRoles } = useAuth();
@@ -21,6 +42,24 @@ const LoginForm: React.FC = () => {
   const [showQuickLogin, setShowQuickLogin] = useState(false);
   const [tapCount, setTapCount] = useState(0);
   const tapTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [testWorkers, setTestWorkers] = useState<TestWorkerQuick[]>([]);
+
+  useEffect(() => {
+    if (showQuickLogin && testWorkers.length === 0) {
+      fetchTestWorkers();
+    }
+  }, [showQuickLogin]);
+
+  const fetchTestWorkers = async () => {
+    const { data } = await supabase
+      .from('workers')
+      .select('username, full_name, role')
+      .eq('is_test', true)
+      .eq('is_active', true)
+      .order('role')
+      .order('full_name');
+    if (data) setTestWorkers(data as TestWorkerQuick[]);
+  };
 
   const handleSecretTap = () => {
     const newCount = tapCount + 1;
@@ -124,37 +163,32 @@ const LoginForm: React.FC = () => {
           </form>
 
           {showQuickLogin && <div className="mt-4 pt-4 border-t border-border space-y-2">
-            <p className="text-xs text-muted-foreground text-center mb-2">دخول سريع</p>
-            <div className="flex flex-col gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full text-xs"
-                disabled={isLoading}
-                onClick={() => doLogin('hssm0909', 'hssm0909')}
-              >
-                🔑 مدير النظام
-              </Button>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 text-xs"
-                  disabled={isLoading}
-                  onClick={() => doLogin('Hicham27', 'Hicham27')}
-                >
-                  🚚 هشام (توصيل)
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 text-xs"
-                  disabled={isLoading}
-                  onClick={() => doLogin('zinou27', 'zinou27')}
-                >
-                  📊 زينو (مبيعات)
-                </Button>
-              </div>
+            <p className="text-xs text-muted-foreground text-center mb-2 flex items-center justify-center gap-1">
+              <FlaskConical className="w-3 h-3" />
+              دخول سريع (تجريبي)
+            </p>
+            <div className="flex flex-col gap-2 max-h-48 overflow-y-auto">
+              {testWorkers.length > 0 ? (
+                testWorkers.map((tw) => (
+                  <Button
+                    key={tw.username}
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs justify-start"
+                    disabled={isLoading}
+                    onClick={() => doLogin(tw.username, tw.username)}
+                  >
+                    {ROLE_EMOJI[tw.role] || '👤'} {tw.full_name}
+                    <span className="text-muted-foreground mr-auto text-[10px]">
+                      ({ROLE_LABEL_AR[tw.role] || tw.role})
+                    </span>
+                  </Button>
+                ))
+              ) : (
+                <p className="text-xs text-center text-muted-foreground py-2">
+                  لا يوجد عمال تجريبيون. أنشئهم من إدارة العمال.
+                </p>
+              )}
             </div>
           </div>}
         </CardContent>

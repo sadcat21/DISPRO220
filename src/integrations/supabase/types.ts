@@ -5784,6 +5784,7 @@ export type Database = {
           full_name_fr: string | null
           id: string
           is_active: boolean
+          is_test: boolean
           last_device_id: string | null
           last_device_info: Json | null
           password_hash: string
@@ -5805,6 +5806,7 @@ export type Database = {
           full_name_fr?: string | null
           id?: string
           is_active?: boolean
+          is_test?: boolean
           last_device_id?: string | null
           last_device_info?: Json | null
           password_hash: string
@@ -5826,6 +5828,7 @@ export type Database = {
           full_name_fr?: string | null
           id?: string
           is_active?: boolean
+          is_test?: boolean
           last_device_id?: string | null
           last_device_info?: Json | null
           password_hash?: string

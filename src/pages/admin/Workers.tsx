@@ -11,7 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { UserPlus, Users, Loader2, Eye, EyeOff, Shield, Building2, Plus, X, Briefcase, Trash2 } from 'lucide-react';
+import { UserPlus, Users, Loader2, Eye, EyeOff, Shield, Building2, Plus, X, Briefcase, Trash2, FlaskConical } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import TestWorkersTab from '@/components/workers/TestWorkersTab';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -65,13 +67,15 @@ const Workers: React.FC = () => {
 
   // Filter workers by activeBranch
   const filteredWorkers = useMemo(() => {
+    // Exclude test workers from main list
+    let result = workers.filter(w => !(w as any).is_test);
     if (role === 'admin' && activeBranch) {
-      return workers.filter(w => 
+      result = result.filter(w => 
         w.branch_id === activeBranch.id || 
         w.worker_roles.some(wr => wr.branch_id === activeBranch.id)
       );
     }
-    return workers;
+    return result;
   }, [workers, activeBranch, role]);
 
   const fetchData = async () => {
@@ -530,6 +534,22 @@ const Workers: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">{t('workers.title')}</h2>
+      </div>
+
+      <Tabs defaultValue="workers" className="w-full">
+        <TabsList className="w-full">
+          <TabsTrigger value="workers" className="flex-1 gap-1">
+            <Users className="w-4 h-4" />
+            العمال
+          </TabsTrigger>
+          <TabsTrigger value="test" className="flex-1 gap-1">
+            <FlaskConical className="w-4 h-4" />
+            تجريبي
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="workers" className="space-y-4 mt-4">
+      <div className="flex justify-end">
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogTrigger asChild>
             <Button size="sm">
@@ -752,6 +772,12 @@ const Workers: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+        </TabsContent>
+
+        <TabsContent value="test" className="mt-4">
+          <TestWorkersTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
