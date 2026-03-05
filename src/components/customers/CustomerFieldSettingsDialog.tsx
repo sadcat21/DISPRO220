@@ -63,9 +63,13 @@ const CustomerFieldSettingsDialog: React.FC<CustomerFieldSettingsDialogProps> = 
     });
   };
 
-  const handleSave = () => {
-    saveSettings(draft);
-    onOpenChange(false);
+  const handleSave = async () => {
+    try {
+      await saveSettings(draft);
+      onOpenChange(false);
+    } catch {
+      // Error toast is handled inside the hook
+    }
   };
 
   return (
@@ -121,7 +125,7 @@ const CustomerFieldSettingsDialog: React.FC<CustomerFieldSettingsDialogProps> = 
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 إلغاء
               </Button>
-              <Button onClick={handleSave} disabled={isSaving}>
+              <Button onClick={() => void handleSave()} disabled={isSaving}>
                 {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'حفظ'}
               </Button>
             </div>

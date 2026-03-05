@@ -57,29 +57,39 @@ export const useCustomerFieldSettings = () => {
     mutationFn: async (settings: CustomerFieldSettings) => {
       const normalized = normalizeCustomerFieldSettings(settings);
       const branchId = activeBranch?.id ?? null;
+      const updatedAt = new Date().toISOString();
 
-      // Delete existing row first, then insert — avoids NULL unique constraint issues
-      let deleteQuery = supabase
+      const updatePayload = {
+        value: JSON.stringify(normalized),
+        updated_by: workerId ?? null,
+        updated_at: updatedAt,
+      };
+
+      let updateQuery = supabase
         .from('app_settings')
-        .delete()
-        .eq('key', CUSTOMER_FIELD_SETTINGS_KEY);
+        .update(updatePayload)
+        .eq('key', CUSTOMER_FIELD_SETTINGS_KEY)
+        .select('id');
 
       if (branchId) {
-        deleteQuery = deleteQuery.eq('branch_id', branchId);
+        updateQuery = updateQuery.eq('branch_id', branchId);
       } else {
-        deleteQuery = deleteQuery.is('branch_id', null);
+        updateQuery = updateQuery.is('branch_id', null);
       }
-      await deleteQuery;
 
-      const { error } = await supabase.from('app_settings').insert({
-        key: CUSTOMER_FIELD_SETTINGS_KEY,
-        value: JSON.stringify(normalized),
-        branch_id: branchId,
-        updated_by: workerId ?? null,
-        updated_at: new Date().toISOString(),
-      });
+      const { data: updatedRows, error: updateError } = await updateQuery;
+      if (updateError) throw updateError;
 
-      if (error) throw error;
+      if (!updatedRows || updatedRows.length === 0) {
+        const { error: insertError } = await supabase.from('app_settings').insert({
+          key: CUSTOMER_FIELD_SETTINGS_KEY,
+          branch_id: branchId,
+          ...updatePayload,
+        });
+
+        if (insertError) throw insertError;
+      }
+
       return normalized;
     },
     onSuccess: () => {
@@ -95,7 +105,7 @@ export const useCustomerFieldSettings = () => {
   return {
     settings: query.data ?? DEFAULT_CUSTOMER_FIELD_SETTINGS,
     isLoading: query.isLoading,
-    saveSettings: saveMutation.mutate,
+    saveSettings: saveMutation.mutateAsync,
     isSaving: saveMutation.isPending,
   };
 };
