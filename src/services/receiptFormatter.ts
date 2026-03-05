@@ -96,7 +96,8 @@ function formatQty(value: number): string {
   return value.toFixed(2).replace(/\.0+$/, '').replace(/(\.[1-9]*)0+$/, '$1');
 }
 
-function getReceiptTypeName(type: ReceiptType): string {
+function getReceiptTypeName(type: ReceiptType, override?: string): string {
+  if (override?.trim()) return override.trim();
   switch (type) {
     case 'direct_sale': return 'BON DE VENTE';
     case 'delivery': return 'BON DE LIVRAISON';
@@ -204,6 +205,7 @@ export interface ReceiptData {
   showLogo?: boolean;
   replaceNameWithLogo?: boolean;
   companyLogoUrl?: string;
+  receiptTitleOverride?: string;
 }
 
 export interface AdvancedReceiptOptions {
@@ -265,7 +267,7 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
 
   // Receipt type
   add(BOLD_ON);
-  addText(getReceiptTypeName(data.receiptType));
+  addText(getReceiptTypeName(data.receiptType, data.receiptTitleOverride));
   add(BOLD_OFF);
 
   // Invoice type + number
@@ -527,7 +529,7 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
 // ─────────── HTML PREVIEW FORMAT ───────────
 
 export function formatReceiptForPreview(data: ReceiptData): string {
-  const typeName = getReceiptTypeName(data.receiptType);
+  const typeName = getReceiptTypeName(data.receiptType, data.receiptTitleOverride);
   const dateStr = data.date.toLocaleDateString('fr-FR');
   const timeStr = data.date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   const payLabel = getPaymentLabel(data);

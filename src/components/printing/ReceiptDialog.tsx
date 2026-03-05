@@ -67,9 +67,9 @@ interface ReceiptDialogProps {
     nextCollectionDate?: string | null;
     nextCollectionTime?: string | null;
     customerSurplusAmount?: number;
+    receiptTitleOverride?: string;
   };
 }
-
 const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, receiptData }) => {
   const { dir } = useLanguage();
   const { status, deviceName, isConnected, isPrinting, scanAndConnect, printReceipt } = useBluetoothPrinter();
@@ -201,6 +201,7 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
     classicLayout: useClassicLayout,
     showLogo,
     replaceNameWithLogo,
+    receiptTitleOverride: receiptData.receiptTitleOverride,
   };
 
   const previewHtml = formatReceiptForPreview(receiptDataForFormatter);

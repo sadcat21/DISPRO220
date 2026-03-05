@@ -404,7 +404,8 @@ const SectorCustomersPopover: React.FC = () => {
         .order('updated_at', { ascending: false })
         .limit(1);
       if (data && data.length > 0) {
-        setOrderDetailsDialog(data[0]);
+        const hydratedItems = await hydrateOrderItems(data[0]);
+        setOrderDetailsDialog({ ...data[0], items: hydratedItems });
       } else {
         toast.error('لم يتم العثور على تفاصيل الطلبية');
       }
@@ -425,7 +426,8 @@ const SectorCustomersPopover: React.FC = () => {
         .order('created_at', { ascending: false })
         .limit(1);
       if (data && data.length > 0) {
-        setOrderDetailsDialog(data[0]);
+        const hydratedItems = await hydrateOrderItems(data[0]);
+        setOrderDetailsDialog({ ...data[0], items: hydratedItems, _isOrderRequest: true });
       } else {
         toast.error('لم يتم العثور على تفاصيل الطلبية');
       }
@@ -439,6 +441,33 @@ const SectorCustomersPopover: React.FC = () => {
     if (sale) {
       setOrderDetailsDialog({ ...sale, _isDirectSale: true, customer });
     }
+  };
+
+  const hydrateOrderItems = async (order: any) => {
+    const currentItems = Array.isArray(order?.items) ? order.items : [];
+    if (currentItems.length > 0) return currentItems;
+
+    if (order?.id) {
+      const { data: orderItems } = await supabase
+        .from('order_items')
+        .select('*, product:products(*)')
+        .eq('order_id', order.id);
+      if (orderItems && orderItems.length > 0) return orderItems;
+
+      const { data: receipt } = await supabase
+        .from('receipts')
+        .select('items')
+        .eq('order_id', order.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (Array.isArray((receipt as any)?.items) && (receipt as any).items.length > 0) {
+        return (receipt as any).items;
+      }
+    }
+
+    return [];
   };
 
   const buildReceiptDataFromOrder = (order: any, isDirectSale: boolean) => {
@@ -467,6 +496,7 @@ const SectorCustomersPopover: React.FC = () => {
       remainingAmount: 0,
       paymentMethod: order.payment_type || order.paymentMethod || 'cash',
       notes: order.notes || null,
+      receiptTitleOverride: !isDirectSale && order._isOrderRequest ? 'BON DE COMMANDE' : undefined,
     };
   };
 
@@ -481,7 +511,8 @@ const SectorCustomersPopover: React.FC = () => {
         .order('updated_at', { ascending: false })
         .limit(1);
       if (data && data.length > 0) {
-        setPrintReceiptData(buildReceiptDataFromOrder(data[0], false));
+        const hydratedItems = await hydrateOrderItems(data[0]);
+        setPrintReceiptData(buildReceiptDataFromOrder({ ...data[0], items: hydratedItems }, false));
         setShowPrintReceipt(true);
       } else {
         toast.error('لم يتم العثور على الطلبية');
@@ -904,6 +935,7 @@ const OrderDetailsPopoverDialog: React.FC<{ order: any; onClose: () => void }> =
     remainingAmount: 0,
     paymentMethod: order.payment_type || order.paymentMethod || 'cash',
     notes: order.notes || null,
+    receiptTitleOverride: !isDirectSale && order._isOrderRequest ? 'BON DE COMMANDE' : undefined,
   };
 
   return (
