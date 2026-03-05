@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, User, Loader2, Trash2, Phone, MapPin, Search, Pencil, Building2, ChevronDown, ChevronUp, Navigation, Shield, Tag, UserCircle, Store, CreditCard, Warehouse, Eye, PlusCircle, Banknote, Truck, AlertTriangle, ShoppingBag, Calendar, Package, MapPinPlus, FileEdit, Settings2 } from 'lucide-react';
+import { UserPlus, User, Loader2, Trash2, Phone, MapPin, Search, Pencil, Building2, ChevronDown, ChevronUp, Navigation, Shield, Tag, UserCircle, Store, CreditCard, Warehouse, Eye, PlusCircle, Banknote, Truck, AlertTriangle, ShoppingBag, Calendar, Package, MapPinPlus, FileEdit, Settings2, BadgeCheck } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { ALGERIAN_WILAYAS, DEFAULT_WILAYA } from '@/data/algerianWilayas';
@@ -219,18 +219,25 @@ const Customers: React.FC = () => {
     }
 
     if (missingFilter !== 'all') {
-      filtered = filtered.filter(c => {
-        switch (missingFilter) {
-          case 'phone': return !c.phone?.trim();
-          case 'location': return !(c.latitude && c.longitude);
-          case 'type': return !c.customer_type;
-          case 'sector': return !c.sector_id;
-          case 'store': return !c.store_name?.trim();
-          case 'address': return !c.address?.trim();
-          case 'wilaya': return !c.wilaya;
-          default: return true;
-        }
-      });
+      if (missingFilter === 'incomplete') {
+        filtered = filtered.filter(c => {
+          const { percent } = getCustomerCompletion(c);
+          return percent < 100;
+        });
+      } else {
+        filtered = filtered.filter(c => {
+          switch (missingFilter) {
+            case 'phone': return !c.phone?.trim();
+            case 'location': return !(c.latitude && c.longitude);
+            case 'type': return !c.customer_type;
+            case 'sector': return !c.sector_id;
+            case 'store': return !c.store_name?.trim();
+            case 'address': return !c.address?.trim();
+            case 'wilaya': return !c.wilaya;
+            default: return true;
+          }
+        });
+      }
     }
 
     if (searchQuery.trim()) {
@@ -473,7 +480,7 @@ const Customers: React.FC = () => {
                   <Store className="w-4 h-4 text-primary" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-bold text-sm leading-tight">
+                  <p className="font-bold text-sm leading-tight flex items-center gap-0.5 flex-wrap">
                     {(() => {
                       const storeName = customer.store_name
                         ? (language === 'fr' && customer.store_name_fr ? customer.store_name_fr : customer.store_name)
@@ -492,8 +499,11 @@ const Customers: React.FC = () => {
                           طلب تعديل ({pendingCount})
                         </Badge>
                       ) : null;
-                      if (!shortLabel) return <>{storeName}{pendingBadge}</>;
-                      return <><Badge variant="destructive" className="text-[10px] px-1.5 py-0 font-mono uppercase ml-1">{shortLabel}</Badge>{storeName}{pendingBadge}</>;
+                      const verifiedBadge = percent === 100 ? (
+                        <BadgeCheck className="w-4 h-4 text-blue-500 shrink-0" />
+                      ) : null;
+                      if (!shortLabel) return <>{storeName}{verifiedBadge}{pendingBadge}</>;
+                      return <><Badge variant="destructive" className="text-[10px] px-1.5 py-0 font-mono uppercase ml-1">{shortLabel}</Badge>{storeName}{verifiedBadge}{pendingBadge}</>;
                     })()}
                   </p>
                   <div className="flex items-center gap-1 flex-wrap mt-0.5">
@@ -811,6 +821,7 @@ const Customers: React.FC = () => {
           </span>
           {[
             { value: 'all', label: 'الكل' },
+            { value: 'incomplete', label: 'غير مكتمل' },
             { value: 'phone', label: 'الهاتف' },
             { value: 'location', label: 'الموقع' },
             { value: 'type', label: 'النوع' },
