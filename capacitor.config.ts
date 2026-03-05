@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Laser Food',
   webDir: 'dist',
   server: {
-    url: 'https://dispro61.vercel.app/',
+    url: 'https://dispro62.vercel.app/',
     cleartext: true
   },
   plugins: {

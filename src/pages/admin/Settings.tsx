@@ -220,11 +220,10 @@ const Settings: React.FC = () => {
         <VerificationChecklistCard />
       )}
       {(role === 'admin' || role === 'branch_admin') && (
-<<<<<<< Updated upstream
         <SmsSettingsCard />
-=======
+      )}
+      {(role === 'admin' || role === 'branch_admin') && (
         <AppUpdateSettingsCard />
->>>>>>> Stashed changes
       )}
 
       {/* User Info */}

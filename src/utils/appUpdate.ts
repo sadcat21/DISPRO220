@@ -6,7 +6,6 @@ import { Capacitor } from '@capacitor/core';
  * يعمل فقط على الأجهزة الأصلية (Android/iOS)
  */
 export const checkForAppUpdate = async (): Promise<{ available: boolean; version?: string }> => {
-  // التحقق من أن التطبيق يعمل على جهاز أصلي
   if (!Capacitor.isNativePlatform()) {
     console.log('App update check is only available on native platforms');
     return { available: false };
@@ -14,9 +13,10 @@ export const checkForAppUpdate = async (): Promise<{ available: boolean; version
 
   try {
     const result = await AppUpdate.getAppUpdateInfo();
+    const available = (result as any).updateAvailability === 2; // UPDATE_AVAILABLE
     return {
-      available: result.available,
-      version: result.latestVersion
+      available,
+      version: result.availableVersionName ?? undefined
     };
   } catch (error) {
     console.error('Error checking for app updates:', error);
@@ -34,8 +34,8 @@ export const performAppUpdate = async (): Promise<boolean> => {
   }
 
   try {
-    const result = await AppUpdate.updateApp();
-    return result.success;
+    await AppUpdate.performImmediateUpdate();
+    return true;
   } catch (error) {
     console.error('Error performing app update:', error);
     return false;
@@ -48,7 +48,7 @@ export const performAppUpdate = async (): Promise<boolean> => {
 export const getCurrentAppVersion = async (): Promise<string | null> => {
   try {
     const result = await AppUpdate.getAppUpdateInfo();
-    return result.currentVersion;
+    return result.currentVersionName;
   } catch (error) {
     console.error('Error getting current app version:', error);
     return null;
