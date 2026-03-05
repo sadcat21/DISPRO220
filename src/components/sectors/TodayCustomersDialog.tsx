@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MapPin, Truck, ShoppingCart, Landmark, User, Phone, Eye, EyeOff, CheckCircle, PackageX, PackageCheck, Navigation, Loader2, MapPinOff, Clock, Check, X, DoorClosed, UserX } from 'lucide-react';
+import { MapPin, Truck, ShoppingCart, Landmark, User, Phone, Eye, EyeOff, CheckCircle, PackageX, PackageCheck, Navigation, Loader2, MapPinOff, Clock, Check, X, DoorClosed, UserX, ShoppingBag } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -183,6 +183,27 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     refetchInterval: 10000,
   });
 
+  // Recent visits with negative status for direct sale tab
+  const sevenDaysAgo = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString();
+  }, []);
+
+  const { data: recentNegativeVisits = [] } = useQuery({
+    queryKey: ['recent-negative-visits-dialog', effectiveWorkerId, sevenDaysAgo],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('visit_tracking')
+        .select('customer_id, notes, created_at')
+        .gte('created_at', sevenDaysAgo)
+        .or('notes.ilike.%مغلق%,notes.ilike.%غير متاح%,notes.ilike.%بدون طلبية%');
+      return data || [];
+    },
+    enabled: !!effectiveWorkerId && open,
+  });
+
   // Computed data
   const workerSectors = useMemo(() => {
     if (targetWorkerId) {
@@ -255,6 +276,16 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     if (targetWorkerId) return allDebts.filter(d => d.worker_id === targetWorkerId);
     return allDebts;
   }, [allDebts, targetWorkerId]);
+
+  // Direct sale customers: customers in today's delivery sectors marked negatively by sales rep
+  const directSaleCustomers = useMemo(() => {
+    const deliverySectorIds = new Set(todayDeliverySectors.map(s => s.id));
+    const customersInDeliverySectors = customers.filter(c => c.sector_id && deliverySectorIds.has(c.sector_id));
+    const negativeCustomerIds = new Set(recentNegativeVisits.map(v => v.customer_id).filter(Boolean));
+    return customersInDeliverySectors.filter(c =>
+      negativeCustomerIds.has(c.id) && !deliveredCustomerIds.has(c.id)
+    );
+  }, [todayDeliverySectors, customers, recentNegativeVisits, deliveredCustomerIds]);
 
   // Location check
   const checkLocationBeforeAction = async (customer: any): Promise<boolean> => {
@@ -412,6 +443,11 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                 طلبات
                 {salesCustomers.length > 0 && <Badge variant="secondary" className="text-[10px] px-1">{salesCustomers.length}</Badge>}
               </TabsTrigger>
+              <TabsTrigger value="direct-sale" className="flex-1 gap-1 text-xs">
+                <ShoppingBag className="w-3.5 h-3.5" />
+                بيع مباشر
+                {directSaleCustomers.length > 0 && <Badge className="text-[10px] px-1 bg-emerald-500">{directSaleCustomers.length}</Badge>}
+              </TabsTrigger>
               <TabsTrigger value="debts" className="flex-1 gap-1 text-xs">
                 <Landmark className="w-3.5 h-3.5" />
                 ديون
@@ -483,6 +519,20 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                   <CustomerList customers={salesWithOrders} emptyMessage="لا توجد طلبيات بعد" onCustomerClick={handleSalesCustomerClick} onVisitWithoutOrder={handleVisitWithoutOrder} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} showVisitButton={false} checkingLocationFor={checkingLocationFor} />
                 </TabsContent>
               </Tabs>
+            </TabsContent>
+
+            {/* Direct Sale Tab */}
+            <TabsContent value="direct-sale" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
+              <CustomerList
+                customers={directSaleCustomers}
+                emptyMessage="لا توجد محلات متاحة للبيع المباشر"
+                onCustomerClick={handleSalesCustomerClick}
+                onVisitWithoutOrder={handleVisitWithoutOrder}
+                onClosed={handleCustomerClosed}
+                onUnavailable={handleCustomerUnavailable}
+                showVisitButton={false}
+                checkingLocationFor={checkingLocationFor}
+              />
             </TabsContent>
 
             {/* Debts Tab with sub-tabs */}
