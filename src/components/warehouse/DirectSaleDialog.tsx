@@ -637,6 +637,7 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
               toast.success('تم إرسال رسالة التأكيد للعميل');
             } else {
               console.warn('[SMS] Background SMS not confirmed for direct sale order:', order.id);
+              toast.error('تعذر إرسال SMS في الخلفية. إذا كنت على رابط Vercel فلن يعمل إلا داخل APK أندرويد.');
             }
           } catch (smsError) {
             console.error('[SMS] Unexpected direct-sale SMS error:', smsError);

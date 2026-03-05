@@ -806,6 +806,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
               toast.success('تم إرسال رسالة التأكيد للعميل');
             } else {
               console.warn('[SMS] Background SMS not confirmed for delivery order:', order.id);
+              toast.error('تعذر إرسال SMS في الخلفية. إذا كنت على رابط Vercel فلن يعمل إلا داخل APK أندرويد.');
             }
           } catch (smsError) {
             console.error('[SMS] Unexpected delivery SMS error:', smsError);
