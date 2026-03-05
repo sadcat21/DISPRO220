@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, User, Loader2, Trash2, Phone, MapPin, Search, Pencil, Building2, ChevronDown, ChevronUp, Navigation, Shield, Tag, UserCircle, Store, CreditCard, Warehouse, Eye, PlusCircle, Banknote, Truck, AlertTriangle, ShoppingBag, Calendar, Package, MapPinPlus, FileEdit } from 'lucide-react';
+import { UserPlus, User, Loader2, Trash2, Phone, MapPin, Search, Pencil, Building2, ChevronDown, ChevronUp, Navigation, Shield, Tag, UserCircle, Store, CreditCard, Warehouse, Eye, PlusCircle, Banknote, Truck, AlertTriangle, ShoppingBag, Calendar, Package, MapPinPlus, FileEdit, Settings2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { ALGERIAN_WILAYAS, DEFAULT_WILAYA } from '@/data/algerianWilayas';
@@ -40,6 +40,9 @@ import { enUS } from 'date-fns/locale';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsElementHidden } from '@/hooks/useUIOverrides';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
+import CustomerFieldSettingsDialog from '@/components/customers/CustomerFieldSettingsDialog';
+import { useCustomerFieldSettings } from '@/hooks/useCustomerFieldSettings';
+import { CUSTOMER_FIELD_LABELS } from '@/types/customerFieldSettings';
 
 // Normalize Arabic text: treat all alef variants and hamza as the same
 const normalizeArabic = (text: string): string =>
@@ -103,6 +106,8 @@ const Customers: React.FC = () => {
   const isManager = role === 'admin' || role === 'branch_admin';
   const [activeTab, setActiveTab] = useState('list');
   const [requestsCount, setRequestsCount] = useState(0);
+  const [showFieldSettingsDialog, setShowFieldSettingsDialog] = useState(false);
+  const { settings: customerFieldSettings } = useCustomerFieldSettings();
 
   // Realtime subscription for instant badge updates + customer data updates
   useRealtimeSubscription(
@@ -390,25 +395,35 @@ const Customers: React.FC = () => {
   };
 
   const getCustomerCompletion = (customer: Customer) => {
-    const required = [
-      { key: 'name', label: t('customers.field_name'), icon: User, filled: !!customer.name?.trim() },
-      { key: 'phone', label: t('customers.field_phone'), icon: Phone, filled: !!customer.phone?.trim() },
-      { key: 'store_name', label: t('customers.field_store'), icon: Store, filled: !!customer.store_name?.trim() },
-      { key: 'sector_id', label: t('customers.field_sector'), icon: MapPin, filled: !!customer.sector_id },
-      { key: 'location', label: t('customers.field_gps'), icon: Navigation, filled: !!(customer.latitude && customer.longitude) },
-    ];
-    const optional = [
-      { key: 'address', filled: !!customer.address?.trim() },
-      { key: 'wilaya', filled: !!customer.wilaya },
-      { key: 'name_fr', filled: !!customer.name_fr?.trim() },
-      { key: 'internal_name', filled: !!customer.internal_name?.trim() },
-      { key: 'sales_rep_name', filled: !!customer.sales_rep_name?.trim() },
-      { key: 'zone_id', filled: !!customer.zone_id },
-    ];
-    const total = required.length + optional.length;
-    const filled = [...required, ...optional].filter(f => f.filled).length;
-    const percent = Math.round((filled / total) * 100);
-    const missing = required.filter(f => !f.filled);
+    const fieldStatus = {
+      name: !!customer.name?.trim(),
+      name_fr: !!customer.name_fr?.trim(),
+      phone: !!customer.phone?.trim(),
+      store_name: !!customer.store_name?.trim(),
+      customer_type: !!customer.customer_type,
+      internal_name: !!customer.internal_name?.trim(),
+      sales_rep_name: !!customer.sales_rep_name?.trim(),
+      sector_id: !!customer.sector_id,
+      zone_id: !!customer.zone_id,
+      address: !!customer.address?.trim(),
+      wilaya: !!customer.wilaya,
+      location: !!(customer.latitude && customer.longitude),
+      default_delivery_worker_id: !!customer.default_delivery_worker_id,
+    };
+
+    const completionKeys = customerFieldSettings.completionFields;
+    const requiredKeys = customerFieldSettings.requiredOnEdit;
+
+    const filled = completionKeys.filter((key) => fieldStatus[key]).length;
+    const percent = completionKeys.length === 0 ? 100 : Math.round((filled / completionKeys.length) * 100);
+    const missing = requiredKeys
+      .filter((key) => !fieldStatus[key])
+      .map((key) => ({
+        key,
+        label: CUSTOMER_FIELD_LABELS[key],
+        icon: AlertTriangle,
+      }));
+
     return { percent, missing };
   };
 
@@ -690,6 +705,11 @@ const Customers: React.FC = () => {
           <Button size="icon" variant="outline" className="h-9 w-9" onClick={() => setShowSectorsDialog(true)} title={t('customers.sectors')}>
             <MapPinPlus className="w-4 h-4" />
           </Button>
+          {isManager && (
+            <Button size="icon" variant="outline" className="h-9 w-9" onClick={() => setShowFieldSettingsDialog(true)} title="إعدادات حقول العميل">
+              <Settings2 className="w-4 h-4" />
+            </Button>
+          )}
           {!isAddCustomerHidden && (
             <Button size="icon" className="h-9 w-9" onClick={() => setShowAddDialog(true)}>
               <UserPlus className="w-4 h-4" />
@@ -879,6 +899,11 @@ const Customers: React.FC = () => {
         }}
         customer={editingCustomer}
         onSuccess={handleCustomerUpdated}
+      />
+
+      <CustomerFieldSettingsDialog
+        open={showFieldSettingsDialog}
+        onOpenChange={setShowFieldSettingsDialog}
       />
 
       {/* Delete Confirmation */}

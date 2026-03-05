@@ -21,6 +21,8 @@ import { useCreateDebt } from '@/hooks/useCustomerDebts';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
 import { reverseGeocode } from '@/utils/geoUtils';
 import { useCustomerTypes, getCustomerTypeColor } from '@/hooks/useCustomerTypes';
+import { useCustomerFieldSettings } from '@/hooks/useCustomerFieldSettings';
+import { CUSTOMER_FIELD_LABELS, type CustomerFieldKey } from '@/types/customerFieldSettings';
 
 interface AddCustomerDialogProps {
   open: boolean;
@@ -53,6 +55,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
   const createDebt = useCreateDebt();
   const { trackVisit } = useTrackVisit();
   const { customerTypes } = useCustomerTypes();
+  const { settings: customerFieldSettings } = useCustomerFieldSettings();
   const [name, setName] = useState('');
   const [nameFr, setNameFr] = useState('');
   const [translatingName, setTranslatingName] = useState(false);
@@ -128,27 +131,69 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
     }
   };
 
-  // Completion percentage
+  const isFieldFilled = useCallback((field: CustomerFieldKey) => {
+    switch (field) {
+      case 'name':
+        return !!name.trim();
+      case 'name_fr':
+        return !!nameFr.trim();
+      case 'phone':
+        return !!phones[0]?.trim();
+      case 'store_name':
+        return !!storeName.trim();
+      case 'customer_type':
+        return customerTypes.length === 0 ? true : !!customerType;
+      case 'internal_name':
+        return !!internalName.trim();
+      case 'sales_rep_name':
+        return !!salesReps.some((rep) => rep.name.trim());
+      case 'sector_id':
+        return !!(sectorId && sectorId !== 'none');
+      case 'zone_id':
+        return !!zoneId;
+      case 'address':
+        return !!address.trim();
+      case 'wilaya':
+        return !!wilaya;
+      case 'location':
+        return !!(latitude && longitude);
+      case 'default_delivery_worker_id':
+        return !!defaultDeliveryWorkerId;
+      default:
+        return false;
+    }
+  }, [
+    name,
+    nameFr,
+    phones,
+    storeName,
+    customerTypes.length,
+    customerType,
+    internalName,
+    salesReps,
+    sectorId,
+    zoneId,
+    address,
+    wilaya,
+    latitude,
+    longitude,
+    defaultDeliveryWorkerId,
+  ]);
+
   const completionPercent = useMemo(() => {
-    const requiredFields = [
-      !!name.trim(),
-      !!phones[0]?.trim(),
-      !!storeName.trim(),
-      !!(sectorId && sectorId !== 'none'),
-      !!(latitude && longitude),
-    ];
-    const optionalFields = [
-      !!address.trim(),
-      !!wilaya,
-      !!nameFr.trim(),
-      !!internalName.trim(),
-      !!salesReps[0]?.name.trim(),
-      !!zoneId,
-    ];
-    const total = requiredFields.length + optionalFields.length;
-    const filled = [...requiredFields, ...optionalFields].filter(Boolean).length;
-    return Math.round((filled / total) * 100);
-  }, [name, phones, storeName, sectorId, latitude, longitude, address, wilaya, nameFr, internalName, salesReps, zoneId]);
+    const completionKeys = customerFieldSettings.completionFields;
+    if (completionKeys.length === 0) return 100;
+
+    const filled = completionKeys.filter((key) => isFieldFilled(key)).length;
+    return Math.round((filled / completionKeys.length) * 100);
+  }, [customerFieldSettings.completionFields, isFieldFilled]);
+
+  const requiredOnCreateSet = useMemo(
+    () => new Set(customerFieldSettings.requiredOnCreate),
+    [customerFieldSettings.requiredOnCreate],
+  );
+
+  const isLocationRequiredOnCreate = requiredOnCreateSet.has('location');
 
   useEffect(() => {
     if (open) {
@@ -304,12 +349,11 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name.trim()) { toast.error('الرجاء إدخال اسم العميل'); return; }
-    if (!phones[0]?.trim()) { toast.error('الرجاء إدخال رقم هاتف العميل'); return; }
-    if (!storeName.trim()) { toast.error('الرجاء إدخال اسم المحل'); return; }
-    if (!sectorId || sectorId === 'none') { toast.error('الرجاء اختيار السكتور'); return; }
-    if (!latitude || !longitude) { toast.error('يرجى تحديد الموقع الجغرافي على الخريطة'); return; }
-    if (customerTypes.length > 0 && !customerType) { toast.error('يجب تحديد نوع العميل'); return; }
+    const firstMissingRequired = customerFieldSettings.requiredOnCreate.find((field) => !isFieldFilled(field));
+    if (firstMissingRequired) {
+      toast.error(`حقل إلزامي: ${CUSTOMER_FIELD_LABELS[firstMissingRequired]}`);
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -380,7 +424,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
         </DialogHeader>
 
         {/* GPS Required Gate */}
-        {!gpsGranted ? (
+        {!gpsGranted && isLocationRequiredOnCreate ? (
           <div className="flex flex-col items-center justify-center py-12 space-y-4 text-center">
             {gpsLoading ? (
               <>
@@ -485,7 +529,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
             </div>
             <div className="space-y-2">
               <Label htmlFor="customer-name">{t('customers.name')} *</Label>
-              <Input id="customer-name" value={name} onChange={(e) => setName(e.target.value)} onBlur={handleNameBlur} placeholder={t('customers.name')} className="text-right" autoFocus required />
+              <Input id="customer-name" value={name} onChange={(e) => setName(e.target.value)} onBlur={handleNameBlur} placeholder={t('customers.name')} className="text-right" autoFocus required={requiredOnCreateSet.has('name')} />
             </div>
 
             <div className="space-y-2">
@@ -502,7 +546,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
               <Label>{t('common.phone')} الخاص بالزبون *</Label>
               {phones.map((ph, idx) => (
                 <div key={idx} className="flex gap-1.5">
-                  <Input type="tel" value={ph} onChange={(e) => updatePhone(idx, e.target.value)} placeholder={`هاتف ${idx + 1}`} className="text-right flex-1" dir="ltr" required={idx === 0} />
+                  <Input type="tel" value={ph} onChange={(e) => updatePhone(idx, e.target.value)} placeholder={`هاتف ${idx + 1}`} className="text-right flex-1" dir="ltr" required={idx === 0 && requiredOnCreateSet.has('phone')} />
                   {idx > 0 && (
                     <Button type="button" variant="ghost" size="icon" className="h-10 w-10 text-destructive shrink-0" onClick={() => removePhone(idx)}>
                       <Trash2 className="w-3.5 h-3.5" />
@@ -535,7 +579,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
                   نسخ اسم العميل
                 </Button>
               </div>
-              <Input id="store-name" value={storeName} onChange={(e) => setStoreName(e.target.value)} onBlur={handleStoreNameBlur} placeholder="اسم المحل (عربي أو فرنسي)" className="text-right" required />
+              <Input id="store-name" value={storeName} onChange={(e) => setStoreName(e.target.value)} onBlur={handleStoreNameBlur} placeholder="اسم المحل (عربي أو فرنسي)" className="text-right" required={requiredOnCreateSet.has('store_name')} />
             </div>
 
             <div className="space-y-2">
@@ -579,7 +623,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
                     <p className="text-xs text-muted-foreground">{selected.fr} — {selected[language] || selected.ar}</p>
                   ) : null;
                 })()}
-                {!customerType && <p className="text-xs text-destructive">يجب تحديد نوع العميل</p>}
+                {!customerType && requiredOnCreateSet.has('customer_type') && <p className="text-xs text-destructive">يجب تحديد نوع العميل</p>}
               </div>
             )}
 
@@ -640,7 +684,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
                   ))}
                 </SelectContent>
               </Select>
-              {!sectorId && <p className="text-xs text-destructive">يجب اختيار سكتور</p>}
+              {!sectorId && requiredOnCreateSet.has('sector_id') && <p className="text-xs text-destructive">يجب اختيار سكتور</p>}
             </div>
 
             {sectorId && (
@@ -750,7 +794,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
                 <LazyLocationPicker latitude={latitude} longitude={longitude} onLocationChange={handleLocationChange} initialSearchQuery={searchAddressQuery} addressToSearch={address} defaultWilaya={activeBranch?.wilaya} />
               </CollapsibleContent>
             </Collapsible>
-            {!(latitude && longitude) && <p className="text-xs text-destructive">يجب تحديد الموقع الجغرافي</p>}
+            {isLocationRequiredOnCreate && !(latitude && longitude) && <p className="text-xs text-destructive">يجب تحديد الموقع الجغرافي</p>}
           </div>
 
           {/* --- Section: Finance & Preferences --- */}

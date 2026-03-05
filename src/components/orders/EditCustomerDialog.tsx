@@ -19,6 +19,8 @@ import { useCustomerDebtSummary, useCreateDebt, useUpdateDebtPayment } from '@/h
 import { useAuth } from '@/contexts/AuthContext';
 import { reverseGeocode } from '@/utils/geoUtils';
 import { useCustomerTypes, getCustomerTypeColor } from '@/hooks/useCustomerTypes';
+import { useCustomerFieldSettings } from '@/hooks/useCustomerFieldSettings';
+import { CUSTOMER_FIELD_LABELS, type CustomerFieldKey } from '@/types/customerFieldSettings';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getLocalizedName } from '@/utils/sectorName';
 
@@ -54,6 +56,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
   const updateDebtPayment = useUpdateDebtPayment();
   const { workerId, role } = useAuth();
   const { customerTypes } = useCustomerTypes();
+  const { settings: customerFieldSettings } = useCustomerFieldSettings();
   const { language } = useLanguage();
   const [name, setName] = useState('');
   const [nameFr, setNameFr] = useState('');
@@ -138,27 +141,61 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
     }
   };
 
-  // Completion percentage
+  const isFieldFilled = useCallback((field: CustomerFieldKey) => {
+    switch (field) {
+      case 'name':
+        return !!name.trim();
+      case 'name_fr':
+        return !!nameFr.trim();
+      case 'phone':
+        return !!phones[0]?.trim();
+      case 'store_name':
+        return !!storeName.trim();
+      case 'customer_type':
+        return customerTypes.length === 0 ? true : !!customerType;
+      case 'internal_name':
+        return !!internalName.trim();
+      case 'sales_rep_name':
+        return !!salesReps.some((rep) => rep.name.trim());
+      case 'sector_id':
+        return !!(sectorId && sectorId !== 'none');
+      case 'zone_id':
+        return !!zoneId;
+      case 'address':
+        return !!address.trim();
+      case 'wilaya':
+        return !!wilaya;
+      case 'location':
+        return !!(latitude && longitude);
+      case 'default_delivery_worker_id':
+        return !!defaultDeliveryWorkerId;
+      default:
+        return false;
+    }
+  }, [
+    name,
+    nameFr,
+    phones,
+    storeName,
+    customerTypes.length,
+    customerType,
+    internalName,
+    salesReps,
+    sectorId,
+    zoneId,
+    address,
+    wilaya,
+    latitude,
+    longitude,
+    defaultDeliveryWorkerId,
+  ]);
+
   const completionPercent = useMemo(() => {
-    const requiredFields = [
-      !!name.trim(),
-      !!phones[0]?.trim(),
-      !!storeName.trim(),
-      !!(sectorId && sectorId !== 'none'),
-      !!(latitude && longitude),
-    ];
-    const optionalFields = [
-      !!address.trim(),
-      !!wilaya,
-      !!nameFr.trim(),
-      !!internalName.trim(),
-      !!salesReps[0]?.name.trim(),
-      !!zoneId,
-    ];
-    const total = requiredFields.length + optionalFields.length;
-    const filled = [...requiredFields, ...optionalFields].filter(Boolean).length;
-    return Math.round((filled / total) * 100);
-  }, [name, phones, storeName, sectorId, latitude, longitude, address, wilaya, nameFr, internalName, salesReps, zoneId]);
+    const completionKeys = customerFieldSettings.completionFields;
+    if (completionKeys.length === 0) return 100;
+    const filled = completionKeys.filter((key) => isFieldFilled(key)).length;
+    return Math.round((filled / completionKeys.length) * 100);
+  }, [customerFieldSettings.completionFields, isFieldFilled]);
 
   useEffect(() => {
     if (debtSummary) {
@@ -290,11 +327,11 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
     if (!customer) return;
     const isManager = role === 'admin' || role === 'branch_admin';
     if (!name.trim()) { toast.error('الرجاء إدخال اسم العميل'); return; }
-    if (!isManager) {
-      if (!phones[0]?.trim()) { toast.error('الرجاء إدخال رقم هاتف العميل'); return; }
-      if (!storeName.trim()) { toast.error('الرجاء إدخال اسم المحل'); return; }
-      if (!sectorId || sectorId === 'none') { toast.error('الرجاء اختيار السكتور'); return; }
-      if (customerTypes.length > 0 && !customerType) { toast.error('يجب تحديد نوع العميل'); return; }
+
+    const firstMissingRequired = customerFieldSettings.requiredOnEdit.find((field) => !isFieldFilled(field));
+    if (firstMissingRequired) {
+      toast.error(`حقل إلزامي: ${CUSTOMER_FIELD_LABELS[firstMissingRequired]}`);
+      return;
     }
 
     setIsLoading(true);
@@ -326,11 +363,32 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
         is_registered: isRegistered,
         default_delivery_worker_id: defaultDeliveryWorkerId || null,
       };
-      // Workers must go through approval for updates, admins can update directly
-      const isManager = role === 'admin' || role === 'branch_admin';
 
+      const editableByWorker = new Set(customerFieldSettings.editableByWorkers);
+      const canEdit = (key: CustomerFieldKey) => isManager || editableByWorker.has(key);
+
+      const sanitizedPayload = {
+        ...payload,
+        name: canEdit('name') ? payload.name : customer.name,
+        name_fr: canEdit('name_fr') ? payload.name_fr : customer.name_fr,
+        phone: canEdit('phone') ? payload.phone : customer.phone,
+        store_name: canEdit('store_name') ? payload.store_name : customer.store_name,
+        internal_name: canEdit('internal_name') ? payload.internal_name : customer.internal_name,
+        customer_type: canEdit('customer_type') ? payload.customer_type : customer.customer_type,
+        sector_id: canEdit('sector_id') ? payload.sector_id : customer.sector_id,
+        zone_id: canEdit('zone_id') ? payload.zone_id : customer.zone_id,
+        sales_rep_name: canEdit('sales_rep_name') ? payload.sales_rep_name : customer.sales_rep_name,
+        sales_rep_phone: canEdit('sales_rep_name') ? payload.sales_rep_phone : customer.sales_rep_phone,
+        address: canEdit('address') ? payload.address : customer.address,
+        wilaya: canEdit('wilaya') ? payload.wilaya : customer.wilaya,
+        latitude: canEdit('location') ? payload.latitude : customer.latitude,
+        longitude: canEdit('location') ? payload.longitude : customer.longitude,
+        location_type: canEdit('location') ? payload.location_type : (customer as any).location_type,
+        default_delivery_worker_id: canEdit('default_delivery_worker_id') ? payload.default_delivery_worker_id : (customer as any).default_delivery_worker_id,
+      };
+      // Workers must go through approval for updates, admins can update directly
       if (isManager) {
-        const { data, error } = await supabase.from('customers').update(payload).eq('id', customer.id).select().single();
+        const { data, error } = await supabase.from('customers').update(sanitizedPayload).eq('id', customer.id).select().single();
         if (error) throw error;
 
         // Handle debt changes
@@ -362,19 +420,19 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
         onOpenChange(false);
       } else {
         const locationPayload = {
-          latitude,
-          longitude,
-          address: address.trim() || null,
-          wilaya: wilaya || null,
-          location_type: locationType,
+          latitude: sanitizedPayload.latitude,
+          longitude: sanitizedPayload.longitude,
+          address: sanitizedPayload.address,
+          wilaya: sanitizedPayload.wilaya,
+          location_type: sanitizedPayload.location_type,
         };
 
         const locationChanged =
-          String(customer.latitude ?? '') !== String(latitude ?? '') ||
-          String(customer.longitude ?? '') !== String(longitude ?? '') ||
+          String(customer.latitude ?? '') !== String(locationPayload.latitude ?? '') ||
+          String(customer.longitude ?? '') !== String(locationPayload.longitude ?? '') ||
           String(customer.address ?? '') !== String(locationPayload.address ?? '') ||
           String(customer.wilaya ?? '') !== String(locationPayload.wilaya ?? '') ||
-          String((customer as any).location_type ?? 'store') !== String(locationType ?? 'store');
+          String((customer as any).location_type ?? 'store') !== String(locationPayload.location_type ?? 'store');
 
         const nonLocationKeys = [
           'name', 'name_fr', 'store_name', 'store_name_fr', 'internal_name', 'phone',
@@ -384,7 +442,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
         ];
 
         const hasNonLocationChanges = nonLocationKeys.some((key) =>
-          String((customer as any)[key] ?? '') !== String((payload as any)[key] ?? '')
+          String((customer as any)[key] ?? '') !== String((sanitizedPayload as any)[key] ?? '')
         );
 
         if (!locationChanged && !hasNonLocationChanges) {
@@ -418,7 +476,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
             .insert({
               operation_type: 'update',
               customer_id: customer.id,
-              payload: { ...payload, new_debt_amount: parseFloat(debtAmount) || 0 },
+              payload: { ...sanitizedPayload, new_debt_amount: parseFloat(debtAmount) || 0 },
               requested_by: workerId,
               branch_id: customer.branch_id || null,
               status: 'pending'
