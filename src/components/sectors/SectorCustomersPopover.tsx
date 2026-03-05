@@ -22,6 +22,8 @@ import CollectDebtDialog from '@/components/debts/CollectDebtDialog';
 import VisitNoPaymentDialog from '@/components/debts/VisitNoPaymentDialog';
 import DeliverySaleDialog from '@/components/orders/DeliverySaleDialog';
 import DirectSaleDialog from '@/components/warehouse/DirectSaleDialog';
+import ReceiptDialog from '@/components/printing/ReceiptDialog';
+import { ReceiptItem } from '@/types/receipt';
 import { format } from 'date-fns';
 import { OrderWithDetails } from '@/types/database';
 
@@ -801,12 +803,44 @@ const SectorCustomersPopover: React.FC = () => {
 
 // Order Details Dialog for popover context
 const OrderDetailsPopoverDialog: React.FC<{ order: any; onClose: () => void }> = ({ order, onClose }) => {
+  const { user } = useAuth();
+  const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const isDirectSale = order._isDirectSale;
   const items = order.items || [];
   const customer = order.customer;
   const totalAmount = order.total_amount;
 
+  const handlePrint = () => {
+    setShowReceiptDialog(true);
+  };
+
+  const receiptData = {
+    receiptType: (isDirectSale ? 'direct_sale' : 'delivery') as any,
+    orderId: order.id || null,
+    customerId: customer?.id || '',
+    customerName: customer?.store_name || customer?.name || order.customer_name || '—',
+    customerPhone: customer?.phone || null,
+    workerId: user?.id || '',
+    workerName: user?.full_name || '',
+    workerPhone: null,
+    branchId: user?.branch_id || null,
+    items: items.map((item: any) => ({
+      productId: isDirectSale ? (item.product_id || '') : (item.product_id || item.product?.id || ''),
+      productName: isDirectSale ? (item.productName || '—') : (item.product?.name || '—'),
+      quantity: item.quantity || 0,
+      unitPrice: isDirectSale ? (item.unitPrice || 0) : (item.unit_price || 0),
+      totalPrice: isDirectSale ? (item.totalPrice || 0) : (item.total_price || 0),
+      giftQuantity: isDirectSale ? (item.giftQuantity || 0) : (item.gift_quantity || 0),
+    })),
+    totalAmount: Number(totalAmount || 0),
+    paidAmount: Number(totalAmount || 0),
+    remainingAmount: 0,
+    paymentMethod: order.payment_type || order.paymentMethod || 'cash',
+    notes: order.notes || null,
+  };
+
   return (
+    <>
     <Dialog open={true} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-[95vw] sm:max-w-sm p-4 gap-3 max-h-[80vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
@@ -871,9 +905,22 @@ const OrderDetailsPopoverDialog: React.FC<{ order: any; onClose: () => void }> =
               ملاحظات: {order.notes}
             </div>
           )}
+
+          {/* Print Button */}
+          <Button className="w-full gap-2" variant="outline" onClick={handlePrint}>
+            <Printer className="w-4 h-4" />
+            طباعة الوصل
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
+
+    <ReceiptDialog
+      open={showReceiptDialog}
+      onOpenChange={setShowReceiptDialog}
+      receiptData={receiptData}
+    />
+    </>
   );
 };
 
