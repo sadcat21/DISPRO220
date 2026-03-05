@@ -12,17 +12,30 @@ import RoleSelectionDialog from './RoleSelectionDialog';
 import BranchSelectionDialog from './BranchSelectionDialog';
 import { supabase } from '@/integrations/supabase/client';
 
-interface TestWorkerQuick {
+interface QuickWorker {
   username: string;
   full_name: string;
   role: string;
+  functional_role?: string | null; // e.g. sales_rep, delivery_rep, warehouse_manager
 }
+
+const FUNCTIONAL_ROLE_EMOJI: Record<string, string> = {
+  sales_rep: '💼',
+  delivery_rep: '🚚',
+  warehouse_manager: '🏭',
+};
+
+const FUNCTIONAL_ROLE_LABEL_AR: Record<string, string> = {
+  sales_rep: 'مندوب مبيعات',
+  delivery_rep: 'مندوب توصيل',
+  warehouse_manager: 'مدير مستودع',
+};
 
 const ROLE_EMOJI: Record<string, string> = {
   admin: '🔑',
   branch_admin: '🏢',
   supervisor: '👁️',
-  worker: '🚚',
+  worker: '👤',
 };
 
 const ROLE_LABEL_AR: Record<string, string> = {
@@ -30,6 +43,21 @@ const ROLE_LABEL_AR: Record<string, string> = {
   branch_admin: 'مدير فرع',
   supervisor: 'مشرف',
   worker: 'عامل',
+};
+
+const getWorkerEmoji = (w: QuickWorker) => {
+  if (w.functional_role && FUNCTIONAL_ROLE_EMOJI[w.functional_role]) {
+    return FUNCTIONAL_ROLE_EMOJI[w.functional_role];
+  }
+  return ROLE_EMOJI[w.role] || '👤';
+};
+
+const getWorkerLabel = (w: QuickWorker) => {
+  const base = ROLE_LABEL_AR[w.role] || w.role;
+  if (w.functional_role && FUNCTIONAL_ROLE_LABEL_AR[w.functional_role]) {
+    return `${base} - ${FUNCTIONAL_ROLE_LABEL_AR[w.functional_role]}`;
+  }
+  return base;
 };
 
 const LoginForm: React.FC = () => {
@@ -49,38 +77,54 @@ const LoginForm: React.FC = () => {
   const [titleTapCount, setTitleTapCount] = useState(0);
   const titleTapTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   
-  const [testWorkers, setTestWorkers] = useState<TestWorkerQuick[]>([]);
-  const [realWorkers, setRealWorkers] = useState<TestWorkerQuick[]>([]);
+  const [testWorkers, setTestWorkers] = useState<QuickWorker[]>([]);
+  const [realWorkers, setRealWorkers] = useState<QuickWorker[]>([]);
 
   useEffect(() => {
     if (quickLoginMode === 'test' && testWorkers.length === 0) {
-      fetchTestWorkers();
+      fetchWorkers(true);
     }
     if (quickLoginMode === 'real' && realWorkers.length === 0) {
-      fetchRealWorkers();
+      fetchWorkers(false);
     }
   }, [quickLoginMode]);
 
-  const fetchTestWorkers = async () => {
-    const { data } = await supabase
+  const fetchWorkers = async (isTest: boolean) => {
+    const { data: workers } = await supabase
       .from('workers')
-      .select('username, full_name, role')
-      .eq('is_test', true)
+      .select('id, username, full_name, role')
+      .eq('is_test', isTest)
       .eq('is_active', true)
       .order('role')
       .order('full_name');
-    if (data) setTestWorkers(data as TestWorkerQuick[]);
-  };
+    if (!workers) return;
 
-  const fetchRealWorkers = async () => {
-    const { data } = await supabase
-      .from('workers')
-      .select('username, full_name, role')
-      .eq('is_test', false)
-      .eq('is_active', true)
-      .order('role')
-      .order('full_name');
-    if (data) setRealWorkers(data as TestWorkerQuick[]);
+    // Fetch functional roles for these workers
+    const workerIds = workers.map(w => w.id);
+    const { data: roles } = await supabase
+      .from('worker_roles')
+      .select('worker_id, custom_role_id, custom_roles(code)')
+      .in('worker_id', workerIds)
+      .not('custom_role_id', 'is', null);
+
+    const funcRoleMap: Record<string, string> = {};
+    if (roles) {
+      for (const r of roles as any[]) {
+        if (r.custom_roles?.code) {
+          funcRoleMap[r.worker_id] = r.custom_roles.code;
+        }
+      }
+    }
+
+    const result: QuickWorker[] = workers.map(w => ({
+      username: w.username,
+      full_name: w.full_name,
+      role: w.role,
+      functional_role: funcRoleMap[w.id] || null,
+    }));
+
+    if (isTest) setTestWorkers(result);
+    else setRealWorkers(result);
   };
 
   // Logo tap → real workers
@@ -215,9 +259,9 @@ const LoginForm: React.FC = () => {
                     disabled={isLoading}
                     onClick={() => doLogin(tw.username, tw.username)}
                   >
-                    {ROLE_EMOJI[tw.role] || '👤'} {tw.full_name}
+                    {getWorkerEmoji(tw)} {tw.full_name}
                     <span className="text-muted-foreground mr-auto text-[10px]">
-                      ({ROLE_LABEL_AR[tw.role] || tw.role})
+                      ({getWorkerLabel(tw)})
                     </span>
                   </Button>
                 ))
@@ -240,11 +284,11 @@ const LoginForm: React.FC = () => {
                   size="sm"
                   className="w-full text-xs justify-start"
                   disabled={isLoading}
-                  onClick={() => { setUsername(tw.username); }}
+                  onClick={() => doLogin(tw.username, tw.username)}
                 >
-                  {ROLE_EMOJI[tw.role] || '👤'} {tw.full_name}
+                  {getWorkerEmoji(tw)} {tw.full_name}
                   <span className="text-muted-foreground mr-auto text-[10px]">
-                    ({ROLE_LABEL_AR[tw.role] || tw.role})
+                    ({getWorkerLabel(tw)})
                   </span>
                 </Button>
               ))}
