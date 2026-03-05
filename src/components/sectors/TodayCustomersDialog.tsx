@@ -494,6 +494,8 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
       receiptTitleOverride: !isDirectSale && order._isOrderRequest ? 'BON DE COMMANDE' : undefined,
     };
   };
+
+  const handlePrintDeliveredOrder = async (customer: any) => {
     try {
       const { data } = await supabase
         .from('orders')
