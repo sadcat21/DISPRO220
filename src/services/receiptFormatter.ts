@@ -99,7 +99,7 @@ function formatQty(value: number): string {
 function getReceiptTypeName(type: ReceiptType, override?: string): string {
   if (override?.trim()) return override.trim();
   switch (type) {
-    case 'direct_sale': return 'BON DE VENTE';
+    case 'direct_sale': return 'CASH VAN';
     case 'delivery': return 'BON DE LIVRAISON';
     case 'debt_payment': return 'RECU DE PAIEMENT';
     default: return 'BON';
