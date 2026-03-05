@@ -95,9 +95,9 @@ export const sendSmsDirectly = async (phone: string, message: string): Promise<b
         });
 
         timeoutId = window.setTimeout(() => {
-          console.warn(`[SMS] No status for sim ${sim} after 6s, assuming queued successfully`);
-          finalize(true);
-        }, 6000);
+          console.warn(`[SMS] No status for sim ${sim} after 8s, trying next SIM`);
+          finalize(false);
+        }, 8000);
       } catch (listenerError) {
         console.warn('[SMS] Could not attach status listener, using optimistic mode:', listenerError);
       }
@@ -135,7 +135,9 @@ export const sendSmsDirectly = async (phone: string, message: string): Promise<b
       }
     };
 
-    for (const sim of [0, 1]) {
+    const simCandidates = [0, 1, 2, 3];
+
+    for (const sim of simCandidates) {
       const sent = await sendWithSim(sim);
       if (sent) {
         console.log('[SMS] Successfully sent to:', cleanPhone, 'via sim:', sim);
@@ -168,22 +170,22 @@ export const buildDeliveryConfirmationSms = (params: {
 }): string => {
   const { customerName, totalAmount, paidAmount, remainingAmount, orderId, companyName } = params;
 
-  let message = `✅ تم التوصيل بنجاح\n`;
-  if (companyName) message += `🏢 ${companyName}\n`;
-  message += `👤 ${customerName}\n`;
-  message += `📦 طلبية: #${orderId.slice(0, 8)}\n`;
-  message += `💰 المبلغ: ${totalAmount.toLocaleString()} دج\n`;
+  let message = `تم التوصيل بنجاح\n`;
+  if (companyName) message += `${companyName}\n`;
+  message += `العميل: ${customerName}\n`;
+  message += `الطلب: ${orderId.slice(0, 8)}\n`;
+  message += `الإجمالي: ${totalAmount.toLocaleString()} دج\n`;
 
   if (paidAmount > 0 && paidAmount < totalAmount) {
-    message += `✅ المدفوع: ${paidAmount.toLocaleString()} دج\n`;
-    message += `⏳ المتبقي: ${remainingAmount.toLocaleString()} دج\n`;
+    message += `المدفوع: ${paidAmount.toLocaleString()} دج\n`;
+    message += `المتبقي: ${remainingAmount.toLocaleString()} دج\n`;
   } else if (paidAmount >= totalAmount) {
-    message += `✅ تم الدفع كاملاً\n`;
+    message += `الحالة: مدفوع بالكامل\n`;
   } else {
-    message += `⏳ دين: ${totalAmount.toLocaleString()} دج\n`;
+    message += `الحالة: دين ${totalAmount.toLocaleString()} دج\n`;
   }
 
-  message += `\nشكراً لتعاملكم معنا 🙏`;
+  message += `شكراً لتعاملكم معنا`;
 
   return message;
 };
