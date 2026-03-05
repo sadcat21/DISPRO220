@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MapPin, Truck, ShoppingCart, Landmark, User, Phone, Eye, EyeOff, CheckCircle, PackageX, PackageCheck, Navigation, Loader2, MapPinOff, Clock, Check, X } from 'lucide-react';
+import { MapPin, Truck, ShoppingCart, Landmark, User, Phone, Eye, EyeOff, CheckCircle, PackageX, PackageCheck, Navigation, Loader2, MapPinOff, Clock, Check, X, DoorClosed, UserX } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -330,6 +330,46 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     } catch { toast.error('فشل في تسجيل الزيارة'); }
   };
 
+  const handleCustomerClosed = async (customer: any) => {
+    const allowed = await checkLocationBeforeAction(customer);
+    if (!allowed) return;
+    try {
+      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `مغلق - ${customer.store_name || customer.name}` });
+      toast.success(`تم تسجيل "${customer.store_name || customer.name}" كمغلق`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
+  };
+
+  const handleCustomerUnavailable = async (customer: any) => {
+    const allowed = await checkLocationBeforeAction(customer);
+    if (!allowed) return;
+    try {
+      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `غير متاح - ${customer.store_name || customer.name}` });
+      toast.success(`تم تسجيل "${customer.store_name || customer.name}" كغير متاح`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
+  };
+
+  const handleDebtCustomerClosed = async (debt: any) => {
+    const customer = debt.customer as any;
+    const customerObj = { id: debt.customer_id, latitude: customer?.latitude, longitude: customer?.longitude, store_name: customer?.store_name, name: customer?.name };
+    const allowed = await checkLocationBeforeAction(customerObj);
+    if (!allowed) return;
+    try {
+      await trackVisit({ customerId: debt.customer_id, operationType: 'visit', notes: `مغلق (تحصيل دين) - ${customer?.store_name || customer?.name}` });
+      toast.success(`تم تسجيل "${customer?.store_name || customer?.name}" كمغلق`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
+  };
+
+  const handleDebtCustomerUnavailable = async (debt: any) => {
+    const customer = debt.customer as any;
+    const customerObj = { id: debt.customer_id, latitude: customer?.latitude, longitude: customer?.longitude, store_name: customer?.store_name, name: customer?.name };
+    const allowed = await checkLocationBeforeAction(customerObj);
+    if (!allowed) return;
+    try {
+      await trackVisit({ customerId: debt.customer_id, operationType: 'visit', notes: `غير متاح (تحصيل دين) - ${customer?.store_name || customer?.name}` });
+      toast.success(`تم تسجيل "${customer?.store_name || customer?.name}" كغير متاح`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
+  };
+
   const handleSalesCustomerClick = (customer: any) => {
     setSelectedCustomerForOrder(customer.id);
     setShowCreateOrder(true);
@@ -401,13 +441,13 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                 </TabsList>
 
                 <TabsContent value="not-delivered" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={deliveryNotDone} emptyMessage="تم توصيل جميع العملاء ✓" onCustomerClick={(c) => handleDeliveryCustomerClick(c)} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} showVisitButton visitButtonLabel="بدون تسليم" checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} />
+                  <CustomerList customers={deliveryNotDone} emptyMessage="تم توصيل جميع العملاء ✓" onCustomerClick={(c) => handleDeliveryCustomerClick(c)} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} showVisitButton visitButtonLabel="بدون تسليم" checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} />
                 </TabsContent>
                 <TabsContent value="not-received" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={deliveryNotReceived} emptyMessage="لا توجد زيارات بدون تسليم" onCustomerClick={(c) => handleDeliveryCustomerClick(c)} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} showVisitButton={false} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} />
+                  <CustomerList customers={deliveryNotReceived} emptyMessage="لا توجد زيارات بدون تسليم" onCustomerClick={(c) => handleDeliveryCustomerClick(c)} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} showVisitButton={false} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} />
                 </TabsContent>
                 <TabsContent value="received" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={deliveryReceived} emptyMessage="لا توجد توصيلات بعد" onCustomerClick={(c) => handleDeliveryCustomerClick(c)} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} showVisitButton={false} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} />
+                  <CustomerList customers={deliveryReceived} emptyMessage="لا توجد توصيلات بعد" onCustomerClick={(c) => handleDeliveryCustomerClick(c)} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} showVisitButton={false} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} />
                 </TabsContent>
               </Tabs>
             </TabsContent>
@@ -434,13 +474,13 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                 </TabsList>
 
                 <TabsContent value="not-visited" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={salesNotVisited} emptyMessage="تمت زيارة جميع العملاء ✓" onCustomerClick={handleSalesCustomerClick} onVisitWithoutOrder={handleVisitWithoutOrder} showVisitButton checkingLocationFor={checkingLocationFor} />
+                  <CustomerList customers={salesNotVisited} emptyMessage="تمت زيارة جميع العملاء ✓" onCustomerClick={handleSalesCustomerClick} onVisitWithoutOrder={handleVisitWithoutOrder} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} showVisitButton checkingLocationFor={checkingLocationFor} />
                 </TabsContent>
                 <TabsContent value="visited-no-order" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={salesVisitedNoOrder} emptyMessage="لا توجد زيارات بدون طلبيات" onCustomerClick={handleSalesCustomerClick} onVisitWithoutOrder={handleVisitWithoutOrder} showVisitButton={false} checkingLocationFor={checkingLocationFor} />
+                  <CustomerList customers={salesVisitedNoOrder} emptyMessage="لا توجد زيارات بدون طلبيات" onCustomerClick={handleSalesCustomerClick} onVisitWithoutOrder={handleVisitWithoutOrder} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} showVisitButton={false} checkingLocationFor={checkingLocationFor} />
                 </TabsContent>
                 <TabsContent value="with-orders" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={salesWithOrders} emptyMessage="لا توجد طلبيات بعد" onCustomerClick={handleSalesCustomerClick} onVisitWithoutOrder={handleVisitWithoutOrder} showVisitButton={false} checkingLocationFor={checkingLocationFor} />
+                  <CustomerList customers={salesWithOrders} emptyMessage="لا توجد طلبيات بعد" onCustomerClick={handleSalesCustomerClick} onVisitWithoutOrder={handleVisitWithoutOrder} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} showVisitButton={false} checkingLocationFor={checkingLocationFor} />
                 </TabsContent>
               </Tabs>
             </TabsContent>
@@ -472,16 +512,16 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                 </TabsList>
 
                 <TabsContent value="today-collection" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <DebtList debts={debtsToCollectToday} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} emptyMessage="لا توجد ديون مستحقة اليوم ✓" />
+                  <DebtList debts={debtsToCollectToday} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} emptyMessage="لا توجد ديون مستحقة اليوم ✓" />
                 </TabsContent>
                 <TabsContent value="collected" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <DebtList debts={debtsCollectedToday} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} emptyMessage="لا توجد تحصيلات بعد" />
+                  <DebtList debts={debtsCollectedToday} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} emptyMessage="لا توجد تحصيلات بعد" />
                 </TabsContent>
                 <TabsContent value="no-payment" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <DebtList debts={debtsNoPaymentToday} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} emptyMessage="لا توجد زيارات بدون دفع" />
+                  <DebtList debts={debtsNoPaymentToday} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} emptyMessage="لا توجد زيارات بدون دفع" />
                 </TabsContent>
                 <TabsContent value="all-debts" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <DebtList debts={allDebtsFiltered} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} emptyMessage="لا توجد ديون مستحقة" />
+                  <DebtList debts={allDebtsFiltered} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} emptyMessage="لا توجد ديون مستحقة" />
                 </TabsContent>
               </Tabs>
             </TabsContent>
@@ -542,11 +582,13 @@ const CustomerList: React.FC<{
   emptyMessage: string;
   onCustomerClick: (c: any) => void;
   onVisitWithoutOrder: (c: any) => void;
+  onClosed: (c: any) => void;
+  onUnavailable: (c: any) => void;
   showVisitButton: boolean;
   visitButtonLabel?: string;
   checkingLocationFor: string | null;
   loadingFor?: string | null;
-}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, showVisitButton, visitButtonLabel, checkingLocationFor, loadingFor }) => {
+}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, onClosed, onUnavailable, showVisitButton, visitButtonLabel, checkingLocationFor, loadingFor }) => {
   if (customers.length === 0) {
     return <div className="p-6 text-center text-sm text-muted-foreground">{emptyMessage}</div>;
   }
@@ -572,7 +614,7 @@ const CustomerList: React.FC<{
               </div>
             </div>
           </button>
-          <div className="flex items-center gap-1 mt-1.5 justify-end">
+          <div className="flex items-center gap-1 mt-1.5 justify-end flex-wrap">
             {c.latitude && c.longitude && (
               <Button
                 variant="ghost"
@@ -600,6 +642,26 @@ const CustomerList: React.FC<{
                 {visitButtonLabel || 'زيارة بدون طلبية'}
               </Button>
             )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 text-[10px] px-1.5 gap-0.5 text-red-600"
+              onClick={() => onClosed(c)}
+              disabled={checkingLocationFor === c.id}
+            >
+              <DoorClosed className="w-3 h-3" />
+              مغلق
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 text-[10px] px-1.5 gap-0.5 text-gray-600"
+              onClick={() => onUnavailable(c)}
+              disabled={checkingLocationFor === c.id}
+            >
+              <UserX className="w-3 h-3" />
+              غير متاح
+            </Button>
           </div>
         </div>
       ))}
@@ -608,7 +670,7 @@ const CustomerList: React.FC<{
 };
 
 // Reusable DebtList component (matches SectorCustomersPopover)
-const DebtList: React.FC<{ debts: DueDebt[]; onCollect: (d: DueDebt) => void; onVisitNoPayment: (d: DueDebt) => void; emptyMessage: string }> = ({ debts, onCollect, onVisitNoPayment, emptyMessage }) => {
+const DebtList: React.FC<{ debts: DueDebt[]; onCollect: (d: DueDebt) => void; onVisitNoPayment: (d: DueDebt) => void; onClosed: (d: DueDebt) => void; onUnavailable: (d: DueDebt) => void; emptyMessage: string }> = ({ debts, onCollect, onVisitNoPayment, onClosed, onUnavailable, emptyMessage }) => {
   if (debts.length === 0) {
     return <div className="p-6 text-center text-sm text-muted-foreground">{emptyMessage}</div>;
   }
@@ -631,7 +693,7 @@ const DebtList: React.FC<{ debts: DueDebt[]; onCollect: (d: DueDebt) => void; on
               {(debt.customer as any)?.phone && <span>• {(debt.customer as any).phone}</span>}
             </div>
           </button>
-          <div className="flex items-center gap-1 mt-1.5 justify-end">
+          <div className="flex items-center gap-1 mt-1.5 justify-end flex-wrap">
             <Button
               variant="ghost"
               size="sm"
@@ -649,6 +711,24 @@ const DebtList: React.FC<{ debts: DueDebt[]; onCollect: (d: DueDebt) => void; on
             >
               <Landmark className="w-3 h-3" />
               تحصيل
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 text-[10px] px-1.5 gap-0.5 text-red-600"
+              onClick={(e) => { e.stopPropagation(); onClosed(debt); }}
+            >
+              <DoorClosed className="w-3 h-3" />
+              مغلق
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 text-[10px] px-1.5 gap-0.5 text-gray-600"
+              onClick={(e) => { e.stopPropagation(); onUnavailable(debt); }}
+            >
+              <UserX className="w-3 h-3" />
+              غير متاح
             </Button>
           </div>
         </div>

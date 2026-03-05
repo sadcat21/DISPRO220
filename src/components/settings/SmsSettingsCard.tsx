@@ -4,11 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MessageSquare, Save, Loader2, RotateCcw } from 'lucide-react';
+import { MessageSquare, Save, Loader2, RotateCcw, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { sendSmsDirectly } from '@/utils/smsHelper';
 
 export type SmsOperationType = 'delivery' | 'direct_sale' | 'order_create' | 'debt_collection' | 'document_collection';
 export type SmsSendMode = 'automatic' | 'semi_automatic' | 'disabled';
@@ -242,6 +244,9 @@ const SmsSettingsCard: React.FC = () => {
                     المتغيرات المتاحة: {'{customer}'} {'{total}'} {'{order_id}'} {'{company}'} {'{amount}'} {'{remaining}'} {'{payment_status}'}
                   </p>
                 </div>
+
+                {/* Test SMS */}
+                <SmsTestSection op={op} template={settings[op].template} mode={settings[op].mode} />
               </>
             )}
           </div>
@@ -257,6 +262,75 @@ const SmsSettingsCard: React.FC = () => {
 };
 
 export default SmsSettingsCard;
+
+/**
+ * SMS Test Section - allows testing SMS sending per operation
+ */
+const SmsTestSection: React.FC<{ op: SmsOperationType; template: string; mode: SmsSendMode }> = ({ op, template, mode }) => {
+  const [testPhone, setTestPhone] = useState('');
+  const [sending, setSending] = useState(false);
+
+  const handleTest = async () => {
+    if (!testPhone.trim()) {
+      toast.error('أدخل رقم هاتف للاختبار');
+      return;
+    }
+    const testVars: Record<string, string> = {
+      customer: 'عميل تجريبي',
+      total: '5000',
+      order_id: 'TEST1234',
+      company: 'شركة تجريبية',
+      amount: '2000',
+      remaining: '3000',
+      payment_status: 'دين جزئي',
+    };
+    const message = buildSmsFromTemplate(template, testVars);
+
+    if (mode === 'automatic') {
+      setSending(true);
+      const sent = await sendSmsDirectly(testPhone, message);
+      setSending(false);
+      if (sent) {
+        toast.success('تم إرسال الرسالة التجريبية بنجاح');
+      } else {
+        toast.error('فشل إرسال الرسالة. تأكد من صلاحيات SMS أو استخدم APK');
+      }
+    } else if (mode === 'semi_automatic') {
+      openSmsApp(testPhone, message);
+      toast.success('تم فتح تطبيق الرسائل');
+    } else {
+      toast.info('الإرسال معطل لهذه العملية');
+    }
+  };
+
+  return (
+    <div className="border-t pt-3 space-y-2">
+      <Label className="text-sm text-muted-foreground">🧪 اختبار الرسالة</Label>
+      <div className="flex gap-2">
+        <Input
+          placeholder="رقم الهاتف للاختبار"
+          value={testPhone}
+          onChange={(e) => setTestPhone(e.target.value)}
+          className="flex-1 text-sm"
+          dir="ltr"
+        />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleTest}
+          disabled={sending}
+          className="gap-1 shrink-0"
+        >
+          {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+          اختبار
+        </Button>
+      </div>
+      <p className="text-[10px] text-muted-foreground">
+        سيتم إرسال رسالة تجريبية بقيم وهمية بنمط «{mode === 'automatic' ? 'تلقائي' : mode === 'semi_automatic' ? 'شبه تلقائي' : 'معطل'}»
+      </p>
+    </div>
+  );
+};
 
 /**
  * Helper to load SMS settings from app_settings (for use in other components)
