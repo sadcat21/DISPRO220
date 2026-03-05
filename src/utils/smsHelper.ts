@@ -8,10 +8,18 @@ import { Capacitor } from '@capacitor/core';
 
 const isGranted = (status?: string) => status === 'granted';
 
+const MAX_PLUGIN_INT_ID = 2_000_000_000;
+
 const hasRequiredSmsPermissions = (permissions: any): boolean => {
   const sendGranted = isGranted(permissions?.send_sms);
   const phoneStateGranted = isGranted(permissions?.read_phone_state);
   return sendGranted && phoneStateGranted;
+};
+
+const createPluginSafeMessageId = (sim: number): number => {
+  const base = Math.trunc(Date.now() % MAX_PLUGIN_INT_ID);
+  const withSimOffset = base + Math.max(0, sim);
+  return withSimOffset > 2_147_483_647 ? withSimOffset - MAX_PLUGIN_INT_ID : withSimOffset;
 };
 
 /**
@@ -50,7 +58,7 @@ export const sendSmsDirectly = async (phone: string, message: string): Promise<b
     }
 
     const sendWithSim = async (sim: number): Promise<boolean> => {
-      const messageId = Date.now() + sim;
+      const messageId = createPluginSafeMessageId(sim);
       let resolved = false;
       let timeoutId: number | null = null;
       let listenerHandle: { remove: () => Promise<void> } | null = null;
@@ -135,7 +143,7 @@ export const sendSmsDirectly = async (phone: string, message: string): Promise<b
       }
     };
 
-    const simCandidates = [0, 1, 2, 3];
+    const simCandidates = [0, 1];
 
     for (const sim of simCandidates) {
       const sent = await sendWithSim(sim);
