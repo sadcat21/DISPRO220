@@ -1,16 +1,46 @@
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin, type PluginListenerHandle } from '@capacitor/core';
 
 /**
  * إرسال رسالة SMS مباشرة من هاتف العامل بدون فتح تطبيق الرسائل
- * يعمل فقط على Android Native عبر capacitor-sms-sender
- * البلجن يستخدم SmsManager.sendTextMessage() الذي لا يحتاج لتعيين التطبيق كـ Default SMS App
+ * يعمل فقط على Android Native عبر بلجن محلي آمن
  */
 
-const isGranted = (status?: string) => status === 'granted';
+type PermissionState = 'prompt' | 'prompt-with-rationale' | 'granted' | 'denied';
 
+type SmsPermissions = {
+  send_sms?: PermissionState;
+  read_phone_state?: PermissionState;
+};
+
+type SmsSendOptions = {
+  id: number;
+  sim: number;
+  phone: string;
+  text: string;
+};
+
+type SmsSendResult = {
+  id?: number;
+  status?: string;
+  res_status?: number;
+};
+
+type SmsSenderPluginContract = {
+  send(options: SmsSendOptions): Promise<SmsSendResult>;
+  checkPermissions(): Promise<SmsPermissions>;
+  requestPermissions(): Promise<SmsPermissions>;
+  addListener(
+    eventName: 'smsSenderStatusUpdated',
+    listenerFunc: (result: SmsSendResult) => void,
+  ): Promise<PluginListenerHandle>;
+};
+
+const SafeSmsSender = registerPlugin<SmsSenderPluginContract>('SafeSmsSender');
+
+const isGranted = (status?: string) => status === 'granted';
 const MAX_PLUGIN_INT_ID = 2_000_000_000;
 
-const hasRequiredSmsPermissions = (permissions: any): boolean => {
+const hasRequiredSmsPermissions = (permissions: SmsPermissions): boolean => {
   const sendGranted = isGranted(permissions?.send_sms);
   const phoneStateGranted = isGranted(permissions?.read_phone_state);
   return sendGranted && phoneStateGranted;
@@ -20,6 +50,20 @@ const createPluginSafeMessageId = (sim: number): number => {
   const base = Math.trunc(Date.now() % MAX_PLUGIN_INT_ID);
   const withSimOffset = base + Math.max(0, sim);
   return withSimOffset > 2_147_483_647 ? withSimOffset - MAX_PLUGIN_INT_ID : withSimOffset;
+};
+
+const resolveSmsPlugin = async (): Promise<SmsSenderPluginContract | null> => {
+  if (Capacitor.isPluginAvailable('SafeSmsSender')) {
+    return SafeSmsSender;
+  }
+
+  // توافق رجعي مؤقت للـ APK القديم قبل المزامنة
+  if (Capacitor.isPluginAvailable('SmsSender')) {
+    const legacyModule = await import('capacitor-sms-sender');
+    return legacyModule.SmsSender as unknown as SmsSenderPluginContract;
+  }
+
+  return null;
 };
 
 /**
@@ -33,8 +77,9 @@ export const sendSmsDirectly = async (phone: string, message: string): Promise<b
     return false;
   }
 
-  if (!Capacitor.isPluginAvailable('SmsSender')) {
-    console.error('[SMS] SmsSender plugin is not available in this Android build. Run: npx cap sync android, then rebuild APK.');
+  const smsPlugin = await resolveSmsPlugin();
+  if (!smsPlugin) {
+    console.error('[SMS] No SMS plugin available in this Android build. Run: npx cap sync android, then rebuild APK.');
     return false;
   }
 
@@ -42,14 +87,11 @@ export const sendSmsDirectly = async (phone: string, message: string): Promise<b
   if (!cleanPhone) return false;
 
   try {
-    const { SmsSender } = await import('capacitor-sms-sender');
-
-    // التحقق من الصلاحيات
-    const currentPerms = await SmsSender.checkPermissions();
+    const currentPerms = await smsPlugin.checkPermissions();
     console.log('[SMS] Current permissions:', JSON.stringify(currentPerms));
 
     if (!hasRequiredSmsPermissions(currentPerms)) {
-      const requestedPerms = await SmsSender.requestPermissions();
+      const requestedPerms = await smsPlugin.requestPermissions();
       console.log('[SMS] Requested permissions result:', JSON.stringify(requestedPerms));
       if (!hasRequiredSmsPermissions(requestedPerms)) {
         console.warn('[SMS] Permissions denied');
@@ -61,7 +103,7 @@ export const sendSmsDirectly = async (phone: string, message: string): Promise<b
       const messageId = createPluginSafeMessageId(sim);
       let resolved = false;
       let timeoutId: number | null = null;
-      let listenerHandle: { remove: () => Promise<void> } | null = null;
+      let listenerHandle: PluginListenerHandle | null = null;
       let resolveStatus: ((sent: boolean) => void) | null = null;
 
       const statusPromise = new Promise<boolean>((resolve) => {
@@ -89,7 +131,7 @@ export const sendSmsDirectly = async (phone: string, message: string): Promise<b
       };
 
       try {
-        listenerHandle = await SmsSender.addListener('smsSenderStatusUpdated', (result: any) => {
+        listenerHandle = await smsPlugin.addListener('smsSenderStatusUpdated', (result) => {
           console.log('[SMS] Status update:', JSON.stringify(result));
           if (Number(result?.id) !== messageId || resolved) return;
 
@@ -112,7 +154,7 @@ export const sendSmsDirectly = async (phone: string, message: string): Promise<b
 
       try {
         console.log('[SMS] Sending to:', cleanPhone, 'id:', messageId, 'sim:', sim);
-        const sendResult = await SmsSender.send({
+        const sendResult = await smsPlugin.send({
           id: messageId,
           sim,
           phone: cleanPhone,
@@ -156,8 +198,8 @@ export const sendSmsDirectly = async (phone: string, message: string): Promise<b
     console.warn('[SMS] Failed to send on all SIM slots');
     return false;
   } catch (error) {
-    const message = String((error as any)?.message || error || '').toLowerCase();
-    if (message.includes('not implemented')) {
+    const msg = String((error as { message?: string })?.message || error || '').toLowerCase();
+    if (msg.includes('not implemented')) {
       console.error('[SMS] Native plugin not linked in APK. Ensure android is synced with Capacitor and rebuild.');
     }
     console.error('[SMS] Error:', error);
