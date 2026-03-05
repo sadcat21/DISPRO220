@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthState, Worker, AppRole, Branch } from '@/types/database';
+import { getDeviceFingerprint, getDeviceInfo } from '@/utils/deviceFingerprint';
 
 export interface WorkerRole {
   role: AppRole;
@@ -200,6 +201,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error('فشل تهيئة جلسة المستخدم');
     }
 
+    // Check device lock
+    const { data: workerFull } = await supabase
+      .from('workers')
+      .select('device_locked, last_device_id')
+      .eq('id', workerData.id)
+      .single();
+    
+    if ((workerFull as any)?.device_locked && (workerFull as any)?.last_device_id) {
+      const currentDeviceId = getDeviceFingerprint();
+      if (currentDeviceId !== (workerFull as any).last_device_id) {
+        throw new Error('هذا الحساب مقفل على جهاز آخر. تواصل مع المسؤول.');
+      }
+    }
+
     // Build worker object from returned data
     const worker: Worker = {
       id: workerData.id,
@@ -307,6 +322,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       customRoleName: roleData?.custom_role_name || null,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+
+    // Save device fingerprint to worker record (fire and forget)
+    try {
+      const deviceId = getDeviceFingerprint();
+      const deviceInfo = getDeviceInfo();
+      supabase
+        .from('workers')
+        .update({
+          last_device_id: deviceId,
+          last_device_info: deviceInfo,
+        } as any)
+        .eq('id', worker.id)
+        .then(({ error }) => {
+          if (error) console.error('Device info save error:', error);
+        });
+    } catch (e) {
+      console.error('Device fingerprint error:', e);
+    }
 
     setPendingWorker(null);
     setWorkerId(worker.id);
