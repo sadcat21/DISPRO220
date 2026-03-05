@@ -15,6 +15,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
+import { openSmsApp, buildDeliveryConfirmationSms } from '@/utils/smsHelper';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -786,6 +787,23 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
 
       // Track delivery visit GPS
       trackVisit({ customerId: order.customer_id, operationType: 'delivery', operationId: order.id });
+
+      // إرسال SMS تلقائي عبر تطبيق الرسائل في الهاتف
+      const customerPhone = order.customer?.phone;
+      if (customerPhone) {
+        const smsMessage = buildDeliveryConfirmationSms({
+          customerName: order.customer?.name || '',
+          totalAmount: totals.totalAmount,
+          paidAmount: paymentData.paidAmount,
+          remainingAmount: paymentData.remainingAmount,
+          orderId: order.id,
+        });
+        // تأخير قصير لإتمام العمليات قبل فتح تطبيق الرسائل
+        setTimeout(() => {
+          openSmsApp(customerPhone, smsMessage);
+        }, 1500);
+      }
+
       queryClient.invalidateQueries({ queryKey: ['assigned-orders'] });
       queryClient.invalidateQueries({ queryKey: ['order-items'] });
       queryClient.invalidateQueries({ queryKey: ['my-worker-stock'] });
