@@ -1,65 +1,108 @@
-/**
- * إرسال رسالة SMS مباشرة من هاتف العامل بدون فتح تطبيق الرسائل
- * يستخدم Capacitor SMS Sender plugin على الأندرويد
- * يرجع إلى فتح تطبيق الرسائل على الويب كـ fallback
- */
+import { Capacitor } from '@capacitor/core';
 
 /**
- * إرسال SMS مباشرة من الهاتف
+ * إرسال رسالة SMS مباشرة من هاتف العامل بدون فتح تطبيق الرسائل
+ * يعمل فقط على Android Native عبر capacitor-sms-sender
+ */
+
+const isGranted = (status?: string) => status === 'granted';
+
+const hasRequiredSmsPermissions = (permissions: any): boolean => {
+  // مفاتيح الإذن الصحيحة للبلجن
+  const sendGranted = isGranted(permissions?.send_sms) || isGranted(permissions?.sms);
+  const phoneStateGranted = isGranted(permissions?.read_phone_state) || isGranted(permissions?.phone_state);
+  return sendGranted && phoneStateGranted;
+};
+
+/**
+ * إرسال SMS مباشرة من الهاتف (0 تدخل من العامل)
  */
 export const sendSmsDirectly = async (phone: string, message: string): Promise<boolean> => {
-  if (!phone) return false;
+  if (!phone || !message?.trim()) return false;
+
+  // منع أي سلوك غير Native Android لضمان عدم فتح تطبيق الرسائل
+  if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') {
+    console.warn('Direct SMS is allowed only on Android native builds');
+    return false;
+  }
 
   // تنظيف رقم الهاتف
   const cleanPhone = phone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
   if (!cleanPhone) return false;
 
   try {
-    // محاولة استخدام Capacitor SMS Sender (يعمل على الأندرويد فقط)
     const { SmsSender } = await import('capacitor-sms-sender');
-    
-    // التحقق من الصلاحيات أولاً
-    const permResult = await SmsSender.checkPermissions() as any;
-    if (permResult?.sms !== 'granted' && permResult?.send !== 'granted') {
-      const reqResult = await SmsSender.requestPermissions() as any;
-      if (reqResult?.sms !== 'granted' && reqResult?.send !== 'granted') {
-        console.warn('SMS permission denied - لم يتم منح صلاحية الرسائل');
+
+    // التحقق من الصلاحيات بالمفاتيح الصحيحة للبلجن
+    const currentPerms = await SmsSender.checkPermissions();
+    if (!hasRequiredSmsPermissions(currentPerms)) {
+      const requestedPerms = await SmsSender.requestPermissions();
+      if (!hasRequiredSmsPermissions(requestedPerms)) {
+        console.warn('SMS permissions denied (SEND_SMS / READ_PHONE_STATE)');
         return false;
       }
     }
 
-    // إرسال الرسالة مباشرة
-    await SmsSender.send({
-      id: Date.now(),
-      sim: 0, // الشريحة الأولى
-      phone: cleanPhone,
-      text: message,
+    const messageId = Date.now();
+    let resolved = false;
+    let timeoutId: number | null = null;
+    let listenerHandle: { remove: () => Promise<void> } | null = null;
+    let resolveStatus: ((sent: boolean) => void) | null = null;
+
+    const statusPromise = new Promise<boolean>((resolve) => {
+      resolveStatus = resolve;
     });
+
+    const finalize = async (sent: boolean) => {
+      if (resolved) return;
+      resolved = true;
+
+      if (timeoutId) window.clearTimeout(timeoutId);
+      if (listenerHandle) {
+        await listenerHandle.remove();
+        listenerHandle = null;
+      }
+
+      resolveStatus?.(sent);
+    };
+
+    listenerHandle = await SmsSender.addListener('smsSenderStatusUpdated', (result: any) => {
+      if (Number(result?.id) !== messageId || resolved) return;
+
+      const status = String(result?.status || '').toUpperCase();
+      if (status === 'SENT' || status === 'DELIVERED') {
+        void finalize(true);
+        return;
+      }
+
+      if (status === 'FAILED') {
+        void finalize(false);
+      }
+    });
+
+    timeoutId = window.setTimeout(() => {
+      void finalize(false);
+    }, 12000);
+
+    await SmsSender.send({
+      id: messageId,
+      sim: 0,
+      phone: cleanPhone,
+      text: message.trim(),
+    });
+
+    const sent = await statusPromise;
+    if (!sent) {
+      console.warn('SMS was not confirmed as SENT/DELIVERED');
+      return false;
+    }
 
     console.log('SMS sent directly to:', cleanPhone);
     return true;
   } catch (error) {
     console.warn('Direct SMS failed:', error);
-    // لا نفتح تطبيق الرسائل - الإرسال يجب أن يكون في الخلفية فقط
     return false;
   }
-};
-
-/**
- * فتح تطبيق الرسائل النصية (SMS) مع رسالة جاهزة - كخطة بديلة
- */
-export const openSmsApp = (phone: string, message: string) => {
-  if (!phone) return;
-
-  const cleanPhone = phone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
-  if (!cleanPhone) return;
-
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  const separator = isIOS ? '&' : '?';
-  const encodedMessage = encodeURIComponent(message);
-
-  const smsUrl = `sms:${cleanPhone}${separator}body=${encodedMessage}`;
-  window.open(smsUrl, '_self');
 };
 
 /**
