@@ -25,6 +25,11 @@ export const sendSmsDirectly = async (phone: string, message: string): Promise<b
     return false;
   }
 
+  if (!Capacitor.isPluginAvailable('SmsSender')) {
+    console.error('[SMS] SmsSender plugin is not available in this Android build. Run: npx cap sync android, then rebuild APK.');
+    return false;
+  }
+
   const cleanPhone = phone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
   if (!cleanPhone) return false;
 
@@ -106,6 +111,10 @@ export const sendSmsDirectly = async (phone: string, message: string): Promise<b
     console.log('[SMS] Successfully sent to:', cleanPhone);
     return true;
   } catch (error) {
+    const message = String((error as any)?.message || error || '').toLowerCase();
+    if (message.includes('not implemented')) {
+      console.error('[SMS] Native plugin not linked in APK. Ensure android is synced with Capacitor and rebuild.');
+    }
     console.error('[SMS] Error:', error);
     return false;
   }
