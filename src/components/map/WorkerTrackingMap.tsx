@@ -194,8 +194,9 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
       }
     });
 
-    // Fit bounds including warehouse
-    if (locations.length > 0) {
+    // Fit bounds only on first data load
+    if (locations.length > 0 && !hasFittedBoundsRef.current) {
+      hasFittedBoundsRef.current = true;
       const allPoints: [number, number][] = [
         [WAREHOUSE_LOCATION.lat, WAREHOUSE_LOCATION.lng],
         ...locations.map(l => [l.latitude, l.longitude] as [number, number]),
