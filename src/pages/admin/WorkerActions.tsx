@@ -626,6 +626,12 @@ const WorkerActions: React.FC = () => {
         workerId={selectedWorker?.id}
         workerName={selectedWorker?.full_name}
       />
+      <WorkerGiftsSummaryDialog
+        open={giftsSummaryOpen}
+        onOpenChange={setGiftsSummaryOpen}
+        workerId={selectedWorker?.id}
+        workerName={selectedWorker?.full_name}
+      />
       <EditWorkerProfileDialog
         open={workerProfileOpen}
         onOpenChange={setWorkerProfileOpen}
