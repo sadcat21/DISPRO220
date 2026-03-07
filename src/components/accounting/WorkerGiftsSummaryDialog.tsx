@@ -360,11 +360,12 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
     
     for (let idx = 0; idx < giftsData.items.length; idx++) {
       const item = giftsData.items[idx];
-      const code = offerCodes[idx]?.code || '-';
+      const codes = itemCodeMap[idx] || [];
+      const codeLabel = codes.join(',');
       const name = transliterate(item.productName).substring(0, 12).padEnd(12);
       const qty = formatGiftDisplay(item.totalGiftPieces, item.piecesPerBox).padStart(7);
       const cli = String(item.customers.length).padStart(4);
-      lines.push({ text: name + qty + cli + code.padStart(5) });
+      lines.push({ text: name + qty + cli + codeLabel.padStart(5) });
     }
     
     lines.push({ separator: true });
@@ -372,14 +373,12 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
     lines.push({ text: totalLine, bold: true });
     lines.push({ separator: true });
 
-    // Legend section - each item gets its own code with product name + tier details
+    // Legend section - each tier gets its own code with product name + detail
     lines.push({ text: 'LEGENDE OFFRES:', bold: true });
     lines.push({ dotSeparator: true });
-    for (const info of offerCodes) {
-      // Line 1: code + product name
-      lines.push({ text: `${info.code}: ${info.productName}` });
-      // Line 2: tier details indented
-      lines.push({ text: `  ${info.details.substring(0, 28)}` });
+    for (const entry of legendEntries) {
+      lines.push({ text: `${entry.code}: ${entry.productName}` });
+      lines.push({ text: `  ${entry.detail.substring(0, 28)}` });
     }
     lines.push({ separator: true });
 
