@@ -212,6 +212,62 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
     }
   }, [locations, t, dir, highlightWorkerId]);
 
+  // Fetch and draw route from highlighted worker to warehouse
+  useEffect(() => {
+    if (!mapRef.current || !highlightWorkerId || !showOnlyHighlighted || !locations) return;
+
+    const loc = locations.find(l => l.worker_id === highlightWorkerId);
+    if (!loc || loc.has_location === false) {
+      // Clear existing route
+      if (routeLayerRef.current && mapRef.current) {
+        mapRef.current.removeLayer(routeLayerRef.current);
+        routeLayerRef.current = null;
+      }
+      setRouteInfo(null);
+      return;
+    }
+
+    const fetchRoute = async () => {
+      try {
+        const url = `https://router.project-osrm.org/route/v1/driving/${loc.longitude},${loc.latitude};${WAREHOUSE_LOCATION.lng},${WAREHOUSE_LOCATION.lat}?overview=full&geometries=geojson`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.code !== 'Ok' || !data.routes?.length || !mapRef.current) return;
+
+        const route = data.routes[0];
+        const coords: [number, number][] = route.geometry.coordinates.map(
+          (c: [number, number]) => [c[1], c[0]]
+        );
+
+        // Remove old route
+        if (routeLayerRef.current && mapRef.current) {
+          mapRef.current.removeLayer(routeLayerRef.current);
+        }
+
+        // Draw new route
+        routeLayerRef.current = L.polyline(coords, {
+          color: '#3b82f6',
+          weight: 5,
+          opacity: 0.7,
+          dashArray: '10, 8',
+        }).addTo(mapRef.current);
+
+        // Fit bounds to show full route
+        mapRef.current.fitBounds(routeLayerRef.current.getBounds(), { padding: [50, 50] });
+
+        setRouteInfo({
+          distance: route.distance,
+          duration: route.duration,
+        });
+      } catch (err) {
+        console.error('Route fetch error:', err);
+      }
+    };
+
+    fetchRoute();
+  }, [locations, highlightWorkerId, showOnlyHighlighted]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
