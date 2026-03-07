@@ -126,6 +126,59 @@ const WorkerActions: React.FC = () => {
     },
   });
 
+  const todayName = JS_DAY_TO_NAME[new Date().getDay()] || '';
+
+  // Fetch sectors for today's assignments
+  const { data: sectors = [] } = useQuery({
+    queryKey: ['worker-actions-sectors', activeBranch?.id],
+    queryFn: async () => {
+      let query = supabase.from('sectors').select('id, name, name_fr, sales_worker_id, delivery_worker_id, visit_day_sales, visit_day_delivery');
+      if (activeBranch?.id) query = query.eq('branch_id', activeBranch.id);
+      const { data } = await query;
+      return data || [];
+    },
+  });
+
+  // Fetch worker roles
+  const { data: workerRolesData = [] } = useQuery({
+    queryKey: ['worker-actions-roles', activeBranch?.id],
+    queryFn: async () => {
+      let query = supabase.from('worker_roles').select('worker_id, custom_roles(name_ar, code)');
+      if (activeBranch?.id) query = query.eq('branch_id', activeBranch.id);
+      const { data } = await query;
+      return data || [];
+    },
+  });
+
+  // Build worker role labels map
+  const workerRoleLabels = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const wr of workerRolesData) {
+      const roleName = (wr as any).custom_roles?.name_ar;
+      if (roleName && wr.worker_id) {
+        map[wr.worker_id] = map[wr.worker_id] ? `${map[wr.worker_id]}، ${roleName}` : roleName;
+      }
+    }
+    return map;
+  }, [workerRolesData]);
+
+  // Build today's sector assignments per worker
+  const workerTodaySectors = useMemo(() => {
+    const map: Record<string, { delivery: string[]; sales: string[] }> = {};
+    for (const s of sectors) {
+      const sectorName = getLocalizedName(s, language);
+      if (s.visit_day_delivery === todayName && s.delivery_worker_id) {
+        if (!map[s.delivery_worker_id]) map[s.delivery_worker_id] = { delivery: [], sales: [] };
+        map[s.delivery_worker_id].delivery.push(sectorName);
+      }
+      if (s.visit_day_sales === todayName && s.sales_worker_id) {
+        if (!map[s.sales_worker_id]) map[s.sales_worker_id] = { delivery: [], sales: [] };
+        map[s.sales_worker_id].sales.push(sectorName);
+      }
+    }
+    return map;
+  }, [sectors, todayName, language]);
+
   const { data: truckStock = [] } = useQuery({
     queryKey: ['worker-truck-stock', selectedWorker?.id],
     queryFn: async () => {
