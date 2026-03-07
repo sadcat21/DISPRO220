@@ -85,7 +85,7 @@ const SectorCustomersPopover: React.FC = () => {
   const [showPrintReceipt, setShowPrintReceipt] = useState(false);
 
   const { data: sectors = [] } = useQuery({
-    queryKey: ['sectors-with-customers', workerId, activeBranch?.id],
+    queryKey: ['sectors-with-customers', effectiveWorkerId, activeBranch?.id],
     queryFn: async () => {
       let query = supabase.from('sectors').select('*');
       if (activeBranch) query = query.eq('branch_id', activeBranch.id);
