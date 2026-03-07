@@ -3,6 +3,7 @@ import { Loader2 } from 'lucide-react';
 
 interface LazyWorkerTrackingMapProps {
   highlightWorkerId?: string;
+  trackableWorkerIds?: string[];
 }
 
 const LazyWorkerTrackingMap: React.FC<LazyWorkerTrackingMapProps> = ({ highlightWorkerId }) => {
