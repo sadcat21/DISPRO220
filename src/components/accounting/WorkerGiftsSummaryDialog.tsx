@@ -73,9 +73,48 @@ function transliterate(text: string): string {
   return result.replace(/\s+/g, ' ').trim().substring(0, 20);
 }
 
+type OfferTierRule = {
+  minQuantity: number;
+  minQuantityUnit: 'box' | 'piece';
+  giftQuantity: number;
+  giftQuantityUnit: 'box' | 'piece';
+  tierOrder: number;
+  detail: string;
+};
+
+const normalizeOfferUnit = (unit: string | null | undefined): 'box' | 'piece' =>
+  unit === 'box' ? 'box' : 'piece';
+
+const toOfferDetail = (
+  minQuantity: number,
+  minUnit: 'box' | 'piece',
+  giftQuantity: number,
+  giftUnit: 'box' | 'piece'
+): string => `${minQuantity}${minUnit === 'box' ? 'BOX' : 'PCS'}+${giftQuantity}${giftUnit === 'box' ? 'BOX' : 'PCS'}`;
+
+const resolveAppliedOfferDetail = ({
+  rules,
+  soldQuantity,
+  piecesPerBox,
+}: {
+  rules: OfferTierRule[];
+  soldQuantity: number;
+  piecesPerBox: number;
+}): string => {
+  if (!rules.length) return '';
+
+  const safePieces = Math.max(1, piecesPerBox || 1);
+  const matchingRules = rules.filter((rule) => {
+    const soldComparable = rule.minQuantityUnit === 'box' ? soldQuantity : soldQuantity * safePieces;
+    return soldComparable + 1e-6 >= rule.minQuantity;
+  });
+
+  return (matchingRules.length > 0 ? matchingRules[matchingRules.length - 1] : rules[0]).detail;
+};
+
 const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerId, workerName }) => {
   const { activeBranch } = useAuth();
-  const { isConnected, scanAndConnect, printReceipt } = useBluetoothPrinter();
+  const { isConnected, scanAndConnect } = useBluetoothPrinter();
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   const [allWorkers, setAllWorkers] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -143,41 +182,72 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
         .in('order_id', orderIds)
         .gt('gift_quantity', 0);
 
-      // Fetch offer names
+      // Fetch offer names + rules (single tier or multi-tier)
       const giftOfferIds = new Set<string>();
       (items || []).forEach(i => { if (i.gift_offer_id) giftOfferIds.add(i.gift_offer_id); });
-      let offerNamesMap: Record<string, string> = {};
-      let offerDetailsMap: Record<string, string[]> = {};
+      const offerNamesMap: Record<string, string> = {};
+      const offerRulesMap: Record<string, OfferTierRule[]> = {};
+
       if (giftOfferIds.size > 0) {
+        const offerIds = Array.from(giftOfferIds);
         const { data: offers } = await supabase
           .from('product_offers')
-          .select('id, name, min_quantity, min_quantity_unit, gift_quantity, gift_quantity_unit, condition_type')
-          .in('id', Array.from(giftOfferIds));
-        (offers || []).forEach(o => { 
+          .select('id, name, min_quantity, min_quantity_unit, gift_quantity, gift_quantity_unit')
+          .in('id', offerIds);
+
+        (offers || []).forEach((o: any) => {
           offerNamesMap[o.id] = o.name;
-          const minU = o.min_quantity_unit === 'box' ? 'BOX' : 'PCS';
-          const giftU = o.gift_quantity_unit === 'box' ? 'BOX' : 'PCS';
-          offerDetailsMap[o.id] = [`${o.min_quantity}${minU}+${o.gift_quantity}${giftU} Promo`];
+          const minQuantityUnit = normalizeOfferUnit(o.min_quantity_unit);
+          const giftQuantityUnit = normalizeOfferUnit(o.gift_quantity_unit);
+          const minQuantity = Number(o.min_quantity || 0);
+          const giftQuantity = Number(o.gift_quantity || 0);
+
+          offerRulesMap[o.id] = [{
+            minQuantity,
+            minQuantityUnit,
+            giftQuantity,
+            giftQuantityUnit,
+            tierOrder: 0,
+            detail: toOfferDetail(minQuantity, minQuantityUnit, giftQuantity, giftQuantityUnit),
+          }];
         });
-        // Also fetch tiers for multi-tier offers
+
+        // Multi-tier: replace default rule with explicit tier rules
         const { data: tiers } = await supabase
           .from('product_offer_tiers')
           .select('offer_id, min_quantity, min_quantity_unit, gift_quantity, gift_quantity_unit, tier_order')
-          .in('offer_id', Array.from(giftOfferIds))
+          .in('offer_id', offerIds)
           .order('tier_order', { ascending: true });
+
         if (tiers && tiers.length > 0) {
-          const tiersByOffer: Record<string, typeof tiers> = {};
-          tiers.forEach(t => {
-            if (!tiersByOffer[t.offer_id!]) tiersByOffer[t.offer_id!] = [];
-            tiersByOffer[t.offer_id!].push(t);
+          const tiersByOffer: Record<string, any[]> = {};
+          tiers.forEach((t: any) => {
+            if (!t.offer_id) return;
+            if (!tiersByOffer[t.offer_id]) tiersByOffer[t.offer_id] = [];
+            tiersByOffer[t.offer_id].push(t);
           });
+
           for (const [oid, offerTiers] of Object.entries(tiersByOffer)) {
-            if (offerTiers.length > 0) {
-              offerDetailsMap[oid] = offerTiers.map(t => {
-                const mU = t.min_quantity_unit === 'box' ? 'BOX' : 'PCS';
-                const gU = t.gift_quantity_unit === 'box' ? 'BOX' : 'PCS';
-                return `${t.min_quantity}${mU}+${t.gift_quantity}${gU} Promo`;
-              });
+            const mappedRules: OfferTierRule[] = offerTiers
+              .map((t: any) => {
+                const minQuantityUnit = normalizeOfferUnit(t.min_quantity_unit);
+                const giftQuantityUnit = normalizeOfferUnit(t.gift_quantity_unit);
+                const minQuantity = Number(t.min_quantity || 0);
+                const giftQuantity = Number(t.gift_quantity || 0);
+                return {
+                  minQuantity,
+                  minQuantityUnit,
+                  giftQuantity,
+                  giftQuantityUnit,
+                  tierOrder: Number(t.tier_order || 0),
+                  detail: toOfferDetail(minQuantity, minQuantityUnit, giftQuantity, giftQuantityUnit),
+                };
+              })
+              .filter(rule => rule.minQuantity > 0 && rule.giftQuantity > 0)
+              .sort((a, b) => (a.tierOrder - b.tierOrder) || (a.minQuantity - b.minQuantity));
+
+            if (mappedRules.length > 0) {
+              offerRulesMap[oid] = mappedRules;
             }
           }
         }
@@ -194,9 +264,16 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
         const rawGift = Number(item.gift_quantity || 0);
         const isDirectSale = String(order?.notes || '').includes('بيع مباشر');
         const giftPieces = (isDirectSale || piecesPerBox <= 1) ? rawGift : rawGift * piecesPerBox;
+        const soldQty = Math.max(0, Number(item.quantity || 0) - (piecesPerBox > 0 ? giftPieces / piecesPerBox : 0));
 
         const offerId = item.gift_offer_id || 'unknown';
-        const key = `${item.product_id}_${offerId}`;
+        const offerRules = offerRulesMap[offerId] || [];
+        const appliedOfferDetail = resolveAppliedOfferDetail({
+          rules: offerRules,
+          soldQuantity: soldQty,
+          piecesPerBox,
+        }) || offerRules[0]?.detail || '';
+        const key = `${item.product_id}_${offerId}_${appliedOfferDetail || 'default'}`;
 
         if (!agg[key]) {
           agg[key] = {
@@ -207,12 +284,11 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
             totalGiftPieces: 0,
             totalQuantitySold: 0,
             offerName: offerNamesMap[offerId] || '',
-            offerDetails: offerDetailsMap[offerId] || [],
+            offerDetails: appliedOfferDetail ? [appliedOfferDetail] : [],
             customers: [],
           };
         }
 
-        const soldQty = Math.max(0, Number(item.quantity || 0) - (piecesPerBox > 0 ? giftPieces / piecesPerBox : 0));
         agg[key].totalGiftPieces += giftPieces;
         agg[key].totalQuantitySold += soldQty;
 
@@ -306,7 +382,7 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
           totalGiftPieces: extra,
           totalQuantitySold: promoAgg.totalVente,
           offerName: 'عرض ترويجي',
-          offerDetails: ['Promo directe'],
+          offerDetails: ['Directe'],
           customers: promoAgg.customers,
         };
       }
