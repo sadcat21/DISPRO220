@@ -75,8 +75,17 @@ const PromoSplits: React.FC = () => {
           {filtered.map(split => {
             const st = statusLabels[split.status] || statusLabels.active;
             const totalDelivered = getTotalDelivered(split);
-            const progress = split.target_quantity > 0 ? Math.min(100, (totalDelivered / Number(split.target_quantity)) * 100) : 0;
-            const effectiveGift = split.adjusted_gift_quantity ?? split.gift_quantity;
+            const targetQuantity = Number(split.target_quantity || 0);
+            const progressRaw = targetQuantity > 0 ? (totalDelivered / targetQuantity) * 100 : 0;
+            const progressBar = Math.min(100, progressRaw);
+            const effectiveGift = Number(split.adjusted_gift_quantity ?? split.gift_quantity);
+
+            const isGrouped = split.split_type === 'customer_group';
+            const completedGroups = isGrouped && targetQuantity > 0 ? Math.floor(totalDelivered / targetQuantity) : 0;
+            const remainingToNextGroup = isGrouped && targetQuantity > 0
+              ? Math.max(0, targetQuantity - (totalDelivered % targetQuantity || 0))
+              : 0;
+            const totalEligiblePromo = isGrouped ? completedGroups * effectiveGift : effectiveGift;
 
             return (
               <Card key={split.id} className="overflow-hidden">
@@ -114,21 +123,31 @@ const PromoSplits: React.FC = () => {
                   {/* Progress */}
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs">
-                      <span>التقدم: {totalDelivered} / {Number(split.target_quantity)} {split.target_quantity_unit === 'box' ? 'صندوق' : 'قطعة'}</span>
-                      <span>{progress.toFixed(0)}%</span>
+                      <span>التقدم: {totalDelivered} / {targetQuantity} {split.target_quantity_unit === 'box' ? 'صندوق' : 'قطعة'}</span>
+                      <span>{progressRaw.toFixed(0)}%</span>
                     </div>
                     <div className="w-full bg-muted rounded-full h-2">
                       <div
                         className="bg-primary h-2 rounded-full transition-all"
-                        style={{ width: `${progress}%` }}
+                        style={{ width: `${progressBar}%` }}
                       />
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      الهدية: {effectiveGift} {split.gift_quantity_unit === 'box' ? 'صندوق' : 'قطعة'}
-                      {split.adjusted_gift_quantity !== null && split.adjusted_gift_quantity !== split.gift_quantity && (
-                        <span className="text-amber-600 mr-1">(معدلة من {Number(split.gift_quantity)})</span>
-                      )}
-                    </div>
+                    {isGrouped ? (
+                      <div className="text-xs text-muted-foreground space-y-0.5">
+                        <div>العرض لكل مجموعة: {effectiveGift} {split.gift_quantity_unit === 'box' ? 'صندوق' : 'قطعة'}</div>
+                        <div>المجموعات المكتملة: {completedGroups} • العرض المستحق: {totalEligiblePromo}</div>
+                        {targetQuantity > 0 && remainingToNextGroup > 0 && (
+                          <div>المتبقي للمجموعة التالية: {remainingToNextGroup} {split.target_quantity_unit === 'box' ? 'صندوق' : 'قطعة'}</div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground">
+                        العرض: {effectiveGift} {split.gift_quantity_unit === 'box' ? 'صندوق' : 'قطعة'}
+                        {split.adjusted_gift_quantity !== null && split.adjusted_gift_quantity !== split.gift_quantity && (
+                          <span className="mr-1">(معدلة من {Number(split.gift_quantity)})</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
