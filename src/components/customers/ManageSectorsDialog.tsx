@@ -30,13 +30,17 @@ interface SectorZone {
 }
 
 const DAYS = [
-  { value: 'saturday', label: 'السبت' },
-  { value: 'sunday', label: 'الأحد' },
-  { value: 'monday', label: 'الاثنين' },
-  { value: 'tuesday', label: 'الثلاثاء' },
-  { value: 'wednesday', label: 'الأربعاء' },
-  { value: 'thursday', label: 'الخميس' },
+  { value: 'saturday', label: 'السبت', order: 0 },
+  { value: 'sunday', label: 'الأحد', order: 1 },
+  { value: 'monday', label: 'الاثنين', order: 2 },
+  { value: 'tuesday', label: 'الثلاثاء', order: 3 },
+  { value: 'wednesday', label: 'الأربعاء', order: 4 },
+  { value: 'thursday', label: 'الخميس', order: 5 },
 ];
+
+const DAY_ORDER: Record<string, number> = {
+  saturday: 0, sunday: 1, monday: 2, tuesday: 3, wednesday: 4, thursday: 5,
+};
 
 const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenChange }) => {
   const { workerId, activeBranch } = useAuth();
@@ -80,6 +84,22 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
     if (filterWorker !== 'all' && s.sales_worker_id !== filterWorker && s.delivery_worker_id !== filterWorker) return false;
     return true;
   });
+
+  // Sort sectors by earliest day (delivery or sales)
+  const getSectorDayOrder = (s: Sector) => {
+    const salesOrder = s.visit_day_sales ? DAY_ORDER[s.visit_day_sales] ?? 99 : 99;
+    const deliveryOrder = s.visit_day_delivery ? DAY_ORDER[s.visit_day_delivery] ?? 99 : 99;
+    return Math.min(salesOrder, deliveryOrder);
+  };
+
+  const sortedFilteredSectors = [...filteredSectors].sort((a, b) => getSectorDayOrder(a) - getSectorDayOrder(b));
+
+  // Group by day when no filters active
+  const isFiltered = filterType !== 'all' || filterDay !== 'all' || filterWorker !== 'all';
+  const groupedByDay = !isFiltered ? DAYS.map(day => ({
+    day,
+    sectors: filteredSectors.filter(s => s.visit_day_sales === day.value || s.visit_day_delivery === day.value),
+  })).filter(g => g.sectors.length > 0) : null;
   useEffect(() => {
     if (open) {
       fetchWorkers();
@@ -303,6 +323,96 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
     if (!day) return null;
     return DAYS.find(d => d.value === day)?.label;
   };
+
+  const renderSectorContent = (sector: Sector, sectorZones: SectorZone[]) => (
+    <>
+      <div className="flex items-start justify-between">
+        <div className="space-y-1.5 flex-1">
+          <p className="font-bold text-sm">{sector.name}</p>
+          {(sector as any).name_fr && (
+            <p className="text-xs text-muted-foreground" dir="ltr">{(sector as any).name_fr}</p>
+          )}
+          <Badge variant="default" className={`text-[10px] w-fit ${(sector as any).sector_type === 'cash_van' ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`}>
+            {(sector as any).sector_type === 'cash_van' ? 'Cash Van' : 'Prévente'}
+          </Badge>
+          <div className="flex flex-wrap gap-1.5">
+            {getDayLabel(sector.visit_day_sales) && (
+              <Badge variant="outline" className="text-[10px] px-1.5">
+                <Calendar className="w-2.5 h-2.5 ml-0.5" />
+                طلبات: {getDayLabel(sector.visit_day_sales)}
+              </Badge>
+            )}
+            {getDayLabel(sector.visit_day_delivery) && (
+              <Badge variant="outline" className="text-[10px] px-1.5">
+                <Truck className="w-2.5 h-2.5 ml-0.5" />
+                توصيل: {getDayLabel(sector.visit_day_delivery)}
+              </Badge>
+            )}
+            {sectorZones.length > 0 && (
+              <Badge variant="secondary" className="text-[10px] px-1.5">
+                <Layers className="w-2.5 h-2.5 ml-0.5" />
+                {sectorZones.length} منطقة
+              </Badge>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {getWorkerName(sector.sales_worker_id) && (
+              <Badge variant="secondary" className="text-[10px] px-1.5">
+                <UserCheck className="w-2.5 h-2.5 ml-0.5" />
+                {getWorkerName(sector.sales_worker_id)}
+              </Badge>
+            )}
+            {getWorkerName(sector.delivery_worker_id) && (
+              <Badge variant="secondary" className="text-[10px] px-1.5">
+                <Truck className="w-2.5 h-2.5 ml-0.5" />
+                {getWorkerName(sector.delivery_worker_id)}
+              </Badge>
+            )}
+          </div>
+        </div>
+        <div className="flex gap-1">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setExpandedZonesSector(expandedZonesSector === sector.id ? null : sector.id)} title="المناطق">
+            <Layers className="w-3.5 h-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditForm(sector)}>
+            <Pencil className="w-3.5 h-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setSectorToDelete(sector)}>
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      </div>
+      {expandedZonesSector === sector.id && (
+        <div className="mt-3 pt-3 border-t space-y-2">
+          <Label className="text-xs font-semibold flex items-center gap-1">
+            <Layers className="w-3 h-3" />
+            المناطق
+          </Label>
+          {sectorZones.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {sectorZones.map(zone => (
+                <Badge key={zone.id} variant="outline" className="text-xs flex items-center gap-1 pr-1">
+                  {zone.name}{zone.name_fr ? ` (${zone.name_fr})` : ''}
+                  <button onClick={() => handleDeleteZone(zone.id)} className="hover:text-destructive">
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">لا توجد مناطق</p>
+          )}
+          <div className="flex gap-2">
+            <Input value={newZoneName} onChange={e => setNewZoneName(e.target.value)} placeholder="اسم المنطقة..." className="text-right text-sm flex-1" onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddZoneToExisting(sector.id); } }} />
+            <Input value={newZoneNameFr} onChange={e => setNewZoneNameFr(e.target.value)} placeholder="Nom..." dir="ltr" className="text-sm flex-1" onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddZoneToExisting(sector.id); } }} />
+            <Button variant="outline" size="sm" onClick={() => handleAddZoneToExisting(sector.id)} disabled={!newZoneName.trim() || addingZone}>
+              {addingZone ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+            </Button>
+          </div>
+        </div>
+      )}
+    </>
+  );
 
   return (
     <>
@@ -533,112 +643,34 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
                 <MapPin className="w-10 h-10 mx-auto mb-2 opacity-30" />
                 <p className="text-sm">{sectors.length === 0 ? 'لا توجد سكتورات بعد' : 'لا توجد نتائج'}</p>
               </div>
-            ) : (
-              filteredSectors.map(sector => {
+            ) : groupedByDay ? (
+              // Grouped by day view
+              groupedByDay.map(group => (
+                <div key={group.day.value} className="space-y-2">
+                  <div className="sticky top-0 z-10 bg-muted/80 backdrop-blur-sm px-3 py-1.5 rounded-md border flex items-center gap-2">
+                    <Calendar className="w-3.5 h-3.5 text-primary" />
+                    <span className="text-xs font-bold text-primary">{group.day.label}</span>
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">{group.sectors.length}</Badge>
+                  </div>
+                  {group.sectors.map(sector => {
                 const sectorZones = zonesMap[sector.id] || [];
                 return (
                   <Card key={sector.id}>
                     <CardContent className="p-3">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1.5 flex-1">
-                          <p className="font-bold text-sm">{sector.name}</p>
-                          {(sector as any).name_fr && (
-                            <p className="text-xs text-muted-foreground" dir="ltr">{(sector as any).name_fr}</p>
-                          )}
-                          <Badge variant={(sector as any).sector_type === 'cash_van' ? 'default' : 'default'} className={`text-[10px] w-fit ${(sector as any).sector_type === 'cash_van' ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`}>
-                            {(sector as any).sector_type === 'cash_van' ? 'Cash Van' : 'Prévente'}
-                          </Badge>
-                          <div className="flex flex-wrap gap-1.5">
-                            {getDayLabel(sector.visit_day_sales) && (
-                              <Badge variant="outline" className="text-[10px] px-1.5">
-                                <Calendar className="w-2.5 h-2.5 ml-0.5" />
-                                طلبات: {getDayLabel(sector.visit_day_sales)}
-                              </Badge>
-                            )}
-                            {getDayLabel(sector.visit_day_delivery) && (
-                              <Badge variant="outline" className="text-[10px] px-1.5">
-                                <Truck className="w-2.5 h-2.5 ml-0.5" />
-                                توصيل: {getDayLabel(sector.visit_day_delivery)}
-                              </Badge>
-                            )}
-                            {sectorZones.length > 0 && (
-                              <Badge variant="secondary" className="text-[10px] px-1.5">
-                                <Layers className="w-2.5 h-2.5 ml-0.5" />
-                                {sectorZones.length} منطقة
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {getWorkerName(sector.sales_worker_id) && (
-                              <Badge variant="secondary" className="text-[10px] px-1.5">
-                                <UserCheck className="w-2.5 h-2.5 ml-0.5" />
-                                {getWorkerName(sector.sales_worker_id)}
-                              </Badge>
-                            )}
-                            {getWorkerName(sector.delivery_worker_id) && (
-                              <Badge variant="secondary" className="text-[10px] px-1.5">
-                                <Truck className="w-2.5 h-2.5 ml-0.5" />
-                                {getWorkerName(sector.delivery_worker_id)}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setExpandedZonesSector(expandedZonesSector === sector.id ? null : sector.id)} title="المناطق">
-                            <Layers className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditForm(sector)}>
-                            <Pencil className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setSectorToDelete(sector)}>
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* Zones expandable section */}
-                      {expandedZonesSector === sector.id && (
-                        <div className="mt-3 pt-3 border-t space-y-2">
-                          <Label className="text-xs font-semibold flex items-center gap-1">
-                            <Layers className="w-3 h-3" />
-                            المناطق
-                          </Label>
-                          {sectorZones.length > 0 ? (
-                            <div className="flex flex-wrap gap-1.5">
-                              {sectorZones.map(zone => (
-                                <Badge key={zone.id} variant="outline" className="text-xs flex items-center gap-1 pr-1">
-                                  {zone.name}{zone.name_fr ? ` (${zone.name_fr})` : ''}
-                                  <button onClick={() => handleDeleteZone(zone.id)} className="hover:text-destructive">
-                                    <X className="w-3 h-3" />
-                                  </button>
-                                </Badge>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-xs text-muted-foreground">لا توجد مناطق</p>
-                          )}
-                          <div className="flex gap-2">
-                            <Input
-                              value={newZoneName}
-                              onChange={e => setNewZoneName(e.target.value)}
-                              placeholder="اسم المنطقة..."
-                              className="text-right text-sm flex-1"
-                              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddZoneToExisting(sector.id); } }}
-                            />
-                            <Input
-                              value={newZoneNameFr}
-                              onChange={e => setNewZoneNameFr(e.target.value)}
-                              placeholder="Nom..."
-                              dir="ltr"
-                              className="text-sm flex-1"
-                              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddZoneToExisting(sector.id); } }}
-                            />
-                            <Button variant="outline" size="sm" onClick={() => handleAddZoneToExisting(sector.id)} disabled={!newZoneName.trim() || addingZone}>
-                              {addingZone ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-                            </Button>
-                          </div>
-                        </div>
-                      )}
+                      {renderSectorContent(sector, sectorZones)}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+                </div>
+              ))
+            ) : (
+              sortedFilteredSectors.map(sector => {
+                const sectorZones = zonesMap[sector.id] || [];
+                return (
+                  <Card key={sector.id}>
+                    <CardContent className="p-3">
+                      {renderSectorContent(sector, sectorZones)}
                     </CardContent>
                   </Card>
                 );
