@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { usePromoSplits, PromoSplitWithDetails } from '@/hooks/usePromoSplits';
@@ -10,6 +11,7 @@ import { useProductOffers } from '@/hooks/useProductOffers';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { Layers } from 'lucide-react';
 
 interface Props {
   open: boolean;
@@ -25,6 +27,7 @@ const CreatePromoSplitDialog: React.FC<Props> = ({ open, onOpenChange, editSplit
   const [name, setName] = useState('');
   const [splitType, setSplitType] = useState<string>('quantity_accumulation');
   const [offerId, setOfferId] = useState<string>('none');
+  const [selectedTierIndex, setSelectedTierIndex] = useState<string>('0');
   const [productId, setProductId] = useState('');
   const [targetQty, setTargetQty] = useState('');
   const [targetUnit, setTargetUnit] = useState('box');
@@ -43,6 +46,17 @@ const CreatePromoSplitDialog: React.FC<Props> = ({ open, onOpenChange, editSplit
     },
   });
 
+  // Get the selected offer and its tiers
+  const selectedOffer = useMemo(() => {
+    if (!offerId || offerId === 'none') return null;
+    return activeOffers.find(o => o.id === offerId) || null;
+  }, [offerId, activeOffers]);
+
+  const offerTiers = useMemo(() => {
+    if (!selectedOffer?.tiers?.length) return [];
+    return selectedOffer.tiers;
+  }, [selectedOffer]);
+
   useEffect(() => {
     if (editSplit) {
       setName(editSplit.name);
@@ -56,29 +70,45 @@ const CreatePromoSplitDialog: React.FC<Props> = ({ open, onOpenChange, editSplit
       setAdjustedGift(editSplit.adjusted_gift_quantity != null ? String(editSplit.adjusted_gift_quantity) : '');
       setGiftProductId(editSplit.gift_product_id || 'none');
       setNotes(editSplit.notes || '');
+      setSelectedTierIndex('0');
     } else {
-      setName(''); setSplitType('quantity_accumulation'); setOfferId('');
+      setName(''); setSplitType('quantity_accumulation'); setOfferId('none');
       setProductId(''); setTargetQty(''); setTargetUnit('box');
       setGiftQty(''); setGiftUnit('box'); setAdjustedGift('');
-      setGiftProductId(''); setNotes('');
+      setGiftProductId('none'); setNotes(''); setSelectedTierIndex('0');
     }
   }, [editSplit, open]);
 
-  // Auto-fill from selected offer
+  // Auto-fill from selected offer/tier
   useEffect(() => {
-    if (offerId) {
-      const offer = activeOffers.find(o => o.id === offerId);
-      if (offer) {
-        setProductId(offer.product_id);
-        setTargetQty(String(offer.min_quantity));
-        setTargetUnit(offer.min_quantity_unit || 'box');
-        setGiftQty(String(offer.gift_quantity));
-        setGiftUnit(offer.gift_quantity_unit || 'box');
-        if (offer.gift_product_id) setGiftProductId(offer.gift_product_id);
-        if (!name) setName(`تجزئة: ${offer.name}`);
+    if (!offerId || offerId === 'none') return;
+    const offer = activeOffers.find(o => o.id === offerId);
+    if (!offer) return;
+
+    setProductId(offer.product_id);
+
+    // If offer has tiers, use the selected tier
+    if (offer.tiers?.length) {
+      const tierIdx = parseInt(selectedTierIndex) || 0;
+      const tier = offer.tiers[tierIdx];
+      if (tier) {
+        setTargetQty(String(tier.min_quantity));
+        setTargetUnit(tier.min_quantity_unit || 'box');
+        setGiftQty(String(tier.gift_quantity));
+        setGiftUnit(tier.gift_quantity_unit || 'box');
+        if (tier.gift_product_id) setGiftProductId(tier.gift_product_id);
       }
+    } else {
+      // Fallback to offer-level values
+      setTargetQty(String(offer.min_quantity));
+      setTargetUnit(offer.min_quantity_unit || 'box');
+      setGiftQty(String(offer.gift_quantity));
+      setGiftUnit(offer.gift_quantity_unit || 'box');
+      if (offer.gift_product_id) setGiftProductId(offer.gift_product_id);
     }
-  }, [offerId]);
+
+    if (!name) setName(`تجزئة: ${offer.name}`);
+  }, [offerId, selectedTierIndex]);
 
   const handleSave = async () => {
     if (!name || !productId || !targetQty || !giftQty) return;
@@ -111,6 +141,13 @@ const CreatePromoSplitDialog: React.FC<Props> = ({ open, onOpenChange, editSplit
     }
   };
 
+  const formatTierLabel = (tier: any, index: number) => {
+    const unit = tier.min_quantity_unit === 'piece' ? 'قطعة' : 'صندوق';
+    const gUnit = tier.gift_quantity_unit === 'piece' ? 'قطعة' : 'صندوق';
+    const maxLabel = tier.max_quantity ? ` → ${tier.max_quantity}` : '+';
+    return `شريحة ${index + 1}: ${tier.min_quantity}${maxLabel} ${unit} = ${tier.gift_quantity} ${gUnit} عرض`;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
@@ -131,7 +168,7 @@ const CreatePromoSplitDialog: React.FC<Props> = ({ open, onOpenChange, editSplit
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="quantity_accumulation">تجميع كميات (عميل واحد - دفعات)</SelectItem>
-                <SelectItem value="customer_group">تجميع عملاء (عدة عملاء - تقسيم الهدية)</SelectItem>
+                <SelectItem value="customer_group">تجميع عملاء (عدة عملاء - تقسيم العرض)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -139,16 +176,61 @@ const CreatePromoSplitDialog: React.FC<Props> = ({ open, onOpenChange, editSplit
           {/* Offer selection */}
           <div className="space-y-1">
             <Label>العرض المرتبط (اختياري)</Label>
-            <Select value={offerId} onValueChange={setOfferId}>
+            <Select value={offerId} onValueChange={(v) => { setOfferId(v); setSelectedTierIndex('0'); }}>
               <SelectTrigger><SelectValue placeholder="اختر العرض..." /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">بدون عرض</SelectItem>
                 {activeOffers.map(o => (
-                  <SelectItem key={o.id} value={o.id}>{o.name} - {o.product?.name}</SelectItem>
+                  <SelectItem key={o.id} value={o.id}>
+                    {o.name} - {o.product?.name}
+                    {o.tiers && o.tiers.length > 1 ? ` (${o.tiers.length} شرائح)` : ''}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
+          {/* Tier selection - show when offer has multiple tiers */}
+          {offerTiers.length > 0 && (
+            <div className="space-y-1">
+              <Label className="flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5" />
+                اختر الشريحة ({offerTiers.length} شرائح متاحة)
+              </Label>
+              <div className="space-y-1.5">
+                {offerTiers.map((tier, idx) => (
+                  <div
+                    key={tier.id || idx}
+                    className={`flex items-center gap-2 p-2.5 rounded-lg border-2 cursor-pointer transition-all ${
+                      selectedTierIndex === String(idx)
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/40'
+                    }`}
+                    onClick={() => setSelectedTierIndex(String(idx))}
+                  >
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                      selectedTierIndex === String(idx)
+                        ? 'border-primary bg-primary'
+                        : 'border-muted-foreground/30'
+                    }`}>
+                      {selectedTierIndex === String(idx) && (
+                        <div className="w-2 h-2 rounded-full bg-primary-foreground" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{formatTierLabel(tier, idx)}</p>
+                      {tier.gift_type === 'different_product' && tier.gift_product_id && (
+                        <p className="text-[10px] text-muted-foreground">منتج مختلف</p>
+                      )}
+                    </div>
+                    {selectedTierIndex === String(idx) && (
+                      <Badge variant="default" className="text-[9px] shrink-0">محدد</Badge>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Product */}
           <div className="space-y-1">
@@ -184,11 +266,11 @@ const CreatePromoSplitDialog: React.FC<Props> = ({ open, onOpenChange, editSplit
           {/* Gift Quantity */}
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <Label>كمية الهدية الأصلية *</Label>
+              <Label>كمية العرض الأصلية *</Label>
               <Input type="number" value={giftQty} onChange={e => setGiftQty(e.target.value)} placeholder="25" />
             </div>
             <div className="space-y-1">
-              <Label>وحدة الهدية</Label>
+              <Label>وحدة العرض</Label>
               <Select value={giftUnit} onValueChange={setGiftUnit}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -201,13 +283,13 @@ const CreatePromoSplitDialog: React.FC<Props> = ({ open, onOpenChange, editSplit
 
           {/* Adjusted Gift */}
           <div className="space-y-1">
-            <Label>كمية الهدية المعدلة (اختياري - خصم المدير)</Label>
+            <Label>كمية العرض المعدلة (اختياري - خصم المدير)</Label>
             <Input type="number" value={adjustedGift} onChange={e => setAdjustedGift(e.target.value)} placeholder="مثال: 20 بدلا من 25" />
           </div>
 
           {/* Gift Product */}
           <div className="space-y-1">
-            <Label>منتج الهدية (اختياري)</Label>
+            <Label>منتج العرض (اختياري)</Label>
             <Select value={giftProductId} onValueChange={setGiftProductId}>
               <SelectTrigger><SelectValue placeholder="نفس المنتج" /></SelectTrigger>
               <SelectContent>
