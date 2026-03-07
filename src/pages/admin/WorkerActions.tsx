@@ -486,7 +486,7 @@ const WorkerActions: React.FC = () => {
       </div>
 
 
-      {selectedWorker && (
+      {selectedWorker && !isSelfMode && (
         <div className="flex justify-end">
           <button
             type="button"
@@ -498,6 +498,7 @@ const WorkerActions: React.FC = () => {
           </button>
         </div>
       )}
+
 
       {!selectedWorker ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
