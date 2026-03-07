@@ -690,7 +690,12 @@ const SectorCustomersPopover: React.FC = () => {
           <div className="border-b px-2 py-1.5 shrink-0">
             <ScrollArea className="w-full" dir="rtl">
               <div className="flex gap-1.5 pb-1">
-                {workersList.map(w => {
+                {workersList.filter(w => {
+                  return sectors.some(s =>
+                    (s.delivery_worker_id === w.id && s.visit_day_delivery === todayName) ||
+                    (s.sales_worker_id === w.id && s.visit_day_sales === todayName)
+                  );
+                }).map(w => {
                   const isSelected = w.id === selectedAdminWorkerId;
                   return (
                     <button
