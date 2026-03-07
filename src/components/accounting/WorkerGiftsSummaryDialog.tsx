@@ -5,15 +5,16 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Gift, Package, User, Calendar, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Phone, MapPin, Printer, Users } from 'lucide-react';
+import { Gift, Package, User, Calendar, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Phone, MapPin, Printer, Users, ArrowRight } from 'lucide-react';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBluetoothPrinter } from '@/hooks/useBluetoothPrinter';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, addMonths, subMonths, isSameMonth } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import ThermalPreview, { ThermalLine } from '@/components/stock/ThermalPreview';
 
 interface Props {
   open: boolean;
