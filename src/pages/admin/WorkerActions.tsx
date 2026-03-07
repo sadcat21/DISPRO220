@@ -470,13 +470,13 @@ const WorkerActions: React.FC = () => {
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center gap-2">
-        {selectedWorker && (
+        {selectedWorker && !isSelfMode && (
           <button onClick={handleBack} className="p-1.5 rounded-lg hover:bg-muted">
             <ArrowRight className="w-5 h-5" />
           </button>
         )}
         <h2 className="text-xl font-bold">
-          {selectedWorker ? selectedWorker.full_name : t('worker_actions.title')}
+          {isSelfMode ? 'إجراءاتي' : selectedWorker ? selectedWorker.full_name : t('worker_actions.title')}
         </h2>
         {selectedWorker && liability && (
           <Badge variant={liability.totalLiability > 0 ? 'destructive' : 'outline'} className="mr-auto text-xs">
@@ -484,6 +484,7 @@ const WorkerActions: React.FC = () => {
           </Badge>
         )}
       </div>
+
 
       {selectedWorker && (
         <div className="flex justify-end">
