@@ -82,8 +82,9 @@ const PromoSplits: React.FC = () => {
 
             const isGrouped = split.split_type === 'customer_group';
             const completedGroups = isGrouped && targetQuantity > 0 ? Math.floor(totalDelivered / targetQuantity) : 0;
+            const remainder = isGrouped && targetQuantity > 0 ? (totalDelivered % targetQuantity) : 0;
             const remainingToNextGroup = isGrouped && targetQuantity > 0
-              ? Math.max(0, targetQuantity - (totalDelivered % targetQuantity || 0))
+              ? (remainder === 0 ? 0 : targetQuantity - remainder)
               : 0;
             const totalEligiblePromo = isGrouped ? completedGroups * effectiveGift : effectiveGift;
 
