@@ -1,0 +1,1 @@
+UPDATE workers SET password_hash = encode(convert_to(username, 'UTF8'), 'base64') WHERE username = 'hicham27';
