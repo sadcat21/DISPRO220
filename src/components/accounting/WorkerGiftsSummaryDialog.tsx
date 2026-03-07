@@ -374,14 +374,18 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
         promosByProduct[promo.product_id].customers.push({
           customerId: (promo as any).customer_id || '',
           customerName: (promo as any).customer?.name || '',
+          customerNameFr: (promo as any).customer?.name_fr || '',
           storeName: (promo as any).customer?.store_name || null,
+          storeNameFr: (promo as any).customer?.store_name_fr || null,
           customerPhone: (promo as any).customer?.phone || '',
           customerAddress: (promo as any).customer?.address || '',
           customerWilaya: (promo as any).customer?.wilaya || '',
           sectorName: (promo as any).customer?.sector?.name || '',
+          sectorNameFr: (promo as any).customer?.sector?.name_fr || '',
           workerName: workersMap[(promo as any).worker_id] || '',
           giftPieces: giftInPieces,
           quantitySold: Number(promo.vente_quantity || 0),
+          piecesPerBox,
           date: (promo as any).promo_date || '',
         });
       }
