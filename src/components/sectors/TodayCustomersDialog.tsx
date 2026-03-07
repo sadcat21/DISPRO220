@@ -196,7 +196,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         .from('debt_collections')
         .select('debt_id, action, amount_collected, status')
         .eq('collection_date', todayDateStr);
-      if (!isAdmin) {
+      if (!isAdmin || hasSpecificWorker) {
         query = query.eq('worker_id', effectiveWorkerId!);
       }
       const { data } = await query;
@@ -249,7 +249,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         .select('customer_id, items, total_amount, customer_name, created_at')
         .eq('receipt_type', 'direct_sale')
         .gte('created_at', todayStart);
-      if (!isAdmin) {
+      if (!isAdmin || hasSpecificWorker) {
         query = query.eq('worker_id', effectiveWorkerId!);
       }
       const { data } = await query;
