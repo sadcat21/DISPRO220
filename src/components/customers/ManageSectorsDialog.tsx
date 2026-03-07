@@ -480,18 +480,6 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
             </Button>
           )}
 
-          {/* Sectors List */}
-          <div className="space-y-2 mt-2">
-            {isLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
-              </div>
-            ) : sectors.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <MapPin className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                <p className="text-sm">لا توجد سكتورات بعد</p>
-              </div>
-            ) : (
           {/* Filters */}
           {!showForm && sectors.length > 0 && (
             <div className="space-y-2 border rounded-lg p-3 bg-muted/30">
