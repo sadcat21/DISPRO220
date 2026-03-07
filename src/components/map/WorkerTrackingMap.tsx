@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { useWorkerLocations, WorkerLocationData } from '@/hooks/useWorkerLocation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Loader2, MapPin, Users, Warehouse, Clock, Navigation } from 'lucide-react';
@@ -28,13 +28,45 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
+  const hasFittedBoundsRef = useRef(false);
 
-  // Initialize map with ResizeObserver to ensure tiles load
+  // Initialize map with robust sizing
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current) return;
+    if (!mapContainerRef.current) return;
+    // If map already exists, just invalidate
+    if (mapRef.current) {
+      mapRef.current.invalidateSize();
+      return;
+    }
 
     const container = mapContainerRef.current;
-    
+
+    // Ensure the container has actual dimensions before creating the map
+    const rect = container.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      // Retry after a frame
+      const raf = requestAnimationFrame(() => {
+        if (mapContainerRef.current && !mapRef.current) {
+          const r2 = mapContainerRef.current.getBoundingClientRect();
+          if (r2.width > 0 && r2.height > 0) {
+            initMap(mapContainerRef.current);
+          }
+        }
+      });
+      return () => cancelAnimationFrame(raf);
+    }
+
+    initMap(container);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const observerRef = useRef<ResizeObserver | null>(null);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const initMap = useCallback((container: HTMLDivElement) => {
+    if (mapRef.current) return;
+
     const map = L.map(container, {
       center: [36.7, 3.08],
       zoom: 7,
@@ -47,26 +79,33 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
 
     mapRef.current = map;
 
-    // Force multiple invalidateSize calls to ensure tiles render
+    // ResizeObserver for dynamic resizing
     const observer = new ResizeObserver(() => {
       map.invalidateSize();
     });
     observer.observe(container);
+    observerRef.current = observer;
 
-    // Aggressive tile refresh
-    const timers = [100, 300, 500, 1000, 2000].map(ms =>
+    // Aggressive tile refresh at staggered intervals
+    const timers = [100, 250, 500, 1000, 2000, 4000].map(ms =>
       setTimeout(() => {
         if (mapRef.current) {
           mapRef.current.invalidateSize();
         }
       }, ms)
     );
+    timersRef.current = timers;
+  }, []);
 
+  // Cleanup
+  useEffect(() => {
     return () => {
-      observer.disconnect();
-      timers.forEach(clearTimeout);
-      map.remove();
-      mapRef.current = null;
+      observerRef.current?.disconnect();
+      timersRef.current.forEach(clearTimeout);
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
       markersRef.current.clear();
     };
   }, []);
@@ -155,8 +194,9 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
       }
     });
 
-    // Fit bounds including warehouse
-    if (locations.length > 0) {
+    // Fit bounds only on first data load
+    if (locations.length > 0 && !hasFittedBoundsRef.current) {
+      hasFittedBoundsRef.current = true;
       const allPoints: [number, number][] = [
         [WAREHOUSE_LOCATION.lat, WAREHOUSE_LOCATION.lng],
         ...locations.map(l => [l.latitude, l.longitude] as [number, number]),
