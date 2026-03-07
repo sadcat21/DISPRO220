@@ -40,6 +40,7 @@ import WorkerAttendanceLogDialog from '@/components/attendance/WorkerAttendanceL
 import WorkerSalesSummaryDialog from '@/components/accounting/WorkerSalesSummaryDialog';
 import EditWorkerProfileDialog from '@/components/workers/EditWorkerProfileDialog';
 import WorkerAchievementsDialog from '@/components/workers/WorkerAchievementsDialog';
+import SectorScheduleDialog from '@/components/sectors/SectorScheduleDialog';
 
 const workerActions = [
   { key: 'worker_profile', icon: Settings, path: '', labelKey: 'إعدادات البيانات', color: 'bg-gray-50 border-gray-200 text-gray-700', isDialog: true },
@@ -64,6 +65,7 @@ const workerActions = [
   { key: 'attendance_log', icon: CalendarDays, path: '', labelKey: 'سجل المداومة', color: 'bg-teal-50 border-teal-200 text-teal-700', isDialog: true },
   { key: 'sales_summary', icon: ShoppingBag, path: '', labelKey: 'تجميع المبيعات', color: 'bg-amber-50 border-amber-200 text-amber-700', isDialog: true },
   { key: 'achievements', icon: Trophy, path: '', labelKey: 'المنجزات', color: 'bg-emerald-50 border-emerald-200 text-emerald-700', isDialog: true },
+  { key: 'sector_schedule', icon: MapPin, path: '', labelKey: 'جدول السيكتور', color: 'bg-sky-50 border-sky-200 text-sky-700', isDialog: true },
 ];
 
 const WorkerActions: React.FC = () => {
@@ -84,6 +86,8 @@ const WorkerActions: React.FC = () => {
   const [salesSummaryOpen, setSalesSummaryOpen] = useState(false);
   const [workerProfileOpen, setWorkerProfileOpen] = useState(false);
   const [achievementsOpen, setAchievementsOpen] = useState(false);
+  const [sectorScheduleOpen, setSectorScheduleOpen] = useState(false);
+  const [sectorScheduleType, setSectorScheduleType] = useState<'delivery' | 'sales'>('delivery');
 
   useRealtimeSubscription(
     `worker-actions-realtime-${selectedWorker?.id || 'none'}`,
