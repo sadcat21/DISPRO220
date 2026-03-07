@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { useWorkerLocations, WorkerLocationData } from '@/hooks/useWorkerLocation';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Loader2, MapPin, Users, Warehouse, Clock, Navigation } from 'lucide-react';
+import { Loader2, MapPin, Users, Warehouse, Clock, Navigation, Route } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { calculateDistance } from '@/utils/geoUtils';
@@ -33,6 +33,8 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const hasFittedBoundsRef = useRef(false);
+  const routeLayerRef = useRef<L.Polyline | null>(null);
+  const [routeInfo, setRouteInfo] = useState<{ distance: number; duration: number } | null>(null);
 
   // Initialize map with robust sizing
   useEffect(() => {
@@ -210,6 +212,62 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
     }
   }, [locations, t, dir, highlightWorkerId]);
 
+  // Fetch and draw route from highlighted worker to warehouse
+  useEffect(() => {
+    if (!mapRef.current || !highlightWorkerId || !showOnlyHighlighted || !locations) return;
+
+    const loc = locations.find(l => l.worker_id === highlightWorkerId);
+    if (!loc || loc.has_location === false) {
+      // Clear existing route
+      if (routeLayerRef.current && mapRef.current) {
+        mapRef.current.removeLayer(routeLayerRef.current);
+        routeLayerRef.current = null;
+      }
+      setRouteInfo(null);
+      return;
+    }
+
+    const fetchRoute = async () => {
+      try {
+        const url = `https://router.project-osrm.org/route/v1/driving/${loc.longitude},${loc.latitude};${WAREHOUSE_LOCATION.lng},${WAREHOUSE_LOCATION.lat}?overview=full&geometries=geojson`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.code !== 'Ok' || !data.routes?.length || !mapRef.current) return;
+
+        const route = data.routes[0];
+        const coords: [number, number][] = route.geometry.coordinates.map(
+          (c: [number, number]) => [c[1], c[0]]
+        );
+
+        // Remove old route
+        if (routeLayerRef.current && mapRef.current) {
+          mapRef.current.removeLayer(routeLayerRef.current);
+        }
+
+        // Draw new route
+        routeLayerRef.current = L.polyline(coords, {
+          color: '#3b82f6',
+          weight: 5,
+          opacity: 0.7,
+          dashArray: '10, 8',
+        }).addTo(mapRef.current);
+
+        // Fit bounds to show full route
+        mapRef.current.fitBounds(routeLayerRef.current.getBounds(), { padding: [50, 50] });
+
+        setRouteInfo({
+          distance: route.distance,
+          duration: route.duration,
+        });
+      } catch (err) {
+        console.error('Route fetch error:', err);
+      }
+    };
+
+    fetchRoute();
+  }, [locations, highlightWorkerId, showOnlyHighlighted]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -231,6 +289,35 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
           {locations?.length || 0} {t('navigation.active_workers')}
         </Badge>
       </div>
+
+      {/* Route Info Bar */}
+      {routeInfo && highlightWorkerId && showOnlyHighlighted && (
+        <div className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-primary text-primary-foreground" dir={dir}>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <Route className="w-4 h-4" />
+              <span className="font-bold text-sm">
+                {routeInfo.distance >= 1000
+                  ? `${(routeInfo.distance / 1000).toFixed(1)} كم`
+                  : `${Math.round(routeInfo.distance)} م`}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-4 h-4" />
+              <span className="font-bold text-sm">
+                {(() => {
+                  const mins = Math.round(routeInfo.duration / 60);
+                  if (mins >= 60) {
+                    return `${Math.floor(mins / 60)} س ${mins % 60} د`;
+                  }
+                  return `${mins} د`;
+                })()}
+              </span>
+            </div>
+          </div>
+          <span className="text-xs opacity-80">🏭 → المخزن</span>
+        </div>
+      )}
 
       {/* Map */}
       <div className="h-[400px] rounded-lg overflow-hidden border shadow-sm relative">
