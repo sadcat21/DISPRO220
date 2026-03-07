@@ -16,7 +16,7 @@ import { useTrackVisit } from '@/hooks/useVisitTracking';
 import { Customer } from '@/types/database';
 import { sendSmsDirectly } from '@/utils/smsHelper';
 import { toast } from 'sonner';
-import { ShoppingCart, Gift, Loader2, ShoppingBag, Truck, Package, Banknote, Users, Wallet, ClipboardList, MapPin, Trophy, MessageCircle, Send } from 'lucide-react';
+import { ShoppingCart, Gift, Loader2, ShoppingBag, Truck, Package, Banknote, Users, Wallet, ClipboardList, MapPin, Trophy, MessageCircle, Send, HardHat } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,7 @@ import PalletCalculatorDialog from '@/components/stock/PalletCalculatorDialog';
 import AttendanceButton from '@/components/attendance/AttendanceButton';
 
 const WorkerHome: React.FC = () => {
-  const { user, workerId } = useAuth();
+  const { user, workerId, role } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { data: permissions = [], isLoading: permissionsLoading } = useWorkerPermissions();
@@ -67,6 +67,8 @@ const WorkerHome: React.FC = () => {
   const isDailyReceiptsPageHidden = useIsElementHidden('page', '/daily-receipts');
   const isAvailableOffersHidden = useIsElementHidden('button', 'home_available_offers');
   const isAvailableOffersPageHidden = useIsElementHidden('page', '/available-offers');
+  const isWorkerActionsHidden = useIsElementHidden('page', '/worker-actions');
+  const isSupervisor = role === 'supervisor';
 
   const { data: stockItems } = useQuery({
     queryKey: ['my-worker-stock', workerId],
@@ -320,7 +322,10 @@ const WorkerHome: React.FC = () => {
           if (!isRewardsHidden && !isRewardsPageHidden) {
             quickActions.push({ key: 'rewards', icon: <Trophy className="w-6 h-6" />, label: 'المكافآت', onClick: () => navigate('/my-rewards') });
           }
-
+          // Worker Actions for supervisor
+          if (isSupervisor && !isWorkerActionsHidden) {
+            quickActions.push({ key: 'worker-actions', icon: <HardHat className="w-6 h-6" />, label: 'إجراءات العمال', onClick: () => navigate('/worker-actions') });
+          }
           const colorSchemes: Record<string, { bg: string; iconBg: string; iconColor: string; text: string; border: string }> = {
             deliveries: { bg: 'bg-gradient-to-br from-blue-500 to-blue-600', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
             'direct-sale': { bg: 'bg-gradient-to-br from-emerald-500 to-teal-600', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
