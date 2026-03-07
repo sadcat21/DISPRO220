@@ -128,7 +128,7 @@ const getCellValue = (row: GiftPrintRow, col: GiftPrintColumnKey, rowNumber: num
 };
 
 const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
-  ({ rows, summaryRows, workerNames, workerName, dateRange, productFilter, isVisible = false, visibleColumns, separateByProduct = true, printSummary = false }, ref) => {
+  ({ rows, summaryRows, workerNames, workerName, dateRange, productFilter, isVisible = false, visibleColumns, separateByProduct = true, printSummary = false, summaryOnly = false }, ref) => {
     const [container, setContainer] = useState<HTMLDivElement | null>(null);
 
     const columns = useMemo(() => {
