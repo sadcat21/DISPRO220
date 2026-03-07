@@ -234,8 +234,8 @@
     background: white !important;
   }
 
-  /* Portal container holds the printable content */
-  body > *:not(#print-portal) {
+  /* Portal containers that hold printable content */
+  body > *:not(#print-portal):not(#gifts-print-portal) {
     display: none !important;
     visibility: hidden !important;
     height: 0 !important;
@@ -243,7 +243,8 @@
     overflow: hidden !important;
   }
 
-  #print-portal {
+  #print-portal,
+  #gifts-print-portal {
     display: block !important;
     visibility: visible !important;
     height: auto !important;
