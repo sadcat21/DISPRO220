@@ -143,27 +143,34 @@ const AdminHome: React.FC = () => {
 
       {/* Surplus/Deficit Treasury & Rewards */}
       {(role === 'admin' || role === 'branch_admin') && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-4 gap-3">
           <div
-            className="relative overflow-hidden rounded-xl border-2 border-violet-300 bg-gradient-to-br from-violet-50 to-violet-100 p-4 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg"
+            className="relative overflow-hidden rounded-xl border-2 border-violet-300 bg-gradient-to-br from-violet-50 to-violet-100 p-3 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg"
             onClick={() => navigate('/surplus-deficit')}
           >
-            <Scale className="w-7 h-7 text-violet-600 mb-1" />
-            <p className="font-bold text-xs text-violet-900">خزينة الفائض والعجز</p>
+            <Scale className="w-6 h-6 text-violet-600 mb-1" />
+            <p className="font-bold text-[10px] text-violet-900">خزينة الفائض</p>
           </div>
           <div
-            className="relative overflow-hidden rounded-xl border-2 border-yellow-300 bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg"
+            className="relative overflow-hidden rounded-xl border-2 border-yellow-300 bg-gradient-to-br from-yellow-50 to-yellow-100 p-3 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg"
             onClick={() => navigate('/rewards')}
           >
-            <Trophy className="w-7 h-7 text-yellow-600 mb-1" />
-            <p className="font-bold text-xs text-yellow-900">المكافآت والعقوبات</p>
+            <Trophy className="w-6 h-6 text-yellow-600 mb-1" />
+            <p className="font-bold text-[10px] text-yellow-900">المكافآت</p>
           </div>
           <div
-            className="relative overflow-hidden rounded-xl border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 to-emerald-100 p-4 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg"
+            className="relative overflow-hidden rounded-xl border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 to-emerald-100 p-3 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg"
             onClick={() => navigate('/attendance')}
           >
-            <CalendarDays className="w-7 h-7 text-emerald-600 mb-1" />
-            <p className="font-bold text-xs text-emerald-900">المداومة</p>
+            <CalendarDays className="w-6 h-6 text-emerald-600 mb-1" />
+            <p className="font-bold text-[10px] text-emerald-900">المداومة</p>
+          </div>
+          <div
+            className="relative overflow-hidden rounded-xl border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-purple-100 p-3 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg"
+            onClick={() => { setGiftsWorkerIdx(0); setGiftsOpen(true); }}
+          >
+            <Gift className="w-6 h-6 text-purple-600 mb-1" />
+            <p className="font-bold text-[10px] text-purple-900">تتبع العروض</p>
           </div>
         </div>
       )}
