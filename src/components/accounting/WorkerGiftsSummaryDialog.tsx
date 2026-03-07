@@ -464,7 +464,7 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
       bold(false);
       line('.'.repeat(LINE_WIDTH));
       for (const [, info] of Object.entries(offerCodes)) {
-        line(`${info.code}: ${transliterate(info.name).substring(0, 26)}`);
+        line(`${info.code}: ${info.details.substring(0, 26)}`);
       }
       sep();
 
