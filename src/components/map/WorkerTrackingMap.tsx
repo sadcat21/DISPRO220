@@ -414,30 +414,61 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
 
       {/* Route Info Bar */}
       {routeInfo && highlightWorkerId && showOnlyHighlighted && (
-        <div className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-primary text-primary-foreground" dir={dir}>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5">
-              <Route className="w-4 h-4" />
-              <span className="font-bold text-sm">
-                {routeInfo.distance >= 1000
-                  ? `${(routeInfo.distance / 1000).toFixed(1)} كم`
-                  : `${Math.round(routeInfo.distance)} م`}
-              </span>
+        <div className="flex flex-col gap-1.5 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground" dir={dir}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1.5">
+                <Route className="w-4 h-4" />
+                <span className="font-bold text-sm">
+                  {routeInfo.distance >= 1000
+                    ? `${(routeInfo.distance / 1000).toFixed(1)} كم`
+                    : `${Math.round(routeInfo.distance)} م`}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-4 h-4" />
+                <span className="font-bold text-sm">
+                  {(() => {
+                    const mins = Math.round(routeInfo.duration / 60);
+                    if (mins >= 60) {
+                      return `${Math.floor(mins / 60)} س ${mins % 60} د`;
+                    }
+                    return `${mins} د`;
+                  })()}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <Clock className="w-4 h-4" />
-              <span className="font-bold text-sm">
-                {(() => {
-                  const mins = Math.round(routeInfo.duration / 60);
-                  if (mins >= 60) {
-                    return `${Math.floor(mins / 60)} س ${mins % 60} د`;
-                  }
-                  return `${mins} د`;
-                })()}
-              </span>
-            </div>
+            <span className="text-xs opacity-80">🏭 → المخزن</span>
           </div>
-          <span className="text-xs opacity-80">🏭 → المخزن</span>
+          {/* Worker address */}
+          {(workerAddress || isLoadingAddress) && (
+            <div className="flex items-center gap-1.5 text-xs opacity-90 border-t border-primary-foreground/20 pt-1.5">
+              <MapPin className="w-3 h-3 shrink-0" />
+              {isLoadingAddress ? (
+                <span className="flex items-center gap-1">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  جاري تحديد العنوان...
+                </span>
+              ) : (
+                <span className="leading-relaxed">{workerAddress}</span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Worker address when no route but highlighted */}
+      {!routeInfo && highlightWorkerId && (workerAddress || isLoadingAddress) && (
+        <div className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-muted text-sm" dir={dir}>
+          <MapPin className="w-4 h-4 text-primary shrink-0" />
+          {isLoadingAddress ? (
+            <span className="flex items-center gap-1 text-muted-foreground">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              جاري تحديد العنوان...
+            </span>
+          ) : (
+            <span className="leading-relaxed">{workerAddress}</span>
+          )}
         </div>
       )}
 
