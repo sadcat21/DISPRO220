@@ -351,9 +351,9 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
     lines.push({ text: hdr, bold: true });
     lines.push({ separator: true });
     
-    for (const item of giftsData.items) {
-      const offerId = item.offerName || item.productName;
-      const code = offerCodes[offerId]?.code || '-';
+    for (let idx = 0; idx < giftsData.items.length; idx++) {
+      const item = giftsData.items[idx];
+      const code = offerCodes[idx]?.code || '-';
       const name = transliterate(item.productName).substring(0, 12).padEnd(12);
       const qty = formatGiftDisplay(item.totalGiftPieces, item.piecesPerBox).padStart(7);
       const cli = String(item.customers.length).padStart(4);
@@ -365,12 +365,14 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
     lines.push({ text: totalLine, bold: true });
     lines.push({ separator: true });
 
-    // Legend section - offer details in French
+    // Legend section - each item gets its own code with product name + tier details
     lines.push({ text: 'LEGENDE OFFRES:', bold: true });
     lines.push({ dotSeparator: true });
-    for (const [, info] of Object.entries(offerCodes)) {
-      const legendLine = `${info.code}: ${info.details.substring(0, 26)}`;
-      lines.push({ text: legendLine });
+    for (const info of offerCodes) {
+      // Line 1: code + product name
+      lines.push({ text: `${info.code}: ${info.productName}` });
+      // Line 2: tier details indented
+      lines.push({ text: `  ${info.details.substring(0, 28)}` });
     }
     lines.push({ separator: true });
 
