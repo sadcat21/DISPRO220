@@ -69,6 +69,17 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
   const [translatingName, setTranslatingName] = useState(false);
   const [translatingZone, setTranslatingZone] = useState(false);
 
+  // Filter state
+  const [filterWorker, setFilterWorker] = useState('all');
+  const [filterDay, setFilterDay] = useState('all');
+  const [filterType, setFilterType] = useState<'all' | 'prevente' | 'cash_van'>('all');
+
+  const filteredSectors = sectors.filter(s => {
+    if (filterType !== 'all' && (s as any).sector_type !== filterType) return false;
+    if (filterDay !== 'all' && s.visit_day_sales !== filterDay && s.visit_day_delivery !== filterDay) return false;
+    if (filterWorker !== 'all' && s.sales_worker_id !== filterWorker && s.delivery_worker_id !== filterWorker) return false;
+    return true;
+  });
   useEffect(() => {
     if (open) {
       fetchWorkers();
