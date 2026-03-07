@@ -116,6 +116,16 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     enabled: !!effectiveWorkerId && open,
   });
 
+  // Fetch sector_schedules for multi-schedule support
+  const { data: sectorSchedules = [] } = useQuery({
+    queryKey: ['today-cust-sector-schedules', scopedBranchId],
+    queryFn: async () => {
+      const { data } = await supabase.from('sector_schedules').select('*');
+      return data || [];
+    },
+    enabled: !!effectiveWorkerId && open,
+  });
+
   const { data: customers = [] } = useQuery({
     queryKey: ['today-cust-customers', scopedBranchId],
     queryFn: async () => {
@@ -281,23 +291,69 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     refetchInterval: 10000,
   });
 
-  // Computed data
-  // Computed data
+  // Computed data - use sector_schedules for determining today's sectors
+  const todaySalesSectorIds = useMemo(() => {
+    const ids = new Set<string>();
+    // From sector_schedules
+    sectorSchedules.forEach(sc => {
+      if (sc.day === todayName && sc.schedule_type === 'sales') {
+        if (!hasSpecificWorker && isAdmin) {
+          ids.add(sc.sector_id);
+        } else if (sc.worker_id === effectiveWorkerId) {
+          ids.add(sc.sector_id);
+        }
+      }
+    });
+    // Fallback: legacy fields for sectors without schedules
+    sectors.forEach(s => {
+      const hasNewSchedule = sectorSchedules.some(sc => sc.sector_id === s.id);
+      if (hasNewSchedule) return;
+      if (s.visit_day_sales === todayName) {
+        if (!hasSpecificWorker && isAdmin) ids.add(s.id);
+        else if (s.sales_worker_id === effectiveWorkerId) ids.add(s.id);
+      }
+    });
+    return ids;
+  }, [sectorSchedules, sectors, todayName, effectiveWorkerId, isAdmin, hasSpecificWorker]);
+
+  const todayDeliverySectorIds = useMemo(() => {
+    const ids = new Set<string>();
+    sectorSchedules.forEach(sc => {
+      if (sc.day === todayName && sc.schedule_type === 'delivery') {
+        if (!hasSpecificWorker && isAdmin) {
+          ids.add(sc.sector_id);
+        } else if (sc.worker_id === effectiveWorkerId) {
+          ids.add(sc.sector_id);
+        }
+      }
+    });
+    sectors.forEach(s => {
+      const hasNewSchedule = sectorSchedules.some(sc => sc.sector_id === s.id);
+      if (hasNewSchedule) return;
+      if (s.visit_day_delivery === todayName) {
+        if (!hasSpecificWorker && isAdmin) ids.add(s.id);
+        else if (s.delivery_worker_id === effectiveWorkerId) ids.add(s.id);
+      }
+    });
+    return ids;
+  }, [sectorSchedules, sectors, todayName, effectiveWorkerId, isAdmin, hasSpecificWorker]);
+
   const workerSectors = useMemo(() => {
-    if (hasSpecificWorker) return sectors.filter(s => s.delivery_worker_id === effectiveWorkerId || s.sales_worker_id === effectiveWorkerId);
+    if (hasSpecificWorker) {
+      return sectors.filter(s => {
+        const hasSchedule = sectorSchedules.some(sc => sc.sector_id === s.id && sc.worker_id === effectiveWorkerId);
+        return hasSchedule || s.delivery_worker_id === effectiveWorkerId || s.sales_worker_id === effectiveWorkerId;
+      });
+    }
     if (isAdmin) return sectors;
-    return sectors.filter(s => s.delivery_worker_id === effectiveWorkerId || s.sales_worker_id === effectiveWorkerId);
-  }, [sectors, effectiveWorkerId, isAdmin, hasSpecificWorker]);
+    return sectors.filter(s => {
+      const hasSchedule = sectorSchedules.some(sc => sc.sector_id === s.id && sc.worker_id === effectiveWorkerId);
+      return hasSchedule || s.delivery_worker_id === effectiveWorkerId || s.sales_worker_id === effectiveWorkerId;
+    });
+  }, [sectors, sectorSchedules, effectiveWorkerId, isAdmin, hasSpecificWorker]);
 
-  const todaySalesSectors = useMemo(() => {
-    if (isAdmin && !hasSpecificWorker) return workerSectors.filter(s => s.visit_day_sales === todayName);
-    return workerSectors.filter(s => s.visit_day_sales === todayName && s.sales_worker_id === effectiveWorkerId);
-  }, [workerSectors, todayName, effectiveWorkerId, isAdmin, hasSpecificWorker]);
-
-  const todayDeliverySectors = useMemo(() => {
-    if (isAdmin && !hasSpecificWorker) return workerSectors.filter(s => s.visit_day_delivery === todayName);
-    return workerSectors.filter(s => s.visit_day_delivery === todayName && s.delivery_worker_id === effectiveWorkerId);
-  }, [workerSectors, todayName, effectiveWorkerId, isAdmin, hasSpecificWorker]);
+  const todaySalesSectors = useMemo(() => workerSectors.filter(s => todaySalesSectorIds.has(s.id)), [workerSectors, todaySalesSectorIds]);
+  const todayDeliverySectors = useMemo(() => workerSectors.filter(s => todayDeliverySectorIds.has(s.id)), [workerSectors, todayDeliverySectorIds]);
 
   const deliveryCustomerIdsWithOrders = useMemo(() => {
     const ids = new Set<string>();
