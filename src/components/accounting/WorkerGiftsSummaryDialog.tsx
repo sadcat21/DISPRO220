@@ -532,7 +532,7 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
   }, [giftsData]);
 
   const printProductLabel = useMemo(() => {
-    if (!printSettings || printSettings.productFilter === 'all') return 'جميع المنتجات';
+    if (!printSettings || printSettings.productFilter === 'all') return 'Tous les produits';
     return giftsData?.items?.find(i => i.productId === printSettings.productFilter)?.productName || '';
   }, [printSettings, giftsData]);
 
@@ -878,7 +878,7 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
       <GiftsPrintView
         ref={printRef}
         rows={printRows}
-        workerName={allWorkers ? 'جميع العمال' : workerName}
+        workerName={allWorkers ? 'Tous les employés' : workerName}
         dateRange={periodDateLabel}
         productFilter={printProductLabel}
         isVisible={showPrintView}
@@ -890,6 +890,7 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
         onOpenChange={setShowPrintSettings}
         products={availableProducts}
         onPrint={handleA4Print}
+        isAdmin={!!activeBranch || true}
       />
     </Dialog>
   );
