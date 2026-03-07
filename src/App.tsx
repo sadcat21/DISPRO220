@@ -290,7 +290,7 @@ const AppRoutes = () => {
       } />
 
       <Route path="/worker-actions" element={
-        <ProtectedRoute allowedRoles={['admin', 'branch_admin']}>
+        <ProtectedRoute allowedRoles={['admin', 'branch_admin', 'supervisor']}>
           <WorkerActions />
         </ProtectedRoute>
       } />
