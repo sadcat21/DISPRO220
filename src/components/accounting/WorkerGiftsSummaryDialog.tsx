@@ -525,6 +525,38 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
     return rows;
   }, [giftsData, printSettings]);
 
+  // Build summary rows for the summary page
+  const { summaryRows, summaryWorkerNames } = useMemo(() => {
+    if (!giftsData?.items?.length) return { summaryRows: [] as SummaryRow[], summaryWorkerNames: [] as string[] };
+    const workerSet = new Set<string>();
+    const rows: SummaryRow[] = [];
+    const productFilter = printSettings?.productFilter;
+
+    for (const item of giftsData.items) {
+      if (productFilter && productFilter !== 'all' && item.productId !== productFilter) continue;
+      // Build offer detail string like "50 box + 1 box gift"
+      const offerDetail = item.offerDetails?.length
+        ? item.offerDetails.join(' | ')
+        : item.offerName || '-';
+
+      const workerGifts: Record<string, number> = {};
+      for (const c of item.customers) {
+        const wName = c.workerName || '-';
+        workerSet.add(wName);
+        workerGifts[wName] = (workerGifts[wName] || 0) + c.giftPieces;
+      }
+
+      rows.push({
+        productName: item.productName,
+        offerDetail,
+        workerGifts,
+        piecesPerBox: item.piecesPerBox || 1,
+      });
+    }
+
+    return { summaryRows: rows, summaryWorkerNames: Array.from(workerSet).sort() };
+  }, [giftsData, printSettings]);
+
   // Available products for filter
   const availableProducts = useMemo(() => {
     if (!giftsData?.items?.length) return [];
