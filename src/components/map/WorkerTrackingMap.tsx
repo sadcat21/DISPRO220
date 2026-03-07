@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { useWorkerLocations, WorkerLocationData } from '@/hooks/useWorkerLocation';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Loader2, MapPin, Users, Warehouse, Clock, Navigation } from 'lucide-react';
+import { Loader2, MapPin, Users, Warehouse, Clock, Navigation, Route } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { calculateDistance } from '@/utils/geoUtils';
