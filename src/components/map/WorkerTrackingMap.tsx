@@ -21,14 +21,18 @@ L.Icon.Default.mergeOptions({
 interface WorkerTrackingMapProps {
   highlightWorkerId?: string;
   showOnlyHighlighted?: boolean;
+  trackableWorkerIds?: string[];
 }
 
-const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId, showOnlyHighlighted }) => {
+const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId, showOnlyHighlighted, trackableWorkerIds }) => {
   const { t, dir } = useLanguage();
   const { data: rawLocations, isLoading } = useWorkerLocations();
-  const locations = showOnlyHighlighted && highlightWorkerId
-    ? rawLocations?.filter(l => l.worker_id === highlightWorkerId)
+  const filteredByTrackable = trackableWorkerIds
+    ? rawLocations?.filter(l => trackableWorkerIds.includes(l.worker_id))
     : rawLocations;
+  const locations = showOnlyHighlighted && highlightWorkerId
+    ? filteredByTrackable?.filter(l => l.worker_id === highlightWorkerId)
+    : filteredByTrackable;
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
