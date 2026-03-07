@@ -325,7 +325,7 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
         className="print-container"
         style={{ display: isVisible ? 'block' : 'none' }}
       >
-        {pages.map((page, pageIndex) => {
+        {!summaryOnly && pages.map((page, pageIndex) => {
           const emptyRowsCount = Math.max(0, ROWS_PER_PAGE - page.rows.length);
           const pageTitle = page.productName
             ? `Registre des promotions — ${page.productName}`
@@ -399,7 +399,7 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
             </section>
           );
         })}
-        {summaryContent}
+        {(printSummary || summaryOnly) && summaryContent}
       </div>
     );
 
