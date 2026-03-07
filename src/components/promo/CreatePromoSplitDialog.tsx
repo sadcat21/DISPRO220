@@ -142,7 +142,7 @@ const CreatePromoSplitDialog: React.FC<Props> = ({ open, onOpenChange, editSplit
             <Select value={offerId} onValueChange={setOfferId}>
               <SelectTrigger><SelectValue placeholder="اختر العرض..." /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">بدون عرض</SelectItem>
+                <SelectItem value="none">بدون عرض</SelectItem>
                 {activeOffers.map(o => (
                   <SelectItem key={o.id} value={o.id}>{o.name} - {o.product?.name}</SelectItem>
                 ))}
@@ -211,7 +211,7 @@ const CreatePromoSplitDialog: React.FC<Props> = ({ open, onOpenChange, editSplit
             <Select value={giftProductId} onValueChange={setGiftProductId}>
               <SelectTrigger><SelectValue placeholder="نفس المنتج" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">نفس المنتج</SelectItem>
+                <SelectItem value="none">نفس المنتج</SelectItem>
                 {products?.map(p => (
                   <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                 ))}
