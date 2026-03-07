@@ -93,7 +93,7 @@ const SectorCustomersPopover: React.FC = () => {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!workerId,
+    enabled: !!effectiveWorkerId,
   });
 
   const { data: customers = [] } = useQuery({
