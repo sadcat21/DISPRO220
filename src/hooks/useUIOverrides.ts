@@ -322,35 +322,61 @@ export const UI_ELEMENTS = {
     { key: 'deliveries_search', label: 'بحث في التوصيلات', group: 'توصيلاتي' },
     // رصيدي من المنتجات (MyStock)
     { key: 'stock_direct_sale', label: 'بيع مباشر', group: 'رصيدي من المنتجات' },
+    { key: 'stock_load_request', label: 'طلب تحميل', group: 'رصيدي من المنتجات' },
     // عملياتي (MyPromos)
     { key: 'add_promo', label: 'إضافة عملية', group: 'عملياتي' },
     // مصاريفي (Expenses)
     { key: 'add_expense', label: 'إضافة مصروف', group: 'مصاريفي' },
     // العملاء (Customers)
     { key: 'add_customer', label: 'إضافة عميل', group: 'العملاء' },
+    { key: 'manage_sectors', label: 'إدارة القطاعات', group: 'العملاء' },
+    { key: 'customer_field_settings', label: 'إعدادات حقول العملاء', group: 'العملاء' },
     // تحميل للعامل (LoadStock)
     { key: 'load_stock', label: 'تحميل مخزون', group: 'تحميل للعامل' },
+    { key: 'partial_load_orders', label: 'تحميل جزئي من الطلبيات', group: 'تحميل للعامل' },
     // عروض المنتجات (ProductOffers)
     { key: 'add_offer', label: 'إضافة عرض', group: 'عروض المنتجات' },
     // المخزن (WarehouseStock)
     { key: 'warehouse_direct_sale', label: 'بيع مباشر من المخزن', group: 'المخزن' },
     { key: 'warehouse_quick_load', label: 'تحميل سريع', group: 'المخزن' },
     { key: 'warehouse_factory_delivery', label: 'استلام من المصنع', group: 'المخزن' },
+    { key: 'warehouse_review', label: 'مراجعة المخزن', group: 'المخزن' },
+    { key: 'warehouse_pallet_calculator', label: 'حاسبة البالتات', group: 'المخزن' },
     // خزينة المدير (ManagerTreasury)
     { key: 'treasury_coin_exchange', label: 'صرف عملة', group: 'خزينة المدير' },
     { key: 'treasury_invoice_request', label: 'طلب فاتورة', group: 'خزينة المدير' },
     { key: 'treasury_quick_order', label: 'طلبية سريعة', group: 'خزينة المدير' },
     { key: 'treasury_settings', label: 'إعدادات الخزينة', group: 'خزينة المدير' },
+    { key: 'treasury_handover', label: 'تسليم الخزينة', group: 'خزينة المدير' },
     // المحاسبة (AccountingSessions)
     { key: 'create_session', label: 'إنشاء جلسة محاسبة', group: 'المحاسبة' },
     // المكافآت (Rewards)
     { key: 'add_reward_task', label: 'إضافة مهمة مكافأة', group: 'المكافآت' },
+    { key: 'reward_contest', label: 'إنشاء مسابقة', group: 'المكافآت' },
+    { key: 'reward_settings', label: 'إعدادات المكافآت', group: 'المكافآت' },
     // ديون العملاء (CustomerDebts)
     { key: 'collect_debt_btn', label: 'تحصيل دين', group: 'ديون العملاء' },
     // وصولات المخزن (StockReceipts)
     { key: 'add_stock_receipt', label: 'إضافة وصل استلام', group: 'وصولات المخزن' },
     // إدارة المصاريف (ExpensesManagement)
     { key: 'manage_expense_categories', label: 'إدارة التصنيفات', group: 'إدارة المصاريف' },
+    // الحضور والانصراف (Attendance)
+    { key: 'attendance_settings', label: 'إعدادات الحضور', group: 'الحضور والانصراف' },
+    { key: 'attendance_check_in', label: 'تسجيل حضور', group: 'الحضور والانصراف' },
+    // المنتجات (Products)
+    { key: 'add_product', label: 'إضافة منتج', group: 'المنتجات' },
+    { key: 'pricing_groups', label: 'مجموعات التسعير', group: 'المنتجات' },
+    { key: 'stamp_price', label: 'أسعار الطوابع', group: 'المنتجات' },
+    // العمال (Workers)
+    { key: 'add_worker', label: 'إضافة عامل', group: 'العمال' },
+    // الفروع (Branches)
+    { key: 'add_branch', label: 'إضافة فرع', group: 'الفروع' },
+    // حسابات العملاء (CustomerAccounts)
+    { key: 'approve_customer_account', label: 'الموافقة على حساب عميل', group: 'حسابات العملاء' },
+    // تتبع العمال (WorkerTracking)
+    { key: 'tracking_settings', label: 'إعدادات التتبع', group: 'تتبع العمال' },
+    // عهدة العمال (WorkerLiability)
+    { key: 'worker_financial_details', label: 'تفاصيل مالية للعامل', group: 'عهدة العمال' },
   ],
   actions: [
     { key: 'collect_debt', label: 'تحصيل دين', group: 'ديون العملاء' },
@@ -359,24 +385,40 @@ export const UI_ELEMENTS = {
     { key: 'cancel_order', label: 'إلغاء طلبية', group: 'الطلبيات' },
     { key: 'print_receipt', label: 'طباعة فاتورة', group: 'الطلبيات' },
     { key: 'assign_order', label: 'تعيين عامل للطلبية', group: 'الطلبيات' },
+    { key: 'verify_check', label: 'التحقق من الشيك', group: 'الطلبيات' },
     { key: 'modify_delivery', label: 'تعديل توصيلة', group: 'توصيلاتي' },
     { key: 'cancel_delivery', label: 'إلغاء توصيلة', group: 'توصيلاتي' },
+    { key: 'delivery_payment', label: 'دفع التوصيلة', group: 'توصيلاتي' },
     { key: 'edit_promo', label: 'تعديل عملية', group: 'عملياتي' },
     { key: 'delete_promo', label: 'حذف عملية', group: 'عملياتي' },
     { key: 'delete_expense', label: 'حذف مصروف', group: 'مصاريفي' },
     { key: 'edit_customer', label: 'تعديل عميل', group: 'العملاء' },
     { key: 'delete_customer', label: 'حذف عميل', group: 'العملاء' },
     { key: 'view_customer_profile', label: 'عرض ملف العميل', group: 'العملاء' },
+    { key: 'customer_special_prices', label: 'أسعار خاصة للعميل', group: 'العملاء' },
     { key: 'edit_product', label: 'تعديل منتج', group: 'المنتجات' },
     { key: 'delete_product', label: 'حذف منتج', group: 'المنتجات' },
+    { key: 'group_price_update', label: 'تحديث أسعار جماعي', group: 'المنتجات' },
     { key: 'edit_worker', label: 'تعديل عامل', group: 'العمال' },
     { key: 'deactivate_worker', label: 'تعطيل عامل', group: 'العمال' },
+    { key: 'worker_achievements', label: 'إنجازات العامل', group: 'العمال' },
     { key: 'review_expense', label: 'مراجعة مصروف', group: 'إدارة المصاريف' },
     { key: 'approve_debt_collection', label: 'الموافقة على تحصيل', group: 'ديون العملاء' },
     { key: 'reject_debt_collection', label: 'رفض تحصيل', group: 'ديون العملاء' },
     { key: 'complete_accounting_session', label: 'إتمام جلسة محاسبة', group: 'المحاسبة' },
+    { key: 'view_accounting_details', label: 'عرض تفاصيل المحاسبة', group: 'المحاسبة' },
     { key: 'handover_print', label: 'طباعة التسليم', group: 'خزينة المدير' },
     { key: 'approve_customer_change', label: 'الموافقة على تعديل عميل', group: 'العملاء' },
     { key: 'reject_customer_change', label: 'رفض تعديل عميل', group: 'العملاء' },
+    { key: 'stock_verification', label: 'التحقق من المخزون', group: 'المخزن' },
+    { key: 'exchange_session', label: 'جلسة تبادل', group: 'المخزن' },
+    { key: 'approve_load_request', label: 'الموافقة على طلب تحميل', group: 'تحميل للعامل' },
+    { key: 'reward_dispute', label: 'نزاع مكافأة', group: 'المكافآت' },
+    { key: 'edit_reward_task', label: 'تعديل مهمة مكافأة', group: 'المكافآت' },
+    { key: 'delete_reward_task', label: 'حذف مهمة مكافأة', group: 'المكافآت' },
+    { key: 'worker_points_adjust', label: 'تعديل نقاط العامل', group: 'المكافآت' },
+    { key: 'view_attendance_log', label: 'عرض سجل الحضور', group: 'الحضور والانصراف' },
+    { key: 'send_chat_message', label: 'إرسال رسالة', group: 'المحادثات' },
+    { key: 'create_conversation', label: 'إنشاء محادثة', group: 'المحادثات' },
   ],
 };
