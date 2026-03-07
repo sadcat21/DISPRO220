@@ -215,15 +215,23 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
         </div>
       `;
 
+      const onMarkerClick = () => {
+        if (mapRef.current) {
+          mapRef.current.flyTo([loc.latitude, loc.longitude], 16, { duration: 0.8 });
+        }
+      };
+
       if (markersRef.current.has(loc.worker_id)) {
         const marker = markersRef.current.get(loc.worker_id)!;
         marker.setLatLng([loc.latitude, loc.longitude]);
         marker.setIcon(icon);
         marker.setPopupContent(popupContent);
+        marker.off('click').on('click', onMarkerClick);
       } else {
         const marker = L.marker([loc.latitude, loc.longitude], { icon })
           .addTo(mapRef.current!)
-          .bindPopup(popupContent);
+          .bindPopup(popupContent)
+          .on('click', onMarkerClick);
         markersRef.current.set(loc.worker_id, marker);
       }
     });
