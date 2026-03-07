@@ -1207,9 +1207,20 @@ const CustomerList: React.FC<{
 };
 
 // Reusable DebtList component
-const DebtList: React.FC<{ debts: DueDebt[]; onCollect: (d: DueDebt) => void; onVisitNoPayment: (d: DueDebt) => void; onClosed: (d: DueDebt) => void; onUnavailable: (d: DueDebt) => void; emptyMessage: string }> = ({ debts, onCollect, onVisitNoPayment, onClosed, onUnavailable, emptyMessage }) => {
-  if (debts.length === 0) {
-    return <div className="p-6 text-center text-sm text-muted-foreground">{emptyMessage}</div>;
+const DebtList: React.FC<{ debts: DueDebt[]; onCollect: (d: DueDebt) => void; onVisitNoPayment: (d: DueDebt) => void; onClosed: (d: DueDebt) => void; onUnavailable: (d: DueDebt) => void; emptyMessage: string; searchQuery?: string }> = ({ debts, onCollect, onVisitNoPayment, onClosed, onUnavailable, emptyMessage, searchQuery }) => {
+  const filtered = useMemo(() => {
+    if (!searchQuery?.trim()) return debts;
+    const q = searchQuery.trim().toLowerCase();
+    return debts.filter(d => {
+      const cust = d.customer as any;
+      return (cust?.name || '').toLowerCase().includes(q) ||
+        (cust?.store_name || '').toLowerCase().includes(q) ||
+        (cust?.phone || '').includes(q);
+    });
+  }, [debts, searchQuery]);
+
+  if (filtered.length === 0) {
+    return <div className="p-6 text-center text-sm text-muted-foreground">{searchQuery?.trim() ? 'لا توجد نتائج' : emptyMessage}</div>;
   }
 
   return (
