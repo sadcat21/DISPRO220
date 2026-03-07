@@ -11,7 +11,7 @@ const WorkerTracking: React.FC = () => {
   return (
     <div className="p-4 space-y-4">
       <h2 className="text-xl font-bold">{t('navigation.tracking_title')}</h2>
-      <WorkerTrackingMap highlightWorkerId={highlightWorkerId} />
+      <WorkerTrackingMap key={highlightWorkerId || '__all__'} highlightWorkerId={highlightWorkerId} />
     </div>
   );
 };
