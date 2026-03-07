@@ -39,6 +39,7 @@ const pathColors: Record<string, { bg: string; icon: string; border: string }> =
   '/shared-invoices': { bg: 'bg-orange-50', icon: 'text-orange-700', border: 'border-orange-200' },
   '/surplus-deficit': { bg: 'bg-violet-50', icon: 'text-violet-600', border: 'border-violet-200' },
   '/rewards': { bg: 'bg-yellow-50', icon: 'text-yellow-600', border: 'border-yellow-200' },
+  '/promo-splits': { bg: 'bg-cyan-50', icon: 'text-cyan-600', border: 'border-cyan-200' },
 };
 
 const defaultColor = { bg: 'bg-muted/30', icon: 'text-primary', border: 'border-border' };

@@ -3294,6 +3294,207 @@ export type Database = {
           },
         ]
       }
+      promo_split_customers: {
+        Row: {
+          allocated_quantity: number
+          created_at: string
+          customer_id: string
+          delivered_quantity: number
+          gift_delivered: boolean
+          gift_share: number
+          id: string
+          notes: string | null
+          split_id: string
+          updated_at: string
+        }
+        Insert: {
+          allocated_quantity?: number
+          created_at?: string
+          customer_id: string
+          delivered_quantity?: number
+          gift_delivered?: boolean
+          gift_share?: number
+          id?: string
+          notes?: string | null
+          split_id: string
+          updated_at?: string
+        }
+        Update: {
+          allocated_quantity?: number
+          created_at?: string
+          customer_id?: string
+          delivered_quantity?: number
+          gift_delivered?: boolean
+          gift_share?: number
+          id?: string
+          notes?: string | null
+          split_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_split_customers_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promo_split_customers_split_id_fkey"
+            columns: ["split_id"]
+            isOneToOne: false
+            referencedRelation: "promo_splits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promo_split_installments: {
+        Row: {
+          actual_quantity: number
+          created_at: string
+          id: string
+          notes: string | null
+          planned_quantity: number
+          scheduled_date: string
+          split_customer_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          actual_quantity?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          planned_quantity?: number
+          scheduled_date: string
+          split_customer_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          actual_quantity?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          planned_quantity?: number
+          scheduled_date?: string
+          split_customer_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_split_installments_split_customer_id_fkey"
+            columns: ["split_customer_id"]
+            isOneToOne: false
+            referencedRelation: "promo_split_customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promo_splits: {
+        Row: {
+          adjusted_gift_quantity: number | null
+          branch_id: string | null
+          created_at: string
+          created_by: string | null
+          gift_product_id: string | null
+          gift_quantity: number
+          gift_quantity_unit: string
+          id: string
+          name: string
+          notes: string | null
+          offer_id: string | null
+          product_id: string
+          split_type: string
+          status: string
+          target_quantity: number
+          target_quantity_unit: string
+          updated_at: string
+        }
+        Insert: {
+          adjusted_gift_quantity?: number | null
+          branch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          gift_product_id?: string | null
+          gift_quantity?: number
+          gift_quantity_unit?: string
+          id?: string
+          name: string
+          notes?: string | null
+          offer_id?: string | null
+          product_id: string
+          split_type?: string
+          status?: string
+          target_quantity?: number
+          target_quantity_unit?: string
+          updated_at?: string
+        }
+        Update: {
+          adjusted_gift_quantity?: number | null
+          branch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          gift_product_id?: string | null
+          gift_quantity?: number
+          gift_quantity_unit?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          offer_id?: string | null
+          product_id?: string
+          split_type?: string
+          status?: string
+          target_quantity?: number
+          target_quantity_unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_splits_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promo_splits_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promo_splits_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promo_splits_gift_product_id_fkey"
+            columns: ["gift_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promo_splits_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "product_offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promo_splits_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       promos: {
         Row: {
           bonus_amount: number | null

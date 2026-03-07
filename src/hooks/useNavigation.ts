@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Home, Users, Package, BarChart3, Settings, FileSpreadsheet, UserCheck, Building2, Shield, ShoppingCart, Truck, Activity, Store, BookOpen, UserCog, Gift, Wallet, Warehouse, ClipboardList, Banknote, Calculator, MapPin, Navigation, FileText, Vault, FolderOpen, Scale, Trophy, CalendarDays } from 'lucide-react';
+import { Home, Users, Package, BarChart3, Settings, FileSpreadsheet, UserCheck, Building2, Shield, ShoppingCart, Truck, Activity, Store, BookOpen, UserCog, Gift, Wallet, Warehouse, ClipboardList, Banknote, Calculator, MapPin, Navigation, FileText, Vault, FolderOpen, Scale, Trophy, CalendarDays, Split } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkerPermissions } from '@/hooks/usePermissions';
 import { useMyUIOverrides } from '@/hooks/useUIOverrides';
@@ -46,6 +46,7 @@ export const useNavigation = () => {
           { path: '/my-deliveries', icon: Truck, label: t('nav.my_deliveries') },
           { path: '/my-promos', icon: BarChart3, label: t('nav.my_promos') },
           { path: '/product-offers', icon: Gift, label: t('nav.product_offers') },
+          { path: '/promo-splits', icon: Split, label: 'تجزئة العروض' },
           { path: '/customer-accounts', icon: UserCog, label: t('nav.customer_accounts') },
           { path: '/warehouse', icon: Warehouse, label: t('stock.warehouse_stock') },
           { path: '/stock-receipts', icon: ClipboardList, label: t('stock.receipts') },
@@ -106,6 +107,7 @@ export const useNavigation = () => {
           { path: '/my-deliveries', icon: Truck, label: t('nav.my_deliveries') },
           { path: '/my-promos', icon: BarChart3, label: t('nav.my_promos') },
           { path: '/product-offers', icon: Gift, label: t('nav.product_offers') },
+          { path: '/promo-splits', icon: Split, label: 'تجزئة العروض' },
           { path: '/customer-accounts', icon: UserCog, label: t('nav.customer_accounts') },
           { path: '/warehouse', icon: Warehouse, label: t('stock.warehouse_stock') },
           { path: '/stock-receipts', icon: ClipboardList, label: t('stock.receipts') },

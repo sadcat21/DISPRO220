@@ -49,6 +49,7 @@ import SharedInvoices from "./pages/admin/SharedInvoices";
 import SurplusDeficitTreasury from "./pages/admin/SurplusDeficitTreasury";
 import Rewards from "./pages/admin/Rewards";
 import WorkerRewards from "./pages/WorkerRewards";
+import PromoSplits from "./pages/admin/PromoSplits";
 import NotFound from "./pages/NotFound";
 import Chat from "./pages/Chat";
 import Attendance from "./pages/admin/Attendance";
@@ -351,7 +352,14 @@ const AppRoutes = () => {
         </ProtectedRoute>
       } />
 
-      {/* Chat */}
+      {/* Promo Splits */}
+      <Route path="/promo-splits" element={
+        <ProtectedRoute allowedRoles={['admin', 'branch_admin']}>
+          <PromoSplits />
+        </ProtectedRoute>
+      } />
+
+
       <Route path="/chat" element={
         <ProtectedRoute>
           <Chat />
