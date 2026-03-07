@@ -345,13 +345,20 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     return allDebts;
   }, [allDebts, effectiveWorkerId, hasSpecificWorker]);
 
-  // Direct sale customers
+  // Direct sale customers:
+  // 1. Cash Van sectors (today delivery) → ALL customers
+  // 2. Prévente sectors (today delivery) → customers NOT having pending orders (not in delivery tab)
   const directSaleCustomers = useMemo(() => {
-    const deliverySectorIds = new Set(todayDeliverySectors.map(s => s.id));
-    const customersInDeliverySectors = customers.filter(c => c.sector_id && deliverySectorIds.has(c.sector_id));
-    const negativeCustomerIds = new Set(recentNegativeVisits.map(v => v.customer_id).filter(Boolean));
-    return customersInDeliverySectors.filter(c => negativeCustomerIds.has(c.id) && !deliveredCustomerIds.has(c.id));
-  }, [todayDeliverySectors, customers, recentNegativeVisits, deliveredCustomerIds]);
+    const cashVanSectorIds = new Set(todayDeliverySectors.filter(s => (s as any).sector_type === 'cash_van').map(s => s.id));
+    const preventeSectorIds = new Set(todayDeliverySectors.filter(s => (s as any).sector_type !== 'cash_van').map(s => s.id));
+    
+    const cashVanCustomers = customers.filter(c => c.sector_id && cashVanSectorIds.has(c.sector_id) && !deliveredCustomerIds.has(c.id));
+    const preventeUnvisitedCustomers = customers.filter(c => c.sector_id && preventeSectorIds.has(c.sector_id) && !deliveryCustomerIdsWithOrders.has(c.id) && !deliveredCustomerIds.has(c.id));
+    
+    const combined = new Map<string, typeof customers[0]>();
+    [...cashVanCustomers, ...preventeUnvisitedCustomers].forEach(c => combined.set(c.id, c));
+    return Array.from(combined.values());
+  }, [todayDeliverySectors, customers, deliveredCustomerIds, deliveryCustomerIdsWithOrders]);
 
   // Direct sale sub-categorization
   const directSoldCustomerIds = useMemo(() => new Set(todayDirectSales.map(s => s.customer_id).filter(Boolean)), [todayDirectSales]);
