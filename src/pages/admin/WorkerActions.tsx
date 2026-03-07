@@ -68,7 +68,7 @@ const workerActions = [
 
 const WorkerActions: React.FC = () => {
   const { activeBranch } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const { setSelectedWorker: setContextWorker } = useSelectedWorker();
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
