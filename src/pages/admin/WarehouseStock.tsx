@@ -226,6 +226,20 @@ const WarehouseStock: React.FC = () => {
     return productSummaries.filter(s => s.productName.includes(search));
   }, [productSummaries, search]);
 
+  // Fetch pallet quantity for review
+  const { data: palletData } = useQuery({
+    queryKey: ['branch-pallet-qty', branchId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('branch_pallets')
+        .select('quantity')
+        .eq('branch_id', branchId!)
+        .single();
+      return data?.quantity || 0;
+    },
+    enabled: !!branchId,
+  });
+
   if (isLoading || summaryLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -241,20 +255,6 @@ const WarehouseStock: React.FC = () => {
     quantity: s.quantity,
     product: s.product,
   }));
-
-  // Fetch pallet quantity for review
-  const { data: palletData } = useQuery({
-    queryKey: ['branch-pallet-qty', branchId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('branch_pallets')
-        .select('quantity')
-        .eq('branch_id', branchId!)
-        .single();
-      return data?.quantity || 0;
-    },
-    enabled: !!branchId,
-  });
 
   return (
     <div className="p-4 space-y-4">
