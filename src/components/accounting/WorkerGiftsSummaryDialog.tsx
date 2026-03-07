@@ -881,6 +881,7 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
         productFilter={printProductLabel}
         isVisible={showPrintView}
         visibleColumns={printSettings?.columns}
+        separateByProduct={printSettings?.separateByProduct ?? true}
       />
       <GiftsPrintSettingsDialog
         open={showPrintSettings}

@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Settings, Printer } from 'lucide-react';
 
@@ -37,7 +38,8 @@ export const ALL_PRINT_COLUMNS: GiftPrintColumn[] = [
 
 export interface GiftPrintSettings {
   columns: GiftPrintColumnKey[];
-  productFilter: string; // 'all' or product id
+  productFilter: string;
+  separateByProduct: boolean;
 }
 
 interface Props {
@@ -48,6 +50,7 @@ interface Props {
 }
 
 const STORAGE_KEY = 'gifts-print-columns';
+const SEPARATE_KEY = 'gifts-print-separate';
 
 const getDefaultColumns = (): GiftPrintColumnKey[] =>
   ALL_PRINT_COLUMNS.filter(c => c.defaultVisible).map(c => c.key);
@@ -60,9 +63,18 @@ const loadSavedColumns = (): GiftPrintColumnKey[] => {
   return getDefaultColumns();
 };
 
+const loadSeparate = (): boolean => {
+  try {
+    const saved = localStorage.getItem(SEPARATE_KEY);
+    if (saved !== null) return JSON.parse(saved);
+  } catch {}
+  return true; // default ON
+};
+
 const GiftsPrintSettingsDialog: React.FC<Props> = ({ open, onOpenChange, products, onPrint }) => {
   const [selectedColumns, setSelectedColumns] = useState<GiftPrintColumnKey[]>(loadSavedColumns);
   const [productFilter, setProductFilter] = useState('all');
+  const [separateByProduct, setSeparateByProduct] = useState(loadSeparate);
 
   const toggleColumn = (key: GiftPrintColumnKey) => {
     setSelectedColumns(prev => {
@@ -72,6 +84,11 @@ const GiftsPrintSettingsDialog: React.FC<Props> = ({ open, onOpenChange, product
     });
   };
 
+  const handleSeparateChange = (val: boolean) => {
+    setSeparateByProduct(val);
+    localStorage.setItem(SEPARATE_KEY, JSON.stringify(val));
+  };
+
   const uniqueProducts = useMemo(() => {
     const map = new Map<string, string>();
     products.forEach(p => map.set(p.id, p.name));
@@ -79,7 +96,7 @@ const GiftsPrintSettingsDialog: React.FC<Props> = ({ open, onOpenChange, product
   }, [products]);
 
   const handlePrint = () => {
-    onPrint({ columns: selectedColumns, productFilter });
+    onPrint({ columns: selectedColumns, productFilter, separateByProduct });
     onOpenChange(false);
   };
 
@@ -94,6 +111,18 @@ const GiftsPrintSettingsDialog: React.FC<Props> = ({ open, onOpenChange, product
         </DialogHeader>
 
         <div className="space-y-4 overflow-y-auto flex-1 px-1">
+          {/* Separate by product */}
+          <div className="flex items-center justify-between p-2 rounded-lg bg-accent/30">
+            <Label htmlFor="separate-product" className="text-xs cursor-pointer">
+              صفحة مستقلة لكل منتج
+            </Label>
+            <Switch
+              id="separate-product"
+              checked={separateByProduct}
+              onCheckedChange={handleSeparateChange}
+            />
+          </div>
+
           {/* Product filter */}
           <div className="space-y-1.5">
             <Label className="text-sm font-semibold">تصفية حسب المنتج</Label>
