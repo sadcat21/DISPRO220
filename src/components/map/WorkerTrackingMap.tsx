@@ -290,6 +290,35 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
         </Badge>
       </div>
 
+      {/* Route Info Bar */}
+      {routeInfo && highlightWorkerId && showOnlyHighlighted && (
+        <div className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-primary text-primary-foreground" dir={dir}>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <Route className="w-4 h-4" />
+              <span className="font-bold text-sm">
+                {routeInfo.distance >= 1000
+                  ? `${(routeInfo.distance / 1000).toFixed(1)} كم`
+                  : `${Math.round(routeInfo.distance)} م`}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-4 h-4" />
+              <span className="font-bold text-sm">
+                {(() => {
+                  const mins = Math.round(routeInfo.duration / 60);
+                  if (mins >= 60) {
+                    return `${Math.floor(mins / 60)} س ${mins % 60} د`;
+                  }
+                  return `${mins} د`;
+                })()}
+              </span>
+            </div>
+          </div>
+          <span className="text-xs opacity-80">🏭 → المخزن</span>
+        </div>
+      )}
+
       {/* Map */}
       <div className="h-[400px] rounded-lg overflow-hidden border shadow-sm relative">
         <div ref={mapContainerRef} className="h-full w-full" style={{ zIndex: 1 }} />
