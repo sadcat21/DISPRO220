@@ -360,7 +360,7 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
     fetchRoute();
   }, [locations, highlightWorkerId, showOnlyHighlighted]);
 
-  // Reverse geocode highlighted worker's location
+  // Fast reverse geocode highlighted worker's location (single Nominatim call)
   useEffect(() => {
     if (!highlightWorkerId || !locations) {
       setWorkerAddress(null);
@@ -377,17 +377,44 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
     setIsLoadingAddress(true);
     setWorkerAddress(null);
 
-    reverseGeocode(loc.latitude, loc.longitude)
-      .then(address => {
-        if (!cancelled) setWorkerAddress(address);
-      })
-      .catch(() => {
-        if (!cancelled) setWorkerAddress(null);
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoadingAddress(false);
-      });
+    const cleanArabic = (text: string): string => {
+      if (!text) return '';
+      const match = text.match(/[\u0600-\u06FF]+/g);
+      return match ? match.join(' ') : text;
+    };
 
+    const fetchAddress = async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${loc.latitude}&lon=${loc.longitude}&accept-language=ar&addressdetails=1`
+        );
+        if (!res.ok) throw new Error('fail');
+        const data = await res.json();
+        if (cancelled) return;
+
+        if (data?.address) {
+          const addr = data.address;
+          const parts: string[] = [];
+          const road = addr.road || addr.suburb || addr.neighbourhood || addr.residential || addr.quarter;
+          if (road) parts.push(cleanArabic(road));
+          const city = addr.municipality || addr.city || addr.town || addr.village;
+          if (city) { const c = cleanArabic(city); if (c && c !== parts[parts.length - 1]) parts.push(`بلدية ${c}`); }
+          const daira = addr.county;
+          if (daira) { const d = cleanArabic(daira); if (d && d !== cleanArabic(city || '')) parts.push(`دائرة ${d}`); }
+          const wilaya = addr.state || addr.province;
+          if (wilaya) { const w = cleanArabic(wilaya); if (w && w !== cleanArabic(daira || '')) parts.push(`ولاية ${w}`); }
+          setWorkerAddress(parts.length > 0 ? parts.join('، ') : data.display_name || 'عنوان غير معروف');
+        } else {
+          setWorkerAddress('عنوان غير معروف');
+        }
+      } catch {
+        if (!cancelled) setWorkerAddress('تعذر تحديد العنوان');
+      } finally {
+        if (!cancelled) setIsLoadingAddress(false);
+      }
+    };
+
+    fetchAddress();
     return () => { cancelled = true; };
   }, [highlightWorkerId, locations]);
   if (isLoading) {
