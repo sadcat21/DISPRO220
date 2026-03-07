@@ -444,11 +444,11 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
               size="sm"
               variant="outline"
               className="gap-1 text-[10px] h-7"
-              onClick={handleThermalPrint}
-              disabled={isPrinting || !giftsData?.items?.length}
+              onClick={() => setShowPreview(prev => !prev)}
+              disabled={!giftsData?.items?.length}
             >
               <Printer className="w-3 h-3" />
-              طباعة حرارية
+              {showPreview ? 'إخفاء المعاينة' : 'معاينة الطباعة'}
             </Button>
           </div>
 
