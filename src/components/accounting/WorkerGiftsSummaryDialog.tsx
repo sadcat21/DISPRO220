@@ -207,7 +207,7 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
             totalGiftPieces: 0,
             totalQuantitySold: 0,
             offerName: offerNamesMap[offerId] || '',
-            offerDetails: offerDetailsMap[offerId] || '',
+            offerDetails: offerDetailsMap[offerId] || [],
             customers: [],
           };
         }
@@ -306,7 +306,7 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
           totalGiftPieces: extra,
           totalQuantitySold: promoAgg.totalVente,
           offerName: 'عرض ترويجي',
-          offerDetails: 'Promo directe',
+          offerDetails: ['Promo directe'],
           customers: promoAgg.customers,
         };
       }
