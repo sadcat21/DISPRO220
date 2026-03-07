@@ -38,6 +38,7 @@ import WorkerPointsDialog from '@/components/rewards/WorkerPointsDialog';
 import StockVerificationDialog from '@/components/stock/StockVerificationDialog';
 import WorkerAttendanceLogDialog from '@/components/attendance/WorkerAttendanceLogDialog';
 import WorkerSalesSummaryDialog from '@/components/accounting/WorkerSalesSummaryDialog';
+import WorkerGiftsSummaryDialog from '@/components/accounting/WorkerGiftsSummaryDialog';
 import EditWorkerProfileDialog from '@/components/workers/EditWorkerProfileDialog';
 import WorkerAchievementsDialog from '@/components/workers/WorkerAchievementsDialog';
 import SectorScheduleDialog from '@/components/sectors/SectorScheduleDialog';
@@ -64,6 +65,7 @@ const workerActions = [
   { key: 'today_customers', icon: MapPin, path: '', labelKey: 'عملاء اليوم', color: 'bg-sky-50 border-sky-200 text-sky-700', isDialog: true },
   { key: 'attendance_log', icon: CalendarDays, path: '', labelKey: 'سجل المداومة', color: 'bg-teal-50 border-teal-200 text-teal-700', isDialog: true },
   { key: 'sales_summary', icon: ShoppingBag, path: '', labelKey: 'تجميع المبيعات', color: 'bg-amber-50 border-amber-200 text-amber-700', isDialog: true },
+  { key: 'gifts_summary', icon: Gift, path: '', labelKey: 'تجميع الهدايا', color: 'bg-purple-50 border-purple-200 text-purple-700', isDialog: true },
   { key: 'achievements', icon: Trophy, path: '', labelKey: 'المنجزات', color: 'bg-emerald-50 border-emerald-200 text-emerald-700', isDialog: true },
   { key: 'sector_schedule', icon: MapPin, path: '', labelKey: 'جدول السيكتور', color: 'bg-sky-50 border-sky-200 text-sky-700', isDialog: true },
 ];
@@ -84,6 +86,7 @@ const WorkerActions: React.FC = () => {
   const [stockReviewOpen, setStockReviewOpen] = useState(false);
   const [attendanceLogOpen, setAttendanceLogOpen] = useState(false);
   const [salesSummaryOpen, setSalesSummaryOpen] = useState(false);
+  const [giftsSummaryOpen, setGiftsSummaryOpen] = useState(false);
   const [workerProfileOpen, setWorkerProfileOpen] = useState(false);
   const [achievementsOpen, setAchievementsOpen] = useState(false);
   const [sectorScheduleOpen, setSectorScheduleOpen] = useState(false);
@@ -400,6 +403,8 @@ const WorkerActions: React.FC = () => {
         setAttendanceLogOpen(true);
       } else if (action.key === 'sales_summary') {
         setSalesSummaryOpen(true);
+      } else if (action.key === 'gifts_summary') {
+        setGiftsSummaryOpen(true);
       } else if (action.key === 'worker_profile') {
         setWorkerProfileOpen(true);
       } else if (action.key === 'achievements') {
