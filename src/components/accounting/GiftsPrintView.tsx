@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useState, useMemo } from 'react';
+import React, { forwardRef, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { format } from 'date-fns';
 import logoImage from '@/assets/logo.png';
@@ -30,6 +30,8 @@ interface GiftsPrintViewProps {
   separateByProduct?: boolean;
 }
 
+const ROWS_PER_PAGE = 16;
+
 const COLUMN_CONFIG: Record<GiftPrintColumnKey, { header: string; width?: string; className?: string }> = {
   number: { header: 'N°', width: '30px', className: 'center' },
   customerName: { header: 'Nom', className: '' },
@@ -47,9 +49,26 @@ const COLUMN_CONFIG: Record<GiftPrintColumnKey, { header: string; width?: string
   date: { header: 'Date', width: '70px', className: 'small-text' },
 };
 
-const getCellValue = (row: GiftPrintRow, col: GiftPrintColumnKey, index: number): React.ReactNode => {
+type PrintPage = {
+  productName: string | null;
+  rows: GiftPrintRow[];
+  rowOffset: number;
+  showTotals: boolean;
+  totals: { vente: number; gift: number };
+};
+
+const chunkRows = <T,>(items: T[], size: number): T[][] => {
+  if (size <= 0) return [items];
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks.length ? chunks : [[]];
+};
+
+const getCellValue = (row: GiftPrintRow, col: GiftPrintColumnKey, rowNumber: number): React.ReactNode => {
   switch (col) {
-    case 'number': return index + 1;
+    case 'number': return rowNumber;
     case 'customerName': return row.customerName;
     case 'customerNameFr': return row.customerNameFr || '-';
     case 'storeName': return row.storeName || '-';
@@ -71,7 +90,18 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
   ({ rows, workerName, dateRange, productFilter, isVisible = false, visibleColumns, separateByProduct = true }, ref) => {
     const [container, setContainer] = useState<HTMLDivElement | null>(null);
 
-    const columns = visibleColumns || ['number', 'customerName', 'address', 'wilaya', 'phone', 'productName', 'venteQuantity', 'giftBoxPiece', 'workerName', 'date'];
+    const columns = visibleColumns || [
+      'number',
+      'customerName',
+      'address',
+      'wilaya',
+      'phone',
+      'productName',
+      'venteQuantity',
+      'giftBoxPiece',
+      'workerName',
+      'date',
+    ];
 
     const venteColIdx = columns.indexOf('venteQuantity');
     const giftColIdx = columns.indexOf('giftQuantity');
@@ -84,7 +114,9 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
       div.id = 'gifts-print-portal';
       document.body.appendChild(div);
       setContainer(div);
-      return () => { if (div.parentNode) div.parentNode.removeChild(div); };
+      return () => {
+        if (div.parentNode) div.parentNode.removeChild(div);
+      };
     }, []);
 
     const filterCriteria = [
@@ -93,128 +125,82 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
       `Période: ${dateRange || ''}`,
     ].join('  |  ');
 
-    // Group rows by product
-    const productGroups = useMemo(() => {
-      if (!separateByProduct) return [{ productName: null, rows }];
-      const map = new Map<string, GiftPrintRow[]>();
-      rows.forEach(r => {
-        const key = r.productName;
-        if (!map.has(key)) map.set(key, []);
-        map.get(key)!.push(r);
+    const pages = useMemo((): PrintPage[] => {
+      if (!rows.length) {
+        return [{ productName: null, rows: [], rowOffset: 0, showTotals: true, totals: { vente: 0, gift: 0 } }];
+      }
+
+      if (!separateByProduct) {
+        const totals = {
+          vente: rows.reduce((s, r) => s + r.venteQuantity, 0),
+          gift: rows.reduce((s, r) => s + r.giftQuantity, 0),
+        };
+        const chunks = chunkRows(rows, ROWS_PER_PAGE);
+        return chunks.map((chunk, idx) => ({
+          productName: null,
+          rows: chunk,
+          rowOffset: idx * ROWS_PER_PAGE,
+          showTotals: idx === chunks.length - 1,
+          totals,
+        }));
+      }
+
+      const grouped = new Map<string, GiftPrintRow[]>();
+      rows.forEach((row) => {
+        if (!grouped.has(row.productName)) grouped.set(row.productName, []);
+        grouped.get(row.productName)!.push(row);
       });
-      return Array.from(map, ([productName, rows]) => ({ productName, rows }));
+
+      const builtPages: PrintPage[] = [];
+      for (const [productName, productRows] of grouped.entries()) {
+        const totals = {
+          vente: productRows.reduce((s, r) => s + r.venteQuantity, 0),
+          gift: productRows.reduce((s, r) => s + r.giftQuantity, 0),
+        };
+        const chunks = chunkRows(productRows, ROWS_PER_PAGE);
+        chunks.forEach((chunk, idx) => {
+          builtPages.push({
+            productName,
+            rows: chunk,
+            rowOffset: idx * ROWS_PER_PAGE,
+            showTotals: idx === chunks.length - 1,
+            totals,
+          });
+        });
+      }
+
+      return builtPages;
     }, [rows, separateByProduct]);
 
-    const buildTotalsRow = (pageRows: GiftPrintRow[]) => {
-      const totalVente = pageRows.reduce((s, r) => s + r.venteQuantity, 0);
-      const totalGift = pageRows.reduce((s, r) => s + r.giftQuantity, 0);
+    const buildTotalsRow = (totals: { vente: number; gift: number }) => {
       const totalIndices = [venteColIdx, giftColIdx, giftBPColIdx].filter(i => i >= 0);
       if (totalIndices.length === 0) {
         return <td colSpan={columns.length} className="totals-label">Total</td>;
       }
+
       const firstTotalIdx = Math.min(...totalIndices);
       const cells: React.ReactNode[] = [];
+
       if (firstTotalIdx > 0) {
-        cells.push(<td key="label" colSpan={firstTotalIdx} className="totals-label">Total</td>);
+        cells.push(
+          <td key="label" colSpan={firstTotalIdx} className="totals-label">Total</td>
+        );
       }
+
       for (let i = firstTotalIdx; i < columns.length; i++) {
         const col = columns[i];
-        if (col === 'venteQuantity') cells.push(<td key={col} className="center bold">{totalVente}</td>);
-        else if (col === 'giftQuantity') cells.push(<td key={col} className="center bold">{totalGift}</td>);
-        else if (col === 'giftBoxPiece') cells.push(<td key={col} className="center bold">-</td>);
-        else cells.push(<td key={col}></td>);
+        if (col === 'venteQuantity') {
+          cells.push(<td key={col} className="center bold">{totals.vente}</td>);
+        } else if (col === 'giftQuantity') {
+          cells.push(<td key={col} className="center bold">{totals.gift}</td>);
+        } else if (col === 'giftBoxPiece') {
+          cells.push(<td key={col} className="center bold">-</td>);
+        } else {
+          cells.push(<td key={col}></td>);
+        }
       }
+
       return cells;
-    };
-
-    const renderPage = (pageRows: GiftPrintRow[], pageProductName: string | null, pageIndex: number) => {
-      const minRows = 20;
-      const emptyRowsCount = Math.max(0, minRows - pageRows.length);
-      const pageTitle = pageProductName
-        ? `Registre des promotions — ${pageProductName}`
-        : 'Registre des promotions';
-
-      return (
-        <div
-          key={pageIndex}
-          className="print-page"
-          style={{
-            position: 'relative',
-            minHeight: '100vh',
-            pageBreakBefore: pageIndex > 0 ? 'always' : 'auto',
-            pageBreakAfter: 'auto',
-          }}
-        >
-          {/* Watermark */}
-          <div style={{
-            position: 'absolute', top: '45%', left: '50%',
-            transform: 'translate(-50%, -50%)', zIndex: 0,
-            opacity: 0.2, pointerEvents: 'none',
-          }}>
-            <img src={logoImage} alt="" style={{ width: '280px', height: 'auto' }} />
-          </div>
-
-          {/* Header */}
-          <div className="print-header-with-logo" style={{ position: 'relative', zIndex: 1 }}>
-            <div className="print-logo">
-              <img src={logoImage} alt="Laser Food" />
-            </div>
-            <div className="print-title-section">
-              <h1 style={{ fontSize: pageProductName ? '16pt' : '18pt' }}>{pageTitle}</h1>
-              <p style={{ fontSize: '10pt', fontWeight: 600, marginTop: '5px' }}>
-                {filterCriteria}
-              </p>
-            </div>
-            <div className="print-logo">
-              <img src={logoImage} alt="Laser Food" />
-            </div>
-          </div>
-
-          {/* Table */}
-          <table className="word-table" style={{ position: 'relative', zIndex: 1 }}>
-            <thead>
-              <tr>
-                {columns.map(col => {
-                  const cfg = COLUMN_CONFIG[col];
-                  return (
-                    <th key={col} style={cfg.width ? { width: cfg.width } : undefined}>
-                      {cfg.header}
-                    </th>
-                  );
-                })}
-              </tr>
-            </thead>
-            <tbody>
-              {pageRows.map((row, index) => (
-                <tr key={index}>
-                  {columns.map(col => {
-                    const cfg = COLUMN_CONFIG[col];
-                    return (
-                      <td key={col} className={cfg.className || ''}>
-                        {getCellValue(row, col, index)}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-              {Array.from({ length: emptyRowsCount }).map((_, i) => (
-                <tr key={`empty-${i}`}>
-                  {columns.map((_, j) => <td key={j}>&nbsp;</td>)}
-                </tr>
-              ))}
-              <tr className="totals-row">
-                {buildTotalsRow(pageRows)}
-              </tr>
-            </tbody>
-          </table>
-
-          {/* Footer */}
-          <div className="print-footer">
-            <span>Date d'impression: {format(new Date(), 'dd/MM/yyyy HH:mm')}</span>
-            <span>Laser Food</span>
-          </div>
-        </div>
-      );
     };
 
     const content = (
@@ -224,7 +210,80 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
         dir="rtl"
         style={{ display: isVisible ? 'block' : 'none' }}
       >
-        {productGroups.map((group, idx) => renderPage(group.rows, group.productName, idx))}
+        {pages.map((page, pageIndex) => {
+          const emptyRowsCount = Math.max(0, ROWS_PER_PAGE - page.rows.length);
+          const pageTitle = page.productName
+            ? `Registre des promotions — ${page.productName}`
+            : 'Registre des promotions';
+
+          return (
+            <section
+              key={`${page.productName || 'all'}-${pageIndex}`}
+              className="print-page"
+              data-pdf-section={page.productName || 'all-products'}
+              style={{ pageBreakBefore: pageIndex > 0 ? 'always' : 'auto' }}
+            >
+              <div style={{ position: 'absolute', top: '45%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 0, opacity: 0.2, pointerEvents: 'none' }}>
+                <img src={logoImage} alt="" style={{ width: '280px', height: 'auto' }} />
+              </div>
+
+              <div className="print-header-with-logo" style={{ position: 'relative', zIndex: 1 }}>
+                <div className="print-logo"><img src={logoImage} alt="Laser Food" /></div>
+                <div className="print-title-section">
+                  <h1 style={{ fontSize: page.productName ? '16pt' : '18pt' }}>{pageTitle}</h1>
+                  <p style={{ fontSize: '10pt', fontWeight: 600, marginTop: '5px' }}>{filterCriteria}</p>
+                </div>
+                <div className="print-logo"><img src={logoImage} alt="Laser Food" /></div>
+              </div>
+
+              <table className="word-table" style={{ position: 'relative', zIndex: 1 }}>
+                <thead>
+                  <tr>
+                    {columns.map(col => {
+                      const cfg = COLUMN_CONFIG[col];
+                      return (
+                        <th key={col} style={cfg.width ? { width: cfg.width } : undefined}>
+                          {cfg.header}
+                        </th>
+                      );
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {page.rows.map((row, rowIndex) => (
+                    <tr key={rowIndex}>
+                      {columns.map(col => {
+                        const cfg = COLUMN_CONFIG[col];
+                        return (
+                          <td key={col} className={cfg.className || ''}>
+                            {getCellValue(row, col, page.rowOffset + rowIndex + 1)}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+
+                  {Array.from({ length: emptyRowsCount }).map((_, i) => (
+                    <tr key={`empty-${i}`}>
+                      {columns.map((_, j) => <td key={j}>&nbsp;</td>)}
+                    </tr>
+                  ))}
+
+                  {page.showTotals && (
+                    <tr className="totals-row">
+                      {buildTotalsRow(page.totals)}
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+
+              <div className="print-footer">
+                <span>Date d'impression: {format(new Date(), 'dd/MM/yyyy HH:mm')}</span>
+                <span>Laser Food</span>
+              </div>
+            </section>
+          );
+        })}
       </div>
     );
 

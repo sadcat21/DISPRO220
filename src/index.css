@@ -438,6 +438,22 @@
     font-size: 11pt;
   }
 
+  .print-page {
+    position: relative;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .print-page + .print-page {
+    page-break-before: always;
+    break-before: page;
+  }
+
+  .print-page .print-footer {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
   .print-footer {
     display: flex;
     justify-content: space-between;
