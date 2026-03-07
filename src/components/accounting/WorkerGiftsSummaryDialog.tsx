@@ -43,7 +43,7 @@ interface GiftProductAgg {
   totalGiftPieces: number;
   totalQuantitySold: number;
   offerName: string;
-  offerDetails: string;
+  offerDetails: string[];  // each tier as separate entry
   customers: GiftCustomerDetail[];
 }
 
