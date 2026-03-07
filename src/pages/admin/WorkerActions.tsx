@@ -143,6 +143,15 @@ const WorkerActions: React.FC = () => {
     },
   });
 
+  // Fetch sector_schedules for multi-schedule support
+  const { data: sectorSchedules = [] } = useQuery({
+    queryKey: ['worker-actions-sector-schedules', activeBranch?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('sector_schedules').select('*');
+      return data || [];
+    },
+  });
+
   // Fetch worker roles
   const { data: workerRolesData = [] } = useQuery({
     queryKey: ['worker-actions-roles', activeBranch?.id],
@@ -166,11 +175,37 @@ const WorkerActions: React.FC = () => {
     return map;
   }, [workerRolesData]);
 
-  // Build today's sector assignments per worker
+  // Build sector name lookup
+  const sectorNameMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const s of sectors) {
+      map[s.id] = getLocalizedName(s, language);
+    }
+    return map;
+  }, [sectors, language]);
+
+  // Build today's sector assignments per worker using sector_schedules
   const workerTodaySectors = useMemo(() => {
     const map: Record<string, { delivery: string[]; sales: string[] }> = {};
+    
+    // Use sector_schedules table (new system)
+    for (const sc of sectorSchedules) {
+      if (sc.day !== todayName || !sc.worker_id) continue;
+      const sectorName = sectorNameMap[sc.sector_id] || '';
+      if (!sectorName) continue;
+      if (!map[sc.worker_id]) map[sc.worker_id] = { delivery: [], sales: [] };
+      if (sc.schedule_type === 'delivery') {
+        map[sc.worker_id].delivery.push(sectorName);
+      } else if (sc.schedule_type === 'sales') {
+        map[sc.worker_id].sales.push(sectorName);
+      }
+    }
+
+    // Fallback: also check legacy fields for sectors without schedules
     for (const s of sectors) {
-      const sectorName = getLocalizedName(s, language);
+      const hasNewSchedule = sectorSchedules.some(sc => sc.sector_id === s.id);
+      if (hasNewSchedule) continue;
+      const sectorName = sectorNameMap[s.id] || '';
       if (s.visit_day_delivery === todayName && s.delivery_worker_id) {
         if (!map[s.delivery_worker_id]) map[s.delivery_worker_id] = { delivery: [], sales: [] };
         map[s.delivery_worker_id].delivery.push(sectorName);
@@ -181,7 +216,7 @@ const WorkerActions: React.FC = () => {
       }
     }
     return map;
-  }, [sectors, todayName, language]);
+  }, [sectorSchedules, sectors, todayName, sectorNameMap]);
 
   const { data: truckStock = [] } = useQuery({
     queryKey: ['worker-truck-stock', selectedWorker?.id],

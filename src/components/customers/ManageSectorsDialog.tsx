@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { MapPin, Plus, Pencil, Trash2, Loader2, Save, X, UserCheck, Truck, Calendar, Layers, Languages, Filter } from 'lucide-react';
 import { useSectors } from '@/hooks/useSectors';
+import { useSectorSchedules, SectorSchedule } from '@/hooks/useSectorSchedules';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -29,6 +30,12 @@ interface SectorZone {
   sector_id: string;
 }
 
+interface FormScheduleEntry {
+  schedule_type: 'sales' | 'delivery';
+  day: string;
+  worker_id: string;
+}
+
 const DAYS = [
   { value: 'saturday', label: 'السبت', order: 0 },
   { value: 'sunday', label: 'الأحد', order: 1 },
@@ -45,6 +52,7 @@ const DAY_ORDER: Record<string, number> = {
 const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenChange }) => {
   const { workerId, activeBranch } = useAuth();
   const { sectors, isLoading, createSector, updateSector, deleteSector } = useSectors();
+  const { schedules, saveSectorSchedules, getSchedulesBySector } = useSectorSchedules();
   const [workers, setWorkers] = useState<{ id: string; full_name: string }[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingSector, setEditingSector] = useState<Sector | null>(null);
@@ -55,10 +63,9 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
   const [name, setName] = useState('');
   const [nameFr, setNameFr] = useState('');
   const [sectorType, setSectorType] = useState<SectorType>('prevente');
-  const [visitDaySales, setVisitDaySales] = useState('');
-  const [visitDayDelivery, setVisitDayDelivery] = useState('');
-  const [salesWorkerId, setSalesWorkerId] = useState('');
-  const [deliveryWorkerId, setDeliveryWorkerId] = useState('');
+
+  // Multi-schedule form state
+  const [formSchedules, setFormSchedules] = useState<FormScheduleEntry[]>([]);
 
   // Zone management state
   const [zonesMap, setZonesMap] = useState<Record<string, SectorZone[]>>({});
@@ -66,7 +73,6 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
   const [newZoneName, setNewZoneName] = useState('');
   const [newZoneNameFr, setNewZoneNameFr] = useState('');
   const [addingZone, setAddingZone] = useState(false);
-  // Zones for the form (when creating/editing a sector)
   const [formZones, setFormZones] = useState<{ name: string; name_fr: string }[]>([]);
   const [newFormZone, setNewFormZone] = useState('');
   const [newFormZoneFr, setNewFormZoneFr] = useState('');
@@ -78,28 +84,41 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
   const [filterDay, setFilterDay] = useState('all');
   const [filterType, setFilterType] = useState<'all' | 'prevente' | 'cash_van'>('all');
 
+  // Build schedules map for display
+  const schedulesMap = useMemo(() => {
+    const map: Record<string, SectorSchedule[]> = {};
+    schedules.forEach(s => {
+      if (!map[s.sector_id]) map[s.sector_id] = [];
+      map[s.sector_id].push(s);
+    });
+    return map;
+  }, [schedules]);
+
   const filteredSectors = sectors.filter(s => {
     if (filterType !== 'all' && (s as any).sector_type !== filterType) return false;
-    if (filterDay !== 'all' && s.visit_day_sales !== filterDay && s.visit_day_delivery !== filterDay) return false;
-    if (filterWorker !== 'all' && s.sales_worker_id !== filterWorker && s.delivery_worker_id !== filterWorker) return false;
+    const sectorSchedules = schedulesMap[s.id] || [];
+    if (filterDay !== 'all' && !sectorSchedules.some(sc => sc.day === filterDay)) return false;
+    if (filterWorker !== 'all' && !sectorSchedules.some(sc => sc.worker_id === filterWorker)) return false;
     return true;
   });
 
-  // Sort sectors by earliest day (delivery or sales)
   const getSectorDayOrder = (s: Sector) => {
-    const salesOrder = s.visit_day_sales ? DAY_ORDER[s.visit_day_sales] ?? 99 : 99;
-    const deliveryOrder = s.visit_day_delivery ? DAY_ORDER[s.visit_day_delivery] ?? 99 : 99;
-    return Math.min(salesOrder, deliveryOrder);
+    const sectorSchedules = schedulesMap[s.id] || [];
+    if (sectorSchedules.length === 0) return 99;
+    return Math.min(...sectorSchedules.map(sc => DAY_ORDER[sc.day] ?? 99));
   };
 
   const sortedFilteredSectors = [...filteredSectors].sort((a, b) => getSectorDayOrder(a) - getSectorDayOrder(b));
 
-  // Group by day when no filters active
   const isFiltered = filterType !== 'all' || filterDay !== 'all' || filterWorker !== 'all';
   const groupedByDay = !isFiltered ? DAYS.map(day => ({
     day,
-    sectors: filteredSectors.filter(s => s.visit_day_sales === day.value || s.visit_day_delivery === day.value),
+    sectors: filteredSectors.filter(s => {
+      const sectorSchedules = schedulesMap[s.id] || [];
+      return sectorSchedules.some(sc => sc.day === day.value);
+    }),
   })).filter(g => g.sectors.length > 0) : null;
+
   useEffect(() => {
     if (open) {
       fetchWorkers();
@@ -130,10 +149,7 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
     setName('');
     setNameFr('');
     setSectorType('prevente');
-    setVisitDaySales('');
-    setVisitDayDelivery('');
-    setSalesWorkerId('');
-    setDeliveryWorkerId('');
+    setFormSchedules([]);
     setEditingSector(null);
     setShowForm(false);
     setFormZones([]);
@@ -146,12 +162,27 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
     setName(sector.name);
     setNameFr((sector as any).name_fr || '');
     setSectorType((sector as any).sector_type || 'prevente');
-    setVisitDaySales(sector.visit_day_sales || '');
-    setVisitDayDelivery(sector.visit_day_delivery || '');
-    setSalesWorkerId(sector.sales_worker_id || '');
-    setDeliveryWorkerId(sector.delivery_worker_id || '');
+    // Load existing schedules into form
+    const existing = schedulesMap[sector.id] || [];
+    setFormSchedules(existing.map(s => ({
+      schedule_type: s.schedule_type as 'sales' | 'delivery',
+      day: s.day,
+      worker_id: s.worker_id || '',
+    })));
     setFormZones((zonesMap[sector.id] || []).map(z => ({ name: z.name, name_fr: z.name_fr || '' })));
     setShowForm(true);
+  };
+
+  const handleAddScheduleEntry = () => {
+    setFormSchedules(prev => [...prev, { schedule_type: 'delivery', day: '', worker_id: '' }]);
+  };
+
+  const handleRemoveScheduleEntry = (index: number) => {
+    setFormSchedules(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateScheduleEntry = (index: number, field: keyof FormScheduleEntry, value: string) => {
+    setFormSchedules(prev => prev.map((entry, i) => i === index ? { ...entry, [field]: value } : entry));
   };
 
   const handleTranslateSectorName = async () => {
@@ -197,24 +228,41 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
       toast.error('الرجاء إدخال اسم السكتور');
       return;
     }
+
+    // Validate schedules: check for duplicate (type, day) entries
+    const seen = new Set<string>();
+    for (const entry of formSchedules) {
+      if (!entry.day) continue;
+      const key = `${entry.schedule_type}-${entry.day}`;
+      if (seen.has(key)) {
+        toast.error('يوجد تكرار في الجدولة: نفس النوع واليوم');
+        return;
+      }
+      seen.add(key);
+    }
+
     setIsSaving(true);
     try {
-      // Auto-translate sector name if French is empty
       let finalNameFr = nameFr.trim();
       if (!finalNameFr && name.trim()) {
         const r = await autoTranslateBeforeSave(name, '', '', 'transliterate');
         finalNameFr = r.fr || '';
       }
 
+      // Get primary schedule info for backward compatibility
+      const salesSchedule = formSchedules.find(s => s.schedule_type === 'sales' && s.day);
+      const deliverySchedule = formSchedules.find(s => s.schedule_type === 'delivery' && s.day);
+
       const sectorData = {
         name: name.trim(),
         name_fr: finalNameFr || null,
         branch_id: activeBranch?.id || null,
         sector_type: sectorType,
-        visit_day_sales: sectorType === 'cash_van' ? null : (visitDaySales || null),
-        visit_day_delivery: visitDayDelivery || null,
-        sales_worker_id: sectorType === 'cash_van' ? null : (salesWorkerId || null),
-        delivery_worker_id: deliveryWorkerId || null,
+        // Keep backward compat fields updated with first schedule
+        visit_day_sales: sectorType === 'cash_van' ? null : (salesSchedule?.day || null),
+        visit_day_delivery: deliverySchedule?.day || null,
+        sales_worker_id: sectorType === 'cash_van' ? null : (salesSchedule?.worker_id || null),
+        delivery_worker_id: deliverySchedule?.worker_id || null,
         created_by: workerId,
       };
 
@@ -226,22 +274,16 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
 
         const existingZones = zonesMap[editingSector.id] || [];
         const existingNames = existingZones.map(z => z.name);
-
-        // Delete zones that were removed
         const toDelete = existingZones.filter(z => !formZones.some(fz => fz.name === z.name));
         for (const z of toDelete) {
           await supabase.from('sector_zones').delete().eq('id', z.id);
         }
-
-        // Update existing zones (name_fr)
         for (const fz of formZones) {
           const existing = existingZones.find(ez => ez.name === fz.name);
           if (existing && existing.name_fr !== fz.name_fr) {
             await supabase.from('sector_zones').update({ name_fr: fz.name_fr || null }).eq('id', existing.id);
           }
         }
-
-        // Add new zones
         const toAdd = formZones.filter(fz => !existingNames.includes(fz.name));
         if (toAdd.length > 0) {
           await supabase.from('sector_zones').insert(toAdd.map(fz => ({ sector_id: savedSectorId, name: fz.name, name_fr: fz.name_fr || null })));
@@ -259,6 +301,16 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
         toast.success('تم إنشاء السكتور بنجاح');
       }
 
+      // Save schedules to sector_schedules table
+      const validSchedules = formSchedules
+        .filter(s => s.day && s.day !== 'none')
+        .map(s => ({
+          schedule_type: s.schedule_type,
+          day: s.day,
+          worker_id: s.worker_id || null,
+        }));
+      await saveSectorSchedules(savedSectorId, validSchedules);
+
       await fetchAllZones();
       resetForm();
     } catch (error: any) {
@@ -273,7 +325,6 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
     if (!trimmed) return;
     setAddingZone(true);
     try {
-      // Auto-translate zone name
       let frName = newZoneNameFr.trim();
       if (!frName) {
         const r = await autoTranslateBeforeSave(trimmed, '', '', 'transliterate');
@@ -324,95 +375,157 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
     return DAYS.find(d => d.value === day)?.label;
   };
 
-  const renderSectorContent = (sector: Sector, sectorZones: SectorZone[]) => (
-    <>
-      <div className="flex items-start justify-between">
-        <div className="space-y-1.5 flex-1">
-          <p className="font-bold text-sm">{sector.name}</p>
-          {(sector as any).name_fr && (
-            <p className="text-xs text-muted-foreground" dir="ltr">{(sector as any).name_fr}</p>
-          )}
-          <Badge variant="default" className={`text-[10px] w-fit ${(sector as any).sector_type === 'cash_van' ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`}>
-            {(sector as any).sector_type === 'cash_van' ? 'Cash Van' : 'Prévente'}
-          </Badge>
-          <div className="flex flex-wrap gap-1.5">
-            {getDayLabel(sector.visit_day_sales) && (
-              <Badge variant="outline" className="text-[10px] px-1.5">
-                <Calendar className="w-2.5 h-2.5 ml-0.5" />
-                طلبات: {getDayLabel(sector.visit_day_sales)}
-              </Badge>
+  const renderSectorContent = (sector: Sector, sectorZones: SectorZone[]) => {
+    const sectorSchedules = schedulesMap[sector.id] || [];
+    const salesSchedules = sectorSchedules.filter(s => s.schedule_type === 'sales');
+    const deliverySchedules = sectorSchedules.filter(s => s.schedule_type === 'delivery');
+
+    return (
+      <>
+        <div className="flex items-start justify-between">
+          <div className="space-y-1.5 flex-1">
+            <p className="font-bold text-sm">{sector.name}</p>
+            {(sector as any).name_fr && (
+              <p className="text-xs text-muted-foreground" dir="ltr">{(sector as any).name_fr}</p>
             )}
-            {getDayLabel(sector.visit_day_delivery) && (
-              <Badge variant="outline" className="text-[10px] px-1.5">
-                <Truck className="w-2.5 h-2.5 ml-0.5" />
-                توصيل: {getDayLabel(sector.visit_day_delivery)}
-              </Badge>
-            )}
-            {sectorZones.length > 0 && (
-              <Badge variant="secondary" className="text-[10px] px-1.5">
-                <Layers className="w-2.5 h-2.5 ml-0.5" />
-                {sectorZones.length} منطقة
-              </Badge>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {getWorkerName(sector.sales_worker_id) && (
-              <Badge variant="secondary" className="text-[10px] px-1.5">
-                <UserCheck className="w-2.5 h-2.5 ml-0.5" />
-                {getWorkerName(sector.sales_worker_id)}
-              </Badge>
-            )}
-            {getWorkerName(sector.delivery_worker_id) && (
-              <Badge variant="secondary" className="text-[10px] px-1.5">
-                <Truck className="w-2.5 h-2.5 ml-0.5" />
-                {getWorkerName(sector.delivery_worker_id)}
-              </Badge>
-            )}
-          </div>
-        </div>
-        <div className="flex gap-1">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setExpandedZonesSector(expandedZonesSector === sector.id ? null : sector.id)} title="المناطق">
-            <Layers className="w-3.5 h-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditForm(sector)}>
-            <Pencil className="w-3.5 h-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setSectorToDelete(sector)}>
-            <Trash2 className="w-3.5 h-3.5" />
-          </Button>
-        </div>
-      </div>
-      {expandedZonesSector === sector.id && (
-        <div className="mt-3 pt-3 border-t space-y-2">
-          <Label className="text-xs font-semibold flex items-center gap-1">
-            <Layers className="w-3 h-3" />
-            المناطق
-          </Label>
-          {sectorZones.length > 0 ? (
+            <Badge variant="default" className={`text-[10px] w-fit ${(sector as any).sector_type === 'cash_van' ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`}>
+              {(sector as any).sector_type === 'cash_van' ? 'Cash Van' : 'Prévente'}
+            </Badge>
+
+            {/* Schedule badges */}
             <div className="flex flex-wrap gap-1.5">
-              {sectorZones.map(zone => (
-                <Badge key={zone.id} variant="outline" className="text-xs flex items-center gap-1 pr-1">
-                  {zone.name}{zone.name_fr ? ` (${zone.name_fr})` : ''}
-                  <button onClick={() => handleDeleteZone(zone.id)} className="hover:text-destructive">
-                    <X className="w-3 h-3" />
-                  </button>
+              {salesSchedules.map(sc => (
+                <Badge key={`sales-${sc.day}`} variant="outline" className="text-[10px] px-1.5">
+                  <Calendar className="w-2.5 h-2.5 ml-0.5" />
+                  طلبات: {getDayLabel(sc.day)}
+                  {sc.worker_id && getWorkerName(sc.worker_id) && (
+                    <span className="text-muted-foreground mr-1">({getWorkerName(sc.worker_id)})</span>
+                  )}
                 </Badge>
               ))}
+              {deliverySchedules.map(sc => (
+                <Badge key={`delivery-${sc.day}`} variant="outline" className="text-[10px] px-1.5">
+                  <Truck className="w-2.5 h-2.5 ml-0.5" />
+                  توصيل: {getDayLabel(sc.day)}
+                  {sc.worker_id && getWorkerName(sc.worker_id) && (
+                    <span className="text-muted-foreground mr-1">({getWorkerName(sc.worker_id)})</span>
+                  )}
+                </Badge>
+              ))}
+              {sectorZones.length > 0 && (
+                <Badge variant="secondary" className="text-[10px] px-1.5">
+                  <Layers className="w-2.5 h-2.5 ml-0.5" />
+                  {sectorZones.length} منطقة
+                </Badge>
+              )}
             </div>
-          ) : (
-            <p className="text-xs text-muted-foreground">لا توجد مناطق</p>
-          )}
-          <div className="flex gap-2">
-            <Input value={newZoneName} onChange={e => setNewZoneName(e.target.value)} placeholder="اسم المنطقة..." className="text-right text-sm flex-1" onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddZoneToExisting(sector.id); } }} />
-            <Input value={newZoneNameFr} onChange={e => setNewZoneNameFr(e.target.value)} placeholder="Nom..." dir="ltr" className="text-sm flex-1" onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddZoneToExisting(sector.id); } }} />
-            <Button variant="outline" size="sm" onClick={() => handleAddZoneToExisting(sector.id)} disabled={!newZoneName.trim() || addingZone}>
-              {addingZone ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+          </div>
+          <div className="flex gap-1">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setExpandedZonesSector(expandedZonesSector === sector.id ? null : sector.id)} title="المناطق">
+              <Layers className="w-3.5 h-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditForm(sector)}>
+              <Pencil className="w-3.5 h-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setSectorToDelete(sector)}>
+              <Trash2 className="w-3.5 h-3.5" />
             </Button>
           </div>
         </div>
-      )}
-    </>
-  );
+        {expandedZonesSector === sector.id && (
+          <div className="mt-3 pt-3 border-t space-y-2">
+            <Label className="text-xs font-semibold flex items-center gap-1">
+              <Layers className="w-3 h-3" />
+              المناطق
+            </Label>
+            {sectorZones.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {sectorZones.map(zone => (
+                  <Badge key={zone.id} variant="outline" className="text-xs flex items-center gap-1 pr-1">
+                    {zone.name}{zone.name_fr ? ` (${zone.name_fr})` : ''}
+                    <button onClick={() => handleDeleteZone(zone.id)} className="hover:text-destructive">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">لا توجد مناطق</p>
+            )}
+            <div className="flex gap-2">
+              <Input value={newZoneName} onChange={e => setNewZoneName(e.target.value)} placeholder="اسم المنطقة..." className="text-right text-sm flex-1" onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddZoneToExisting(sector.id); } }} />
+              <Input value={newZoneNameFr} onChange={e => setNewZoneNameFr(e.target.value)} placeholder="Nom..." dir="ltr" className="text-sm flex-1" onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddZoneToExisting(sector.id); } }} />
+              <Button variant="outline" size="sm" onClick={() => handleAddZoneToExisting(sector.id)} disabled={!newZoneName.trim() || addingZone}>
+                {addingZone ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+              </Button>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  };
+
+  const renderScheduleForm = () => {
+    const availableTypes = sectorType === 'cash_van' ? ['delivery'] : ['sales', 'delivery'];
+    const typeLabels: Record<string, string> = { sales: 'طلبات', delivery: 'توصيل' };
+
+    return (
+      <div className="space-y-2 border rounded-lg p-3 bg-background">
+        <div className="flex items-center justify-between">
+          <Label className="text-sm flex items-center gap-1">
+            <Calendar className="w-3.5 h-3.5" />
+            الجدولة (أيام الزيارة والعمال)
+          </Label>
+          <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={handleAddScheduleEntry}>
+            <Plus className="w-3 h-3 ml-1" />
+            إضافة
+          </Button>
+        </div>
+
+        {formSchedules.length === 0 && (
+          <p className="text-xs text-muted-foreground text-center py-2">لا توجد جدولة. اضغط "إضافة" لتحديد الأيام والعمال.</p>
+        )}
+
+        {formSchedules.map((entry, index) => (
+          <div key={index} className="flex items-center gap-2 border rounded-md p-2 bg-muted/30">
+            <Select value={entry.schedule_type} onValueChange={(v) => handleUpdateScheduleEntry(index, 'schedule_type', v)}>
+              <SelectTrigger className="text-[11px] h-8 w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availableTypes.map(t => (
+                  <SelectItem key={t} value={t}>{typeLabels[t]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={entry.day} onValueChange={(v) => handleUpdateScheduleEntry(index, 'day', v)}>
+              <SelectTrigger className="text-[11px] h-8 flex-1">
+                <SelectValue placeholder="اليوم" />
+              </SelectTrigger>
+              <SelectContent>
+                {DAYS.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            <Select value={entry.worker_id} onValueChange={(v) => handleUpdateScheduleEntry(index, 'worker_id', v)}>
+              <SelectTrigger className="text-[11px] h-8 flex-1">
+                <SelectValue placeholder="العامل" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">بدون</SelectItem>
+                {workers.map(w => <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-destructive" onClick={() => handleRemoveScheduleEntry(index)}>
+              <X className="w-3 h-3" />
+            </Button>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <>
@@ -458,7 +571,13 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
                 </div>
                 <Switch
                   checked={sectorType === 'cash_van'}
-                  onCheckedChange={(checked) => setSectorType(checked ? 'cash_van' : 'prevente')}
+                  onCheckedChange={(checked) => {
+                    setSectorType(checked ? 'cash_van' : 'prevente');
+                    // Remove sales schedules when switching to cash_van
+                    if (checked) {
+                      setFormSchedules(prev => prev.filter(s => s.schedule_type !== 'sales'));
+                    }
+                  }}
                 />
               </div>
 
@@ -481,21 +600,8 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
                   </div>
                 )}
                 <div className="flex gap-2">
-                  <Input
-                    value={newFormZone}
-                    onChange={e => setNewFormZone(e.target.value)}
-                    placeholder="اسم المنطقة..."
-                    className="text-right text-sm flex-1"
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddFormZone(); } }}
-                  />
-                  <Input
-                    value={newFormZoneFr}
-                    onChange={e => setNewFormZoneFr(e.target.value)}
-                    placeholder="Nom..."
-                    dir="ltr"
-                    className="text-sm flex-1"
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddFormZone(); } }}
-                  />
+                  <Input value={newFormZone} onChange={e => setNewFormZone(e.target.value)} placeholder="اسم المنطقة..." className="text-right text-sm flex-1" onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddFormZone(); } }} />
+                  <Input value={newFormZoneFr} onChange={e => setNewFormZoneFr(e.target.value)} placeholder="Nom..." dir="ltr" className="text-sm flex-1" onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddFormZone(); } }} />
                   <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={handleTranslateZoneName} disabled={translatingZone}>
                     {translatingZone ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Languages className="w-3.5 h-3.5" />}
                   </Button>
@@ -505,78 +611,8 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
                 </div>
               </div>
 
-              {sectorType === 'prevente' ? (
-                <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs flex items-center gap-1"><Calendar className="w-3 h-3" /> يوم زيارة الطلبات</Label>
-                      <Select value={visitDaySales} onValueChange={setVisitDaySales}>
-                        <SelectTrigger className="text-xs h-9"><SelectValue placeholder="اختر اليوم" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">بدون</SelectItem>
-                          {DAYS.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs flex items-center gap-1"><Calendar className="w-3 h-3" /> يوم التوصيل</Label>
-                      <Select value={visitDayDelivery} onValueChange={setVisitDayDelivery}>
-                        <SelectTrigger className="text-xs h-9"><SelectValue placeholder="اختر اليوم" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">بدون</SelectItem>
-                          {DAYS.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs flex items-center gap-1"><UserCheck className="w-3 h-3" /> مندوب المبيعات</Label>
-                      <Select value={salesWorkerId} onValueChange={setSalesWorkerId}>
-                        <SelectTrigger className="text-xs h-9"><SelectValue placeholder="اختر المندوب" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">بدون</SelectItem>
-                          {workers.map(w => <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs flex items-center gap-1"><Truck className="w-3 h-3" /> مندوب التوصيل</Label>
-                      <Select value={deliveryWorkerId} onValueChange={setDeliveryWorkerId}>
-                        <SelectTrigger className="text-xs h-9"><SelectValue placeholder="اختر المندوب" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">بدون</SelectItem>
-                          {workers.map(w => <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs flex items-center gap-1"><Calendar className="w-3 h-3" /> يوم البيع المباشر</Label>
-                    <Select value={visitDayDelivery} onValueChange={setVisitDayDelivery}>
-                      <SelectTrigger className="text-xs h-9"><SelectValue placeholder="اختر اليوم" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">بدون</SelectItem>
-                        {DAYS.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs flex items-center gap-1"><Truck className="w-3 h-3" /> عامل التوصيل / البيع المباشر</Label>
-                    <Select value={deliveryWorkerId} onValueChange={setDeliveryWorkerId}>
-                      <SelectTrigger className="text-xs h-9"><SelectValue placeholder="اختر العامل" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">بدون</SelectItem>
-                        {workers.map(w => <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </>
-              )}
+              {/* Schedule entries (replaces old day/worker selects) */}
+              {renderScheduleForm()}
 
               <Button className="w-full" onClick={handleSave} disabled={isSaving}>
                 {isSaving ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Save className="w-4 h-4 ml-2" />}
@@ -644,7 +680,6 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
                 <p className="text-sm">{sectors.length === 0 ? 'لا توجد سكتورات بعد' : 'لا توجد نتائج'}</p>
               </div>
             ) : groupedByDay ? (
-              // Grouped by day view
               groupedByDay.map(group => (
                 <div key={group.day.value} className="space-y-2">
                   <div className="sticky top-0 z-10 bg-muted/80 backdrop-blur-sm px-3 py-1.5 rounded-md border flex items-center gap-2">
@@ -653,15 +688,15 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">{group.sectors.length}</Badge>
                   </div>
                   {group.sectors.map(sector => {
-                const sectorZones = zonesMap[sector.id] || [];
-                return (
-                  <Card key={sector.id}>
-                    <CardContent className="p-3">
-                      {renderSectorContent(sector, sectorZones)}
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                    const sectorZones = zonesMap[sector.id] || [];
+                    return (
+                      <Card key={sector.id}>
+                        <CardContent className="p-3">
+                          {renderSectorContent(sector, sectorZones)}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               ))
             ) : (

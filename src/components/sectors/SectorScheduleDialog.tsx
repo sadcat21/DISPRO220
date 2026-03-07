@@ -104,6 +104,16 @@ const SectorScheduleDialog: React.FC<SectorScheduleDialogProps> = ({
     enabled: open,
   });
 
+  // Fetch sector_schedules for multi-schedule support
+  const { data: allSchedules = [] } = useQuery({
+    queryKey: ['sector-schedule-schedules', activeBranch?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('sector_schedules').select('*');
+      return data || [];
+    },
+    enabled: open,
+  });
+
   // Fetch workers for cross-worker conflict display
   const { data: allWorkers = [] } = useQuery({
     queryKey: ['sector-schedule-workers', activeBranch?.id],
@@ -137,8 +147,23 @@ const SectorScheduleDialog: React.FC<SectorScheduleDialogProps> = ({
       schedule[day] = [];
     }
 
-    const workerSectors = allSectors.filter((s: any) => s[workerField] === workerId);
-    for (const s of workerSectors) {
+    // Use sector_schedules table (new system)
+    const workerSchedulesFromTable = allSchedules.filter(
+      (sc: any) => sc.worker_id === workerId && sc.schedule_type === (workerType === 'delivery' ? 'delivery' : 'sales')
+    );
+    for (const sc of workerSchedulesFromTable) {
+      if (sc.day && schedule[sc.day]) {
+        const sector = allSectors.find((s: any) => s.id === sc.sector_id);
+        if (sector) {
+          schedule[sc.day].push({ sectorId: sc.sector_id, sectorName: getLocalizedName(sector, language) });
+        }
+      }
+    }
+
+    // Fallback: legacy fields for sectors without schedules
+    const scheduledSectorIds = new Set(workerSchedulesFromTable.map((sc: any) => sc.sector_id));
+    const legacySectors = allSectors.filter((s: any) => s[workerField] === workerId && !scheduledSectorIds.has(s.id));
+    for (const s of legacySectors) {
       const day = (s as any)[dayField];
       if (day && schedule[day]) {
         schedule[day].push({ sectorId: s.id, sectorName: getLocalizedName(s, language) });
@@ -166,7 +191,7 @@ const SectorScheduleDialog: React.FC<SectorScheduleDialogProps> = ({
     }
 
     return schedule;
-  }, [allSectors, overrides, workerId, workerField, dayField, language]);
+  }, [allSectors, allSchedules, overrides, workerId, workerField, dayField, workerType, language]);
 
   const getAvailableSectors = useCallback((day: string) => {
     const assignedIds = effectiveSchedule[day]?.map((s) => s.sectorId) || [];

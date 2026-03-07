@@ -4152,6 +4152,55 @@ export type Database = {
           },
         ]
       }
+      sector_schedules: {
+        Row: {
+          created_at: string
+          day: string
+          id: string
+          schedule_type: string
+          sector_id: string
+          worker_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          day: string
+          id?: string
+          schedule_type: string
+          sector_id: string
+          worker_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          id?: string
+          schedule_type?: string
+          sector_id?: string
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sector_schedules_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sector_schedules_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sector_schedules_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sector_zones: {
         Row: {
           created_at: string
