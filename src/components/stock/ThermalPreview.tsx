@@ -8,7 +8,7 @@ interface ThermalPreviewProps {
 }
 
 export interface ThermalLine {
-  text: string;
+  text?: string;
   bold?: boolean;
   center?: boolean;
   large?: boolean;
