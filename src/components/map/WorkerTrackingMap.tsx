@@ -28,6 +28,7 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
+  const hasFittedBoundsRef = useRef(false);
 
   // Initialize map with robust sizing
   useEffect(() => {
