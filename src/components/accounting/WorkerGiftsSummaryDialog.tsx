@@ -168,7 +168,7 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
       // Fetch delivered orders
       let ordersQuery = supabase
         .from('orders')
-        .select('id, customer_id, assigned_worker_id, created_by, updated_at, notes, customer:customers(name, store_name, phone, address, wilaya, sector:sectors(name))')
+        .select('id, customer_id, assigned_worker_id, created_by, updated_at, notes, customer:customers(name, name_fr, store_name, store_name_fr, phone, address, wilaya, sector:sectors(name, name_fr))')
         .in('status', ['delivered', 'completed', 'confirmed'])
         .gte('updated_at', periodStartTz)
         .lte('updated_at', periodEndTz);
@@ -312,14 +312,18 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
           agg[key].customers.push({
             customerId: order.customer_id || '',
             customerName: order.customer?.name || '',
+            customerNameFr: (order.customer as any)?.name_fr || '',
             storeName: order.customer?.store_name || null,
+            storeNameFr: (order.customer as any)?.store_name_fr || null,
             customerPhone: order.customer?.phone || '',
             customerAddress: (order.customer as any)?.address || '',
             customerWilaya: (order.customer as any)?.wilaya || '',
             sectorName: order.customer?.sector?.name || '',
+            sectorNameFr: (order.customer?.sector as any)?.name_fr || '',
             workerName: workersMap[deliveryWorkerId] || '',
             giftPieces,
             quantitySold: soldQty,
+            piecesPerBox,
             date: order.updated_at || '',
           });
         }
@@ -328,7 +332,7 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
       // Also check promos table
       let promosQuery = supabase
         .from('promos')
-        .select('product_id, worker_id, vente_quantity, gratuite_quantity, notes, promo_date, customer_id, customer:customers(name, store_name, phone, sector:sectors(name)), product:products(name, pieces_per_box, image_url)')
+        .select('product_id, worker_id, vente_quantity, gratuite_quantity, notes, promo_date, customer_id, customer:customers(name, name_fr, store_name, store_name_fr, phone, sector:sectors(name, name_fr)), product:products(name, pieces_per_box, image_url)')
         .gt('gratuite_quantity', 0)
         .gte('promo_date', periodStartTz)
         .lte('promo_date', periodEndTz);
