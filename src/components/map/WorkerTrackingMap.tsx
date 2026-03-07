@@ -11,6 +11,17 @@ import L from 'leaflet';
 // Warehouse location
 const WAREHOUSE_LOCATION = { lat: 35.90775, lng: 0.10253 };
 
+const TILE_LAYERS = {
+  street: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '© OSM',
+  },
+  satellite: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: '© Esri',
+  },
+};
+
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -38,7 +49,10 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const hasFittedBoundsRef = useRef(false);
   const routeLayerRef = useRef<L.Polyline | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
+  const userInteractedRef = useRef(false);
   const [routeInfo, setRouteInfo] = useState<{ distance: number; duration: number } | null>(null);
+  const [mapStyle, setMapStyle] = useState<'street' | 'satellite'>('street');
 
   // Initialize map with robust sizing
   useEffect(() => {
