@@ -283,19 +283,20 @@ const SectorCustomersPopover: React.FC = () => {
 
   // Computed
   const mySectors = useMemo(() => {
+    if (hasSpecificWorker) return sectors.filter(s => s.delivery_worker_id === effectiveWorkerId || s.sales_worker_id === effectiveWorkerId);
     if (isAdmin) return sectors;
-    return sectors.filter(s => s.delivery_worker_id === workerId || s.sales_worker_id === workerId);
-  }, [sectors, workerId, isAdmin]);
+    return sectors.filter(s => s.delivery_worker_id === effectiveWorkerId || s.sales_worker_id === effectiveWorkerId);
+  }, [sectors, effectiveWorkerId, isAdmin, hasSpecificWorker]);
 
   const todayDeliverySectors = useMemo(() => {
-    if (isAdmin) return mySectors.filter(s => s.visit_day_delivery === todayName);
-    return mySectors.filter(s => s.visit_day_delivery === todayName && s.delivery_worker_id === workerId);
-  }, [mySectors, todayName, workerId, isAdmin]);
+    if (isAdmin && !hasSpecificWorker) return mySectors.filter(s => s.visit_day_delivery === todayName);
+    return mySectors.filter(s => s.visit_day_delivery === todayName && s.delivery_worker_id === effectiveWorkerId);
+  }, [mySectors, todayName, effectiveWorkerId, isAdmin, hasSpecificWorker]);
 
   const todaySalesSectors = useMemo(() => {
-    if (isAdmin) return mySectors.filter(s => s.visit_day_sales === todayName);
-    return mySectors.filter(s => s.visit_day_sales === todayName && s.sales_worker_id === workerId);
-  }, [mySectors, todayName, workerId, isAdmin]);
+    if (isAdmin && !hasSpecificWorker) return mySectors.filter(s => s.visit_day_sales === todayName);
+    return mySectors.filter(s => s.visit_day_sales === todayName && s.sales_worker_id === effectiveWorkerId);
+  }, [mySectors, todayName, effectiveWorkerId, isAdmin, hasSpecificWorker]);
 
   const deliveryCustomerIdsWithOrders = useMemo(() => {
     const ids = new Set<string>();
