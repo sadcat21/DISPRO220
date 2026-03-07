@@ -369,6 +369,9 @@ const WorkerActions: React.FC = () => {
         setWorkerProfileOpen(true);
       } else if (action.key === 'achievements') {
         setAchievementsOpen(true);
+      } else if (action.key === 'sector_schedule') {
+        setSectorScheduleType('delivery');
+        setSectorScheduleOpen(true);
       }
       return;
     }
