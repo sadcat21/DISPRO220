@@ -499,7 +499,12 @@ const WorkerActions: React.FC = () => {
           className="grid !grid-cols-4 gap-1.5"
           style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}
         >
-          {workerActions.map((action) => (
+          {workerActions.filter(action => {
+            // Admin sees all, others check UI overrides
+            if (role === 'admin') return true;
+            const overrideKey = `wa_${action.key}`;
+            return !myOverrides?.some(o => o.element_type === 'button' && o.element_key === overrideKey && o.is_hidden);
+          }).map((action) => (
             <div
               key={action.key}
               className={`flex min-w-0 flex-col items-center justify-center p-2 gap-1 rounded-lg border cursor-pointer active:scale-95 transition-all hover:shadow-md ${action.color}`}
