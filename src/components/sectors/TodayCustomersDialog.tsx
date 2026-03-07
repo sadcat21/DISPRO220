@@ -345,20 +345,71 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     return allDebts;
   }, [allDebts, effectiveWorkerId, hasSpecificWorker]);
 
+  // Fetch sales worker visits for Prévente sectors to know which customers were visited
+  const preventeDeliverySectors = useMemo(() => todayDeliverySectors.filter(s => (s as any).sector_type !== 'cash_van'), [todayDeliverySectors]);
+  const salesWorkerIds = useMemo(() => {
+    const ids = new Set<string>();
+    preventeDeliverySectors.forEach(s => { if (s.sales_worker_id) ids.add(s.sales_worker_id); });
+    return Array.from(ids);
+  }, [preventeDeliverySectors]);
+
+  const { data: salesWorkerVisits = [] } = useQuery({
+    queryKey: ['sales-worker-visits-for-prevente', salesWorkerIds, todayStart],
+    queryFn: async () => {
+      if (salesWorkerIds.length === 0) return [];
+      // Get visits by sales workers in the last 7 days for these sectors
+      const { data } = await supabase
+        .from('visit_tracking')
+        .select('customer_id, worker_id, operation_type')
+        .in('worker_id', salesWorkerIds)
+        .gte('created_at', sevenDaysAgo);
+      return data || [];
+    },
+    enabled: !!effectiveWorkerId && open && salesWorkerIds.length > 0,
+  });
+
+  const { data: salesWorkerOrders = [] } = useQuery({
+    queryKey: ['sales-worker-orders-for-prevente', salesWorkerIds, todayStart],
+    queryFn: async () => {
+      if (salesWorkerIds.length === 0) return [];
+      const { data } = await supabase
+        .from('orders')
+        .select('customer_id')
+        .in('created_by', salesWorkerIds)
+        .gte('created_at', sevenDaysAgo)
+        .not('status', 'eq', 'cancelled');
+      return data || [];
+    },
+    enabled: !!effectiveWorkerId && open && salesWorkerIds.length > 0,
+  });
+
+  // Customers visited or ordered by sales worker = should NOT be in direct sale
+  const salesWorkerTouchedCustomerIds = useMemo(() => {
+    const ids = new Set<string>();
+    salesWorkerVisits.forEach(v => { if (v.customer_id) ids.add(v.customer_id); });
+    salesWorkerOrders.forEach(o => { if (o.customer_id) ids.add(o.customer_id); });
+    return ids;
+  }, [salesWorkerVisits, salesWorkerOrders]);
+
   // Direct sale customers:
   // 1. Cash Van sectors (today delivery) → ALL customers
-  // 2. Prévente sectors (today delivery) → customers NOT having pending orders (not in delivery tab)
+  // 2. Prévente sectors (today delivery) → customers NOT visited/ordered by sales worker AND not having pending delivery orders
   const directSaleCustomers = useMemo(() => {
     const cashVanSectorIds = new Set(todayDeliverySectors.filter(s => (s as any).sector_type === 'cash_van').map(s => s.id));
-    const preventeSectorIds = new Set(todayDeliverySectors.filter(s => (s as any).sector_type !== 'cash_van').map(s => s.id));
+    const preventeSectorIds = new Set(preventeDeliverySectors.map(s => s.id));
     
     const cashVanCustomers = customers.filter(c => c.sector_id && cashVanSectorIds.has(c.sector_id) && !deliveredCustomerIds.has(c.id));
-    const preventeUnvisitedCustomers = customers.filter(c => c.sector_id && preventeSectorIds.has(c.sector_id) && !deliveryCustomerIdsWithOrders.has(c.id) && !deliveredCustomerIds.has(c.id));
+    const preventeUnvisitedCustomers = customers.filter(c => 
+      c.sector_id && preventeSectorIds.has(c.sector_id) && 
+      !deliveryCustomerIdsWithOrders.has(c.id) && 
+      !deliveredCustomerIds.has(c.id) &&
+      !salesWorkerTouchedCustomerIds.has(c.id)
+    );
     
     const combined = new Map<string, typeof customers[0]>();
     [...cashVanCustomers, ...preventeUnvisitedCustomers].forEach(c => combined.set(c.id, c));
     return Array.from(combined.values());
-  }, [todayDeliverySectors, customers, deliveredCustomerIds, deliveryCustomerIdsWithOrders]);
+  }, [todayDeliverySectors, preventeDeliverySectors, customers, deliveredCustomerIds, deliveryCustomerIdsWithOrders, salesWorkerTouchedCustomerIds]);
 
   // Direct sale sub-categorization
   const directSoldCustomerIds = useMemo(() => new Set(todayDirectSales.map(s => s.customer_id).filter(Boolean)), [todayDirectSales]);
