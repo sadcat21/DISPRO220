@@ -161,7 +161,7 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
       // Fetch delivered orders
       let ordersQuery = supabase
         .from('orders')
-        .select('id, customer_id, assigned_worker_id, created_by, updated_at, notes, customer:customers(name, store_name, phone, sector:sectors(name))')
+        .select('id, customer_id, assigned_worker_id, created_by, updated_at, notes, customer:customers(name, store_name, phone, address, wilaya, sector:sectors(name))')
         .in('status', ['delivered', 'completed', 'confirmed'])
         .gte('updated_at', periodStartTz)
         .lte('updated_at', periodEndTz);
