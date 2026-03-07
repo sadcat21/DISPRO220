@@ -1,14 +1,16 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings, Printer } from 'lucide-react';
+import { Settings, Printer, Save, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export type GiftPrintColumnKey =
-  | 'number' | 'customerName' | 'customerNameFr' | 'storeName'
+  | 'number' | 'customerName' | 'customerNameFr' | 'storeName' | 'storeNameFr'
   | 'sector' | 'address' | 'wilaya' | 'phone'
   | 'productName' | 'venteQuantity' | 'giftQuantity' | 'giftBoxPiece'
   | 'workerName' | 'date';
@@ -21,13 +23,14 @@ export interface GiftPrintColumn {
 
 export const ALL_PRINT_COLUMNS: GiftPrintColumn[] = [
   { key: 'number', label: 'N° / الرقم', defaultVisible: true },
-  { key: 'customerName', label: 'Nom / الاسم', defaultVisible: true },
-  { key: 'customerNameFr', label: 'Nom FR / الاسم بالفرنسية', defaultVisible: false },
-  { key: 'storeName', label: 'Magasin / اسم المحل', defaultVisible: false },
-  { key: 'sector', label: 'Secteur / السيكتور', defaultVisible: false },
-  { key: 'address', label: 'Adresse / العنوان', defaultVisible: true },
-  { key: 'wilaya', label: 'Wilaya / الولاية', defaultVisible: true },
+  { key: 'customerName', label: 'Nom AR / الاسم بالعربية', defaultVisible: false },
+  { key: 'customerNameFr', label: 'Nom FR / الاسم بالفرنسية', defaultVisible: true },
+  { key: 'storeName', label: 'Magasin AR / اسم المحل بالعربية', defaultVisible: false },
+  { key: 'storeNameFr', label: 'Magasin FR / اسم المحل بالفرنسية', defaultVisible: false },
   { key: 'phone', label: 'Téléphone / الهاتف', defaultVisible: true },
+  { key: 'sector', label: 'Secteur / السيكتور', defaultVisible: true },
+  { key: 'address', label: 'Adresse / العنوان', defaultVisible: false },
+  { key: 'wilaya', label: 'Wilaya / الولاية', defaultVisible: false },
   { key: 'productName', label: 'Produit / المنتج', defaultVisible: true },
   { key: 'venteQuantity', label: 'Ventes / المبيعات', defaultVisible: true },
   { key: 'giftQuantity', label: 'Gratuit (pièces) / الهدايا قطع', defaultVisible: false },
@@ -47,34 +50,60 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   products: { id: string; name: string }[];
   onPrint: (settings: GiftPrintSettings) => void;
+  isAdmin?: boolean;
 }
 
 const STORAGE_KEY = 'gifts-print-columns';
 const SEPARATE_KEY = 'gifts-print-separate';
+const DB_SETTINGS_KEY = 'gifts_print_settings';
 
 const getDefaultColumns = (): GiftPrintColumnKey[] =>
   ALL_PRINT_COLUMNS.filter(c => c.defaultVisible).map(c => c.key);
 
-const loadSavedColumns = (): GiftPrintColumnKey[] => {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) return JSON.parse(saved);
-  } catch {}
-  return getDefaultColumns();
-};
-
-const loadSeparate = (): boolean => {
-  try {
-    const saved = localStorage.getItem(SEPARATE_KEY);
-    if (saved !== null) return JSON.parse(saved);
-  } catch {}
-  return true; // default ON
-};
-
-const GiftsPrintSettingsDialog: React.FC<Props> = ({ open, onOpenChange, products, onPrint }) => {
-  const [selectedColumns, setSelectedColumns] = useState<GiftPrintColumnKey[]>(loadSavedColumns);
+const GiftsPrintSettingsDialog: React.FC<Props> = ({ open, onOpenChange, products, onPrint, isAdmin = false }) => {
+  const [selectedColumns, setSelectedColumns] = useState<GiftPrintColumnKey[]>(getDefaultColumns);
   const [productFilter, setProductFilter] = useState('all');
-  const [separateByProduct, setSeparateByProduct] = useState(loadSeparate);
+  const [separateByProduct, setSeparateByProduct] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  
+
+  // Load settings from DB first, then fallback to localStorage
+  useEffect(() => {
+    if (!open || loaded) return;
+    const loadSettings = async () => {
+      try {
+        const { data } = await supabase
+          .from('app_settings')
+          .select('value')
+          .eq('key', DB_SETTINGS_KEY)
+          .maybeSingle();
+        
+        if (data?.value) {
+          const parsed = JSON.parse(data.value);
+          if (parsed.columns?.length) setSelectedColumns(parsed.columns);
+          if (typeof parsed.separateByProduct === 'boolean') setSeparateByProduct(parsed.separateByProduct);
+          setLoaded(true);
+          return;
+        }
+      } catch {}
+
+      // Fallback to localStorage
+      try {
+        const savedCols = localStorage.getItem(STORAGE_KEY);
+        if (savedCols) setSelectedColumns(JSON.parse(savedCols));
+        const savedSep = localStorage.getItem(SEPARATE_KEY);
+        if (savedSep !== null) setSeparateByProduct(JSON.parse(savedSep));
+      } catch {}
+      setLoaded(true);
+    };
+    loadSettings();
+  }, [open, loaded]);
+
+  // Reset loaded when dialog closes
+  useEffect(() => {
+    if (!open) setLoaded(false);
+  }, [open]);
 
   const toggleColumn = (key: GiftPrintColumnKey) => {
     setSelectedColumns(prev => {
@@ -98,6 +127,41 @@ const GiftsPrintSettingsDialog: React.FC<Props> = ({ open, onOpenChange, product
   const handlePrint = () => {
     onPrint({ columns: selectedColumns, productFilter, separateByProduct });
     onOpenChange(false);
+  };
+
+  const handleSaveToDb = async () => {
+    setIsSaving(true);
+    try {
+      const settingsValue = JSON.stringify({
+        columns: selectedColumns,
+        separateByProduct,
+      });
+
+      const { data: existing } = await supabase
+        .from('app_settings')
+        .select('id')
+        .eq('key', DB_SETTINGS_KEY)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase
+          .from('app_settings')
+          .update({ value: settingsValue, updated_at: new Date().toISOString() })
+          .eq('key', DB_SETTINGS_KEY);
+      } else {
+        await supabase
+          .from('app_settings')
+          .insert({ key: DB_SETTINGS_KEY, value: settingsValue });
+      }
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedColumns));
+      localStorage.setItem(SEPARATE_KEY, JSON.stringify(separateByProduct));
+      toast.success('تم حفظ إعدادات الطباعة الافتراضية');
+    } catch (err: any) {
+      toast.error('فشل الحفظ: ' + (err.message || ''));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -160,6 +224,12 @@ const GiftsPrintSettingsDialog: React.FC<Props> = ({ open, onOpenChange, product
         </div>
 
         <DialogFooter className="flex gap-2 pt-2">
+          {isAdmin && (
+            <Button variant="secondary" size="sm" className="gap-1.5" onClick={handleSaveToDb} disabled={isSaving}>
+              {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+              حفظ كافتراضي
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
             إلغاء
           </Button>

@@ -8,6 +8,7 @@ export interface GiftPrintRow {
   customerName: string;
   customerNameFr: string;
   storeName: string;
+  storeNameFr: string;
   sector: string;
   address: string;
   wilaya: string;
@@ -18,6 +19,7 @@ export interface GiftPrintRow {
   giftBoxPiece: string;
   workerName: string;
   date: string;
+  piecesPerBox: number;
 }
 
 interface GiftsPrintViewProps {
@@ -34,9 +36,10 @@ const ROWS_PER_PAGE = 16;
 
 const COLUMN_CONFIG: Record<GiftPrintColumnKey, { header: string; width?: string; className?: string }> = {
   number: { header: 'N°', width: '30px', className: 'center' },
-  customerName: { header: 'Nom', className: '' },
+  customerName: { header: 'Nom AR', className: '' },
   customerNameFr: { header: 'Nom FR', className: '' },
-  storeName: { header: 'Magasin', className: '' },
+  storeName: { header: 'Magasin AR', className: '' },
+  storeNameFr: { header: 'Magasin FR', className: '' },
   sector: { header: 'Secteur', className: '' },
   address: { header: 'Adresse', className: 'small-text' },
   wilaya: { header: 'Wilaya', width: '65px' },
@@ -54,7 +57,7 @@ type PrintPage = {
   rows: GiftPrintRow[];
   rowOffset: number;
   showTotals: boolean;
-  totals: { vente: number; gift: number };
+  totals: { vente: number; gift: number; giftBoxPiece: string };
 };
 
 const chunkRows = <T,>(items: T[], size: number): T[][] => {
@@ -66,12 +69,35 @@ const chunkRows = <T,>(items: T[], size: number): T[][] => {
   return chunks.length ? chunks : [[]];
 };
 
+const formatGiftTotalBoxPiece = (rows: GiftPrintRow[]): string => {
+  if (!rows.length) return '0';
+  // Group by piecesPerBox to compute total
+  let totalPieces = 0;
+  let ppb = rows[0]?.piecesPerBox || 1;
+  // Use the most common ppb
+  const ppbMap = new Map<number, number>();
+  rows.forEach(r => {
+    ppbMap.set(r.piecesPerBox, (ppbMap.get(r.piecesPerBox) || 0) + r.giftQuantity);
+    totalPieces += r.giftQuantity;
+  });
+  // Find dominant ppb
+  let maxCount = 0;
+  ppbMap.forEach((count, key) => {
+    if (count > maxCount) { maxCount = count; ppb = key; }
+  });
+  if (ppb <= 1) return `${totalPieces}`;
+  const boxes = Math.floor(totalPieces / ppb);
+  const rem = totalPieces % ppb;
+  return rem > 0 ? `${boxes}.${String(rem).padStart(2, '0')}` : `${boxes}`;
+};
+
 const getCellValue = (row: GiftPrintRow, col: GiftPrintColumnKey, rowNumber: number): React.ReactNode => {
   switch (col) {
     case 'number': return rowNumber;
     case 'customerName': return row.customerName;
     case 'customerNameFr': return row.customerNameFr || '-';
     case 'storeName': return row.storeName || '-';
+    case 'storeNameFr': return row.storeNameFr || '-';
     case 'sector': return row.sector || '-';
     case 'address': return row.address;
     case 'wilaya': return row.wilaya;
@@ -90,18 +116,17 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
   ({ rows, workerName, dateRange, productFilter, isVisible = false, visibleColumns, separateByProduct = true }, ref) => {
     const [container, setContainer] = useState<HTMLDivElement | null>(null);
 
-    const columns = visibleColumns || [
-      'number',
-      'customerName',
-      'address',
-      'wilaya',
-      'phone',
-      'productName',
-      'venteQuantity',
-      'giftBoxPiece',
-      'workerName',
-      'date',
-    ];
+    // When separating by product, remove productName column automatically
+    const columns = useMemo(() => {
+      let cols = visibleColumns || [
+        'number', 'customerNameFr', 'phone', 'sector',
+        'venteQuantity', 'giftBoxPiece', 'date', 'workerName',
+      ] as GiftPrintColumnKey[];
+      if (separateByProduct) {
+        cols = cols.filter(c => c !== 'productName');
+      }
+      return cols;
+    }, [visibleColumns, separateByProduct]);
 
     const venteColIdx = columns.indexOf('venteQuantity');
     const giftColIdx = columns.indexOf('giftQuantity');
@@ -119,21 +144,26 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
       };
     }, []);
 
+    // All French filter criteria
+    const workerLabel = workerName === 'جميع العمال' ? 'Tous les employés' : (workerName || 'Tous les employés');
+    const productLabel = (!productFilter || productFilter === 'جميع المنتجات') ? 'Tous les produits' : productFilter;
+
     const filterCriteria = [
-      `Employé: ${workerName || 'جميع العمال'}`,
-      `Produit: ${productFilter || 'جميع المنتجات'}`,
+      `Employé: ${workerLabel}`,
+      `Produit: ${productLabel}`,
       `Période: ${dateRange || ''}`,
     ].join('  |  ');
 
     const pages = useMemo((): PrintPage[] => {
       if (!rows.length) {
-        return [{ productName: null, rows: [], rowOffset: 0, showTotals: true, totals: { vente: 0, gift: 0 } }];
+        return [{ productName: null, rows: [], rowOffset: 0, showTotals: true, totals: { vente: 0, gift: 0, giftBoxPiece: '0' } }];
       }
 
       if (!separateByProduct) {
         const totals = {
           vente: rows.reduce((s, r) => s + r.venteQuantity, 0),
           gift: rows.reduce((s, r) => s + r.giftQuantity, 0),
+          giftBoxPiece: formatGiftTotalBoxPiece(rows),
         };
         const chunks = chunkRows(rows, ROWS_PER_PAGE);
         return chunks.map((chunk, idx) => ({
@@ -156,6 +186,7 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
         const totals = {
           vente: productRows.reduce((s, r) => s + r.venteQuantity, 0),
           gift: productRows.reduce((s, r) => s + r.giftQuantity, 0),
+          giftBoxPiece: formatGiftTotalBoxPiece(productRows),
         };
         const chunks = chunkRows(productRows, ROWS_PER_PAGE);
         chunks.forEach((chunk, idx) => {
@@ -172,7 +203,7 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
       return builtPages;
     }, [rows, separateByProduct]);
 
-    const buildTotalsRow = (totals: { vente: number; gift: number }) => {
+    const buildTotalsRow = (totals: { vente: number; gift: number; giftBoxPiece: string }) => {
       const totalIndices = [venteColIdx, giftColIdx, giftBPColIdx].filter(i => i >= 0);
       if (totalIndices.length === 0) {
         return <td colSpan={columns.length} className="totals-label">Total</td>;
@@ -194,7 +225,7 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
         } else if (col === 'giftQuantity') {
           cells.push(<td key={col} className="center bold">{totals.gift}</td>);
         } else if (col === 'giftBoxPiece') {
-          cells.push(<td key={col} className="center bold">-</td>);
+          cells.push(<td key={col} className="center bold">{totals.giftBoxPiece}</td>);
         } else {
           cells.push(<td key={col}></td>);
         }
