@@ -425,15 +425,14 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
       }
       sep();
 
-      // Build offer codes
-      const offerCodes: Record<string, { code: string; details: string }> = {};
+      // Build offer codes - one per item
+      const offerCodes: { code: string; productName: string; details: string }[] = [];
       let codeIndex = 1;
       for (const item of giftsData.items) {
-        const offerId = item.offerName || item.productName;
-        if (!offerCodes[offerId]) {
-          offerCodes[offerId] = { code: `P${codeIndex}`, details: item.offerDetails || transliterate(item.offerName || item.productName) };
-          codeIndex++;
-        }
+        const prodName = transliterate(item.productName).substring(0, 16);
+        const details = item.offerDetails || transliterate(item.offerName || item.productName);
+        offerCodes.push({ code: `P${codeIndex}`, productName: prodName, details });
+        codeIndex++;
       }
 
       left();
@@ -443,9 +442,9 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
       bold(false);
       sep();
 
-      for (const item of giftsData.items) {
-        const offerId = item.offerName || item.productName;
-        const code = offerCodes[offerId]?.code || '-';
+      for (let idx = 0; idx < giftsData.items.length; idx++) {
+        const item = giftsData.items[idx];
+        const code = offerCodes[idx]?.code || '-';
         const name = transliterate(item.productName).substring(0, 12).padEnd(12);
         const qty = formatGiftDisplay(item.totalGiftPieces, item.piecesPerBox).padStart(7);
         const cli = String(item.customers.length).padStart(4);
@@ -464,8 +463,9 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
       line('LEGENDE OFFRES:');
       bold(false);
       line('.'.repeat(LINE_WIDTH));
-      for (const [, info] of Object.entries(offerCodes)) {
-        line(`${info.code}: ${info.details.substring(0, 26)}`);
+      for (const info of offerCodes) {
+        line(`${info.code}: ${info.productName}`);
+        line(`  ${info.details.substring(0, 28)}`);
       }
       sep();
 
