@@ -22,6 +22,8 @@ const TILE_LAYERS = {
   },
 };
 
+const LABELS_LAYER_URL = 'https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png';
+
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -52,7 +54,9 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const userInteractedRef = useRef(false);
   const [routeInfo, setRouteInfo] = useState<{ distance: number; duration: number } | null>(null);
-  const [mapStyle, setMapStyle] = useState<'street' | 'satellite'>('street');
+  const [mapStyle, setMapStyle] = useState<'street' | 'satellite'>('satellite');
+  const [showLabels, setShowLabels] = useState(true);
+  const labelsLayerRef = useRef<L.TileLayer | null>(null);
 
   // Initialize map with robust sizing
   useEffect(() => {
@@ -97,10 +101,17 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
       scrollWheelZoom: true,
     });
 
-    const tile = L.tileLayer(TILE_LAYERS.street.url, {
-      attribution: TILE_LAYERS.street.attribution,
+    const tile = L.tileLayer(TILE_LAYERS.satellite.url, {
+      attribution: TILE_LAYERS.satellite.attribution,
     }).addTo(map);
     tileLayerRef.current = tile;
+
+    // Add labels overlay by default
+    const labels = L.tileLayer(LABELS_LAYER_URL, {
+      attribution: '© CARTO',
+      pane: 'overlayPane',
+    }).addTo(map);
+    labelsLayerRef.current = labels;
 
     mapRef.current = map;
 
@@ -254,6 +265,20 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
     tileLayerRef.current.setUrl(config.url);
   }, [mapStyle]);
 
+  // Toggle labels overlay
+  useEffect(() => {
+    if (!mapRef.current) return;
+    if (showLabels && !labelsLayerRef.current) {
+      labelsLayerRef.current = L.tileLayer(LABELS_LAYER_URL, {
+        attribution: '© CARTO',
+        pane: 'overlayPane',
+      }).addTo(mapRef.current);
+    } else if (!showLabels && labelsLayerRef.current) {
+      mapRef.current.removeLayer(labelsLayerRef.current);
+      labelsLayerRef.current = null;
+    }
+  }, [showLabels]);
+
   // Fetch and draw route from highlighted worker to warehouse
   useEffect(() => {
     if (!mapRef.current || !highlightWorkerId || !showOnlyHighlighted || !locations) return;
@@ -366,14 +391,21 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
       {/* Map */}
       <div className="h-[400px] rounded-lg overflow-hidden border shadow-sm relative">
         <div ref={mapContainerRef} className="h-full w-full" style={{ zIndex: 1 }} />
-        {/* Satellite toggle */}
-        <button
-          onClick={() => setMapStyle(prev => prev === 'street' ? 'satellite' : 'street')}
-          className="absolute top-3 right-3 z-[1000] bg-background/90 backdrop-blur-sm border rounded-lg px-3 py-1.5 text-xs font-medium shadow-md hover:bg-accent transition-colors"
-          style={{ zIndex: 1000 }}
-        >
-          {mapStyle === 'street' ? '🛰️ قمر صناعي' : '🗺️ مخطط'}
-        </button>
+        {/* Map controls */}
+        <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-1.5" style={{ zIndex: 1000 }}>
+          <button
+            onClick={() => setMapStyle(prev => prev === 'street' ? 'satellite' : 'street')}
+            className="bg-background/90 backdrop-blur-sm border rounded-lg px-3 py-1.5 text-xs font-medium shadow-md hover:bg-accent transition-colors"
+          >
+            {mapStyle === 'street' ? '🛰️ قمر صناعي' : '🗺️ مخطط'}
+          </button>
+          <button
+            onClick={() => setShowLabels(prev => !prev)}
+            className={`bg-background/90 backdrop-blur-sm border rounded-lg px-3 py-1.5 text-xs font-medium shadow-md hover:bg-accent transition-colors ${showLabels ? 'ring-1 ring-primary' : ''}`}
+          >
+            {showLabels ? '🏷️ معالم ✓' : '🏷️ معالم'}
+          </button>
+        </div>
       </div>
 
       {/* Worker List */}
