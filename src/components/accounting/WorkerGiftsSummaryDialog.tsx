@@ -473,6 +473,36 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
     return lines;
   }, [giftsData, allWorkers, workerName, periodDateLabel, uniqueCustomerCount]);
 
+  // Build flat print rows for A4 printing
+  const printRows = useMemo((): GiftPrintRow[] => {
+    if (!giftsData?.items?.length) return [];
+    const rows: GiftPrintRow[] = [];
+    for (const item of giftsData.items) {
+      for (const c of item.customers) {
+        rows.push({
+          customerName: c.storeName || c.customerName || '-',
+          address: c.customerAddress || '',
+          wilaya: c.customerWilaya || '',
+          phone: c.customerPhone || '',
+          productName: item.productName,
+          venteQuantity: Math.round(c.quantitySold),
+          giftQuantity: c.giftPieces,
+          workerName: c.workerName || '-',
+          date: c.date || '',
+        });
+      }
+    }
+    return rows;
+  }, [giftsData]);
+
+  const handleA4Print = useCallback(() => {
+    setShowPrintView(true);
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => setShowPrintView(false), 500);
+    }, 300);
+  }, []);
+
   const handleThermalPrint = useCallback(async () => {
     if (!giftsData?.items?.length) return;
     setIsPrinting(true);
