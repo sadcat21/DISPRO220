@@ -2237,6 +2237,14 @@ const LoadStock: React.FC = () => {
           branchId={branchId}
         />
       )}
+      {printSessionId && (
+        <SessionPrintView
+          open={!!printSessionId}
+          onOpenChange={(open) => { if (!open) setPrintSessionId(null); }}
+          sessionId={printSessionId}
+          workerName={workers.find(w => w.id === selectedWorker)?.full_name || ''}
+        />
+      )}
     </div>
   );
 };
