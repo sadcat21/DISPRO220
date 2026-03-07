@@ -43,6 +43,8 @@ const WarehouseStock: React.FC = () => {
   const [showSaleDialog, setShowSaleDialog] = useState(false);
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [showLoadWorkerDialog, setShowLoadWorkerDialog] = useState(false);
+  const [showReviewDialog, setShowReviewDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState('stock');
   const [search, setSearch] = useState('');
   const [expandedWorkers, setExpandedWorkers] = useState(false);
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
