@@ -50,6 +50,7 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
   // Form state
   const [name, setName] = useState('');
   const [nameFr, setNameFr] = useState('');
+  const [sectorType, setSectorType] = useState<SectorType>('prevente');
   const [visitDaySales, setVisitDaySales] = useState('');
   const [visitDayDelivery, setVisitDayDelivery] = useState('');
   const [salesWorkerId, setSalesWorkerId] = useState('');
@@ -97,6 +98,7 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
   const resetForm = () => {
     setName('');
     setNameFr('');
+    setSectorType('prevente');
     setVisitDaySales('');
     setVisitDayDelivery('');
     setSalesWorkerId('');
@@ -112,6 +114,7 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
     setEditingSector(sector);
     setName(sector.name);
     setNameFr((sector as any).name_fr || '');
+    setSectorType((sector as any).sector_type || 'prevente');
     setVisitDaySales(sector.visit_day_sales || '');
     setVisitDayDelivery(sector.visit_day_delivery || '');
     setSalesWorkerId(sector.sales_worker_id || '');
