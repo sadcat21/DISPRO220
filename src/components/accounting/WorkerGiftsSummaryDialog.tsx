@@ -431,14 +431,21 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
       }
       sep();
 
-      // Build offer codes - one per item
-      const offerCodes: { code: string; productName: string; details: string }[] = [];
+      // Build offer codes - each tier gets its own P code
+      const btItemCodeMap: string[][] = [];
+      const btLegendEntries: { code: string; productName: string; detail: string }[] = [];
       let codeIndex = 1;
       for (const item of giftsData.items) {
         const prodName = transliterate(item.productName).substring(0, 16);
-        const details = item.offerDetails || transliterate(item.offerName || item.productName);
-        offerCodes.push({ code: `P${codeIndex}`, productName: prodName, details });
-        codeIndex++;
+        const tierDetails = item.offerDetails.length > 0 ? item.offerDetails : [transliterate(item.offerName || item.productName)];
+        const codes: string[] = [];
+        for (const detail of tierDetails) {
+          const code = `P${codeIndex}`;
+          btLegendEntries.push({ code, productName: prodName, detail });
+          codes.push(code);
+          codeIndex++;
+        }
+        btItemCodeMap.push(codes);
       }
 
       left();
@@ -450,11 +457,12 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
 
       for (let idx = 0; idx < giftsData.items.length; idx++) {
         const item = giftsData.items[idx];
-        const code = offerCodes[idx]?.code || '-';
+        const codes = btItemCodeMap[idx] || [];
+        const codeLabel = codes.join(',');
         const name = transliterate(item.productName).substring(0, 12).padEnd(12);
         const qty = formatGiftDisplay(item.totalGiftPieces, item.piecesPerBox).padStart(7);
         const cli = String(item.customers.length).padStart(4);
-        line(name + qty + cli + code.padStart(5));
+        line(name + qty + cli + codeLabel.padStart(5));
       }
 
       sep();
@@ -469,9 +477,9 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
       line('LEGENDE OFFRES:');
       bold(false);
       line('.'.repeat(LINE_WIDTH));
-      for (const info of offerCodes) {
-        line(`${info.code}: ${info.productName}`);
-        line(`  ${info.details.substring(0, 28)}`);
+      for (const entry of btLegendEntries) {
+        line(`${entry.code}: ${entry.productName}`);
+        line(`  ${entry.detail.substring(0, 28)}`);
       }
       sep();
 
