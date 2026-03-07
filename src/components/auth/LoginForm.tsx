@@ -153,7 +153,7 @@ const LoginForm: React.FC = () => {
     titleTapTimer.current = setTimeout(() => setTitleTapCount(0), 800);
   };
 
-  const doLogin = async (user: string, pass: string) => {
+  const doLogin = async (user: string, pass: string, isQuickLogin = false) => {
     setIsLoading(true);
     try {
       const result = await login(user.trim(), pass);
@@ -161,6 +161,19 @@ const LoginForm: React.FC = () => {
         toast.success(t('auth.login') + ' ✓');
       }
     } catch (error: any) {
+      // For quick login, try capitalized version of password
+      if (isQuickLogin && pass === pass.toLowerCase()) {
+        const capitalizedPass = pass.charAt(0).toUpperCase() + pass.slice(1);
+        try {
+          const result = await login(user.trim(), capitalizedPass);
+          if (!result.needsRoleSelection && !result.needsBranchSelection) {
+            toast.success(t('auth.login') + ' ✓');
+          }
+          return;
+        } catch {
+          // fall through to show original error
+        }
+      }
       console.error('Login error:', error);
       toast.error(error.message || t('auth.invalid_credentials'));
     } finally {
