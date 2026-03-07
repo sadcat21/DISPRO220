@@ -276,21 +276,22 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   });
 
   // Computed data
+  const hasSpecificWorker = !!(targetWorkerId || selectedAdminWorkerId);
   const workerSectors = useMemo(() => {
-    if (targetWorkerId) return sectors.filter(s => s.delivery_worker_id === targetWorkerId || s.sales_worker_id === targetWorkerId);
+    if (hasSpecificWorker) return sectors.filter(s => s.delivery_worker_id === effectiveWorkerId || s.sales_worker_id === effectiveWorkerId);
     if (isAdmin) return sectors;
     return sectors.filter(s => s.delivery_worker_id === effectiveWorkerId || s.sales_worker_id === effectiveWorkerId);
-  }, [sectors, targetWorkerId, effectiveWorkerId, isAdmin]);
+  }, [sectors, effectiveWorkerId, isAdmin, hasSpecificWorker]);
 
   const todaySalesSectors = useMemo(() => {
-    if (isAdmin && !targetWorkerId) return workerSectors.filter(s => s.visit_day_sales === todayName);
-    return workerSectors.filter(s => s.visit_day_sales === todayName && s.sales_worker_id === (targetWorkerId || effectiveWorkerId));
-  }, [workerSectors, todayName, targetWorkerId, effectiveWorkerId, isAdmin]);
+    if (isAdmin && !hasSpecificWorker) return workerSectors.filter(s => s.visit_day_sales === todayName);
+    return workerSectors.filter(s => s.visit_day_sales === todayName && s.sales_worker_id === effectiveWorkerId);
+  }, [workerSectors, todayName, effectiveWorkerId, isAdmin, hasSpecificWorker]);
 
   const todayDeliverySectors = useMemo(() => {
-    if (isAdmin && !targetWorkerId) return workerSectors.filter(s => s.visit_day_delivery === todayName);
-    return workerSectors.filter(s => s.visit_day_delivery === todayName && s.delivery_worker_id === (targetWorkerId || effectiveWorkerId));
-  }, [workerSectors, todayName, targetWorkerId, effectiveWorkerId, isAdmin]);
+    if (isAdmin && !hasSpecificWorker) return workerSectors.filter(s => s.visit_day_delivery === todayName);
+    return workerSectors.filter(s => s.visit_day_delivery === todayName && s.delivery_worker_id === effectiveWorkerId);
+  }, [workerSectors, todayName, effectiveWorkerId, isAdmin, hasSpecificWorker]);
 
   const deliveryCustomerIdsWithOrders = useMemo(() => {
     const ids = new Set<string>();
