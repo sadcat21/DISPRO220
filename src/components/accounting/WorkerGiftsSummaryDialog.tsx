@@ -506,7 +506,8 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
         rows.push({
           customerName: c.customerName || '-',
           customerNameFr: c.customerNameFr || '',
-          storeName: c.storeName || c.storeNameFr || '',
+          storeName: c.storeName || '',
+          storeNameFr: c.storeNameFr || '',
           sector: c.sectorNameFr || c.sectorName || '',
           address: c.customerAddress || '',
           wilaya: c.customerWilaya || '',
@@ -517,6 +518,7 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
           giftBoxPiece: formatGiftDisplay(c.giftPieces, ppb),
           workerName: c.workerName || '-',
           date: c.date || '',
+          piecesPerBox: ppb,
         });
       }
     }
