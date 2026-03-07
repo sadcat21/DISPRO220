@@ -99,6 +99,7 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
       center: [36.7, 3.08],
       zoom: 7,
       scrollWheelZoom: true,
+      maxZoom: 19,
     });
 
     const tile = L.tileLayer(TILE_LAYERS.satellite.url, {
