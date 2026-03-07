@@ -75,7 +75,7 @@ interface ConflictInfo {
 const SectorScheduleDialog: React.FC<SectorScheduleDialogProps> = ({
   open, onOpenChange, workerId, workerName, workerType,
 }) => {
-  const { activeBranch, worker: currentWorker } = useAuth();
+  const { activeBranch, workerId: currentWorkerId } = useAuth();
   const { language } = useLanguage();
   const queryClient = useQueryClient();
 
