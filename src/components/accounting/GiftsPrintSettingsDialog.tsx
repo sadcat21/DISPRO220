@@ -47,6 +47,7 @@ export interface GiftPrintSettings {
   columns: GiftPrintColumnKey[];
   productFilter: string;
   separateByProduct: boolean;
+  printSummary: boolean;
 }
 
 interface Props {
@@ -72,6 +73,7 @@ const GiftsPrintSettingsDialog: React.FC<Props> = ({ open, onOpenChange, product
   const [columnOrder, setColumnOrder] = useState<GiftPrintColumnKey[]>(getDefaultOrder);
   const [productFilter, setProductFilter] = useState('all');
   const [separateByProduct, setSeparateByProduct] = useState(true);
+  const [printSummary, setPrintSummary] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
@@ -139,7 +141,12 @@ const GiftsPrintSettingsDialog: React.FC<Props> = ({ open, onOpenChange, product
   }, [columnOrder, selectedColumns]);
 
   const handlePrint = () => {
-    onPrint({ columns: orderedSelectedColumns, productFilter, separateByProduct });
+    onPrint({ columns: orderedSelectedColumns, productFilter, separateByProduct, printSummary });
+    onOpenChange(false);
+  };
+
+  const handlePrintSummaryOnly = () => {
+    onPrint({ columns: orderedSelectedColumns, productFilter, separateByProduct, printSummary: true });
     onOpenChange(false);
   };
 
@@ -233,6 +240,18 @@ const GiftsPrintSettingsDialog: React.FC<Props> = ({ open, onOpenChange, product
               id="separate-product"
               checked={separateByProduct}
               onCheckedChange={handleSeparateChange}
+            />
+          </div>
+
+          {/* Print summary toggle */}
+          <div className="flex items-center justify-between p-2 rounded-lg bg-accent/30">
+            <Label htmlFor="print-summary" className="text-xs cursor-pointer">
+              إضافة صفحة ملخص حسب العمال
+            </Label>
+            <Switch
+              id="print-summary"
+              checked={printSummary}
+              onCheckedChange={setPrintSummary}
             />
           </div>
 
