@@ -157,7 +157,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         .from('orders')
         .select('*, customer:customers(*), items:order_items(*, product:products(*))')
         .in('status', ['pending', 'assigned', 'in_progress']);
-      if (!isAdmin) {
+      if (!isAdmin || hasSpecificWorker) {
         query = query.eq('assigned_worker_id', effectiveWorkerId!);
       } else if (activeBranch) {
         query = query.eq('branch_id', activeBranch.id);
@@ -176,7 +176,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         .select('customer_id, status, assigned_worker_id')
         .gte('updated_at', todayStart)
         .eq('status', 'delivered');
-      if (!isAdmin) {
+      if (!isAdmin || hasSpecificWorker) {
         query = query.eq('assigned_worker_id', effectiveWorkerId!);
       }
       const { data } = await query;
