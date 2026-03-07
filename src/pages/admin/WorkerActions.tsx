@@ -72,8 +72,9 @@ const workerActions = [
 ];
 
 const WorkerActions: React.FC = () => {
-  const { activeBranch } = useAuth();
+  const { activeBranch, role } = useAuth();
   const { t, language } = useLanguage();
+  const { data: myOverrides } = useMyUIOverrides();
   const navigate = useNavigate();
   const { setSelectedWorker: setContextWorker } = useSelectedWorker();
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
