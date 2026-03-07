@@ -464,6 +464,13 @@ const WarehouseStock: React.FC = () => {
         )}
       </div>
 
+        </TabsContent>
+
+        <TabsContent value="review" className="mt-3">
+          {branchId && <WarehouseReviewHistory branchId={branchId} />}
+        </TabsContent>
+      </Tabs>
+
       <DirectSaleDialog
         open={showSaleDialog}
         onOpenChange={setShowSaleDialog}
@@ -487,6 +494,17 @@ const WarehouseStock: React.FC = () => {
         warehouseStock={warehouseStock}
         loadToWorker={loadToWorker}
       />
+
+      {branchId && (
+        <WarehouseReviewDialog
+          open={showReviewDialog}
+          onOpenChange={setShowReviewDialog}
+          branchId={branchId}
+          products={products}
+          warehouseStock={warehouseStock}
+          palletQuantity={palletData || 0}
+        />
+      )}
     </div>
   );
 };
