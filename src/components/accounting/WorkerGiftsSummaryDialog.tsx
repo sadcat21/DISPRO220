@@ -458,12 +458,18 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
     lines.push({ text: totalLine, bold: true });
     lines.push({ separator: true });
 
-    // Legend section - each tier gets its own code with product name + detail
+    // Legend section - product name + detail on one line, separator between products
     lines.push({ text: 'LEGENDE OFFRES:', bold: true });
     lines.push({ dotSeparator: true });
+    let lastProductName = '';
     for (const entry of legendEntries) {
-      lines.push({ text: `${entry.code}: ${entry.productName}` });
-      lines.push({ text: `  ${entry.detail.substring(0, 28)}` });
+      if (lastProductName && lastProductName !== entry.productName) {
+        lines.push({ dotSeparator: true });
+      }
+      const combined = `${entry.code}: ${entry.productName}`;
+      const detailPart = entry.detail.substring(0, 30 - combined.length);
+      lines.push({ text: `${combined} ${detailPart}` });
+      lastProductName = entry.productName;
     }
     lines.push({ separator: true });
 
@@ -497,10 +503,11 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
 
   const handleA4Print = useCallback(() => {
     setShowPrintView(true);
+    // Give time for portal to render before triggering print
     setTimeout(() => {
       window.print();
       setTimeout(() => setShowPrintView(false), 500);
-    }, 300);
+    }, 100);
   }, []);
 
   const handleThermalPrint = useCallback(async () => {
@@ -592,9 +599,15 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
       line('LEGENDE OFFRES:');
       bold(false);
       line('.'.repeat(LINE_WIDTH));
+      let lastProd = '';
       for (const entry of btLegendEntries) {
-        line(`${entry.code}: ${entry.productName}`);
-        line(`  ${entry.detail.substring(0, 28)}`);
+        if (lastProd && lastProd !== entry.productName) {
+          line('.'.repeat(LINE_WIDTH));
+        }
+        const combined = `${entry.code}: ${entry.productName}`;
+        const detailPart = entry.detail.substring(0, LINE_WIDTH - combined.length - 1);
+        line(`${combined} ${detailPart}`);
+        lastProd = entry.productName;
       }
       sep();
 

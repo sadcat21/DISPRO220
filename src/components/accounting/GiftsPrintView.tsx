@@ -33,11 +33,17 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
     const emptyRowsCount = Math.max(0, minRows - rows.length);
 
     useEffect(() => {
+      // Remove existing portal if any
+      const existing = document.getElementById('gifts-print-portal');
+      if (existing) existing.remove();
+      
       const div = document.createElement('div');
       div.id = 'gifts-print-portal';
       document.body.appendChild(div);
       setContainer(div);
-      return () => { document.body.removeChild(div); };
+      return () => {
+        if (div.parentNode) div.parentNode.removeChild(div);
+      };
     }, []);
 
     const filterCriteria = [
