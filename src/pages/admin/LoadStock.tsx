@@ -2215,6 +2215,15 @@ const LoadStock: React.FC = () => {
           onConfirm={handlePartialLoadConfirm}
         />
       )}
+      {selectedWorker && (
+        <LoadSheetPrintView
+          open={showLoadSheetPrint}
+          onOpenChange={setShowLoadSheetPrint}
+          workerId={selectedWorker}
+          workerName={workers.find(w => w.id === selectedWorker)?.full_name || ''}
+          branchId={branchId}
+        />
+      )}
     </div>
   );
 };
