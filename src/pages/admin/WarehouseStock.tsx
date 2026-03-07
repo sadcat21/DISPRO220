@@ -242,6 +242,20 @@ const WarehouseStock: React.FC = () => {
     product: s.product,
   }));
 
+  // Fetch pallet quantity for review
+  const { data: palletData } = useQuery({
+    queryKey: ['branch-pallet-qty', branchId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('branch_pallets')
+        .select('quantity')
+        .eq('branch_id', branchId!)
+        .single();
+      return data?.quantity || 0;
+    },
+    enabled: !!branchId,
+  });
+
   return (
     <div className="p-4 space-y-4">
       {/* Header */}
@@ -251,6 +265,10 @@ const WarehouseStock: React.FC = () => {
           {t('stock.warehouse_stock')}
         </h2>
         <div className="flex items-center gap-2 flex-wrap">
+          <Button size="sm" variant="outline" onClick={() => setShowReviewDialog(true)}>
+            <ClipboardCheck className="w-4 h-4 ml-1" />
+            مراجعة
+          </Button>
           <Button size="sm" variant="outline" onClick={() => navigate('/stock-receipts')}>
             <ClipboardList className="w-4 h-4 ml-1" />
             استلام وتسليم
@@ -276,6 +294,20 @@ const WarehouseStock: React.FC = () => {
         </div>
       </div>
 
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="w-full grid grid-cols-2">
+          <TabsTrigger value="stock" className="text-xs gap-1">
+            <Package className="w-3.5 h-3.5" />
+            المخزون
+          </TabsTrigger>
+          <TabsTrigger value="review" className="text-xs gap-1">
+            <ClipboardCheck className="w-3.5 h-3.5" />
+            المراجعات
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="stock" className="space-y-4 mt-3">
       {/* Pallet Balance */}
       {branchId && <BranchPalletCard branchId={branchId} />}
 
