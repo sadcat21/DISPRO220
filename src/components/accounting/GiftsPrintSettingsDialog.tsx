@@ -307,13 +307,17 @@ const GiftsPrintSettingsDialog: React.FC<Props> = ({ open, onOpenChange, product
           </div>
         </div>
 
-        <DialogFooter className="flex gap-2 pt-2">
+        <DialogFooter className="flex flex-wrap gap-2 pt-2">
           {isAdmin && (
             <Button variant="secondary" size="sm" className="gap-1.5" onClick={handleSaveToDb} disabled={isSaving}>
               {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
               حفظ كافتراضي
             </Button>
           )}
+          <Button variant="outline" size="sm" onClick={handlePrintSummaryOnly} className="gap-1.5">
+            <Printer className="w-3.5 h-3.5" />
+            ملخص فقط
+          </Button>
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
             إلغاء
           </Button>
