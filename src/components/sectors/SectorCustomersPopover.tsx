@@ -872,16 +872,16 @@ const SectorCustomersPopover: React.FC = () => {
               </TabsList>
 
               <TabsContent value="today-collection" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
-                <DebtList debts={debtsToCollectToday} onSelect={setSelectedDebt} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} emptyMessage="لا توجد ديون مستحقة اليوم ✓" />
+                <DebtList debts={debtsToCollectToday} onSelect={setSelectedDebt} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} emptyMessage="لا توجد ديون مستحقة اليوم ✓" searchQuery={searchQuery} />
               </TabsContent>
               <TabsContent value="collected" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
-                <DebtList debts={debtsCollectedToday} onSelect={setSelectedDebt} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} emptyMessage="لا توجد تحصيلات بعد" />
+                <DebtList debts={debtsCollectedToday} onSelect={setSelectedDebt} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} emptyMessage="لا توجد تحصيلات بعد" searchQuery={searchQuery} />
               </TabsContent>
               <TabsContent value="no-payment" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
-                <DebtList debts={debtsNoPaymentToday} onSelect={setSelectedDebt} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} emptyMessage="لا توجد زيارات بدون دفع" />
+                <DebtList debts={debtsNoPaymentToday} onSelect={setSelectedDebt} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} emptyMessage="لا توجد زيارات بدون دفع" searchQuery={searchQuery} />
               </TabsContent>
               <TabsContent value="all-debts" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
-                <DebtList debts={allDebts} onSelect={setSelectedDebt} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} emptyMessage="لا توجد ديون مستحقة" />
+                <DebtList debts={allDebts} onSelect={setSelectedDebt} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} emptyMessage="لا توجد ديون مستحقة" searchQuery={searchQuery} />
               </TabsContent>
             </Tabs>
           </TabsContent>
