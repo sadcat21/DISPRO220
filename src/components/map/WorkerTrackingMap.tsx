@@ -239,6 +239,12 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
       mapRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
     }
   }, [locations, t, dir, highlightWorkerId]);
+  // Switch tile layer when mapStyle changes
+  useEffect(() => {
+    if (!mapRef.current || !tileLayerRef.current) return;
+    const config = TILE_LAYERS[mapStyle];
+    tileLayerRef.current.setUrl(config.url);
+  }, [mapStyle]);
 
   // Fetch and draw route from highlighted worker to warehouse
   useEffect(() => {
