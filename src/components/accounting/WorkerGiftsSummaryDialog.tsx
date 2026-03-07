@@ -129,6 +129,8 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
   const [isPrinting, setIsPrinting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showPrintView, setShowPrintView] = useState(false);
+  const [showPrintSettings, setShowPrintSettings] = useState(false);
+  const [printSettings, setPrintSettings] = useState<GiftPrintSettings | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
   // Date range: current month → 1st to today, past month → 1st to last day
@@ -496,31 +498,49 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
   const printRows = useMemo((): GiftPrintRow[] => {
     if (!giftsData?.items?.length) return [];
     const rows: GiftPrintRow[] = [];
+    const productFilter = printSettings?.productFilter;
     for (const item of giftsData.items) {
+      if (productFilter && productFilter !== 'all' && item.productId !== productFilter) continue;
       for (const c of item.customers) {
+        const ppb = c.piecesPerBox || item.piecesPerBox || 1;
         rows.push({
-          customerName: c.storeName || c.customerName || '-',
+          customerName: c.customerName || '-',
+          customerNameFr: c.customerNameFr || '',
+          storeName: c.storeName || c.storeNameFr || '',
+          sector: c.sectorNameFr || c.sectorName || '',
           address: c.customerAddress || '',
           wilaya: c.customerWilaya || '',
           phone: c.customerPhone || '',
           productName: item.productName,
           venteQuantity: Math.round(c.quantitySold),
           giftQuantity: c.giftPieces,
+          giftBoxPiece: formatGiftDisplay(c.giftPieces, ppb),
           workerName: c.workerName || '-',
           date: c.date || '',
         });
       }
     }
     return rows;
+  }, [giftsData, printSettings]);
+
+  // Available products for filter
+  const availableProducts = useMemo(() => {
+    if (!giftsData?.items?.length) return [];
+    return giftsData.items.map(item => ({ id: item.productId, name: item.productName }));
   }, [giftsData]);
 
-  const handleA4Print = useCallback(() => {
+  const printProductLabel = useMemo(() => {
+    if (!printSettings || printSettings.productFilter === 'all') return 'جميع المنتجات';
+    return giftsData?.items?.find(i => i.productId === printSettings.productFilter)?.productName || '';
+  }, [printSettings, giftsData]);
+
+  const handleA4Print = useCallback((settings: GiftPrintSettings) => {
+    setPrintSettings(settings);
     setShowPrintView(true);
-    // Give time for portal to render before triggering print
     setTimeout(() => {
       window.print();
       setTimeout(() => setShowPrintView(false), 500);
-    }, 100);
+    }, 200);
   }, []);
 
   const handleThermalPrint = useCallback(async () => {
