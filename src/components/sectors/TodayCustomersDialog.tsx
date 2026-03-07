@@ -328,16 +328,16 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   const collectedDebtIds = useMemo(() => new Set(todayCollections.filter(c => c.action !== 'no_payment').map(c => c.debt_id)), [todayCollections]);
   const noPaymentDebtIds = useMemo(() => new Set(todayCollections.filter(c => c.action === 'no_payment').map(c => c.debt_id)), [todayCollections]);
   const debtCustomers = useMemo(() => {
-    if (targetWorkerId) return dueDebts.filter(d => d.worker_id === targetWorkerId);
+    if (hasSpecificWorker) return dueDebts.filter(d => d.worker_id === effectiveWorkerId);
     return dueDebts;
-  }, [dueDebts, targetWorkerId]);
+  }, [dueDebts, effectiveWorkerId, hasSpecificWorker]);
   const debtsToCollectToday = useMemo(() => debtCustomers.filter(d => !collectedDebtIds.has(d.id) && !noPaymentDebtIds.has(d.id)), [debtCustomers, collectedDebtIds, noPaymentDebtIds]);
   const debtsCollectedToday = useMemo(() => debtCustomers.filter(d => collectedDebtIds.has(d.id)), [debtCustomers, collectedDebtIds]);
   const debtsNoPaymentToday = useMemo(() => debtCustomers.filter(d => noPaymentDebtIds.has(d.id)), [debtCustomers, noPaymentDebtIds]);
   const allDebtsFiltered = useMemo(() => {
-    if (targetWorkerId) return allDebts.filter(d => d.worker_id === targetWorkerId);
+    if (hasSpecificWorker) return allDebts.filter(d => d.worker_id === effectiveWorkerId);
     return allDebts;
-  }, [allDebts, targetWorkerId]);
+  }, [allDebts, effectiveWorkerId, hasSpecificWorker]);
 
   // Direct sale customers
   const directSaleCustomers = useMemo(() => {
