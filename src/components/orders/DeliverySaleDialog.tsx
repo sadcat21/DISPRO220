@@ -268,9 +268,9 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
           if (newPaidQty <= 0) return { ...item, quantity: 0, totalPrice: 0, giftQuantity: 0, giftPieces: 0 };
           const oldGift = item.giftQuantity;
           if (oldGift > 0 && newGiftQty === 0 && newGiftPcs === 0) {
-            toast.warning(`⚠️ ${item.productName}: تم فقدان الهدية لأن الكمية أقل من شرط العرض`, { duration: 5000 });
+            toast.warning(`⚠️ ${item.productName}: تم فقدان العرض لأن الكمية أقل من شرط العرض`, { duration: 5000 });
           } else if (oldGift > 0 && newGiftQty < oldGift) {
-            toast.warning(`⚠️ ${item.productName}: تغيرت الهدية من ${oldGift} إلى ${newGiftQty} صندوق`, { duration: 4000 });
+            toast.warning(`⚠️ ${item.productName}: تغير العرض من ${oldGift} إلى ${newGiftQty} صندوق`, { duration: 4000 });
           }
           return { ...item, quantity: newTotal, giftQuantity: newGiftQty, giftPieces: newGiftPcs, totalPrice: newPaidQty * item.unitPrice };
         }

@@ -1189,7 +1189,7 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void }> = ({ ord
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <span>الكمية: {quantity}</span>
                       <span>السعر: {Number(unitPrice || 0).toLocaleString()} DA</span>
-                      {giftQty > 0 && <span className="text-emerald-600">🎁 هدية: {giftQty}</span>}
+                      {giftQty > 0 && <span className="text-emerald-600">🎁 عرض: {giftQty}</span>}
                     </div>
                   </div>
                 );

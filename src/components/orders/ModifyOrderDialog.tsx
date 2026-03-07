@@ -582,14 +582,14 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
                           {item.gift_quantity > 0 && (
                             <Badge className="bg-pink-100 text-pink-700 dark:bg-pink-950/40 dark:text-pink-300 text-[10px] px-1.5 py-0 gap-0.5">
                               <Gift className="w-3 h-3" />
-                              هدية {item.gift_quantity}
+                              عرض {item.gift_quantity}
                             </Badge>
                           )}
                         </div>
                         {item.unit_price > 0 && (
                           <p className="text-xs text-muted-foreground">
                             {item.unit_price.toLocaleString()} دج × {getPaidQuantity(item)} = {(item.unit_price * getPaidQuantity(item)).toLocaleString()} دج
-                            {item.gift_quantity > 0 ? ` (${getPaidQuantity(item)} + ${item.gift_quantity} هدية = ${item.new_quantity})` : ''}
+                            {item.gift_quantity > 0 ? ` (${getPaidQuantity(item)} + ${item.gift_quantity} عرض = ${item.new_quantity})` : ''}
                           </p>
                         )}
                       </div>

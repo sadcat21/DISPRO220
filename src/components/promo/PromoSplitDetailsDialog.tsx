@@ -127,7 +127,7 @@ const PromoSplitDetailsDialog: React.FC<Props> = ({ open, onOpenChange, split })
             </div>
             <div className="bg-muted rounded-lg p-2">
               <div className="text-lg font-bold">{Number(effectiveGift)}</div>
-              <div className="text-[10px] text-muted-foreground">هدية {split.gift_quantity_unit === 'box' ? 'صندوق' : 'قطعة'}</div>
+              <div className="text-[10px] text-muted-foreground">عرض {split.gift_quantity_unit === 'box' ? 'صندوق' : 'قطعة'}</div>
             </div>
           </div>
 
@@ -159,7 +159,7 @@ const PromoSplitDetailsDialog: React.FC<Props> = ({ open, onOpenChange, split })
                       <Input type="number" value={allocatedQty} onChange={e => setAllocatedQty(e.target.value)} placeholder="200" />
                     </div>
                     <div>
-                      <Label className="text-xs">حصة الهدية (تلقائي)</Label>
+                      <Label className="text-xs">حصة العرض (تلقائي)</Label>
                       <Input type="number" value={giftShare} onChange={e => setGiftShare(e.target.value)} placeholder="تلقائي" />
                     </div>
                   </div>
@@ -203,7 +203,7 @@ const PromoSplitDetailsDialog: React.FC<Props> = ({ open, onOpenChange, split })
                           onClick={() => handleToggleGiftDelivered(sc.id, sc.gift_delivered)}
                         >
                           <Check className="w-3 h-3 mr-1" />
-                          هدية {sc.gift_delivered ? '✓' : ''}
+                          عرض {sc.gift_delivered ? '✓' : ''}
                         </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeCustomer(sc.id)}>
                           <Trash2 className="w-3 h-3" />
@@ -227,7 +227,7 @@ const PromoSplitDetailsDialog: React.FC<Props> = ({ open, onOpenChange, split })
                         />
                       </div>
                       <div>
-                        <span className="text-muted-foreground">حصة الهدية:</span>
+                        <span className="text-muted-foreground">حصة العرض:</span>
                         <span className="font-medium mr-1">{Number(sc.gift_share)}</span>
                       </div>
                     </div>

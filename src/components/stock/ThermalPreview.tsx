@@ -23,7 +23,7 @@ const LEGEND_ITEMS = [
   { abbr: 'Cmd', full: 'Commandes (الطلبات)' },
   { abbr: 'Surp', full: 'Surplus (الفائض)' },
   { abbr: 'SC', full: 'Sans Comptabilité (بدون محاسبة)' },
-  { abbr: 'Cad', full: 'Cadeau (هدايا)' },
+  { abbr: 'Promo', full: 'Promo (عروض)' },
   { abbr: 'Ret', full: 'Retour (المُرجع)' },
   { abbr: 'Sys', full: 'Système (النظام)' },
   { abbr: 'Reel', full: 'Réel (الفعلي)' },

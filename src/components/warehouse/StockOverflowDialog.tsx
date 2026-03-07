@@ -208,7 +208,7 @@ const StockOverflowDialog: React.FC<StockOverflowDialogProps> = ({
                       حساب العرض حسب الكمية المسلمة
                     </Label>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      هدية: {deliveredGift?.giftQuantity || 0} {t('offers.unit_box')}
+                      عرض: {deliveredGift?.giftQuantity || 0} {t('offers.unit_box')}
                       {deliveredGift && deliveredGift.giftPieces % (product.pieces_per_box || 1) > 0 && (
                         <> + {deliveredGift.giftPieces % (product.pieces_per_box || 1)} {t('offers.unit_piece')}</>
                       )}
@@ -227,7 +227,7 @@ const StockOverflowDialog: React.FC<StockOverflowDialogProps> = ({
                       تمرير العرض كما هو
                     </Label>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      هدية: {originalGift?.giftQuantity || 0} {t('offers.unit_box')} (رغم عدم توافق الكمية)
+                      عرض: {originalGift?.giftQuantity || 0} {t('offers.unit_box')} (رغم عدم توافق الكمية)
                     </p>
                     <Badge variant="outline" className="mt-1 text-[10px] border-amber-500 text-amber-600">
                       ⚠️ سيظهر تنبيه للمديرين
@@ -295,7 +295,7 @@ const StockOverflowDialog: React.FC<StockOverflowDialogProps> = ({
             </div>
             {effectiveGift && (effectiveGift.giftQuantity > 0 || effectiveGift.giftPieces > 0) && (
               <div className="flex justify-between text-green-600">
-                <span>الهدية:</span>
+                <span>العرض:</span>
                 <span className="font-bold">
                   {effectiveGift.giftQuantity > 0 ? `${effectiveGift.giftQuantity} ${t('offers.unit_box')}` : ''}
                   {effectiveGift.giftQuantity > 0 && effectiveGift.giftPieces % (product?.pieces_per_box || 1) > 0 ? ' + ' : ''}

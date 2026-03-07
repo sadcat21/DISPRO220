@@ -120,7 +120,7 @@ const PromoTrackingSummary: React.FC<PromoTrackingSummaryProps> = ({ items, tota
                   <div className="grid grid-cols-12 gap-1 text-[9px] text-muted-foreground font-medium px-3 py-1.5 border-b border-border/50">
                     <span className="col-span-4">العميل</span>
                     <span className="col-span-2 text-center">الكمية</span>
-                    <span className="col-span-3 text-center">الهدية</span>
+                    <span className="col-span-3 text-center">العرض</span>
                     <span className="col-span-3 text-end">التاريخ</span>
                   </div>
                   {item.customerDetails.map((cd, cdIdx) => (

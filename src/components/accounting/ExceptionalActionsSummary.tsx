@@ -202,14 +202,14 @@ const buildDetailRows = (detailsInput: Record<string, unknown> | null): DetailRo
       if (c.هدية_سابقة !== undefined || c.هدية_جديدة !== undefined) {
         rows.push({
           id: `gift-${index}`,
-          label: `${productName} • هدية`,
+           label: `${productName} • عرض`,
           before: toDisplayValue(c.هدية_سابقة),
           after: toDisplayValue(c.هدية_جديدة),
         });
       } else if (c.هدية !== undefined) {
         rows.push({
           id: `gift-single-${index}`,
-          label: `${productName} • هدية`,
+          label: `${productName} • عرض`,
           value: toDisplayValue(c.هدية),
         });
       }

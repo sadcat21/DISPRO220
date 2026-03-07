@@ -95,7 +95,7 @@ const PromoDetailsPrintView = forwardRef<HTMLDivElement, PromoDetailsPrintViewPr
               <th style={{ width: '100px' }}>الهاتف</th>
               <th>العنوان</th>
               <th style={{ width: '70px' }}>الكمية المشتراة</th>
-              <th style={{ width: '90px' }}>الهدية المسلمة</th>
+              <th style={{ width: '90px' }}>العرض المسلم</th>
               <th style={{ width: '100px' }}>التاريخ والتوقيت</th>
             </tr>
           </thead>

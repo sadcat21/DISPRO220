@@ -361,7 +361,7 @@ const SessionPrintView: React.FC<SessionPrintViewProps> = ({
 
     } else {
       // Default
-      lines.push({ text: padRight('Produit', 14) + padLeft('Prec', 6) + padLeft('Charg', 6) + padLeft('Cad', 6), bold: true });
+      lines.push({ text: padRight('Produit', 14) + padLeft('Prec', 6) + padLeft('Charg', 6) + padLeft('Promo', 6), bold: true });
       lines.push({ text: '', separator: true });
 
       for (const item of items) {

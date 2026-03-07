@@ -278,7 +278,7 @@ export const UI_ELEMENTS = {
     { key: 'wa_today_customers', label: 'عملاء اليوم', group: 'إجراءات العمال' },
     { key: 'wa_attendance_log', label: 'سجل المداومة', group: 'إجراءات العمال' },
     { key: 'wa_sales_summary', label: 'تجميع المبيعات', group: 'إجراءات العمال' },
-    { key: 'wa_gifts_summary', label: 'تجميع الهدايا', group: 'إجراءات العمال' },
+    { key: 'wa_gifts_summary', label: 'تجميع العروض', group: 'إجراءات العمال' },
     { key: 'wa_achievements', label: 'المنجزات', group: 'إجراءات العمال' },
     { key: 'wa_sector_schedule', label: 'جدول السيكتور', group: 'إجراءات العمال' },
   ],
