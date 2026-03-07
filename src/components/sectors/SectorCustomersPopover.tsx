@@ -348,7 +348,7 @@ const SectorCustomersPopover: React.FC = () => {
   const directSaleNoSale = useMemo(() => directSaleCustomers.filter(c => directNoSaleCustomerIds.has(c.id) && !directSoldCustomerIds.has(c.id)), [directSaleCustomers, directNoSaleCustomerIds, directSoldCustomerIds]);
 
   const totalCount = deliveryCustomers.length + salesCustomers.length;
-  const debtBadgeCount = dueDebts.length;
+  const debtBadgeCount = filteredDueDebts.length;
 
   if (mySectors.length === 0 && dueDebts.length === 0 && allDebts.length === 0) return null;
 
