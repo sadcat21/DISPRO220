@@ -146,9 +146,40 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
       const giftOfferIds = new Set<string>();
       (items || []).forEach(i => { if (i.gift_offer_id) giftOfferIds.add(i.gift_offer_id); });
       let offerNamesMap: Record<string, string> = {};
+      let offerDetailsMap: Record<string, string> = {};
       if (giftOfferIds.size > 0) {
-        const { data: offers } = await supabase.from('product_offers').select('id, name').in('id', Array.from(giftOfferIds));
-        (offers || []).forEach(o => { offerNamesMap[o.id] = o.name; });
+        const { data: offers } = await supabase
+          .from('product_offers')
+          .select('id, name, min_quantity, min_quantity_unit, gift_quantity, gift_quantity_unit, condition_type')
+          .in('id', Array.from(giftOfferIds));
+        (offers || []).forEach(o => { 
+          offerNamesMap[o.id] = o.name;
+          const minU = o.min_quantity_unit === 'box' ? 'BOX' : 'PCS';
+          const giftU = o.gift_quantity_unit === 'box' ? 'BOX' : 'PCS';
+          offerDetailsMap[o.id] = `${o.min_quantity} ${minU} + ${o.gift_quantity} ${giftU} Promo`;
+        });
+        // Also fetch tiers for multi-tier offers
+        const { data: tiers } = await supabase
+          .from('product_offer_tiers')
+          .select('offer_id, min_quantity, min_quantity_unit, gift_quantity, gift_quantity_unit, tier_order')
+          .in('offer_id', Array.from(giftOfferIds))
+          .order('tier_order', { ascending: true });
+        if (tiers && tiers.length > 0) {
+          const tiersByOffer: Record<string, typeof tiers> = {};
+          tiers.forEach(t => {
+            if (!tiersByOffer[t.offer_id!]) tiersByOffer[t.offer_id!] = [];
+            tiersByOffer[t.offer_id!].push(t);
+          });
+          for (const [oid, offerTiers] of Object.entries(tiersByOffer)) {
+            if (offerTiers.length > 0) {
+              offerDetailsMap[oid] = offerTiers.map(t => {
+                const mU = t.min_quantity_unit === 'box' ? 'BOX' : 'PCS';
+                const gU = t.gift_quantity_unit === 'box' ? 'BOX' : 'PCS';
+                return `${t.min_quantity}${mU}+${t.gift_quantity}${gU}`;
+              }).join(' / ');
+            }
+          }
+        }
       }
 
       const orderMap = new Map(orders.map(o => [o.id, o]));
