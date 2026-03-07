@@ -104,6 +104,16 @@ const SectorScheduleDialog: React.FC<SectorScheduleDialogProps> = ({
     enabled: open,
   });
 
+  // Fetch sector_schedules for multi-schedule support
+  const { data: allSchedules = [] } = useQuery({
+    queryKey: ['sector-schedule-schedules', activeBranch?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('sector_schedules').select('*');
+      return data || [];
+    },
+    enabled: open,
+  });
+
   // Fetch workers for cross-worker conflict display
   const { data: allWorkers = [] } = useQuery({
     queryKey: ['sector-schedule-workers', activeBranch?.id],
