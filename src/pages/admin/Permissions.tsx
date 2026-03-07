@@ -40,7 +40,7 @@ import { Permission, PERMISSION_CATEGORIES, RESOURCE_NAMES, PermissionCategory, 
 import { Loader2 } from 'lucide-react';
 import RoleCard from '@/components/permissions/RoleCard';
 import WorkerPermissionsSection from '@/components/permissions/WorkerPermissionsSection';
-import WorkerUIOverridesSection from '@/components/permissions/WorkerUIOverridesSection';
+import SupervisorWorkersSection from '@/components/permissions/SupervisorWorkersSection';
 
 const Permissions: React.FC = () => {
   const { toast } = useToast();
