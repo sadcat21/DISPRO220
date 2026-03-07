@@ -71,6 +71,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   // For admin: use selected worker or fallback to auth worker
   const effectiveWorkerId = targetWorkerId || (isAdmin && selectedAdminWorkerId ? selectedAdminWorkerId : authWorkerId);
   const effectiveWorkerName = targetWorkerName || (isAdmin && selectedAdminWorkerId ? workersList.find(w => w.id === selectedAdminWorkerId)?.full_name : undefined);
+  const hasSpecificWorker = !!(targetWorkerId || selectedAdminWorkerId);
 
   const todayStart = useMemo(() => {
     const d = new Date();
@@ -157,7 +158,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         .from('orders')
         .select('*, customer:customers(*), items:order_items(*, product:products(*))')
         .in('status', ['pending', 'assigned', 'in_progress']);
-      if (!isAdmin) {
+      if (!isAdmin || hasSpecificWorker) {
         query = query.eq('assigned_worker_id', effectiveWorkerId!);
       } else if (activeBranch) {
         query = query.eq('branch_id', activeBranch.id);
@@ -176,7 +177,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         .select('customer_id, status, assigned_worker_id')
         .gte('updated_at', todayStart)
         .eq('status', 'delivered');
-      if (!isAdmin) {
+      if (!isAdmin || hasSpecificWorker) {
         query = query.eq('assigned_worker_id', effectiveWorkerId!);
       }
       const { data } = await query;
@@ -196,7 +197,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         .from('debt_collections')
         .select('debt_id, action, amount_collected, status')
         .eq('collection_date', todayDateStr);
-      if (!isAdmin) {
+      if (!isAdmin || hasSpecificWorker) {
         query = query.eq('worker_id', effectiveWorkerId!);
       }
       const { data } = await query;
@@ -249,7 +250,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         .select('customer_id, items, total_amount, customer_name, created_at')
         .eq('receipt_type', 'direct_sale')
         .gte('created_at', todayStart);
-      if (!isAdmin) {
+      if (!isAdmin || hasSpecificWorker) {
         query = query.eq('worker_id', effectiveWorkerId!);
       }
       const { data } = await query;
@@ -276,7 +277,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   });
 
   // Computed data
-  const hasSpecificWorker = !!(targetWorkerId || selectedAdminWorkerId);
+  // Computed data
   const workerSectors = useMemo(() => {
     if (hasSpecificWorker) return sectors.filter(s => s.delivery_worker_id === effectiveWorkerId || s.sales_worker_id === effectiveWorkerId);
     if (isAdmin) return sectors;
