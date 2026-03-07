@@ -16,6 +16,7 @@ import { format, startOfMonth, endOfMonth, addMonths, subMonths, isSameMonth } f
 import { ar } from 'date-fns/locale';
 import ThermalPreview, { ThermalLine } from '@/components/stock/ThermalPreview';
 import GiftsPrintView, { GiftPrintRow } from '@/components/accounting/GiftsPrintView';
+import GiftsPrintSettingsDialog, { GiftPrintSettings } from '@/components/accounting/GiftsPrintSettingsDialog';
 
 interface Props {
   open: boolean;
@@ -27,14 +28,18 @@ interface Props {
 interface GiftCustomerDetail {
   customerId: string;
   customerName: string;
+  customerNameFr: string;
   storeName: string | null;
+  storeNameFr: string | null;
   customerPhone: string;
   customerAddress: string;
   customerWilaya: string;
   sectorName: string;
+  sectorNameFr: string;
   workerName: string;
   giftPieces: number;
   quantitySold: number;
+  piecesPerBox: number;
   date: string;
 }
 
@@ -124,6 +129,8 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
   const [isPrinting, setIsPrinting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showPrintView, setShowPrintView] = useState(false);
+  const [showPrintSettings, setShowPrintSettings] = useState(false);
+  const [printSettings, setPrintSettings] = useState<GiftPrintSettings | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
   // Date range: current month → 1st to today, past month → 1st to last day
@@ -163,7 +170,7 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
       // Fetch delivered orders
       let ordersQuery = supabase
         .from('orders')
-        .select('id, customer_id, assigned_worker_id, created_by, updated_at, notes, customer:customers(name, store_name, phone, address, wilaya, sector:sectors(name))')
+        .select('id, customer_id, assigned_worker_id, created_by, updated_at, notes, customer:customers(name, name_fr, store_name, store_name_fr, phone, address, wilaya, sector:sectors(name, name_fr))')
         .in('status', ['delivered', 'completed', 'confirmed'])
         .gte('updated_at', periodStartTz)
         .lte('updated_at', periodEndTz);
@@ -307,14 +314,18 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
           agg[key].customers.push({
             customerId: order.customer_id || '',
             customerName: order.customer?.name || '',
+            customerNameFr: (order.customer as any)?.name_fr || '',
             storeName: order.customer?.store_name || null,
+            storeNameFr: (order.customer as any)?.store_name_fr || null,
             customerPhone: order.customer?.phone || '',
             customerAddress: (order.customer as any)?.address || '',
             customerWilaya: (order.customer as any)?.wilaya || '',
             sectorName: order.customer?.sector?.name || '',
+            sectorNameFr: (order.customer?.sector as any)?.name_fr || '',
             workerName: workersMap[deliveryWorkerId] || '',
             giftPieces,
             quantitySold: soldQty,
+            piecesPerBox,
             date: order.updated_at || '',
           });
         }
@@ -323,7 +334,7 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
       // Also check promos table
       let promosQuery = supabase
         .from('promos')
-        .select('product_id, worker_id, vente_quantity, gratuite_quantity, notes, promo_date, customer_id, customer:customers(name, store_name, phone, sector:sectors(name)), product:products(name, pieces_per_box, image_url)')
+        .select('product_id, worker_id, vente_quantity, gratuite_quantity, notes, promo_date, customer_id, customer:customers(name, name_fr, store_name, store_name_fr, phone, sector:sectors(name, name_fr)), product:products(name, pieces_per_box, image_url)')
         .gt('gratuite_quantity', 0)
         .gte('promo_date', periodStartTz)
         .lte('promo_date', periodEndTz);
@@ -365,14 +376,18 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
         promosByProduct[promo.product_id].customers.push({
           customerId: (promo as any).customer_id || '',
           customerName: (promo as any).customer?.name || '',
+          customerNameFr: (promo as any).customer?.name_fr || '',
           storeName: (promo as any).customer?.store_name || null,
+          storeNameFr: (promo as any).customer?.store_name_fr || null,
           customerPhone: (promo as any).customer?.phone || '',
           customerAddress: (promo as any).customer?.address || '',
           customerWilaya: (promo as any).customer?.wilaya || '',
           sectorName: (promo as any).customer?.sector?.name || '',
+          sectorNameFr: (promo as any).customer?.sector?.name_fr || '',
           workerName: workersMap[(promo as any).worker_id] || '',
           giftPieces: giftInPieces,
           quantitySold: Number(promo.vente_quantity || 0),
+          piecesPerBox,
           date: (promo as any).promo_date || '',
         });
       }
@@ -483,31 +498,49 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
   const printRows = useMemo((): GiftPrintRow[] => {
     if (!giftsData?.items?.length) return [];
     const rows: GiftPrintRow[] = [];
+    const productFilter = printSettings?.productFilter;
     for (const item of giftsData.items) {
+      if (productFilter && productFilter !== 'all' && item.productId !== productFilter) continue;
       for (const c of item.customers) {
+        const ppb = c.piecesPerBox || item.piecesPerBox || 1;
         rows.push({
-          customerName: c.storeName || c.customerName || '-',
+          customerName: c.customerName || '-',
+          customerNameFr: c.customerNameFr || '',
+          storeName: c.storeName || c.storeNameFr || '',
+          sector: c.sectorNameFr || c.sectorName || '',
           address: c.customerAddress || '',
           wilaya: c.customerWilaya || '',
           phone: c.customerPhone || '',
           productName: item.productName,
           venteQuantity: Math.round(c.quantitySold),
           giftQuantity: c.giftPieces,
+          giftBoxPiece: formatGiftDisplay(c.giftPieces, ppb),
           workerName: c.workerName || '-',
           date: c.date || '',
         });
       }
     }
     return rows;
+  }, [giftsData, printSettings]);
+
+  // Available products for filter
+  const availableProducts = useMemo(() => {
+    if (!giftsData?.items?.length) return [];
+    return giftsData.items.map(item => ({ id: item.productId, name: item.productName }));
   }, [giftsData]);
 
-  const handleA4Print = useCallback(() => {
+  const printProductLabel = useMemo(() => {
+    if (!printSettings || printSettings.productFilter === 'all') return 'جميع المنتجات';
+    return giftsData?.items?.find(i => i.productId === printSettings.productFilter)?.productName || '';
+  }, [printSettings, giftsData]);
+
+  const handleA4Print = useCallback((settings: GiftPrintSettings) => {
+    setPrintSettings(settings);
     setShowPrintView(true);
-    // Give time for portal to render before triggering print
     setTimeout(() => {
       window.print();
       setTimeout(() => setShowPrintView(false), 500);
-    }, 100);
+    }, 200);
   }, []);
 
   const handleThermalPrint = useCallback(async () => {
@@ -666,7 +699,7 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
                 size="sm"
                 variant="outline"
                 className="gap-1 text-[10px] h-7"
-                onClick={handleA4Print}
+                onClick={() => setShowPrintSettings(true)}
                 disabled={!giftsData?.items?.length}
               >
                 <FileText className="w-3 h-3" />
@@ -845,7 +878,15 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
         rows={printRows}
         workerName={allWorkers ? 'جميع العمال' : workerName}
         dateRange={periodDateLabel}
+        productFilter={printProductLabel}
         isVisible={showPrintView}
+        visibleColumns={printSettings?.columns}
+      />
+      <GiftsPrintSettingsDialog
+        open={showPrintSettings}
+        onOpenChange={setShowPrintSettings}
+        products={availableProducts}
+        onPrint={handleA4Print}
       />
     </Dialog>
   );
