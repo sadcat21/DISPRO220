@@ -121,6 +121,8 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isPrinting, setIsPrinting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [showPrintView, setShowPrintView] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
 
   // Date range: current month → 1st to today, past month → 1st to last day
   const periodStartDate = startOfMonth(currentMonth);
