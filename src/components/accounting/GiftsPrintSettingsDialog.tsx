@@ -7,7 +7,6 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Settings, Printer, Save, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 export type GiftPrintColumnKey =
@@ -67,7 +66,7 @@ const GiftsPrintSettingsDialog: React.FC<Props> = ({ open, onOpenChange, product
   const [separateByProduct, setSeparateByProduct] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const { worker } = useAuth();
+  
 
   // Load settings from DB first, then fallback to localStorage
   useEffect(() => {
@@ -147,12 +146,12 @@ const GiftsPrintSettingsDialog: React.FC<Props> = ({ open, onOpenChange, product
       if (existing) {
         await supabase
           .from('app_settings')
-          .update({ value: settingsValue, updated_by: worker?.id || null, updated_at: new Date().toISOString() })
+          .update({ value: settingsValue, updated_at: new Date().toISOString() })
           .eq('key', DB_SETTINGS_KEY);
       } else {
         await supabase
           .from('app_settings')
-          .insert({ key: DB_SETTINGS_KEY, value: settingsValue, updated_by: worker?.id || null });
+          .insert({ key: DB_SETTINGS_KEY, value: settingsValue });
       }
 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedColumns));
