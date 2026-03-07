@@ -32,6 +32,7 @@ import CustomerPickerDialog from '@/components/orders/CustomerPickerDialog';
 import PartialLoadFromOrdersDialog from '@/components/stock/PartialLoadFromOrdersDialog';
 import WorkerLoadRequestBanner from '@/components/stock/WorkerLoadRequestBanner';
 import LoadSheetPrintView from '@/components/stock/LoadSheetPrintView';
+import SessionPrintView from '@/components/stock/SessionPrintView';
 import { Customer, Sector } from '@/types/database';
 
 interface EmptyTruckItem {
@@ -106,6 +107,7 @@ const LoadStock: React.FC = () => {
   const [showSessionHistory, setShowSessionHistory] = useState(false);
   const [showPartialLoadDialog, setShowPartialLoadDialog] = useState(false);
   const [showLoadSheetPrint, setShowLoadSheetPrint] = useState(false);
+  const [printSessionId, setPrintSessionId] = useState<string | null>(null);
   const [viewSessionId, setViewSessionId] = useState<string | null>(null);
   const [viewSessionItems, setViewSessionItems] = useState<any[]>([]);
   const [viewReviewDiscrepancies, setViewReviewDiscrepancies] = useState<any[]>([]);
