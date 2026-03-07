@@ -4,7 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Loader2, MapPin, Users, Warehouse, Clock, Navigation, Route } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { calculateDistance } from '@/utils/geoUtils';
+import { calculateDistance, reverseGeocode } from '@/utils/geoUtils';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
