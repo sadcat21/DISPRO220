@@ -325,6 +325,22 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
                 </div>
               </div>
 
+              {/* Sector Type Switch */}
+              <div className="flex items-center justify-between border rounded-lg p-3 bg-background">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium">
+                    {sectorType === 'prevente' ? 'Prévente' : 'Cash Van'}
+                  </Label>
+                  <Badge variant={sectorType === 'prevente' ? 'default' : 'secondary'} className="text-[10px]">
+                    {sectorType === 'prevente' ? 'طلبات + توصيل' : 'بيع مباشر'}
+                  </Badge>
+                </div>
+                <Switch
+                  checked={sectorType === 'cash_van'}
+                  onCheckedChange={(checked) => setSectorType(checked ? 'cash_van' : 'prevente')}
+                />
+              </div>
+
               {/* Zones inside the form */}
               <div className="space-y-2 border rounded-lg p-3 bg-background">
                 <Label className="text-sm flex items-center gap-1">
@@ -368,51 +384,78 @@ const ManageSectorsDialog: React.FC<ManageSectorsDialogProps> = ({ open, onOpenC
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs flex items-center gap-1"><Calendar className="w-3 h-3" /> يوم زيارة الطلبات</Label>
-                  <Select value={visitDaySales} onValueChange={setVisitDaySales}>
-                    <SelectTrigger className="text-xs h-9"><SelectValue placeholder="اختر اليوم" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">بدون</SelectItem>
-                      {DAYS.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs flex items-center gap-1"><Calendar className="w-3 h-3" /> يوم التوصيل</Label>
-                  <Select value={visitDayDelivery} onValueChange={setVisitDayDelivery}>
-                    <SelectTrigger className="text-xs h-9"><SelectValue placeholder="اختر اليوم" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">بدون</SelectItem>
-                      {DAYS.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+              {sectorType === 'prevente' ? (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs flex items-center gap-1"><Calendar className="w-3 h-3" /> يوم زيارة الطلبات</Label>
+                      <Select value={visitDaySales} onValueChange={setVisitDaySales}>
+                        <SelectTrigger className="text-xs h-9"><SelectValue placeholder="اختر اليوم" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">بدون</SelectItem>
+                          {DAYS.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs flex items-center gap-1"><Calendar className="w-3 h-3" /> يوم التوصيل</Label>
+                      <Select value={visitDayDelivery} onValueChange={setVisitDayDelivery}>
+                        <SelectTrigger className="text-xs h-9"><SelectValue placeholder="اختر اليوم" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">بدون</SelectItem>
+                          {DAYS.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs flex items-center gap-1"><UserCheck className="w-3 h-3" /> مندوب المبيعات</Label>
-                  <Select value={salesWorkerId} onValueChange={setSalesWorkerId}>
-                    <SelectTrigger className="text-xs h-9"><SelectValue placeholder="اختر المندوب" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">بدون</SelectItem>
-                      {workers.map(w => <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs flex items-center gap-1"><Truck className="w-3 h-3" /> مندوب التوصيل</Label>
-                  <Select value={deliveryWorkerId} onValueChange={setDeliveryWorkerId}>
-                    <SelectTrigger className="text-xs h-9"><SelectValue placeholder="اختر المندوب" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">بدون</SelectItem>
-                      {workers.map(w => <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs flex items-center gap-1"><UserCheck className="w-3 h-3" /> مندوب المبيعات</Label>
+                      <Select value={salesWorkerId} onValueChange={setSalesWorkerId}>
+                        <SelectTrigger className="text-xs h-9"><SelectValue placeholder="اختر المندوب" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">بدون</SelectItem>
+                          {workers.map(w => <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs flex items-center gap-1"><Truck className="w-3 h-3" /> مندوب التوصيل</Label>
+                      <Select value={deliveryWorkerId} onValueChange={setDeliveryWorkerId}>
+                        <SelectTrigger className="text-xs h-9"><SelectValue placeholder="اختر المندوب" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">بدون</SelectItem>
+                          {workers.map(w => <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs flex items-center gap-1"><Calendar className="w-3 h-3" /> يوم البيع المباشر</Label>
+                    <Select value={visitDayDelivery} onValueChange={setVisitDayDelivery}>
+                      <SelectTrigger className="text-xs h-9"><SelectValue placeholder="اختر اليوم" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">بدون</SelectItem>
+                        {DAYS.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs flex items-center gap-1"><Truck className="w-3 h-3" /> عامل التوصيل / البيع المباشر</Label>
+                    <Select value={deliveryWorkerId} onValueChange={setDeliveryWorkerId}>
+                      <SelectTrigger className="text-xs h-9"><SelectValue placeholder="اختر العامل" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">بدون</SelectItem>
+                        {workers.map(w => <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
 
               <Button className="w-full" onClick={handleSave} disabled={isSaving}>
                 {isSaving ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Save className="w-4 h-4 ml-2" />}
