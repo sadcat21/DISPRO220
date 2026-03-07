@@ -670,10 +670,52 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         <DialogContent className="max-w-[95vw] sm:max-w-md p-0 gap-0 max-h-[85vh] flex flex-col" dir="rtl">
           <DialogHeader className="p-3 border-b shrink-0">
             <DialogTitle className="flex items-center gap-2 text-sm">
-              <MapPin className="w-4 h-4 text-blue-500 shrink-0" />
+              <MapPin className="w-4 h-4 text-primary shrink-0" />
               <span className="truncate">{title}</span>
             </DialogTitle>
           </DialogHeader>
+
+          {/* Admin worker picker strip */}
+          {isAdmin && !targetWorkerId && workersList.length > 0 && (
+            <div className="border-b px-2 py-1.5 shrink-0">
+              <ScrollArea className="w-full" dir="rtl">
+                <div className="flex gap-1.5 pb-1">
+                  {workersList.map(w => {
+                    const isSelected = w.id === selectedAdminWorkerId;
+                    return (
+                      <button
+                        key={w.id}
+                        onClick={() => setSelectedAdminWorkerId(isSelected ? null : w.id)}
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-medium whitespace-nowrap transition-colors shrink-0
+                          ${isSelected
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'bg-background border-border hover:bg-accent text-foreground'}
+                        `}
+                      >
+                        <User className="w-3 h-3" />
+                        {w.full_name}
+                      </button>
+                    );
+                  })}
+                </div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+            </div>
+          )}
+
+          {/* Search bar */}
+          <div className="px-3 pt-2 pb-1 shrink-0">
+            <div className="relative">
+              <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input
+                placeholder="بحث بالاسم أو الهاتف..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-8 text-xs pr-8"
+                dir="rtl"
+              />
+            </div>
+          </div>
 
           <Tabs defaultValue="sales" className="flex flex-col flex-1 min-h-0">
             <TabsList className="w-full rounded-none border-b shrink-0">
