@@ -71,6 +71,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   // For admin: use selected worker or fallback to auth worker
   const effectiveWorkerId = targetWorkerId || (isAdmin && selectedAdminWorkerId ? selectedAdminWorkerId : authWorkerId);
   const effectiveWorkerName = targetWorkerName || (isAdmin && selectedAdminWorkerId ? workersList.find(w => w.id === selectedAdminWorkerId)?.full_name : undefined);
+  const hasSpecificWorker = !!(targetWorkerId || selectedAdminWorkerId);
 
   const todayStart = useMemo(() => {
     const d = new Date();
