@@ -1,11 +1,11 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Gift, Package, User, Calendar, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Phone, MapPin, Printer, Users, ArrowRight } from 'lucide-react';
+import { Gift, Package, User, Calendar, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Phone, MapPin, Printer, Users, ArrowRight, FileText } from 'lucide-react';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBluetoothPrinter } from '@/hooks/useBluetoothPrinter';
@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, isSameMonth } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import ThermalPreview, { ThermalLine } from '@/components/stock/ThermalPreview';
+import GiftsPrintView, { GiftPrintRow } from '@/components/accounting/GiftsPrintView';
 
 interface Props {
   open: boolean;
