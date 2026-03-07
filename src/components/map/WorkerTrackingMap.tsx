@@ -23,9 +23,12 @@ interface WorkerTrackingMapProps {
   showOnlyHighlighted?: boolean;
 }
 
-const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId }) => {
+const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId, showOnlyHighlighted }) => {
   const { t, dir } = useLanguage();
-  const { data: locations, isLoading } = useWorkerLocations();
+  const { data: rawLocations, isLoading } = useWorkerLocations();
+  const locations = showOnlyHighlighted && highlightWorkerId
+    ? rawLocations?.filter(l => l.worker_id === highlightWorkerId)
+    : rawLocations;
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
