@@ -82,7 +82,7 @@ const chunkRows = <T,>(items: T[], size: number): T[][] => {
 };
 
 const formatGiftTotalBoxPiece = (rows: GiftPrintRow[]): string => {
-  if (!rows.length) return '0';
+  if (!rows.length) return '0.00';
   let totalPieces = 0;
   let ppb = rows[0]?.piecesPerBox || 1;
   const ppbMap = new Map<number, number>();
@@ -94,17 +94,17 @@ const formatGiftTotalBoxPiece = (rows: GiftPrintRow[]): string => {
   ppbMap.forEach((count, key) => {
     if (count > maxCount) { maxCount = count; ppb = key; }
   });
-  if (ppb <= 1) return `${totalPieces}`;
+  if (ppb <= 1) return `${totalPieces}.00`;
   const boxes = Math.floor(totalPieces / ppb);
   const rem = totalPieces % ppb;
-  return rem > 0 ? `${boxes}.${String(rem).padStart(2, '0')}` : `${boxes}`;
+  return `${boxes}.${String(rem).padStart(2, '0')}`;
 };
 
 const formatBoxPiece = (pieces: number, ppb: number): string => {
-  if (ppb <= 1) return `${pieces}`;
+  if (ppb <= 1) return `${pieces}.00`;
   const boxes = Math.floor(pieces / ppb);
   const rem = pieces % ppb;
-  return rem > 0 ? `${boxes}.${String(rem).padStart(2, '0')}` : `${boxes}`;
+  return `${boxes}.${String(rem).padStart(2, '0')}`;
 };
 
 const getCellValue = (row: GiftPrintRow, col: GiftPrintColumnKey, rowNumber: number): React.ReactNode => {
