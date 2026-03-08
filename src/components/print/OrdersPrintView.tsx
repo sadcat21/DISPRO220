@@ -175,6 +175,19 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
       fetchShortages();
     }, [activeBranch?.id]);
 
+    // Fetch stamp price tiers
+    useEffect(() => {
+      const fetchTiers = async () => {
+        const { data } = await supabase
+          .from('stamp_price_tiers')
+          .select('*')
+          .eq('is_active', true)
+          .order('min_amount', { ascending: true });
+        if (data) setStampTiers(data as StampPriceTier[]);
+      };
+      fetchTiers();
+    }, []);
+
     const getFilterCriteria = () => {
       const criteria: string[] = [];
       if (dateRange) criteria.push(`${tp('print.header.period')}: ${dateRange}`);
