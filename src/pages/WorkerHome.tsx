@@ -25,6 +25,7 @@ import WorkerHandoverPreviewDialog from '@/components/accounting/WorkerHandoverP
 import TodayCustomersDialog from '@/components/sectors/TodayCustomersDialog';
 import PalletCalculatorDialog from '@/components/stock/PalletCalculatorDialog';
 import AttendanceButton from '@/components/attendance/AttendanceButton';
+import ManualPromoEntryDialog from '@/components/offers/ManualPromoEntryDialog';
 
 const WorkerHome: React.FC = () => {
   const { user, workerId, role } = useAuth();
