@@ -509,7 +509,7 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[85vh] overflow-hidden flex flex-col" dir="rtl">
+      <DialogContent className="max-w-md max-h-[92dvh] min-h-0 overflow-hidden flex flex-col" dir="rtl">
         {!expandedProduct && (
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
@@ -565,7 +565,7 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
             </TabsList>
 
             <TabsContent value="products" className="flex-1 min-h-0 mt-1">
-              <ScrollArea className="h-full max-h-[55vh]">
+              <ScrollArea className="h-full min-h-0">
                 <div className="grid grid-cols-3 gap-2 pb-2">
                   {salesData.items.map((item) => (
                     <div
@@ -610,13 +610,13 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
             </TabsContent>
 
             <TabsContent value="pricing" className="flex-1 min-h-0 mt-1">
-              <ScrollArea className="h-full max-h-[55vh]">
+              <ScrollArea className="h-full min-h-0">
                 <PriceTrackingTab priceTracking={salesData.priceTracking || []} />
               </ScrollArea>
             </TabsContent>
 
             <TabsContent value="groups" className="flex-1 min-h-0 mt-1">
-              <ScrollArea className="h-full max-h-[55vh]">
+              <ScrollArea className="h-full min-h-0">
                 <PricingGroupsSummary
                   workerId={workerId!}
                   periodStart={lastAccounting || new Date().toISOString().split('T')[0]}
@@ -626,7 +626,7 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
             </TabsContent>
           </Tabs>
         ) : (
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 min-h-0">
             {isLoading ? (
               <div className="flex justify-center py-8">
                 <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />

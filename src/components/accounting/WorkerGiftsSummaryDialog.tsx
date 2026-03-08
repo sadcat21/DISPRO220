@@ -743,7 +743,7 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-hidden flex flex-col" dir="rtl">
+      <DialogContent className="max-w-md max-h-[92dvh] min-h-0 overflow-hidden flex flex-col" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Gift className="w-5 h-5 text-purple-600" />
@@ -848,7 +848,7 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
           </div>
         )}
 
-        <ScrollArea className="flex-1 max-h-[55vh]">
+        <ScrollArea className="flex-1 min-h-0">
           {isLoading ? (
             <div className="flex justify-center py-8">
               <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
