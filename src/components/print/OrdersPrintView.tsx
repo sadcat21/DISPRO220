@@ -261,7 +261,7 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
       >
         {/* Watermark - absolutely positioned in center of container */}
         <div style={{
-          position: 'fixed',
+          position: usePortal ? 'fixed' : 'absolute',
           top: '45%',
           left: '50%',
           transform: 'translate(-50%, -50%)',

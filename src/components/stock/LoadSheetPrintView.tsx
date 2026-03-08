@@ -125,7 +125,7 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
             ) : (
               <>
                 <ScrollArea className="max-h-[65vh] rounded-md border border-border">
-                  <div className="overflow-auto p-3 bg-background">
+                  <div className="print-preview-surface overflow-auto p-3 bg-background">
                     <div
                       className="origin-top-right"
                       style={{
