@@ -249,7 +249,7 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
       }
 
       return builtPages;
-    }, [rows, separateByProduct, isTemplate]);
+    }, [rows, separateByProduct, isTemplate, templatePageCount]);
 
     const buildTotalsRow = (totals: { vente: number; gift: number; giftBoxPiece: string }) => {
       const totalIndices = [venteColIdx, giftColIdx, giftBPColIdx].filter(i => i >= 0);
