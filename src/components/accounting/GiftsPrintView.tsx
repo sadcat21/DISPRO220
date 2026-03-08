@@ -58,14 +58,7 @@ const COLUMN_CONFIG: Record<GiftPrintColumnKey, { header: string; width?: string
   storeNameFr: { header: 'Magasin FR', className: '' },
   sector: { header: 'Secteur', className: '' },
   address: { header: 'Adresse', className: 'small-text' },
-  wilaya: { header: 'Wilaya', width: '65px' },
-  phone: { header: 'Téléphone', width: '95px', className: 'ltr-text' },
-  productName: { header: 'Produit', className: '' },
-  venteQuantity: { header: 'Ventes', width: '45px', className: 'center bold' },
-  giftQuantity: { header: 'Gratuit', width: '45px', className: 'center bold' },
-  giftBoxPiece: { header: 'Gratuit B.P', width: '55px', className: 'center bold' },
-  workerName: { header: 'Employé', className: 'small-text' },
-  date: { header: 'Date', width: '70px', className: 'small-text' },
+  date: { header: 'Date', width: '85px', className: 'small-text' },
 };
 
 type PrintPage = {
