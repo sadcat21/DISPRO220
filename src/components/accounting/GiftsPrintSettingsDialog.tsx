@@ -5,7 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings, Printer, Save, Loader2, GripVertical } from 'lucide-react';
+import { Settings, Printer, Save, Loader2, GripVertical, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -49,6 +49,7 @@ export interface GiftPrintSettings {
   separateByProduct: boolean;
   printSummary: boolean;
   summaryOnly: boolean;
+  isTemplate: boolean;
 }
 
 interface Props {
@@ -142,12 +143,17 @@ const GiftsPrintSettingsDialog: React.FC<Props> = ({ open, onOpenChange, product
   }, [columnOrder, selectedColumns]);
 
   const handlePrint = () => {
-    onPrint({ columns: orderedSelectedColumns, productFilter, separateByProduct, printSummary, summaryOnly: false });
+    onPrint({ columns: orderedSelectedColumns, productFilter, separateByProduct, printSummary, summaryOnly: false, isTemplate: false });
     onOpenChange(false);
   };
 
   const handlePrintSummaryOnly = () => {
-    onPrint({ columns: orderedSelectedColumns, productFilter, separateByProduct, printSummary: true, summaryOnly: true });
+    onPrint({ columns: orderedSelectedColumns, productFilter, separateByProduct, printSummary: true, summaryOnly: true, isTemplate: false });
+    onOpenChange(false);
+  };
+
+  const handlePrintTemplate = () => {
+    onPrint({ columns: orderedSelectedColumns, productFilter, separateByProduct, printSummary: false, summaryOnly: false, isTemplate: true });
     onOpenChange(false);
   };
 
@@ -318,6 +324,10 @@ const GiftsPrintSettingsDialog: React.FC<Props> = ({ open, onOpenChange, product
           <Button variant="outline" size="sm" onClick={handlePrintSummaryOnly} className="gap-1.5">
             <Printer className="w-3.5 h-3.5" />
             ملخص فقط
+          </Button>
+          <Button variant="outline" size="sm" onClick={handlePrintTemplate} className="gap-1.5">
+            <FileText className="w-3.5 h-3.5" />
+            نموذج فارغ
           </Button>
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
             إلغاء

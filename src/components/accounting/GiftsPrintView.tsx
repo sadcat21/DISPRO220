@@ -42,9 +42,10 @@ interface GiftsPrintViewProps {
   separateByProduct?: boolean;
   printSummary?: boolean;
   summaryOnly?: boolean;
+  isTemplate?: boolean;
 }
 
-const ROWS_PER_PAGE = 16;
+const ROWS_PER_PAGE = 20;
 
 const COLUMN_CONFIG: Record<GiftPrintColumnKey, { header: string; width?: string; className?: string }> = {
   number: { header: 'N°', width: '30px', className: 'center' },
@@ -70,6 +71,8 @@ type PrintPage = {
   rowOffset: number;
   showTotals: boolean;
   totals: { vente: number; gift: number; giftBoxPiece: string };
+  pageNum: number;
+  totalPages: number;
 };
 
 const chunkRows = <T,>(items: T[], size: number): T[][] => {
@@ -129,7 +132,7 @@ const getCellValue = (row: GiftPrintRow, col: GiftPrintColumnKey, rowNumber: num
 };
 
 const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
-  ({ rows, summaryRows, workerNames, workerName, dateRange, productFilter, isVisible = false, visibleColumns, separateByProduct = true, printSummary = false, summaryOnly = false }, ref) => {
+  ({ rows, summaryRows, workerNames, workerName, dateRange, productFilter, isVisible = false, visibleColumns, separateByProduct = true, printSummary = false, summaryOnly = false, isTemplate = false }, ref) => {
     const [container, setContainer] = useState<HTMLDivElement | null>(null);
 
     const columns = useMemo(() => {
@@ -169,8 +172,26 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
     ].join('  |  ');
 
     const pages = useMemo((): PrintPage[] => {
-      if (!rows.length) {
-        return [{ productName: null, rows: [], rowOffset: 0, showTotals: true, totals: { vente: 0, gift: 0, giftBoxPiece: '0' } }];
+      if (!rows.length && !isTemplate) {
+        return [{ productName: null, rows: [], rowOffset: 0, showTotals: true, totals: { vente: 0, gift: 0, giftBoxPiece: '0.00' }, pageNum: 1, totalPages: 1 }];
+      }
+
+      // Template mode: generate empty pages
+      if (isTemplate) {
+        const templatePages: PrintPage[] = [];
+        const numTemplatePages = 2;
+        for (let i = 0; i < numTemplatePages; i++) {
+          templatePages.push({
+            productName: null,
+            rows: [],
+            rowOffset: i * ROWS_PER_PAGE,
+            showTotals: true,
+            totals: { vente: 0, gift: 0, giftBoxPiece: '0.00' },
+            pageNum: i + 1,
+            totalPages: numTemplatePages,
+          });
+        }
+        return templatePages;
       }
 
       if (!separateByProduct) {
@@ -186,6 +207,8 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
           rowOffset: idx * ROWS_PER_PAGE,
           showTotals: idx === chunks.length - 1,
           totals,
+          pageNum: idx + 1,
+          totalPages: chunks.length,
         }));
       }
 
@@ -216,12 +239,14 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
             rowOffset: idx * ROWS_PER_PAGE,
             showTotals: idx === chunks.length - 1,
             totals,
+            pageNum: idx + 1,
+            totalPages: chunks.length,
           });
         });
       }
 
       return builtPages;
-    }, [rows, separateByProduct]);
+    }, [rows, separateByProduct, isTemplate]);
 
     const buildTotalsRow = (totals: { vente: number; gift: number; giftBoxPiece: string }) => {
       const totalIndices = [venteColIdx, giftColIdx, giftBPColIdx].filter(i => i >= 0);
@@ -318,10 +343,7 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
             </tbody>
           </table>
 
-          <div className="print-footer">
-            <span>Date d'impression: {format(new Date(), 'dd/MM/yyyy HH:mm')}</span>
-            <span>Laser Food</span>
-          </div>
+          {/* No footer */}
         </section>
       );
     }, [printSummary, summaryRows, workerNames, filterCriteria]);
@@ -334,9 +356,13 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
       >
         {!summaryOnly && pages.map((page, pageIndex) => {
           const emptyRowsCount = Math.max(0, ROWS_PER_PAGE - page.rows.length);
-          const pageTitle = page.productName
-            ? `Registre des promotions — ${page.productName}`
-            : 'Registre des promotions';
+          const templateDots = '··············';
+          const pageSuffix = page.totalPages > 1 ? ` (${page.pageNum}/${page.totalPages})` : '';
+          const pageTitle = isTemplate
+            ? `Registre des promotions — ${templateDots}${pageSuffix}`
+            : page.productName
+              ? `Registre des promotions — ${page.productName}${pageSuffix}`
+              : `Registre des promotions${pageSuffix}`;
 
           return (
             <section
@@ -352,8 +378,9 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
               <div className="print-header-with-logo" style={{ position: 'relative', zIndex: 1 }}>
                 <div className="print-logo"><img src={logoImage} alt="Laser Food" /></div>
                 <div className="print-title-section">
-                  <h1 style={{ fontSize: page.productName ? '16pt' : '18pt' }}>{pageTitle}</h1>
-                  <p style={{ fontSize: '10pt', fontWeight: 600, marginTop: '5px' }}>{filterCriteria}</p>
+                  <h1 style={{ fontSize: page.productName || isTemplate ? '14pt' : '18pt' }}>{pageTitle}</h1>
+                  <p style={{ fontSize: '10pt', fontWeight: 600, marginTop: '3px' }}>{isTemplate ? `Employé: ${templateDots}  |  Produit: ${templateDots}  |  Période: ${templateDots}` : filterCriteria}</p>
+                  <p style={{ fontSize: '8pt', color: '#666', marginTop: '2px' }}>Date d'impression: {format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
                 </div>
                 <div className="print-logo"><img src={logoImage} alt="Laser Food" /></div>
               </div>
@@ -372,7 +399,7 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
                   </tr>
                 </thead>
                 <tbody>
-                  {page.rows.map((row, rowIndex) => (
+                  {!isTemplate && page.rows.map((row, rowIndex) => (
                     <tr key={rowIndex}>
                       {columns.map(col => {
                         const cfg = COLUMN_CONFIG[col];
@@ -385,9 +412,14 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
                     </tr>
                   ))}
 
-                  {Array.from({ length: emptyRowsCount }).map((_, i) => (
+                  {/* Empty rows: template shows all ROWS_PER_PAGE, normal fills remaining */}
+                  {Array.from({ length: isTemplate ? ROWS_PER_PAGE : emptyRowsCount }).map((_, i) => (
                     <tr key={`empty-${i}`}>
-                      {columns.map((_, j) => <td key={j}>&nbsp;</td>)}
+                      {columns.map((col, j) => (
+                        <td key={j}>
+                          {isTemplate && col === 'number' ? (page.rowOffset + i + 1) : '\u00A0'}
+                        </td>
+                      ))}
                     </tr>
                   ))}
 
@@ -398,11 +430,6 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
                   )}
                 </tbody>
               </table>
-
-              <div className="print-footer">
-                <span>Date d'impression: {format(new Date(), 'dd/MM/yyyy HH:mm')}</span>
-                <span>Laser Food</span>
-              </div>
             </section>
           );
         })}
