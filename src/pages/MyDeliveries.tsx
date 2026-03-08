@@ -114,10 +114,110 @@ const MyDeliveries: React.FC = () => {
       });
   }, [orders]);
 
-  // Load print settings once
+  // Load print settings and products once
   useEffect(() => {
     loadPrintSettingsFromDB(null);
+    supabase.from('products').select('*').eq('is_active', true).order('sort_order', { ascending: true }).order('name')
+      .then(({ data }) => { if (data) setProducts(data); });
+    supabase.from('workers').select('*').eq('is_active', true).order('full_name')
+      .then(({ data }) => { if (data) setWorkersList(data.filter(w => w.role === 'worker')); });
   }, []);
+
+  const toMap = (record: Record<string, any[]>) => {
+    const m = new (globalThis.Map)<string, any[]>();
+    Object.entries(record).forEach(([k, v]) => m.set(k, v));
+    return m;
+  };
+
+  const handlePrint = async (_filterWorkerId: string | null, _printPerWorker: boolean, filteredOrders: OrderWithDetails[], _groupCustomers: boolean = true, _groupProducts: boolean = true, columnConfig?: PrintColumnConfig[]) => {
+    if (columnConfig) setPrintColumnConfig(columnConfig);
+    if (!filteredOrders || filteredOrders.length === 0) {
+      toast.error('لا توجد طلبيات للطباعة');
+      return;
+    }
+    try {
+      const orderIds = filteredOrders.map(o => o.id);
+      const { data: items, error } = await supabase
+        .from('order_items')
+        .select('*, product:products(*)')
+        .in('order_id', orderIds);
+      if (error) throw error;
+
+      const itemsRecord: Record<string, any[]> = {};
+      items?.forEach(item => {
+        if (!itemsRecord[item.order_id]) itemsRecord[item.order_id] = [];
+        itemsRecord[item.order_id].push(item);
+      });
+
+      setAllOrderItems(itemsRecord);
+      setFilteredOrdersForPrint(filteredOrders);
+      setPrintWorkerName(user?.full_name || null);
+      setIsPrintReady(true);
+
+      setTimeout(() => {
+        window.print();
+        setIsPrintReady(false);
+        setPrintWorkerName(null);
+      }, 500);
+    } catch (error: any) {
+      toast.error('خطأ في الطباعة');
+      console.error(error);
+    }
+  };
+
+  const handleExportCSV = async (filteredOrders: OrderWithDetails[]) => {
+    if (!filteredOrders || filteredOrders.length === 0) {
+      toast.error('لا توجد طلبيات للتصدير');
+      return;
+    }
+    try {
+      const orderIds = filteredOrders.map(o => o.id);
+      const { data: items, error } = await supabase
+        .from('order_items')
+        .select('*, product:products(*)')
+        .in('order_id', orderIds);
+      if (error) throw error;
+
+      const itemsMap: Record<string, any[]> = {};
+      items?.forEach(item => {
+        if (!itemsMap[item.order_id]) itemsMap[item.order_id] = [];
+        itemsMap[item.order_id].push(item);
+      });
+
+      const productNames = products.map(p => p.name);
+      const headers = ['رقم الطلبية', 'العميل', 'الهاتف', 'العنوان', 'تاريخ التوصيل', 'الحالة', ...productNames];
+
+      const rows = filteredOrders.map(order => {
+        const orderItemsData = itemsMap[order.id] || [];
+        const productQuantities = products.map(product => {
+          const item = orderItemsData.find((i: any) => i.product_id === product.id);
+          return item?.quantity || 0;
+        });
+        return [
+          order.id.substring(0, 8).toUpperCase(),
+          order.customer?.name || '',
+          order.customer?.phone || '',
+          order.customer?.address || '',
+          order.delivery_date || '',
+          order.status,
+          ...productQuantities
+        ];
+      });
+
+      const BOM = '\uFEFF';
+      const csvContent = BOM + [headers.join(','), ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `deliveries_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      toast.success('تم التصدير بنجاح');
+    } catch (error: any) {
+      toast.error('خطأ في التصدير');
+      console.error(error);
+    }
+  };
   
   const getDateLocale = (lang: Language) => {
     switch (lang) {
