@@ -119,52 +119,6 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
             </div>
           ) : (
             <>
-              <ScrollArea className="max-h-[65vh]">
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse text-[11px]">
-                    <thead>
-                      <tr className="bg-muted">
-                        <th className="border border-border p-1.5 text-center w-[30px]">الرقم</th>
-                        <th className="border border-border p-1.5 text-right min-w-[100px]">العميل</th>
-                        <th className="border border-border p-1.5 text-right min-w-[80px]">اسم المحل</th>
-                        <th className="border border-border p-1.5 text-right min-w-[80px]">الهاتف</th>
-                        <th className="border border-border p-1.5 text-right min-w-[80px]">العنوان</th>
-                        {products.map(p => (
-                          <th key={p.id} className="border border-border p-1 text-center min-w-[50px] text-[10px]">
-                            {p.name}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {orders.map((order, idx) => {
-                        const items = orderItems.get(order.id) || [];
-                        return (
-                          <tr key={order.id} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/30'}>
-                            <td className="border border-border p-1 text-center font-medium">{idx + 1}</td>
-                            <td className="border border-border p-1.5 text-right">
-                              <div className="font-semibold text-[11px]">{order.customer?.name || '—'}</div>
-                            </td>
-                            <td className="border border-border p-1.5 text-right text-[10px]">{order.customer?.store_name || ''}</td>
-                            <td className="border border-border p-1.5 text-right text-[10px] direction-ltr">{order.customer?.phone || ''}</td>
-                            <td className="border border-border p-1.5 text-right text-[10px]">{order.customer?.address || ''}</td>
-                            {products.map(p => {
-                              const item = items.find((i: any) => i.product_id === p.id);
-                              const qty = item?.quantity || 0;
-                              return (
-                                <td key={p.id} className={`border border-border p-1 text-center ${qty > 0 ? 'font-bold' : 'text-muted-foreground/30'}`}>
-                                  {qty > 0 ? qty : '·'}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </ScrollArea>
-
               <div className="flex items-center justify-between pt-2">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Badge variant="secondary">{orders.length} عميل</Badge>
