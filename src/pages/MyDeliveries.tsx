@@ -90,7 +90,7 @@ const MyDeliveries: React.FC = () => {
   const printRef = useRef<HTMLDivElement>(null);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [previewOrders, setPreviewOrders] = useState<OrderWithDetails[]>([]);
-  const [previewItems, setPreviewItems] = useState(() => new Map<string, any[]>());
+  const [previewItems, setPreviewItems] = useState<Record<string, any[]>>({});
   const [previewColumnConfig, setPreviewColumnConfig] = useState<PrintColumnConfig[]>([]);
 
   const isSearchHidden = useIsElementHidden('button', 'deliveries_search');
