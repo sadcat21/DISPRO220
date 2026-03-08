@@ -135,6 +135,9 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
+    const dateStr = format(new Date(), 'dd/MM/yyyy HH:mm');
+    const dateOnly = format(new Date(), 'dd/MM/yyyy');
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html dir="rtl">
@@ -143,27 +146,67 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
         <style>
           @page { size: landscape; margin: 8mm; }
           body { font-family: 'Cairo', 'Segoe UI', sans-serif; direction: rtl; margin: 0; padding: 0; font-size: 9pt; }
-          .header { text-align: center; margin-bottom: 8px; }
-          .header h1 { font-size: 14pt; margin: 0; }
-          .header p { font-size: 10pt; margin: 2px 0; color: #555; }
-          .header img { height: 40px; margin-bottom: 4px; }
-          table { width: 100%; border-collapse: collapse; }
-          th, td { border: 1px solid #333; padding: 3px 5px; text-align: center; font-size: 8pt; }
-          th { background: #f0f0f0; font-weight: bold; font-size: 7pt; }
+          
+          /* Header with logos */
+          .print-header-with-logo {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #000;
+          }
+          .print-logo img { height: 50px; }
+          .print-title-section { text-align: center; flex: 1; }
+          .print-title-section h1 { font-size: 16pt; margin: 0; font-weight: bold; }
+          .print-title-section p { font-size: 11pt; margin: 2px 0; color: #333; }
+
+          /* Watermark */
+          .watermark {
+            position: fixed;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 0;
+            opacity: 0.12;
+            pointer-events: none;
+          }
+          .watermark img { width: 280px; }
+
+          /* Word-like table */
+          table { width: 100%; border-collapse: collapse; position: relative; z-index: 1; }
+          th, td { border: 1px solid #000; padding: 4px 6px; text-align: center; font-size: 8pt; }
+          th { background-color: #e8e8e8 !important; font-weight: bold; font-size: 8pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          tbody tr:nth-child(even) { background-color: #f8f8f8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          tbody tr { page-break-inside: avoid; }
+          
           .customer-name { text-align: right; font-weight: 600; font-size: 8.5pt; white-space: nowrap; }
           .store-name { font-size: 7pt; color: #666; }
           .sector-name { font-size: 6.5pt; color: #999; }
-          .surplus-row { background: #fff8e1; font-weight: bold; }
-          .surplus-row td:first-child { text-align: right; color: #e65100; }
-          .total-row { background: #e3f2fd; font-weight: bold; }
-          .total-row td:first-child { text-align: right; }
           .qty-cell { font-weight: bold; font-size: 9pt; }
           .empty-cell { color: #ccc; }
-          .loaded-row { background: #e8f5e9; font-weight: bold; }
+
+          .totals-row { background-color: #d9d9d9 !important; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .totals-row td { padding: 6px; font-size: 9pt; }
+          .surplus-row { background: #fff8e1 !important; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .surplus-row td:first-child { text-align: right; color: #e65100; }
+          .loaded-row { background: #e8f5e9 !important; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .loaded-row td:first-child { text-align: right; color: #2e7d32; }
+
+          /* Footer */
+          .print-footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding-top: 6px;
+            border-top: 1px solid #999;
+            font-size: 8pt;
+            color: #555;
+          }
         </style>
       </head>
       <body>
+        <div class="watermark"><img src="${logoImage}" alt="" /></div>
         ${printRef.current.innerHTML}
       </body>
       </html>
@@ -276,11 +319,20 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
             {/* Print-only content (hidden) */}
             <div style={{ display: 'none' }}>
               <div ref={printRef}>
-                <div className="header">
-                  <img src={logoImage} alt="" />
-                  <h1>ورقة الشحن</h1>
-                  <p><strong>{workerName}</strong> — {format(new Date(), 'dd/MM/yyyy')}</p>
+                {/* Header with logos */}
+                <div className="print-header-with-logo">
+                  <div className="print-logo">
+                    <img src={logoImage} alt="Laser Food" />
+                  </div>
+                  <div className="print-title-section">
+                    <h1>ورقة الشحن</h1>
+                    <p><strong>{workerName}</strong> — {format(new Date(), 'dd/MM/yyyy')}</p>
+                  </div>
+                  <div className="print-logo">
+                    <img src={logoImage} alt="Laser Food" />
+                  </div>
                 </div>
+
                 <table>
                   <thead>
                     <tr>
@@ -308,8 +360,8 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
                         })}
                       </tr>
                     ))}
-                    <tr className="total-row">
-                      <td>📦 إجمالي الطلبيات</td>
+                    <tr className="totals-row">
+                      <td style={{ textAlign: 'center', fontSize: '9pt' }}>📦 إجمالي الطلبيات</td>
                       {productColumns.map(p => (
                         <td key={p.id}>{productTotals[p.id] || '·'}</td>
                       ))}
@@ -332,6 +384,13 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
                     </tr>
                   </tbody>
                 </table>
+
+                {/* Footer */}
+                <div className="print-footer">
+                  <span>تاريخ الطباعة: {format(new Date(), 'dd/MM/yyyy HH:mm')}</span>
+                  <span>عدد العملاء: {customerRows.length}</span>
+                  <span>Laser Food</span>
+                </div>
               </div>
             </div>
 
