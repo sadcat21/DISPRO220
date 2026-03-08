@@ -1,11 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Printer, Package } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { format } from 'date-fns';
 import OrdersPrintView from '@/components/print/OrdersPrintView';
 import { OrderWithDetails, Product } from '@/types/database';
@@ -18,10 +16,15 @@ interface LoadSheetPrintViewProps {
   branchId: string | null;
 }
 
+const PREVIEW_SCALE = 0.58;
+
 const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
-  open, onOpenChange, workerId, workerName, branchId
+  open,
+  onOpenChange,
+  workerId,
+  workerName,
+  branchId,
 }) => {
-  const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [orders, setOrders] = useState<OrderWithDetails[]>([]);
   const [orderItems, setOrderItems] = useState<Map<string, any[]>>(new Map());
@@ -37,7 +40,6 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Fetch orders with full details (same structure OrdersPrintView expects)
       const { data: ordersData } = await supabase
         .from('orders')
         .select(`
@@ -51,8 +53,7 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
         .order('created_at', { ascending: true });
 
       const fetchedOrders = (ordersData || []) as unknown as OrderWithDetails[];
-      
-      // Build orderItems map and products list
+
       const itemsMap = new Map<string, any[]>();
       const productMap = new Map<string, Product>();
 
@@ -85,29 +86,30 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
   };
 
   const hasData = orders.length > 0;
+  const title = `ورقة الشحن - ${workerName}`;
+  const printDate = format(new Date(), 'dd/MM/yyyy');
 
   return (
     <>
-      {/* Reuse OrdersPrintView with custom title */}
       {isPrintReady && (
         <OrdersPrintView
           ref={printRef}
           orders={orders}
           orderItems={orderItems}
           products={products}
-          title={`ورقة الشحن - ${workerName}`}
-          dateRange={format(new Date(), 'dd/MM/yyyy')}
+          title={title}
+          dateRange={printDate}
           isVisible
         />
       )}
 
       <div className="print:hidden">
         <Dialog open={open} onOpenChange={onOpenChange}>
-          <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh]" dir="rtl">
+          <DialogContent className="max-w-[95vw] sm:max-w-6xl max-h-[90vh] overflow-hidden" dir="rtl">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-base">
                 <Printer className="w-4 h-4" />
-                ورقة الشحن - {workerName}
+                {title}
               </DialogTitle>
             </DialogHeader>
 
@@ -122,57 +124,29 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
               </div>
             ) : (
               <>
-                <ScrollArea className="max-h-[65vh]">
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse text-[11px]">
-                      <thead>
-                        <tr className="bg-muted">
-                          <th className="border border-border p-1.5 text-center w-[30px]">الرقم</th>
-                          <th className="border border-border p-1.5 text-right min-w-[100px]">العميل</th>
-                          <th className="border border-border p-1.5 text-right min-w-[80px]">اسم المحل</th>
-                          <th className="border border-border p-1.5 text-right min-w-[80px]">الهاتف</th>
-                          <th className="border border-border p-1.5 text-right min-w-[80px]">العنوان</th>
-                          {products.map(p => (
-                            <th key={p.id} className="border border-border p-1 text-center min-w-[50px] text-[10px]">
-                              {p.name}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {orders.map((order, idx) => {
-                          const items = orderItems.get(order.id) || [];
-                          return (
-                            <tr key={order.id} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/30'}>
-                              <td className="border border-border p-1 text-center font-medium">{idx + 1}</td>
-                              <td className="border border-border p-1.5 text-right">
-                                <div className="font-semibold text-[11px]">{order.customer?.name || '—'}</div>
-                              </td>
-                              <td className="border border-border p-1.5 text-right text-[10px]">{order.customer?.store_name || ''}</td>
-                              <td className="border border-border p-1.5 text-right text-[10px] direction-ltr">{order.customer?.phone || ''}</td>
-                              <td className="border border-border p-1.5 text-right text-[10px]">{order.customer?.address || ''}</td>
-                              {products.map(p => {
-                                const item = items.find((i: any) => i.product_id === p.id);
-                                const qty = item?.quantity || 0;
-                                return (
-                                  <td key={p.id} className={`border border-border p-1 text-center ${qty > 0 ? 'font-bold' : 'text-muted-foreground/30'}`}>
-                                    {qty > 0 ? qty : '·'}
-                                  </td>
-                                );
-                              })}
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                <ScrollArea className="max-h-[65vh] rounded-md border border-border">
+                  <div className="print-preview-surface overflow-auto p-3 bg-background">
+                    <div
+                      className="origin-top-right"
+                      style={{
+                        transform: `scale(${PREVIEW_SCALE})`,
+                        width: `${100 / PREVIEW_SCALE}%`,
+                      }}
+                    >
+                      <OrdersPrintView
+                        orders={orders}
+                        orderItems={orderItems}
+                        products={products}
+                        title={title}
+                        dateRange={printDate}
+                        isVisible
+                        usePortal={false}
+                      />
+                    </div>
                   </div>
                 </ScrollArea>
 
-                <div className="flex items-center justify-between pt-2">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Badge variant="secondary">{orders.length} عميل</Badge>
-                    <Badge variant="secondary">{products.length} منتج</Badge>
-                  </div>
+                <div className="flex items-center justify-end pt-2">
                   <Button onClick={handlePrint} className="gap-2">
                     <Printer className="w-4 h-4" />
                     طباعة ورقة الشحن

@@ -32,10 +32,11 @@ interface OrdersPrintViewProps {
   dateRange?: string;
   isVisible?: boolean;
   columnConfig?: PrintColumnConfig[];
+  usePortal?: boolean;
 }
 
 const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
-  ({ orders, orderItems, products, title, dateRange, isVisible = false, columnConfig = [] }, ref) => {
+  ({ orders, orderItems, products, title, dateRange, isVisible = false, columnConfig = [], usePortal = true }, ref) => {
     const [container, setContainer] = useState<HTMLDivElement | null>(null);
     const [customerDebts, setCustomerDebts] = useState<Record<string, number>>({});
     const [shortageProductIds, setShortageProductIds] = useState<Set<string>>(new Set());
@@ -60,12 +61,17 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
     const visibleStaticCols = staticColIds.filter(id => isColVisible(id)).length;
 
     useEffect(() => {
+      if (!usePortal) return;
+
       const div = document.createElement('div');
       div.id = 'print-portal';
       document.body.appendChild(div);
       setContainer(div);
-      return () => { document.body.removeChild(div); };
-    }, []);
+
+      return () => {
+        document.body.removeChild(div);
+      };
+    }, [usePortal]);
 
     // Fetch active customer debts
     useEffect(() => {
@@ -255,7 +261,7 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
       >
         {/* Watermark - absolutely positioned in center of container */}
         <div style={{
-          position: 'fixed',
+          position: usePortal ? 'fixed' : 'absolute',
           top: '45%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
@@ -443,7 +449,7 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
       </div>
     );
 
-    // Render directly into body using portal
+    if (!usePortal) return content;
     if (!container) return null;
     return createPortal(content, container);
   }

@@ -504,6 +504,130 @@
   }
 }
 
+/* On-screen print preview (matches print sheet inside dialogs) */
+.print-preview-surface .print-container {
+  display: block !important;
+  visibility: visible !important;
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  overflow: visible !important;
+  font-family: 'Cairo', 'Traditional Arabic', 'Arial', sans-serif;
+  font-size: 11pt;
+  color: #000;
+  background: #fff;
+  padding: 0;
+  margin: 0;
+}
+
+.print-preview-surface .print-header-with-logo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #000;
+}
+
+.print-preview-surface .print-logo {
+  width: 80px;
+  flex-shrink: 0;
+}
+
+.print-preview-surface .print-logo img {
+  width: 100%;
+  height: auto;
+}
+
+.print-preview-surface .print-title-section {
+  flex: 1;
+  text-align: center;
+  padding: 0 20px;
+}
+
+.print-preview-surface .print-title-section h1 {
+  font-size: 22pt;
+  font-weight: bold;
+  margin: 0 0 8px 0;
+  letter-spacing: 1px;
+}
+
+.print-preview-surface .word-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 2px solid #000;
+  font-size: 10pt;
+  margin-top: 5px;
+  position: relative;
+  z-index: 1;
+  background: transparent;
+}
+
+.print-preview-surface .word-table th,
+.print-preview-surface .word-table td {
+  border: 1px solid #000;
+  padding: 4px 6px;
+  text-align: start;
+  vertical-align: middle;
+  line-height: 1.3;
+  background: transparent;
+}
+
+.print-preview-surface .word-table th {
+  background-color: #e8e8e8;
+  font-weight: bold;
+  font-size: 10pt;
+  padding: 6px;
+  border-bottom: 2px solid #000;
+}
+
+.print-preview-surface .word-table tbody tr:nth-child(even) {
+  background-color: #f8f8f8;
+}
+
+.print-preview-surface .word-table .center {
+  text-align: center;
+}
+
+.print-preview-surface .word-table .bold {
+  font-weight: bold;
+}
+
+.print-preview-surface .word-table .small-text {
+  font-size: 9pt;
+}
+
+.print-preview-surface .word-table .ltr-text {
+  direction: ltr;
+  text-align: left;
+  font-size: 9pt;
+}
+
+.print-preview-surface .word-table .totals-row {
+  background-color: #d9d9d9;
+  font-weight: bold;
+  border-top: 2px solid #000;
+}
+
+.print-preview-surface .word-table .totals-row td {
+  padding: 6px;
+}
+
+.print-preview-surface .word-table .totals-label {
+  text-align: center;
+  font-size: 11pt;
+}
+
+.print-preview-surface .print-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 5px;
+  border-top: 1px solid #999;
+  font-size: 8pt;
+  color: #666;
+}
+
 /* Marquee Animation for Offers Ticker */
 @keyframes marquee {
   0% {
