@@ -16,8 +16,6 @@ interface LoadSheetPrintViewProps {
   branchId: string | null;
 }
 
-const PREVIEW_SCALE = 0.58;
-
 const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
   open,
   onOpenChange,
@@ -30,12 +28,44 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
   const [orderItems, setOrderItems] = useState<Map<string, any[]>>(new Map());
   const [products, setProducts] = useState<Product[]>([]);
   const [isPrintReady, setIsPrintReady] = useState(false);
+  const [previewScale, setPreviewScale] = useState(1);
+
   const printRef = useRef<HTMLDivElement>(null);
+  const previewViewportRef = useRef<HTMLDivElement>(null);
+  const previewContentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open || !workerId) return;
     fetchData();
   }, [open, workerId]);
+
+  useEffect(() => {
+    if (!open || orders.length === 0) return;
+
+    const updateScale = () => {
+      const viewportWidth = previewViewportRef.current?.clientWidth || 0;
+      const contentWidth = previewContentRef.current?.scrollWidth || 0;
+      if (!viewportWidth || !contentWidth) return;
+
+      const fitScale = Math.min(1, viewportWidth / contentWidth);
+      setPreviewScale(fitScale > 0 ? fitScale : 1);
+    };
+
+    const raf = requestAnimationFrame(updateScale);
+    window.addEventListener('resize', updateScale);
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined' && previewViewportRef.current) {
+      resizeObserver = new ResizeObserver(updateScale);
+      resizeObserver.observe(previewViewportRef.current);
+    }
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', updateScale);
+      resizeObserver?.disconnect();
+    };
+  }, [open, orders.length, products.length]);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -124,24 +154,28 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
               </div>
             ) : (
               <>
-                <ScrollArea className="max-h-[65vh] rounded-md border border-border">
-                  <div className="print-preview-surface overflow-auto p-3 bg-background">
-                    <div
-                      className="origin-top-right"
-                      style={{
-                        transform: `scale(${PREVIEW_SCALE})`,
-                        width: `${100 / PREVIEW_SCALE}%`,
-                      }}
-                    >
-                      <OrdersPrintView
-                        orders={orders}
-                        orderItems={orderItems}
-                        products={products}
-                        title={title}
-                        dateRange={printDate}
-                        isVisible
-                        usePortal={false}
-                      />
+                <ScrollArea className="max-h-[68vh] rounded-md border border-border">
+                  <div ref={previewViewportRef} className="print-preview-surface overflow-auto p-3 bg-background">
+                    <div className="flex justify-center">
+                      <div
+                        className="origin-top-right"
+                        style={{
+                          transform: `scale(${previewScale})`,
+                          width: `${100 / previewScale}%`,
+                        }}
+                      >
+                        <div ref={previewContentRef}>
+                          <OrdersPrintView
+                            orders={orders}
+                            orderItems={orderItems}
+                            products={products}
+                            title={title}
+                            dateRange={printDate}
+                            isVisible
+                            usePortal={false}
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </ScrollArea>
