@@ -18,7 +18,7 @@ interface OrderItemWithProduct {
   product?: Product;
 }
 
-interface PrintColumnConfig {
+export interface PrintColumnConfig {
   id: string;
   labelKey: string;
   visible: boolean;
@@ -46,67 +46,118 @@ interface OrdersPrintViewProps {
 const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
   ({ orders, orderItems, products, title, dateRange, isVisible = false, columnConfig = [], usePortal = true, extraRows = [] }, ref) => {
     const [container, setContainer] = useState<HTMLDivElement | null>(null);
-    const [customerDebts, setCustomerDebts] = useState<Record<string, number>>({});
+    const [customerDebts, setCustomerDebts] = useState<Record<string, { amount: number; docType?: string }>>({});
     const [shortageProductIds, setShortageProductIds] = useState<Set<string>>(new Set());
-    const { tp, printDir } = useLanguage();
+    const { tp, printDir, printLanguage } = useLanguage();
     const { activeBranch } = useAuth();
     
-    // Use translated title if not provided
     const displayTitle = title || tp('print.order_list');
 
     // Column visibility helper
     const isColVisible = (id: string): boolean => {
       if (!columnConfig || columnConfig.length === 0) {
-        // Default: all visible except order_id and qr
-        return id !== 'order_id' && id !== 'qr';
+        return id !== 'order_id' && id !== 'qr' && id !== 'sector' && id !== 'zone';
       }
       const col = columnConfig.find(c => c.id === id);
-      return col ? col.visible : true;
+      return col ? col.visible : false;
     };
 
-    // Count visible static columns for totals row colspan
-    const staticColIds = ['number', 'order_id', 'qr', 'customer', 'store_name', 'phone', 'address', 'delivery_worker', 'payment_info'];
-    const visibleStaticCols = staticColIds.filter(id => isColVisible(id)).length;
+    // Detect uniform columns (all rows share the same value) → collapse to header
+    const uniformValues: Record<string, string> = {};
+    const checkUniformCol = (colId: string, getter: (o: OrderWithDetails) => string) => {
+      if (!isColVisible(colId)) return;
+      const values = orders.map(getter).filter(Boolean);
+      if (values.length > 0 && values.every(v => v === values[0])) {
+        uniformValues[colId] = values[0];
+      }
+    };
+
+    checkUniformCol('delivery_worker', o => o.assigned_worker?.full_name || '');
+    checkUniformCol('sector', o => {
+      const s = (o.customer as any)?.sector;
+      return s ? (printLanguage !== 'ar' && s.name_fr ? s.name_fr : s.name) : '';
+    });
+    checkUniformCol('zone', o => {
+      const z = (o.customer as any)?.zone;
+      return z ? (printLanguage !== 'ar' && z.name_fr ? z.name_fr : z.name) : '';
+    });
+
+    // Effective visibility: hide uniform columns from table body
+    const isColEffective = (id: string): boolean => {
+      if (uniformValues[id]) return false;
+      return isColVisible(id);
+    };
+
+    // Count visible static columns for colspan
+    const staticColIds = ['number', 'order_id', 'qr', 'customer', 'store_name', 'phone', 'address', 'sector', 'zone', 'delivery_worker', 'payment_info'];
+    const visibleStaticCols = staticColIds.filter(id => isColEffective(id)).length;
+
+    // Helper: get French or Arabic name
+    const getCustomerName = (customer: any): string => {
+      if (!customer) return '';
+      if (printLanguage !== 'ar' && customer.name_fr) return customer.name_fr;
+      return customer.name || '';
+    };
+    const getStoreName = (customer: any): string => {
+      if (!customer) return '';
+      if (printLanguage !== 'ar' && customer.store_name_fr) return customer.store_name_fr;
+      return customer.store_name || '';
+    };
 
     useEffect(() => {
       if (!usePortal) return;
-
       const div = document.createElement('div');
       div.id = 'print-portal';
       document.body.appendChild(div);
       setContainer(div);
-
-      return () => {
-        document.body.removeChild(div);
-      };
+      return () => { document.body.removeChild(div); };
     }, [usePortal]);
 
-    // Fetch active customer debts
+    // Fetch active customer debts + pending documents
     useEffect(() => {
       const customerIds = [...new Set(orders.map(o => o.customer_id).filter(Boolean))];
-      if (customerIds.length === 0) {
-        setCustomerDebts({});
-        return;
-      }
+      if (customerIds.length === 0) { setCustomerDebts({}); return; }
       
-      const fetchDebts = async () => {
-        const { data } = await supabase
+      const fetchDebtsAndDocs = async () => {
+        // Fetch debts
+        const { data: debtData } = await supabase
           .from('customer_debts')
           .select('customer_id, remaining_amount')
           .in('customer_id', customerIds)
           .eq('status', 'active');
         
-        if (!data) return;
-        const debts: Record<string, number> = {};
-        data.forEach(d => {
-          debts[d.customer_id] = (debts[d.customer_id] || 0) + (d.remaining_amount || 0);
+        const debts: Record<string, { amount: number; docType?: string }> = {};
+        (debtData || []).forEach(d => {
+          if (!debts[d.customer_id]) debts[d.customer_id] = { amount: 0 };
+          debts[d.customer_id].amount += (d.remaining_amount || 0);
         });
+
+        // Fetch pending document collections (check/receipt) per order→customer
+        const orderIds = orders.map(o => o.id);
+        const { data: docData } = await supabase
+          .from('document_collections')
+          .select('order_id, action')
+          .in('order_id', orderIds)
+          .eq('status', 'pending');
+
+        if (docData) {
+          for (const doc of docData) {
+            const order = orders.find(o => o.id === doc.order_id);
+            if (order?.customer_id) {
+              if (!debts[order.customer_id]) debts[order.customer_id] = { amount: 0 };
+              // Keep track of doc type
+              const actionLabel = doc.action === 'check' ? 'Chèque' : doc.action === 'receipt' ? 'Reçu' : doc.action;
+              debts[order.customer_id].docType = actionLabel;
+            }
+          }
+        }
+
         setCustomerDebts(debts);
       };
-      fetchDebts();
+      fetchDebtsAndDocs();
     }, [orders.length, orders.map(o => o.customer_id).join(',')]);
 
-    // Fetch shortage product IDs (products marked as unavailable)
+    // Fetch shortage product IDs
     useEffect(() => {
       const branchId = activeBranch?.id;
       const fetchShortages = async () => {
@@ -116,26 +167,28 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
           .eq('status', 'pending');
         if (branchId) query = query.eq('branch_id', branchId);
         const { data } = await query;
-        if (data) {
-          setShortageProductIds(new Set(data.map(d => d.product_id)));
-        }
+        if (data) setShortageProductIds(new Set(data.map(d => d.product_id)));
       };
       fetchShortages();
     }, [activeBranch?.id]);
-    // Build filter criteria text
+
     const getFilterCriteria = () => {
       const criteria: string[] = [];
-      
-      if (dateRange) {
-        criteria.push(`${tp('print.header.period')}: ${dateRange}`);
-      }
-      
+      if (dateRange) criteria.push(`${tp('print.header.period')}: ${dateRange}`);
+      // Add uniform values to header
+      Object.entries(uniformValues).forEach(([colId, value]) => {
+        const labelMap: Record<string, string> = {
+          delivery_worker: tp('print.header.delivery_worker'),
+          sector: tp('print.header.sector') || 'Secteur',
+          zone: tp('print.header.zone') || 'Zone',
+        };
+        criteria.push(`${labelMap[colId] || colId}: ${value}`);
+      });
       return criteria;
     };
 
     const filterCriteria = getFilterCriteria();
 
-    // Get quantity for a specific order and product
     const getQuantity = (orderId: string, productId: string): number => {
       const items = orderItems.get(orderId);
       if (!items) return 0;
@@ -143,34 +196,23 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
       return item?.quantity || 0;
     };
 
-    // Filter products to only show those that have orders
     const productsWithOrders = products.filter(product => {
       return orders.some(order => getQuantity(order.id, product.id) > 0);
     });
 
-    // Calculate totals for each product (only for products with orders)
     const productTotals = productsWithOrders.reduce((acc, product) => {
-      acc[product.id] = orders.reduce((sum, order) => {
-        return sum + getQuantity(order.id, product.id);
-      }, 0);
+      acc[product.id] = orders.reduce((sum, order) => sum + getQuantity(order.id, product.id), 0);
       return acc;
     }, {} as Record<string, number>);
 
-    // Get the box multiplier for a product (how many units per box)
     const getBoxMultiplier = (product: Product): number => {
-      if (product.pricing_unit === 'kg' && product.weight_per_box) {
-        return product.weight_per_box;
-      } else if (product.pricing_unit === 'piece' && product.pieces_per_box > 1) {
-        return product.pieces_per_box;
-      }
-      return 1; // box pricing or no multiplier
+      if (product.pricing_unit === 'kg' && product.weight_per_box) return product.weight_per_box;
+      else if (product.pricing_unit === 'piece' && product.pieces_per_box > 1) return product.pieces_per_box;
+      return 1;
     };
 
-    // Get the base unit price for a product based on order payment type
     const getBaseUnitPrice = (order: OrderWithDetails, product: Product): number => {
-      if (order.payment_type === 'with_invoice') {
-        return product.price_invoice || 0;
-      }
+      if (order.payment_type === 'with_invoice') return product.price_invoice || 0;
       const subtype = order.customer?.default_price_subtype;
       if (subtype === 'super_gros') return product.price_super_gros || 0;
       if (subtype === 'gros') return product.price_gros || 0;
@@ -178,20 +220,13 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
       return product.price_no_invoice || product.price_gros || 0;
     };
 
-    // Calculate total amount per order from items (excluding unavailable products)
     const getOrderTotalAmount = (order: OrderWithDetails): number => {
       const items = orderItems.get(order.id);
       if (!items) return order.total_amount && order.total_amount > 0 ? order.total_amount : 0;
-      
       return items.reduce((sum, item) => {
-        // Skip unavailable products
         if (shortageProductIds.has(item.product_id)) return sum;
-        
-        // Try total_price first
         if (item.total_price && item.total_price > 0) return sum + item.total_price;
-        // Then try unit_price * quantity (unit_price already includes box multiplier)
         if (item.unit_price && item.unit_price > 0) return sum + (item.unit_price * (item.quantity - (item.gift_quantity || 0)));
-        // Fallback: use product prices with box multiplier
         if (item.product) {
           const basePrice = getBaseUnitPrice(order, item.product);
           const multiplier = getBoxMultiplier(item.product);
@@ -201,59 +236,36 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
       }, 0);
     };
 
-    // Get unit price for a specific order and product (price per box)
     const getItemUnitPrice = (order: OrderWithDetails, productId: string): number => {
-      // First try from order_items
       const items = orderItems.get(order.id);
       if (items) {
         const item = items.find(i => i.product_id === productId);
         if (item?.unit_price && item.unit_price > 0) return item.unit_price;
       }
-      // Fallback: calculate box price from product pricing
       const product = products.find(p => p.id === productId);
       if (!product) return 0;
-      
       const basePrice = getBaseUnitPrice(order, product);
       const multiplier = getBoxMultiplier(product);
       return basePrice * multiplier;
     };
 
-    // Grand total of all orders
     const grandTotal = orders.reduce((sum, order) => sum + getOrderTotalAmount(order), 0);
 
-    // Generate short order ID (first 8 characters)
-    const getShortOrderId = (orderId: string): string => {
-      return orderId.substring(0, 8).toUpperCase();
-    };
+    const getShortOrderId = (orderId: string): string => orderId.substring(0, 8).toUpperCase();
 
-    // Get box content label for product header (e.g. "5kg" or "10pcs")
     const getProductBoxLabel = (product: Product): string => {
       const unit = product.pricing_unit;
-      if (unit === 'kg' && product.weight_per_box) {
-        return `${product.weight_per_box}${tp('print.unit.kg')}`;
-      } else if (unit === 'piece' && product.pieces_per_box > 1) {
-        return `${product.pieces_per_box}${tp('print.unit.pc')}`;
-      }
+      if (unit === 'kg' && product.weight_per_box) return `${product.weight_per_box}${tp('print.unit.kg')}`;
+      else if (unit === 'piece' && product.pieces_per_box > 1) return `${product.pieces_per_box}${tp('print.unit.pc')}`;
       return '';
     };
 
-
     const getOrderSymbols = (order: OrderWithDetails): string => {
       const symbols: string[] = [];
-      // Payment type
-      if (order.payment_type === 'with_invoice') {
-        symbols.push(tp('print.symbol.invoice1'));
-      } else if (order.payment_type === 'without_invoice') {
-        symbols.push(tp('print.symbol.invoice2'));
-      }
-      // Invoice payment method
-      if (order.payment_type === 'with_invoice' && order.invoice_payment_method) {
-        symbols.push(tp(`print.symbol.${order.invoice_payment_method}`));
-      }
-      // Pricing subtype from customer
-      if (order.payment_type === 'without_invoice' && order.customer?.default_price_subtype) {
-        symbols.push(tp(`print.symbol.${order.customer.default_price_subtype}`));
-      }
+      if (order.payment_type === 'with_invoice') symbols.push(tp('print.symbol.invoice1'));
+      else if (order.payment_type === 'without_invoice') symbols.push(tp('print.symbol.invoice2'));
+      if (order.payment_type === 'with_invoice' && order.invoice_payment_method) symbols.push(tp(`print.symbol.${order.invoice_payment_method}`));
+      if (order.payment_type === 'without_invoice' && order.customer?.default_price_subtype) symbols.push(tp(`print.symbol.${order.customer.default_price_subtype}`));
       return symbols.filter(Boolean).join(' ');
     };
 
@@ -262,29 +274,21 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
         ref={ref} 
         className="print-container" 
         dir={printDir} 
-        style={{ 
-          display: isVisible ? 'block' : 'none',
-          position: 'relative'
-        }}
+        style={{ display: isVisible ? 'block' : 'none', position: 'relative' }}
       >
-        {/* Watermark - absolutely positioned in center of container */}
+        {/* Watermark */}
         <div style={{
           position: usePortal ? 'fixed' : 'absolute',
-          top: '45%',
-          left: '50%',
+          top: '45%', left: '50%',
           transform: 'translate(-50%, -50%)',
-          zIndex: 0,
-          opacity: 0.2,
-          pointerEvents: 'none'
+          zIndex: 0, opacity: 0.2, pointerEvents: 'none'
         }}>
           <img src={logoImage} alt="" style={{ width: '280px', height: 'auto' }} />
         </div>
 
-        {/* Header with Logo */}
+        {/* Header */}
         <div className="print-header-with-logo" style={{ position: 'relative', zIndex: 1 }}>
-          <div className="print-logo">
-            <img src={logoImage} alt="Laser Food" />
-          </div>
+          <div className="print-logo"><img src={logoImage} alt="Laser Food" /></div>
           <div className="print-title-section">
             <h1>{displayTitle}</h1>
             {filterCriteria.length > 0 && (
@@ -293,24 +297,24 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
               </p>
             )}
           </div>
-          <div className="print-logo">
-            <img src={logoImage} alt="Laser Food" />
-          </div>
+          <div className="print-logo"><img src={logoImage} alt="Laser Food" /></div>
         </div>
 
-        {/* Main Table - Word-like style */}
+        {/* Main Table */}
         <table className="word-table" style={{ position: 'relative', zIndex: 1 }}>
           <thead>
             <tr>
-              {isColVisible('number') && <th style={{ width: '30px' }}>{tp('print.header.number')}</th>}
-              {isColVisible('order_id') && <th style={{ width: '55px' }}>{tp('print.header.order_id')}</th>}
-              {isColVisible('qr') && <th style={{ width: '45px' }}>{tp('print.header.qr')}</th>}
-              {isColVisible('customer') && <th>{tp('print.header.customer')}</th>}
-              {isColVisible('store_name') && <th>{tp('print.header.store_name')}</th>}
-              {isColVisible('phone') && <th style={{ width: '90px' }}>{tp('print.header.phone')}</th>}
-              {isColVisible('address') && <th>{tp('print.header.address')}</th>}
-              {isColVisible('delivery_worker') && <th style={{ width: '80px' }}>{tp('print.header.delivery_worker')}</th>}
-              {isColVisible('payment_info') && <th style={{ width: '45px' }}>{tp('print.header.payment_info')}</th>}
+              {isColEffective('number') && <th style={{ width: '30px' }}>{tp('print.header.number')}</th>}
+              {isColEffective('order_id') && <th style={{ width: '55px' }}>{tp('print.header.order_id')}</th>}
+              {isColEffective('qr') && <th style={{ width: '45px' }}>{tp('print.header.qr')}</th>}
+              {isColEffective('customer') && <th>{tp('print.header.customer')}</th>}
+              {isColEffective('store_name') && <th>{tp('print.header.store_name')}</th>}
+              {isColEffective('phone') && <th style={{ width: '90px' }}>{tp('print.header.phone')}</th>}
+              {isColEffective('address') && <th>{tp('print.header.address')}</th>}
+              {isColEffective('sector') && <th style={{ width: '70px' }}>{tp('print.header.sector') || 'Secteur'}</th>}
+              {isColEffective('zone') && <th style={{ width: '60px' }}>{tp('print.header.zone') || 'Zone'}</th>}
+              {isColEffective('delivery_worker') && <th style={{ width: '80px' }}>{tp('print.header.delivery_worker')}</th>}
+              {isColEffective('payment_info') && <th style={{ width: '45px' }}>{tp('print.header.payment_info')}</th>}
               {isColVisible('products') && productsWithOrders.map((product) => {
                 const boxLabel = getProductBoxLabel(product);
                 return (
@@ -320,116 +324,136 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
                   </th>
                 );
               })}
-              {isColVisible('total_amount') && <th style={{ width: '70px' }}>{tp('print.header.total_amount')}</th>}
+              {isColEffective('total_amount') && <th style={{ width: '70px' }}>{tp('print.header.total_amount')}</th>}
             </tr>
           </thead>
           <tbody>
-            {orders.map((order, index) => (
-              <tr key={order.id}>
-                {isColVisible('number') && <td className="center">{index + 1}</td>}
-                {isColVisible('order_id') && (
-                  <td className="center small-text" style={{ fontSize: '7pt', fontFamily: 'monospace' }}>
-                    {getShortOrderId(order.id)}
-                  </td>
-                )}
-                {isColVisible('qr') && (
-                  <td className="center" style={{ padding: '2px' }}>
-                    <QRCodeSVG 
-                      value={order.id} 
-                      size={28}
-                      level="L"
-                      style={{ display: 'block', margin: '0 auto' }}
-                    />
-                  </td>
-                )}
-                {isColVisible('customer') && (
-                  <td>
-                    <div>{order.customer?.name || ''}</div>
-                    {order.customer_id && customerDebts[order.customer_id] > 0 && (
-                      <div style={{ fontSize: '6pt', opacity: 0.5, color: '#c00', borderTop: '1px dotted #ddd', marginTop: '1px', paddingTop: '1px' }}>
-                        {tp('print.header.debt') || 'D'}: {customerDebts[order.customer_id].toLocaleString()}
-                      </div>
-                    )}
-                  </td>
-                )}
-                {isColVisible('store_name') && <td className="small-text">{order.customer?.store_name || ''}</td>}
-                {isColVisible('phone') && <td className="ltr-text">{order.customer?.phone || ''}</td>}
-                {isColVisible('address') && <td className="small-text">{order.customer?.address || ''}</td>}
-                {isColVisible('delivery_worker') && <td className="small-text">{order.assigned_worker?.full_name || '-'}</td>}
-                {isColVisible('payment_info') && <td className="center small-text" style={{ fontSize: '8pt' }}>{getOrderSymbols(order)}</td>}
-                {isColVisible('products') && productsWithOrders.map((product) => {
-                  const qty = getQuantity(order.id, product.id);
-                  const unitPrice = getItemUnitPrice(order, product.id);
-                  return (
-                    <td key={product.id} className="center" style={{ padding: '2px 1px' }}>
-                      {qty > 0 && (
-                        <>
-                          <div style={{ fontWeight: 'bold', fontSize: '9pt' }}>{qty}</div>
-                          {shortageProductIds.has(product.id) ? (
-                            <div style={{ fontSize: '6pt', color: '#c00', fontWeight: 'bold', borderTop: '1px dotted #ccc', marginTop: '1px', paddingTop: '1px' }}>
-                              {tp('stock.product_unavailable')}
-                            </div>
-                          ) : (
-                            <>
-                              {unitPrice > 0 && (
-                                <div style={{ fontSize: '6pt', opacity: 0.6, borderTop: '1px dotted #ccc', marginTop: '1px', paddingTop: '1px' }}>
-                                  {unitPrice.toLocaleString()}
-                                </div>
-                              )}
-                              {(() => {
-                                const basePrice = getBaseUnitPrice(order, product);
-                                const multiplier = getBoxMultiplier(product);
-                                if (multiplier > 1 && basePrice > 0) {
-                                  return (
-                                    <div style={{ fontSize: '5.5pt', opacity: 0.45, borderTop: '1px dotted #ddd', marginTop: '1px', paddingTop: '1px' }}>
-                                      {basePrice.toLocaleString()}
-                                    </div>
-                                  );
-                                }
-                                return null;
-                              })()}
-                            </>
+            {orders.map((order, index) => {
+              const debtInfo = order.customer_id ? customerDebts[order.customer_id] : null;
+              const sectorData = (order.customer as any)?.sector;
+              const zoneData = (order.customer as any)?.zone;
+
+              return (
+                <tr key={order.id}>
+                  {isColEffective('number') && <td className="center">{index + 1}</td>}
+                  {isColEffective('order_id') && (
+                    <td className="center small-text" style={{ fontSize: '7pt', fontFamily: 'monospace' }}>
+                      {getShortOrderId(order.id)}
+                    </td>
+                  )}
+                  {isColEffective('qr') && (
+                    <td className="center" style={{ padding: '2px' }}>
+                      <QRCodeSVG value={order.id} size={28} level="L" style={{ display: 'block', margin: '0 auto' }} />
+                    </td>
+                  )}
+                  {isColEffective('customer') && (
+                    <td>
+                      <div>{getCustomerName(order.customer)}</div>
+                      {debtInfo && (debtInfo.amount > 0 || debtInfo.docType) && (
+                        <div style={{ fontSize: '7pt', color: '#c00', borderTop: '1px solid #ddd', marginTop: '2px', paddingTop: '2px' }}>
+                          {debtInfo.amount > 0 && (
+                            <span style={{ fontWeight: 'bold' }}>
+                              {tp('print.header.debt') || 'Dette'}: {debtInfo.amount.toLocaleString()}
+                            </span>
                           )}
+                          {debtInfo.docType && (
+                            <span style={{ marginLeft: debtInfo.amount > 0 ? '4px' : '0' }}>
+                              📄 {debtInfo.docType}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                  )}
+                  {isColEffective('store_name') && <td className="small-text">{getStoreName(order.customer)}</td>}
+                  {isColEffective('phone') && <td className="ltr-text">{order.customer?.phone || ''}</td>}
+                  {isColEffective('address') && <td className="small-text">{order.customer?.address || ''}</td>}
+                  {isColEffective('sector') && (
+                    <td className="small-text">
+                      {sectorData ? (printLanguage !== 'ar' && sectorData.name_fr ? sectorData.name_fr : sectorData.name) : ''}
+                    </td>
+                  )}
+                  {isColEffective('zone') && (
+                    <td className="small-text">
+                      {zoneData ? (printLanguage !== 'ar' && zoneData.name_fr ? zoneData.name_fr : zoneData.name) : ''}
+                    </td>
+                  )}
+                  {isColEffective('delivery_worker') && <td className="small-text">{order.assigned_worker?.full_name || '-'}</td>}
+                  {isColEffective('payment_info') && <td className="center small-text" style={{ fontSize: '8pt' }}>{getOrderSymbols(order)}</td>}
+                  {isColVisible('products') && productsWithOrders.map((product) => {
+                    const qty = getQuantity(order.id, product.id);
+                    const unitPrice = getItemUnitPrice(order, product.id);
+                    return (
+                      <td key={product.id} className="center" style={{ padding: '2px 1px' }}>
+                        {qty > 0 && (
+                          <>
+                            <div style={{ fontWeight: 'bold', fontSize: '9pt' }}>{qty}</div>
+                            {shortageProductIds.has(product.id) ? (
+                              <div style={{ fontSize: '6pt', color: '#c00', fontWeight: 'bold', borderTop: '1px dotted #ccc', marginTop: '1px', paddingTop: '1px' }}>
+                                {tp('stock.product_unavailable')}
+                              </div>
+                            ) : (
+                              <>
+                                {unitPrice > 0 && (
+                                  <div style={{ fontSize: '6pt', opacity: 0.6, borderTop: '1px dotted #ccc', marginTop: '1px', paddingTop: '1px' }}>
+                                    {unitPrice.toLocaleString()}
+                                  </div>
+                                )}
+                                {(() => {
+                                  const basePrice = getBaseUnitPrice(order, product);
+                                  const multiplier = getBoxMultiplier(product);
+                                  if (multiplier > 1 && basePrice > 0) {
+                                    return (
+                                      <div style={{ fontSize: '5.5pt', opacity: 0.45, borderTop: '1px dotted #ddd', marginTop: '1px', paddingTop: '1px' }}>
+                                        {basePrice.toLocaleString()}
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+                              </>
+                            )}
+                          </>
+                        )}
+                      </td>
+                    );
+                  })}
+                  {isColEffective('total_amount') && (
+                    <td className="center bold" style={{ padding: '2px 1px' }}>
+                      {getOrderTotalAmount(order) > 0 && (
+                        <>
+                          <div>{getOrderTotalAmount(order).toLocaleString()}</div>
+                          {order.payment_type === 'with_invoice' && order.invoice_payment_method === 'cash' && (() => {
+                            const items = orderItems.get(order.id);
+                            if (!items) return null;
+                            const subtotal = items.reduce((sum, item) => {
+                              if (shortageProductIds.has(item.product_id)) return sum;
+                              if (item.total_price && item.total_price > 0) return sum + item.total_price;
+                              if (item.unit_price && item.unit_price > 0) return sum + (item.unit_price * (item.quantity - (item.gift_quantity || 0)));
+                              if (item.product) {
+                                const bp = getBaseUnitPrice(order, item.product);
+                                const m = getBoxMultiplier(item.product);
+                                return sum + (bp * m * item.quantity);
+                              }
+                              return sum;
+                            }, 0);
+                            const total = getOrderTotalAmount(order);
+                            const stampAmount = total - subtotal;
+                            if (stampAmount <= 0) return null;
+                            const stampPct = subtotal > 0 ? Math.round((stampAmount / subtotal) * 100 * 10) / 10 : 0;
+                            return (
+                              <div style={{ fontSize: '7pt', fontWeight: 'normal', borderTop: '1px solid #bbb', marginTop: '2px', paddingTop: '2px', color: '#555' }}>
+                                {tp('print.header.stamp') || 'T'} {stampPct}% = {stampAmount.toLocaleString()}
+                              </div>
+                            );
+                          })()}
                         </>
                       )}
                     </td>
-                  );
-                })}
-                {isColVisible('total_amount') && (
-                  <td className="center bold" style={{ padding: '2px 1px' }}>
-                    {getOrderTotalAmount(order) > 0 && (
-                      <>
-                        <div>{getOrderTotalAmount(order).toLocaleString()}</div>
-                        {order.payment_type === 'with_invoice' && order.invoice_payment_method === 'cash' && (() => {
-                          const items = orderItems.get(order.id);
-                          if (!items) return null;
-                          const subtotal = items.reduce((sum, item) => {
-                            if (shortageProductIds.has(item.product_id)) return sum;
-                            if (item.total_price && item.total_price > 0) return sum + item.total_price;
-                            if (item.unit_price && item.unit_price > 0) return sum + (item.unit_price * (item.quantity - (item.gift_quantity || 0)));
-                            if (item.product) {
-                              const bp = getBaseUnitPrice(order, item.product);
-                              const m = getBoxMultiplier(item.product);
-                              return sum + (bp * m * item.quantity);
-                            }
-                            return sum;
-                          }, 0);
-                          const total = getOrderTotalAmount(order);
-                          const stampAmount = total - subtotal;
-                          if (stampAmount <= 0) return null;
-                          const stampPct = subtotal > 0 ? Math.round((stampAmount / subtotal) * 100 * 10) / 10 : 0;
-                          return (
-                            <div style={{ fontSize: '7pt', fontWeight: 'normal', borderTop: '1px solid #bbb', marginTop: '2px', paddingTop: '2px', color: '#555' }}>
-                              {tp('print.header.stamp') || 'T'} {stampPct}% = {stampAmount.toLocaleString()}
-                            </div>
-                          );
-                        })()}
-                      </>
-                    )}
-                  </td>
-                )}
-              </tr>
-            ))}
+                  )}
+                </tr>
+              );
+            })}
 
             {/* Extra rows (e.g. surplus) */}
             {extraRows.map((row, idx) => {
@@ -446,7 +470,7 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
                       </td>
                     );
                   })}
-                  {isColVisible('total_amount') && (
+                  {isColEffective('total_amount') && (
                     <td className="center bold">
                       {row.totalAmount && row.totalAmount > 0 ? row.totalAmount.toLocaleString() : ''}
                     </td>
@@ -463,7 +487,7 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
                   {productTotals[product.id] > 0 ? productTotals[product.id] : ''}
                 </td>
               ))}
-              {isColVisible('total_amount') && (
+              {isColEffective('total_amount') && (
                 <td className="center bold">
                   {grandTotal > 0 ? grandTotal.toLocaleString() : ''}
                 </td>
