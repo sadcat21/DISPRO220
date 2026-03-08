@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Printer, Package, Bluetooth, Eye } from 'lucide-react';
+import { Loader2, Printer, Package, Bluetooth, Eye, ClipboardList } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import logoImage from '@/assets/logo.png';
 import { useBluetoothPrinter } from '@/hooks/useBluetoothPrinter';
 import ThermalPreview, { ThermalLine } from './ThermalPreview';
+import LoadSheetPrintView from './LoadSheetPrintView';
 
 interface SessionPrintViewProps {
   open: boolean;
