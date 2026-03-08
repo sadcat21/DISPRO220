@@ -14,6 +14,7 @@ export interface GiftPrintRow {
   wilaya: string;
   phone: string;
   productName: string;
+  offerDetail: string;
   venteQuantity: number;
   giftQuantity: number;
   giftBoxPiece: string;
@@ -188,14 +189,20 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
         }));
       }
 
-      const grouped = new Map<string, GiftPrintRow[]>();
+      // Group by product + offer tier detail for separate pages
+      const grouped = new Map<string, { productName: string; offerDetail: string; rows: GiftPrintRow[] }>();
       rows.forEach((row) => {
-        if (!grouped.has(row.productName)) grouped.set(row.productName, []);
-        grouped.get(row.productName)!.push(row);
+        const groupKey = `${row.productName}|||${row.offerDetail || ''}`;
+        if (!grouped.has(groupKey)) grouped.set(groupKey, { productName: row.productName, offerDetail: row.offerDetail || '', rows: [] });
+        grouped.get(groupKey)!.rows.push(row);
       });
 
       const builtPages: PrintPage[] = [];
-      for (const [productName, productRows] of grouped.entries()) {
+      for (const [, group] of grouped.entries()) {
+        const productRows = group.rows;
+        const tierLabel = group.offerDetail
+          ? `${group.productName} — ${group.offerDetail}`
+          : group.productName;
         const totals = {
           vente: productRows.reduce((s, r) => s + r.venteQuantity, 0),
           gift: productRows.reduce((s, r) => s + r.giftQuantity, 0),
@@ -204,7 +211,7 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
         const chunks = chunkRows(productRows, ROWS_PER_PAGE);
         chunks.forEach((chunk, idx) => {
           builtPages.push({
-            productName,
+            productName: tierLabel,
             rows: chunk,
             rowOffset: idx * ROWS_PER_PAGE,
             showTotals: idx === chunks.length - 1,
