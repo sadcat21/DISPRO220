@@ -7,6 +7,7 @@ import logoImage from '@/assets/logo.png';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { StampPriceTier, calculateStampAmount } from '@/hooks/useStampTiers';
 
 interface OrderItemWithProduct {
   order_id: string;
@@ -48,6 +49,7 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
     const [container, setContainer] = useState<HTMLDivElement | null>(null);
     const [customerDebts, setCustomerDebts] = useState<Record<string, { amount: number; docType?: string }>>({});
     const [shortageProductIds, setShortageProductIds] = useState<Set<string>>(new Set());
+    const [stampTiers, setStampTiers] = useState<StampPriceTier[]>([]);
     const { tp, printDir, printLanguage } = useLanguage();
     const { activeBranch } = useAuth();
     
