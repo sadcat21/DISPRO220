@@ -312,11 +312,13 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
           <div className="print-logo"><img src={logoImage} alt="Laser Food" /></div>
           <div className="print-title-section">
             <h1>{displayTitle}</h1>
-            {filterCriteria.length > 0 && (
-              <p style={{ fontSize: '11pt', fontWeight: 600, marginTop: '5px' }}>
-                {filterCriteria.join('  |  ')}
-              </p>
-            )}
+            <p style={{ fontSize: '11pt', fontWeight: 600, marginTop: '5px' }}>
+              {[
+                ...filterCriteria,
+                `${tp('print.header.print_date')}: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`,
+                `${tp('print.header.orders_count')}: ${orders.length}`,
+              ].join('  |  ')}
+            </p>
           </div>
           <div className="print-logo"><img src={logoImage} alt="Laser Food" /></div>
         </div>
