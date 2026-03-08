@@ -122,6 +122,133 @@ const resolveAppliedOfferDetail = ({
   return (matchingRules.length > 0 ? matchingRules[matchingRules.length - 1] : rules[0]).detail;
 };
 
+/** Carousel view for expanded gift product with customer overlay */
+const GiftExpandedCarousel: React.FC<{
+  items: GiftProductAgg[];
+  expandedProduct: string;
+  onNavigate: (id: string) => void;
+  onClose: () => void;
+}> = ({ items, expandedProduct, onNavigate, onClose }) => {
+  const currentIdx = items.findIndex(i => (i.productId + '_' + i.offerName) === expandedProduct);
+  const item = items[currentIdx];
+  if (!item) return null;
+
+  const getKey = (i: GiftProductAgg) => i.productId + '_' + i.offerName;
+
+  const goPrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (currentIdx > 0) onNavigate(getKey(items[currentIdx - 1]));
+  };
+  const goNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (currentIdx < items.length - 1) onNavigate(getKey(items[currentIdx + 1]));
+  };
+
+  return (
+    <div className="flex flex-col gap-2 pb-2">
+      {/* Navigation with thumbnails */}
+      <div className="flex items-center justify-between px-1 py-1.5 gap-2">
+        {currentIdx > 0 ? (
+          <button onClick={goPrev} className="w-10 h-10 rounded-lg overflow-hidden border border-border hover:border-primary/50 transition-colors shrink-0">
+            {items[currentIdx - 1].imageUrl ? (
+              <img src={items[currentIdx - 1].imageUrl!} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-muted flex items-center justify-center">
+                <Package className="w-4 h-4 text-muted-foreground" />
+              </div>
+            )}
+          </button>
+        ) : (
+          <div className="w-10 h-10 shrink-0" />
+        )}
+        <span className="text-xs text-muted-foreground">{currentIdx + 1} / {items.length}</span>
+        {currentIdx < items.length - 1 ? (
+          <button onClick={goNext} className="w-10 h-10 rounded-lg overflow-hidden border border-border hover:border-primary/50 transition-colors shrink-0">
+            {items[currentIdx + 1].imageUrl ? (
+              <img src={items[currentIdx + 1].imageUrl!} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-muted flex items-center justify-center">
+                <Package className="w-4 h-4 text-muted-foreground" />
+              </div>
+            )}
+          </button>
+        ) : (
+          <div className="w-10 h-10 shrink-0" />
+        )}
+      </div>
+
+      {/* Product card with customer overlay */}
+      <div
+        className="flex flex-col rounded-2xl overflow-hidden shadow-lg border-2 border-primary ring-2 ring-primary/30 cursor-pointer"
+        onClick={onClose}
+      >
+        <div className="px-3 py-2 text-center bg-primary">
+          <span className="font-bold text-sm block truncate text-primary-foreground">{item.productName}</span>
+          {item.offerName && (
+            <span className="text-[10px] text-primary-foreground/70 block truncate">{item.offerName}</span>
+          )}
+        </div>
+
+        <div className="relative w-full overflow-hidden bg-muted h-[38vh] min-h-[200px] max-h-[400px]">
+          {item.imageUrl ? (
+            <img src={item.imageUrl} alt={item.productName} className="absolute inset-0 w-full h-full object-cover" />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Package className="w-16 h-16 text-primary/30" />
+            </div>
+          )}
+
+          {item.customers.length > 0 && (
+            <>
+              <div className="absolute inset-0 bg-background/40 backdrop-blur-[2px]" />
+              <div className="absolute inset-0 z-10 p-3 overflow-y-auto space-y-1.5">
+                {item.customers.map((c, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between py-2 px-3 rounded-lg bg-card/80 border border-border/60 text-sm"
+                    dir="rtl"
+                  >
+                    <div className="flex flex-col min-w-0 gap-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                        <span className="truncate font-medium">{c.storeName || c.customerName}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                        {c.sectorName && (
+                          <span className="flex items-center gap-0.5">
+                            <MapPin className="w-2.5 h-2.5" /> {c.sectorName}
+                          </span>
+                        )}
+                        {c.customerPhone && <span dir="ltr" className="shrink-0">{c.customerPhone}</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="font-bold text-primary text-base">
+                        🎁 {formatGiftDisplay(c.giftPieces, item.piecesPerBox)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="px-2 py-2 bg-card flex flex-col gap-1.5">
+          <div className="flex items-center gap-1.5">
+            <div className="flex-1 flex items-center justify-center gap-1 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 py-1.5 text-sm font-bold">
+              🎁 {formatGiftDisplay(item.totalGiftPieces, item.piecesPerBox)}
+            </div>
+            <div className="flex items-center justify-center gap-1 rounded-md bg-muted py-1.5 px-2 text-xs font-semibold text-muted-foreground">
+              {item.customers.length} عميل
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerId, workerName }) => {
   const { activeBranch } = useAuth();
   const { isConnected, scanAndConnect } = useBluetoothPrinter();
