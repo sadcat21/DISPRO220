@@ -81,7 +81,7 @@ const MyDeliveries: React.FC = () => {
   // Print state
   const [showPrintDialog, setShowPrintDialog] = useState(false);
   const [isPrintReady, setIsPrintReady] = useState(false);
-  const [allOrderItems, setAllOrderItems] = useState<Map<string, any[]>>(new Map());
+  const [allOrderItems, setAllOrderItems] = useState(() => new Map<string, any[]>());
   const [filteredOrdersForPrint, setFilteredOrdersForPrint] = useState<OrderWithDetails[]>([]);
   const [printWorkerName, setPrintWorkerName] = useState<string | null>(null);
   const [printColumnConfig, setPrintColumnConfig] = useState<PrintColumnConfig[]>([]);
