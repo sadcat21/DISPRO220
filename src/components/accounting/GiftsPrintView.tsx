@@ -138,6 +138,8 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
   ({ rows, summaryRows, workerNames, workerName, dateRange, productFilter, isVisible = false, visibleColumns, separateByProduct = true, printSummary = false, summaryOnly = false, isTemplate = false, templatePageCount = 2, templateProductName = '', templateOfferDetail = '' }, ref) => {
     const [container, setContainer] = useState<HTMLDivElement | null>(null);
 
+    const isSingleWorker = !!workerName && workerName !== 'Tous les employés' && workerName !== 'جميع العمال';
+
     const columns = useMemo(() => {
       let cols = visibleColumns || [
         'number', 'customerNameFr', 'phone', 'sector',
@@ -146,8 +148,12 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
       if (separateByProduct) {
         cols = cols.filter(c => c !== 'productName');
       }
+      // Hide worker column when single worker is selected
+      if (isSingleWorker) {
+        cols = cols.filter(c => c !== 'workerName');
+      }
       return cols;
-    }, [visibleColumns, separateByProduct]);
+    }, [visibleColumns, separateByProduct, isSingleWorker]);
 
     const venteColIdx = columns.indexOf('venteQuantity');
     const giftColIdx = columns.indexOf('giftQuantity');
@@ -403,6 +409,9 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
                 <div className="print-logo" style={isTemplate ? { width: '55px' } : undefined}><img src={logoImage} alt="Laser Food" /></div>
                 <div className="print-title-section" style={isTemplate ? { padding: '0 10px' } : undefined}>
                   <h1 style={{ fontSize: isTemplate ? '12pt' : (page.productName ? '14pt' : '18pt'), marginBottom: isTemplate ? '2px' : '8px' }}>{pageTitle}</h1>
+                  {isSingleWorker && !isTemplate && (
+                    <p style={{ fontSize: '11pt', fontWeight: 700, marginTop: '2px', marginBottom: '2px' }}>Employé: {workerName}</p>
+                  )}
                   <p style={{ fontSize: isTemplate ? '8pt' : '10pt', fontWeight: 600, marginTop: '2px' }} dir="ltr">{templateFilterLine}</p>
                   {!isTemplate && (
                     <p style={{ fontSize: '8pt', color: '#666', marginTop: '2px' }}>Date d'impression: {format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
