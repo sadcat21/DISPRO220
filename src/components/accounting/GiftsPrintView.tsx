@@ -447,8 +447,8 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
                     </tr>
                   ))}
 
-                  {/* Empty rows: template shows all ROWS_PER_PAGE, normal fills remaining */}
-                  {Array.from({ length: isTemplate ? ROWS_PER_PAGE : emptyRowsCount }).map((_, i) => (
+                  {/* Empty rows: template shows all ROWS_PER_PAGE, normal fills remaining (minus 1 if totals shown to keep totals on same page) */}
+                  {Array.from({ length: isTemplate ? ROWS_PER_PAGE : Math.max(0, emptyRowsCount - (page.showTotals ? 1 : 0)) }).map((_, i) => (
                     <tr key={`empty-${i}`} style={isTemplate ? { height: '20px' } : undefined}>
                       {columns.map((col, j) => (
                         <td key={j} style={isTemplate ? { padding: '2px 4px' } : undefined}>
