@@ -251,7 +251,8 @@
   }
 
   #print-portal,
-  #gifts-print-portal {
+  #gifts-print-portal,
+  #loadsheet-print-portal {
     display: block !important;
     visibility: visible !important;
     height: auto !important;
