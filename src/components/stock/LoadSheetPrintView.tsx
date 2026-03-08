@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { createPortal } from 'react-dom';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -22,7 +23,7 @@ interface OrderRow {
   customerName: string;
   storeName: string | null;
   sectorName: string | null;
-  products: Record<string, number>; // productId -> quantity
+  products: Record<string, number>;
 }
 
 const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
@@ -33,7 +34,18 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
   const [customerRows, setCustomerRows] = useState<OrderRow[]>([]);
   const [productColumns, setProductColumns] = useState<{ id: string; name: string }[]>([]);
   const [surplusRow, setSurplusRow] = useState<Record<string, number>>({});
+  const [isPrintReady, setIsPrintReady] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
+
+  // Portal container for print
+  const [printContainer, setPrintContainer] = useState<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const div = document.createElement('div');
+    div.id = 'loadsheet-print-portal';
+    document.body.appendChild(div);
+    setPrintContainer(div);
+    return () => { document.body.removeChild(div); };
+  }, []);
 
   useEffect(() => {
     if (!open || !workerId) return;
@@ -43,7 +55,6 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Fetch active orders for this worker
       const { data: ordersData } = await supabase
         .from('orders')
         .select(`
@@ -55,14 +66,12 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
         .in('status', ['pending', 'assigned', 'in_progress'])
         .order('created_at', { ascending: true });
 
-      // Fetch worker stock (what's loaded on truck)
       const { data: workerStock } = await supabase
         .from('worker_stock')
         .select('product_id, quantity, product:products(name)')
         .eq('worker_id', workerId)
         .gt('quantity', 0);
 
-      // Build product set & customer rows
       const productMap = new Map<string, string>();
       const customerMap = new Map<string, OrderRow>();
 
@@ -75,11 +84,8 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
 
         if (!customerMap.has(custId)) {
           customerMap.set(custId, {
-            customerId: custId,
-            customerName: custName,
-            storeName,
-            sectorName,
-            products: {},
+            customerId: custId, customerName: custName,
+            storeName, sectorName, products: {},
           });
         }
 
@@ -92,7 +98,6 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
         }
       }
 
-      // Also add products from worker stock that aren't in orders
       for (const ws of (workerStock || [])) {
         const w = ws as any;
         productMap.set(w.product_id, w.product?.name || '—');
@@ -101,7 +106,6 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
       const products = Array.from(productMap.entries()).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
       const rows = Array.from(customerMap.values());
 
-      // Calculate surplus: worker stock - sum of all orders per product
       const orderTotals: Record<string, number> = {};
       for (const row of rows) {
         for (const [pid, qty] of Object.entries(row.products)) {
@@ -115,9 +119,7 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
         const loaded = w.quantity || 0;
         const ordered = orderTotals[w.product_id] || 0;
         const diff = Math.round((loaded - ordered) * 100) / 100;
-        if (diff > 0) {
-          surplus[w.product_id] = diff;
-        }
+        if (diff > 0) surplus[w.product_id] = diff;
       }
 
       setProductColumns(products);
@@ -131,92 +133,13 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
   };
 
   const handlePrint = () => {
-    if (!printRef.current) return;
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-
-    const dateStr = format(new Date(), 'dd/MM/yyyy HH:mm');
-    const dateOnly = format(new Date(), 'dd/MM/yyyy');
-
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html dir="rtl">
-      <head>
-        <title>ورقة الشحن - ${workerName}</title>
-        <style>
-          @page { size: landscape; margin: 8mm; }
-          body { font-family: 'Cairo', 'Segoe UI', sans-serif; direction: rtl; margin: 0; padding: 0; font-size: 9pt; }
-          
-          /* Header with logos */
-          .print-header-with-logo {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #000;
-          }
-          .print-logo img { height: 50px; }
-          .print-title-section { text-align: center; flex: 1; }
-          .print-title-section h1 { font-size: 16pt; margin: 0; font-weight: bold; }
-          .print-title-section p { font-size: 11pt; margin: 2px 0; color: #333; }
-
-          /* Watermark */
-          .watermark {
-            position: fixed;
-            top: 45%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 0;
-            opacity: 0.12;
-            pointer-events: none;
-          }
-          .watermark img { width: 280px; }
-
-          /* Word-like table */
-          table { width: 100%; border-collapse: collapse; position: relative; z-index: 1; }
-          th, td { border: 1px solid #000; padding: 4px 6px; text-align: center; font-size: 8pt; }
-          th { background-color: #e8e8e8 !important; font-weight: bold; font-size: 8pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          tbody tr:nth-child(even) { background-color: #f8f8f8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          tbody tr { page-break-inside: avoid; }
-          
-          .customer-name { text-align: right; font-weight: 600; font-size: 8.5pt; white-space: nowrap; }
-          .store-name { font-size: 7pt; color: #666; }
-          .sector-name { font-size: 6.5pt; color: #999; }
-          .qty-cell { font-weight: bold; font-size: 9pt; }
-          .empty-cell { color: #ccc; }
-
-          .totals-row { background-color: #d9d9d9 !important; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .totals-row td { padding: 6px; font-size: 9pt; }
-          .surplus-row { background: #fff8e1 !important; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .surplus-row td:first-child { text-align: right; color: #e65100; }
-          .loaded-row { background: #e8f5e9 !important; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .loaded-row td:first-child { text-align: right; color: #2e7d32; }
-
-          /* Footer */
-          .print-footer {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-            padding-top: 6px;
-            border-top: 1px solid #999;
-            font-size: 8pt;
-            color: #555;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="watermark"><img src="${logoImage}" alt="" /></div>
-        ${printRef.current.innerHTML}
-      </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => { printWindow.print(); printWindow.close(); }, 300);
+    setIsPrintReady(true);
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => setIsPrintReady(false), 500);
+    }, 300);
   };
 
-  // Totals per product across all customers
   const productTotals = useMemo(() => {
     const totals: Record<string, number> = {};
     for (const row of customerRows) {
@@ -227,187 +150,221 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
     return totals;
   }, [customerRows]);
 
-  // Grand total loaded (from surplus calculation base)
   const hasSurplus = Object.values(surplusRow).some(v => v > 0);
   const hasData = customerRows.length > 0 || hasSurplus;
 
+  // Print content rendered via portal (same approach as OrdersPrintView)
+  const printContent = printContainer ? createPortal(
+    <div
+      ref={printRef}
+      className="print-container"
+      dir="rtl"
+      style={{ display: isPrintReady ? 'block' : 'none', position: 'relative' }}
+    >
+      {/* Watermark */}
+      <div style={{
+        position: 'fixed', top: '45%', left: '50%',
+        transform: 'translate(-50%, -50%)', zIndex: 0,
+        opacity: 0.2, pointerEvents: 'none'
+      }}>
+        <img src={logoImage} alt="" style={{ width: '280px', height: 'auto' }} />
+      </div>
+
+      {/* Header with Logo - identical to OrdersPrintView */}
+      <div className="print-header-with-logo" style={{ position: 'relative', zIndex: 1 }}>
+        <div className="print-logo">
+          <img src={logoImage} alt="Laser Food" />
+        </div>
+        <div className="print-title-section">
+          <h1>ورقة الشحن</h1>
+          <p style={{ fontSize: '11pt', fontWeight: 600, marginTop: '5px' }}>
+            {workerName} — {format(new Date(), 'dd/MM/yyyy')}
+          </p>
+        </div>
+        <div className="print-logo">
+          <img src={logoImage} alt="Laser Food" />
+        </div>
+      </div>
+
+      {/* Table - using word-table class identical to OrdersPrintView */}
+      <table className="word-table" style={{ position: 'relative', zIndex: 1 }}>
+        <thead>
+          <tr>
+            <th style={{ textAlign: 'right', minWidth: '100px' }}>العميل</th>
+            {productColumns.map(p => (
+              <th key={p.id} style={{ width: '55px', fontSize: '8pt', lineHeight: '1.2' }}>
+                {p.name}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {customerRows.map((row) => (
+            <tr key={row.customerId}>
+              <td style={{ textAlign: 'right' }}>
+                <div style={{ fontWeight: 600, fontSize: '8.5pt', whiteSpace: 'nowrap' }}>{row.customerName}</div>
+                {row.storeName && <div style={{ fontSize: '7pt', opacity: 0.6 }}>({row.storeName})</div>}
+                {row.sectorName && <div style={{ fontSize: '6.5pt', opacity: 0.45 }}>{row.sectorName}</div>}
+              </td>
+              {productColumns.map(p => {
+                const qty = row.products[p.id] || 0;
+                return (
+                  <td key={p.id} className="center" style={{ padding: '2px 1px' }}>
+                    {qty > 0 ? (
+                      <div style={{ fontWeight: 'bold', fontSize: '9pt' }}>{qty}</div>
+                    ) : null}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+          {/* Totals Row */}
+          <tr className="totals-row">
+            <td className="totals-label">📦 إجمالي الطلبيات</td>
+            {productColumns.map(p => (
+              <td key={p.id} className="center bold">
+                {productTotals[p.id] > 0 ? productTotals[p.id] : ''}
+              </td>
+            ))}
+          </tr>
+          {/* Surplus Row */}
+          {hasSurplus && (
+            <tr style={{ backgroundColor: '#fff8e1', fontWeight: 'bold' }}>
+              <td style={{ textAlign: 'right', color: '#e65100' }}>🏪 فائض للبيع المباشر</td>
+              {productColumns.map(p => {
+                const s = surplusRow[p.id] || 0;
+                return (
+                  <td key={p.id} className="center" style={{ color: s > 0 ? '#e65100' : undefined }}>
+                    {s > 0 ? Math.round(s * 100) / 100 : ''}
+                  </td>
+                );
+              })}
+            </tr>
+          )}
+          {/* Loaded Total Row */}
+          <tr style={{ backgroundColor: '#e8f5e9', fontWeight: 'bold' }}>
+            <td style={{ textAlign: 'right', color: '#2e7d32' }}>🚛 إجمالي الشحن</td>
+            {productColumns.map(p => {
+              const total = (productTotals[p.id] || 0) + (surplusRow[p.id] || 0);
+              return (
+                <td key={p.id} className="center" style={{ color: '#2e7d32' }}>
+                  {total > 0 ? Math.round(total * 100) / 100 : ''}
+                </td>
+              );
+            })}
+          </tr>
+        </tbody>
+      </table>
+
+      {/* Footer - identical to OrdersPrintView */}
+      <div className="print-footer" style={{ marginTop: '10px' }}>
+        <span>تاريخ الطباعة: {format(new Date(), 'dd/MM/yyyy HH:mm')}</span>
+        <span>عدد العملاء: {customerRows.length}</span>
+        <span>Laser Food</span>
+      </div>
+    </div>,
+    printContainer
+  ) : null;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh]" dir="rtl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-base">
-            <Printer className="w-4 h-4" />
-            ورقة الشحن - {workerName}
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      {printContent}
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh]" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Printer className="w-4 h-4" />
+              ورقة الشحن - {workerName}
+            </DialogTitle>
+          </DialogHeader>
 
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          </div>
-        ) : !hasData ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <Package className="w-10 h-10 mx-auto mb-2 text-muted-foreground/40" />
-            <p>لا توجد طلبيات نشطة لهذا العامل</p>
-          </div>
-        ) : (
-          <>
-            <ScrollArea className="max-h-[65vh]">
-              <div className="overflow-x-auto">
-                {/* Preview table */}
-                <table className="w-full border-collapse text-[11px]">
-                  <thead>
-                    <tr className="bg-muted">
-                      <th className="border border-border p-1.5 text-right min-w-[120px]">العميل</th>
-                      {productColumns.map(p => (
-                        <th key={p.id} className="border border-border p-1 text-center min-w-[50px] text-[10px]">
-                          {p.name}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {customerRows.map((row, idx) => (
-                      <tr key={row.customerId} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/30'}>
-                        <td className="border border-border p-1.5 text-right">
-                          <div className="font-semibold text-[11px]">{row.customerName}</div>
-                          {row.storeName && <div className="text-[9px] text-muted-foreground">{row.storeName}</div>}
-                          {row.sectorName && <div className="text-[8px] text-muted-foreground/70">{row.sectorName}</div>}
-                        </td>
-                        {productColumns.map(p => {
-                          const qty = row.products[p.id] || 0;
-                          return (
-                            <td key={p.id} className={`border border-border p-1 text-center ${qty > 0 ? 'font-bold' : 'text-muted-foreground/30'}`}>
-                              {qty > 0 ? qty : '·'}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                    {/* Totals Row */}
-                    <tr className="bg-blue-50 dark:bg-blue-950/30 font-bold">
-                      <td className="border border-border p-1.5 text-right text-[11px]">
-                        📦 إجمالي الطلبيات
-                      </td>
-                      {productColumns.map(p => (
-                        <td key={p.id} className="border border-border p-1 text-center">
-                          {productTotals[p.id] || '·'}
-                        </td>
-                      ))}
-                    </tr>
-                    {/* Surplus Row */}
-                    {hasSurplus && (
-                      <tr className="bg-amber-50 dark:bg-amber-950/30 font-bold">
-                        <td className="border border-border p-1.5 text-right text-amber-700 dark:text-amber-400 text-[11px]">
-                          🏪 فائض للبيع المباشر
-                        </td>
-                        {productColumns.map(p => {
-                          const s = surplusRow[p.id] || 0;
-                          return (
-                            <td key={p.id} className={`border border-border p-1 text-center ${s > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground/30'}`}>
-                              {s > 0 ? Math.round(s * 100) / 100 : '·'}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </ScrollArea>
-
-            {/* Print-only content (hidden) */}
-            <div style={{ display: 'none' }}>
-              <div ref={printRef}>
-                {/* Header with logos */}
-                <div className="print-header-with-logo">
-                  <div className="print-logo">
-                    <img src={logoImage} alt="Laser Food" />
-                  </div>
-                  <div className="print-title-section">
-                    <h1>ورقة الشحن</h1>
-                    <p><strong>{workerName}</strong> — {format(new Date(), 'dd/MM/yyyy')}</p>
-                  </div>
-                  <div className="print-logo">
-                    <img src={logoImage} alt="Laser Food" />
-                  </div>
-                </div>
-
-                <table>
-                  <thead>
-                    <tr>
-                      <th style={{ textAlign: 'right', minWidth: '100px' }}>العميل</th>
-                      {productColumns.map(p => (
-                        <th key={p.id}>{p.name}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {customerRows.map((row) => (
-                      <tr key={row.customerId}>
-                        <td className="customer-name">
-                          {row.customerName}
-                          {row.storeName && <span className="store-name"> ({row.storeName})</span>}
-                          {row.sectorName && <div className="sector-name">{row.sectorName}</div>}
-                        </td>
-                        {productColumns.map(p => {
-                          const qty = row.products[p.id] || 0;
-                          return (
-                            <td key={p.id} className={qty > 0 ? 'qty-cell' : 'empty-cell'}>
-                              {qty > 0 ? qty : '·'}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                    <tr className="totals-row">
-                      <td style={{ textAlign: 'center', fontSize: '9pt' }}>📦 إجمالي الطلبيات</td>
-                      {productColumns.map(p => (
-                        <td key={p.id}>{productTotals[p.id] || '·'}</td>
-                      ))}
-                    </tr>
-                    {hasSurplus && (
-                      <tr className="surplus-row">
-                        <td>🏪 فائض للبيع المباشر</td>
-                        {productColumns.map(p => {
-                          const s = surplusRow[p.id] || 0;
-                          return <td key={p.id}>{s > 0 ? Math.round(s * 100) / 100 : '·'}</td>;
-                        })}
-                      </tr>
-                    )}
-                    <tr className="loaded-row">
-                      <td>🚛 إجمالي الشحن</td>
-                      {productColumns.map(p => {
-                        const total = (productTotals[p.id] || 0) + (surplusRow[p.id] || 0);
-                        return <td key={p.id}>{total > 0 ? Math.round(total * 100) / 100 : '·'}</td>;
-                      })}
-                    </tr>
-                  </tbody>
-                </table>
-
-                {/* Footer */}
-                <div className="print-footer">
-                  <span>تاريخ الطباعة: {format(new Date(), 'dd/MM/yyyy HH:mm')}</span>
-                  <span>عدد العملاء: {customerRows.length}</span>
-                  <span>Laser Food</span>
-                </div>
-              </div>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
-
-            <div className="flex items-center justify-between pt-2">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Badge variant="secondary">{customerRows.length} عميل</Badge>
-                <Badge variant="secondary">{productColumns.length} منتج</Badge>
-              </div>
-              <Button onClick={handlePrint} className="gap-2">
-                <Printer className="w-4 h-4" />
-                طباعة ورقة الشحن
-              </Button>
+          ) : !hasData ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Package className="w-10 h-10 mx-auto mb-2 text-muted-foreground/40" />
+              <p>لا توجد طلبيات نشطة لهذا العامل</p>
             </div>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
+          ) : (
+            <>
+              <ScrollArea className="max-h-[65vh]">
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-[11px]">
+                    <thead>
+                      <tr className="bg-muted">
+                        <th className="border border-border p-1.5 text-right min-w-[120px]">العميل</th>
+                        {productColumns.map(p => (
+                          <th key={p.id} className="border border-border p-1 text-center min-w-[50px] text-[10px]">
+                            {p.name}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {customerRows.map((row, idx) => (
+                        <tr key={row.customerId} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/30'}>
+                          <td className="border border-border p-1.5 text-right">
+                            <div className="font-semibold text-[11px]">{row.customerName}</div>
+                            {row.storeName && <div className="text-[9px] text-muted-foreground">{row.storeName}</div>}
+                            {row.sectorName && <div className="text-[8px] text-muted-foreground/70">{row.sectorName}</div>}
+                          </td>
+                          {productColumns.map(p => {
+                            const qty = row.products[p.id] || 0;
+                            return (
+                              <td key={p.id} className={`border border-border p-1 text-center ${qty > 0 ? 'font-bold' : 'text-muted-foreground/30'}`}>
+                                {qty > 0 ? qty : '·'}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                      <tr className="bg-blue-50 dark:bg-blue-950/30 font-bold">
+                        <td className="border border-border p-1.5 text-right text-[11px]">
+                          📦 إجمالي الطلبيات
+                        </td>
+                        {productColumns.map(p => (
+                          <td key={p.id} className="border border-border p-1 text-center">
+                            {productTotals[p.id] || '·'}
+                          </td>
+                        ))}
+                      </tr>
+                      {hasSurplus && (
+                        <tr className="bg-amber-50 dark:bg-amber-950/30 font-bold">
+                          <td className="border border-border p-1.5 text-right text-amber-700 dark:text-amber-400 text-[11px]">
+                            🏪 فائض للبيع المباشر
+                          </td>
+                          {productColumns.map(p => {
+                            const s = surplusRow[p.id] || 0;
+                            return (
+                              <td key={p.id} className={`border border-border p-1 text-center ${s > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground/30'}`}>
+                                {s > 0 ? Math.round(s * 100) / 100 : '·'}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </ScrollArea>
+
+              <div className="flex items-center justify-between pt-2">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Badge variant="secondary">{customerRows.length} عميل</Badge>
+                  <Badge variant="secondary">{productColumns.length} منتج</Badge>
+                </div>
+                <Button onClick={handlePrint} className="gap-2">
+                  <Printer className="w-4 h-4" />
+                  طباعة ورقة الشحن
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
