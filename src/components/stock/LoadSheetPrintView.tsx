@@ -22,6 +22,8 @@ interface OrderRow {
   customerId: string;
   customerName: string;
   storeName: string | null;
+  phone: string | null;
+  address: string | null;
   sectorName: string | null;
   products: Record<string, number>;
 }
@@ -59,7 +61,7 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
         .from('orders')
         .select(`
           id, customer_id,
-          customer:customers(name, store_name, sector:sectors(name)),
+          customer:customers(name, store_name, phone, address, sector:sectors(name)),
           order_items(product_id, quantity, product:products(name))
         `)
         .eq('assigned_worker_id', workerId)
@@ -80,12 +82,14 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
         const custId = o.customer_id;
         const custName = o.customer?.name || '—';
         const storeName = o.customer?.store_name || null;
+        const phone = o.customer?.phone || null;
+        const address = o.customer?.address || null;
         const sectorName = o.customer?.sector?.name || null;
 
         if (!customerMap.has(custId)) {
           customerMap.set(custId, {
             customerId: custId, customerName: custName,
-            storeName, sectorName, products: {},
+            storeName, phone, address, sectorName, products: {},
           });
         }
 
@@ -153,7 +157,10 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
   const hasSurplus = Object.values(surplusRow).some(v => v > 0);
   const hasData = customerRows.length > 0 || hasSurplus;
 
-  // Print content rendered via portal (same approach as OrdersPrintView)
+  // Number of static columns (before products) for colspan in totals
+  const staticColCount = 5; // رقم, العميل, اسم المحل, الهاتف, العنوان
+
+  // Print content rendered via portal (identical to OrdersPrintView)
   const printContent = printContainer ? createPortal(
     <div
       ref={printRef}
@@ -186,68 +193,86 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
         </div>
       </div>
 
-      {/* Table - using word-table class identical to OrdersPrintView */}
+      {/* Table - identical structure to OrdersPrintView */}
       <table className="word-table" style={{ position: 'relative', zIndex: 1 }}>
         <thead>
           <tr>
-            <th style={{ textAlign: 'right', minWidth: '100px' }}>العميل</th>
+            <th style={{ width: '30px' }}>الرقم</th>
+            <th>العميل</th>
+            <th>اسم المحل</th>
+            <th style={{ width: '90px' }}>الهاتف</th>
+            <th>العنوان</th>
             {productColumns.map(p => (
               <th key={p.id} style={{ width: '55px', fontSize: '8pt', lineHeight: '1.2' }}>
-                {p.name}
+                <div>{p.name}</div>
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {customerRows.map((row) => (
+          {customerRows.map((row, index) => (
             <tr key={row.customerId}>
-              <td style={{ textAlign: 'right' }}>
-                <div style={{ fontWeight: 600, fontSize: '8.5pt', whiteSpace: 'nowrap' }}>{row.customerName}</div>
-                {row.storeName && <div style={{ fontSize: '7pt', opacity: 0.6 }}>({row.storeName})</div>}
-                {row.sectorName && <div style={{ fontSize: '6.5pt', opacity: 0.45 }}>{row.sectorName}</div>}
+              <td className="center">{index + 1}</td>
+              <td>
+                <div>{row.customerName}</div>
+                {row.sectorName && (
+                  <div style={{ fontSize: '6pt', opacity: 0.5, borderTop: '1px dotted #ddd', marginTop: '1px', paddingTop: '1px' }}>
+                    {row.sectorName}
+                  </div>
+                )}
               </td>
+              <td className="small-text">{row.storeName || ''}</td>
+              <td className="ltr-text">{row.phone || ''}</td>
+              <td className="small-text">{row.address || ''}</td>
               {productColumns.map(p => {
                 const qty = row.products[p.id] || 0;
                 return (
                   <td key={p.id} className="center" style={{ padding: '2px 1px' }}>
-                    {qty > 0 ? (
+                    {qty > 0 && (
                       <div style={{ fontWeight: 'bold', fontSize: '9pt' }}>{qty}</div>
-                    ) : null}
+                    )}
                   </td>
                 );
               })}
             </tr>
           ))}
-          {/* Totals Row */}
+
+          {/* Totals row - identical style to OrdersPrintView */}
           <tr className="totals-row">
-            <td className="totals-label">📦 إجمالي الطلبيات</td>
+            <td colSpan={staticColCount} className="totals-label">📦 إجمالي الطلبيات</td>
             {productColumns.map(p => (
               <td key={p.id} className="center bold">
                 {productTotals[p.id] > 0 ? productTotals[p.id] : ''}
               </td>
             ))}
           </tr>
-          {/* Surplus Row */}
+
+          {/* Surplus row */}
           {hasSurplus && (
             <tr style={{ backgroundColor: '#fff8e1', fontWeight: 'bold' }}>
-              <td style={{ textAlign: 'right', color: '#e65100' }}>🏪 فائض للبيع المباشر</td>
+              <td colSpan={staticColCount} style={{ textAlign: 'right', color: '#e65100', padding: '4px 8px', fontSize: '9pt' }}>
+                🏪 فائض للبيع المباشر
+              </td>
               {productColumns.map(p => {
                 const s = surplusRow[p.id] || 0;
                 return (
-                  <td key={p.id} className="center" style={{ color: s > 0 ? '#e65100' : undefined }}>
+                  <td key={p.id} className="center" style={{ color: s > 0 ? '#e65100' : undefined, fontWeight: 'bold', fontSize: '9pt' }}>
                     {s > 0 ? Math.round(s * 100) / 100 : ''}
                   </td>
                 );
               })}
             </tr>
           )}
-          {/* Loaded Total Row */}
+
+          {/* Loaded total row */}
           <tr style={{ backgroundColor: '#e8f5e9', fontWeight: 'bold' }}>
-            <td style={{ textAlign: 'right', color: '#2e7d32' }}>🚛 إجمالي الشحن</td>
+            <td colSpan={staticColCount} style={{ textAlign: 'right', color: '#2e7d32', padding: '4px 8px', fontSize: '9pt' }}>
+              🚛 إجمالي الشحن
+            </td>
             {productColumns.map(p => {
               const total = (productTotals[p.id] || 0) + (surplusRow[p.id] || 0);
               return (
-                <td key={p.id} className="center" style={{ color: '#2e7d32' }}>
+                <td key={p.id} className="center" style={{ color: '#2e7d32', fontWeight: 'bold', fontSize: '9pt' }}>
                   {total > 0 ? Math.round(total * 100) / 100 : ''}
                 </td>
               );
@@ -294,7 +319,11 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
                   <table className="w-full border-collapse text-[11px]">
                     <thead>
                       <tr className="bg-muted">
-                        <th className="border border-border p-1.5 text-right min-w-[120px]">العميل</th>
+                        <th className="border border-border p-1.5 text-center w-[30px]">الرقم</th>
+                        <th className="border border-border p-1.5 text-right min-w-[100px]">العميل</th>
+                        <th className="border border-border p-1.5 text-right min-w-[80px]">اسم المحل</th>
+                        <th className="border border-border p-1.5 text-right min-w-[80px]">الهاتف</th>
+                        <th className="border border-border p-1.5 text-right min-w-[80px]">العنوان</th>
                         {productColumns.map(p => (
                           <th key={p.id} className="border border-border p-1 text-center min-w-[50px] text-[10px]">
                             {p.name}
@@ -305,11 +334,14 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
                     <tbody>
                       {customerRows.map((row, idx) => (
                         <tr key={row.customerId} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/30'}>
+                          <td className="border border-border p-1 text-center font-medium">{idx + 1}</td>
                           <td className="border border-border p-1.5 text-right">
                             <div className="font-semibold text-[11px]">{row.customerName}</div>
-                            {row.storeName && <div className="text-[9px] text-muted-foreground">{row.storeName}</div>}
                             {row.sectorName && <div className="text-[8px] text-muted-foreground/70">{row.sectorName}</div>}
                           </td>
+                          <td className="border border-border p-1.5 text-right text-[10px]">{row.storeName || ''}</td>
+                          <td className="border border-border p-1.5 text-right text-[10px] direction-ltr">{row.phone || ''}</td>
+                          <td className="border border-border p-1.5 text-right text-[10px]">{row.address || ''}</td>
                           {productColumns.map(p => {
                             const qty = row.products[p.id] || 0;
                             return (
@@ -321,7 +353,7 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
                         </tr>
                       ))}
                       <tr className="bg-blue-50 dark:bg-blue-950/30 font-bold">
-                        <td className="border border-border p-1.5 text-right text-[11px]">
+                        <td colSpan={staticColCount} className="border border-border p-1.5 text-right text-[11px]">
                           📦 إجمالي الطلبيات
                         </td>
                         {productColumns.map(p => (
@@ -332,7 +364,7 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
                       </tr>
                       {hasSurplus && (
                         <tr className="bg-amber-50 dark:bg-amber-950/30 font-bold">
-                          <td className="border border-border p-1.5 text-right text-amber-700 dark:text-amber-400 text-[11px]">
+                          <td colSpan={staticColCount} className="border border-border p-1.5 text-right text-amber-700 dark:text-amber-400 text-[11px]">
                             🏪 فائض للبيع المباشر
                           </td>
                           {productColumns.map(p => {
@@ -345,6 +377,19 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
                           })}
                         </tr>
                       )}
+                      <tr className="bg-green-50 dark:bg-green-950/30 font-bold">
+                        <td colSpan={staticColCount} className="border border-border p-1.5 text-right text-green-700 dark:text-green-400 text-[11px]">
+                          🚛 إجمالي الشحن
+                        </td>
+                        {productColumns.map(p => {
+                          const total = (productTotals[p.id] || 0) + (surplusRow[p.id] || 0);
+                          return (
+                            <td key={p.id} className="border border-border p-1 text-center text-green-700 dark:text-green-400">
+                              {total > 0 ? Math.round(total * 100) / 100 : '·'}
+                            </td>
+                          );
+                        })}
+                      </tr>
                     </tbody>
                   </table>
                 </div>
