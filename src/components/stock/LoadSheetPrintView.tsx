@@ -99,86 +99,88 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
         isVisible={isPrintReady}
       />
 
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh]" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base">
-              <Printer className="w-4 h-4" />
-              ورقة الشحن - {workerName}
-            </DialogTitle>
-          </DialogHeader>
+      <div className="print:hidden">
+        <Dialog open={open} onOpenChange={onOpenChange}>
+          <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh]" dir="rtl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-base">
+                <Printer className="w-4 h-4" />
+                ورقة الشحن - {workerName}
+              </DialogTitle>
+            </DialogHeader>
 
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            </div>
-          ) : !hasData ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Package className="w-10 h-10 mx-auto mb-2 text-muted-foreground/40" />
-              <p>لا توجد طلبيات نشطة لهذا العامل</p>
-            </div>
-          ) : (
-            <>
-              <ScrollArea className="max-h-[65vh]">
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse text-[11px]">
-                    <thead>
-                      <tr className="bg-muted">
-                        <th className="border border-border p-1.5 text-center w-[30px]">الرقم</th>
-                        <th className="border border-border p-1.5 text-right min-w-[100px]">العميل</th>
-                        <th className="border border-border p-1.5 text-right min-w-[80px]">اسم المحل</th>
-                        <th className="border border-border p-1.5 text-right min-w-[80px]">الهاتف</th>
-                        <th className="border border-border p-1.5 text-right min-w-[80px]">العنوان</th>
-                        {products.map(p => (
-                          <th key={p.id} className="border border-border p-1 text-center min-w-[50px] text-[10px]">
-                            {p.name}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {orders.map((order, idx) => {
-                        const items = orderItems.get(order.id) || [];
-                        return (
-                          <tr key={order.id} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/30'}>
-                            <td className="border border-border p-1 text-center font-medium">{idx + 1}</td>
-                            <td className="border border-border p-1.5 text-right">
-                              <div className="font-semibold text-[11px]">{order.customer?.name || '—'}</div>
-                            </td>
-                            <td className="border border-border p-1.5 text-right text-[10px]">{order.customer?.store_name || ''}</td>
-                            <td className="border border-border p-1.5 text-right text-[10px] direction-ltr">{order.customer?.phone || ''}</td>
-                            <td className="border border-border p-1.5 text-right text-[10px]">{order.customer?.address || ''}</td>
-                            {products.map(p => {
-                              const item = items.find((i: any) => i.product_id === p.id);
-                              const qty = item?.quantity || 0;
-                              return (
-                                <td key={p.id} className={`border border-border p-1 text-center ${qty > 0 ? 'font-bold' : 'text-muted-foreground/30'}`}>
-                                  {qty > 0 ? qty : '·'}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </ScrollArea>
-
-              <div className="flex items-center justify-between pt-2">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Badge variant="secondary">{orders.length} عميل</Badge>
-                  <Badge variant="secondary">{products.length} منتج</Badge>
-                </div>
-                <Button onClick={handlePrint} className="gap-2">
-                  <Printer className="w-4 h-4" />
-                  طباعة ورقة الشحن
-                </Button>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
               </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+            ) : !hasData ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Package className="w-10 h-10 mx-auto mb-2 text-muted-foreground/40" />
+                <p>لا توجد طلبيات نشطة لهذا العامل</p>
+              </div>
+            ) : (
+              <>
+                <ScrollArea className="max-h-[65vh]">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-[11px]">
+                      <thead>
+                        <tr className="bg-muted">
+                          <th className="border border-border p-1.5 text-center w-[30px]">الرقم</th>
+                          <th className="border border-border p-1.5 text-right min-w-[100px]">العميل</th>
+                          <th className="border border-border p-1.5 text-right min-w-[80px]">اسم المحل</th>
+                          <th className="border border-border p-1.5 text-right min-w-[80px]">الهاتف</th>
+                          <th className="border border-border p-1.5 text-right min-w-[80px]">العنوان</th>
+                          {products.map(p => (
+                            <th key={p.id} className="border border-border p-1 text-center min-w-[50px] text-[10px]">
+                              {p.name}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {orders.map((order, idx) => {
+                          const items = orderItems.get(order.id) || [];
+                          return (
+                            <tr key={order.id} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/30'}>
+                              <td className="border border-border p-1 text-center font-medium">{idx + 1}</td>
+                              <td className="border border-border p-1.5 text-right">
+                                <div className="font-semibold text-[11px]">{order.customer?.name || '—'}</div>
+                              </td>
+                              <td className="border border-border p-1.5 text-right text-[10px]">{order.customer?.store_name || ''}</td>
+                              <td className="border border-border p-1.5 text-right text-[10px] direction-ltr">{order.customer?.phone || ''}</td>
+                              <td className="border border-border p-1.5 text-right text-[10px]">{order.customer?.address || ''}</td>
+                              {products.map(p => {
+                                const item = items.find((i: any) => i.product_id === p.id);
+                                const qty = item?.quantity || 0;
+                                return (
+                                  <td key={p.id} className={`border border-border p-1 text-center ${qty > 0 ? 'font-bold' : 'text-muted-foreground/30'}`}>
+                                    {qty > 0 ? qty : '·'}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </ScrollArea>
+
+                <div className="flex items-center justify-between pt-2">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Badge variant="secondary">{orders.length} عميل</Badge>
+                    <Badge variant="secondary">{products.length} منتج</Badge>
+                  </div>
+                  <Button onClick={handlePrint} className="gap-2">
+                    <Printer className="w-4 h-4" />
+                    طباعة ورقة الشحن
+                  </Button>
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
     </>
   );
 };
