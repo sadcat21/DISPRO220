@@ -94,9 +94,15 @@ const PromoTrackingSummary: React.FC<PromoTrackingSummaryProps> = ({ items, tota
                     {formatGiftLabel(item.giftQuantity, item.piecesPerBox)}
                   </div>
                 </div>
-                <span className="col-span-3 text-end text-muted-foreground text-[10px]">
-                  {item.offerName || '-'}
-                </span>
+                <div className="col-span-3 text-end">
+                  {item.offerDescription ? (
+                    <span className="inline-block bg-primary/10 text-primary text-[9px] font-bold px-1.5 py-0.5 rounded-md leading-tight">
+                      {item.offerDescription}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground text-[10px]">{item.offerName || '-'}</span>
+                  )}
+                </div>
               </div>
 
               {/* Expanded customer details */}

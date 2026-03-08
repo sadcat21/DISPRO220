@@ -42,6 +42,7 @@ export interface PromoTrackingItem {
   giftQuantity: number;
   piecesPerBox: number;
   offerName: string;
+  offerDescription: string;
   customerDetails: PromoCustomerDetail[];
 }
 
@@ -163,12 +164,29 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
       });
 
       let offerNamesMap: Record<string, string> = {};
+      let offerDescMap: Record<string, string> = {};
       if (giftOfferIds.size > 0) {
         const { data: offers } = await supabase
           .from('product_offers')
-          .select('id, name')
+          .select('id, name, min_quantity, min_quantity_unit, gift_quantity, gift_quantity_unit, tiers:product_offer_tiers(min_quantity, min_quantity_unit, gift_quantity, gift_quantity_unit, tier_order)')
           .in('id', Array.from(giftOfferIds));
-        (offers || []).forEach(o => { offerNamesMap[o.id] = o.name; });
+        (offers || []).forEach((o: any) => {
+          offerNamesMap[o.id] = o.name;
+          // Build description from tiers or fallback to offer-level values
+          const tiers = (o.tiers || []).sort((a: any, b: any) => a.tier_order - b.tier_order);
+          if (tiers.length > 0) {
+            const parts = tiers.map((t: any) => {
+              const minU = t.min_quantity_unit === 'piece' ? 'قطعة' : 'صندوق';
+              const giftU = t.gift_quantity_unit === 'piece' ? 'قطعة' : 'صندوق';
+              return `${t.min_quantity} ${minU} + ${t.gift_quantity} ${giftU} 🎁`;
+            });
+            offerDescMap[o.id] = parts.join(' | ');
+          } else {
+            const minU = o.min_quantity_unit === 'piece' ? 'قطعة' : 'صندوق';
+            const giftU = o.gift_quantity_unit === 'piece' ? 'قطعة' : 'صندوق';
+            offerDescMap[o.id] = `${o.min_quantity} ${minU} + ${o.gift_quantity} ${giftU} 🎁`;
+          }
+        });
       }
 
       // Helpers
@@ -262,6 +280,7 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
                 giftQuantity: 0,
                 piecesPerBox: piecesPerBox,
                 offerName: offerNamesMap[offerId] || '',
+                offerDescription: offerDescMap[offerId] || '',
                 customerDetails: [],
               };
             }
@@ -365,6 +384,7 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
           giftQuantity: extraGifts,
           piecesPerBox: Number(product?.pieces_per_box || 1),
           offerName: 'عرض ترويجي',
+          offerDescription: '',
           customerDetails: promoAgg.customers,
         };
         // Add gift value for extra gifts (now normalized to pieces)
