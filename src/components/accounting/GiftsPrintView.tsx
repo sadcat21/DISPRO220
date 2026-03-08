@@ -43,6 +43,9 @@ interface GiftsPrintViewProps {
   printSummary?: boolean;
   summaryOnly?: boolean;
   isTemplate?: boolean;
+  templatePageCount?: number;
+  templateProductName?: string;
+  templateOfferDetail?: string;
 }
 
 const ROWS_PER_PAGE = 20;
