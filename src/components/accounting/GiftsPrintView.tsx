@@ -132,7 +132,7 @@ const getCellValue = (row: GiftPrintRow, col: GiftPrintColumnKey, rowNumber: num
 };
 
 const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
-  ({ rows, summaryRows, workerNames, workerName, dateRange, productFilter, isVisible = false, visibleColumns, separateByProduct = true, printSummary = false, summaryOnly = false }, ref) => {
+  ({ rows, summaryRows, workerNames, workerName, dateRange, productFilter, isVisible = false, visibleColumns, separateByProduct = true, printSummary = false, summaryOnly = false, isTemplate = false }, ref) => {
     const [container, setContainer] = useState<HTMLDivElement | null>(null);
 
     const columns = useMemo(() => {
@@ -172,8 +172,26 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
     ].join('  |  ');
 
     const pages = useMemo((): PrintPage[] => {
-      if (!rows.length) {
-        return [{ productName: null, rows: [], rowOffset: 0, showTotals: true, totals: { vente: 0, gift: 0, giftBoxPiece: '0' } }];
+      if (!rows.length && !isTemplate) {
+        return [{ productName: null, rows: [], rowOffset: 0, showTotals: true, totals: { vente: 0, gift: 0, giftBoxPiece: '0.00' }, pageNum: 1, totalPages: 1 }];
+      }
+
+      // Template mode: generate empty pages
+      if (isTemplate) {
+        const templatePages: PrintPage[] = [];
+        const numTemplatePages = 2;
+        for (let i = 0; i < numTemplatePages; i++) {
+          templatePages.push({
+            productName: null,
+            rows: [],
+            rowOffset: i * ROWS_PER_PAGE,
+            showTotals: true,
+            totals: { vente: 0, gift: 0, giftBoxPiece: '0.00' },
+            pageNum: i + 1,
+            totalPages: numTemplatePages,
+          });
+        }
+        return templatePages;
       }
 
       if (!separateByProduct) {
@@ -189,6 +207,8 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
           rowOffset: idx * ROWS_PER_PAGE,
           showTotals: idx === chunks.length - 1,
           totals,
+          pageNum: idx + 1,
+          totalPages: chunks.length,
         }));
       }
 
@@ -219,12 +239,14 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
             rowOffset: idx * ROWS_PER_PAGE,
             showTotals: idx === chunks.length - 1,
             totals,
+            pageNum: idx + 1,
+            totalPages: chunks.length,
           });
         });
       }
 
       return builtPages;
-    }, [rows, separateByProduct]);
+    }, [rows, separateByProduct, isTemplate]);
 
     const buildTotalsRow = (totals: { vente: number; gift: number; giftBoxPiece: string }) => {
       const totalIndices = [venteColIdx, giftColIdx, giftBPColIdx].filter(i => i >= 0);
