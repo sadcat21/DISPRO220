@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useCallback, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
@@ -126,6 +127,7 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
   const { isConnected, scanAndConnect } = useBluetoothPrinter();
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   const [allWorkers, setAllWorkers] = useState(false);
+  const [selectedWorkerId, setSelectedWorkerId] = useState<string | undefined>(workerId);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isPrinting, setIsPrinting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -146,7 +148,7 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
   const periodStartTz = periodStart + 'T00:00:00+01:00';
   const periodEndTz = periodEnd + 'T23:59:59+01:00';
 
-  const effectiveWorkerId = allWorkers ? null : workerId;
+  const effectiveWorkerId = allWorkers ? null : (selectedWorkerId || workerId);
 
   useRealtimeSubscription(
     `worker-gifts-realtime-${effectiveWorkerId || 'all'}`,
@@ -166,6 +168,9 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
     },
     enabled: open,
   });
+
+  const effectiveWorkerName = allWorkers ? 'جميع العمال' : (workersMap[effectiveWorkerId || ''] || workerName || '');
+  const workersList = useMemo(() => Object.entries(workersMap).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name)), [workersMap]);
 
   const { data: giftsData, isLoading } = useQuery({
     queryKey: ['worker-gifts-summary', effectiveWorkerId, periodStart, periodEnd, allWorkers],
@@ -742,11 +747,11 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Gift className="w-5 h-5 text-purple-600" />
-            {allWorkers ? 'تجميع العروض - جميع العمال' : `تجميع العروض - ${workerName || ''}`}
+            {allWorkers ? 'تجميع العروض - جميع العمال' : `تجميع العروض - ${effectiveWorkerName || ''}`}
           </DialogTitle>
         </DialogHeader>
 
-        {/* Controls: all workers toggle + month navigation */}
+        {/* Controls: all workers toggle + worker picker + month navigation */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -783,6 +788,20 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
               </Button>
             </div>
           </div>
+
+          {/* Worker picker when not all workers */}
+          {!allWorkers && workersList.length > 0 && (
+            <Select value={selectedWorkerId || workerId || ''} onValueChange={setSelectedWorkerId}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="اختر العامل" />
+              </SelectTrigger>
+              <SelectContent>
+                {workersList.map(w => (
+                  <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
 
           {/* Month navigation */}
           <div className="flex items-center justify-center gap-2 bg-muted/30 rounded-lg p-1.5">
@@ -944,7 +963,7 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
         rows={printRows}
         summaryRows={summaryRows}
         workerNames={summaryWorkerNames}
-        workerName={allWorkers ? 'Tous les employés' : workerName}
+        workerName={allWorkers ? 'Tous les employés' : effectiveWorkerName}
         dateRange={periodDateLabel}
         productFilter={printProductLabel}
         isVisible={showPrintView}
