@@ -43,6 +43,9 @@ interface GiftsPrintViewProps {
   printSummary?: boolean;
   summaryOnly?: boolean;
   isTemplate?: boolean;
+  templatePageCount?: number;
+  templateProductName?: string;
+  templateOfferDetail?: string;
 }
 
 const ROWS_PER_PAGE = 20;
@@ -62,7 +65,7 @@ const COLUMN_CONFIG: Record<GiftPrintColumnKey, { header: string; width?: string
   giftQuantity: { header: 'Gratuit', width: '45px', className: 'center bold' },
   giftBoxPiece: { header: 'Gratuit B.P', width: '55px', className: 'center bold' },
   workerName: { header: 'Employé', className: 'small-text' },
-  date: { header: 'Date', width: '70px', className: 'small-text' },
+  date: { header: 'Date', width: '85px', className: 'small-text' },
 };
 
 type PrintPage = {
@@ -132,7 +135,7 @@ const getCellValue = (row: GiftPrintRow, col: GiftPrintColumnKey, rowNumber: num
 };
 
 const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
-  ({ rows, summaryRows, workerNames, workerName, dateRange, productFilter, isVisible = false, visibleColumns, separateByProduct = true, printSummary = false, summaryOnly = false, isTemplate = false }, ref) => {
+  ({ rows, summaryRows, workerNames, workerName, dateRange, productFilter, isVisible = false, visibleColumns, separateByProduct = true, printSummary = false, summaryOnly = false, isTemplate = false, templatePageCount = 2, templateProductName = '', templateOfferDetail = '' }, ref) => {
     const [container, setContainer] = useState<HTMLDivElement | null>(null);
 
     const columns = useMemo(() => {
@@ -179,14 +182,14 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
       // Template mode: generate empty pages
       if (isTemplate) {
         const templatePages: PrintPage[] = [];
-        const numTemplatePages = 2;
+        const numTemplatePages = templatePageCount;
         for (let i = 0; i < numTemplatePages; i++) {
           templatePages.push({
             productName: null,
             rows: [],
             rowOffset: i * ROWS_PER_PAGE,
             showTotals: true,
-            totals: { vente: 0, gift: 0, giftBoxPiece: '0.00' },
+            totals: { vente: 0, gift: 0, giftBoxPiece: '' },
             pageNum: i + 1,
             totalPages: numTemplatePages,
           });
@@ -246,7 +249,7 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
       }
 
       return builtPages;
-    }, [rows, separateByProduct, isTemplate]);
+    }, [rows, separateByProduct, isTemplate, templatePageCount]);
 
     const buildTotalsRow = (totals: { vente: number; gift: number; giftBoxPiece: string }) => {
       const totalIndices = [venteColIdx, giftColIdx, giftBPColIdx].filter(i => i >= 0);
@@ -356,13 +359,33 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
       >
         {!summaryOnly && pages.map((page, pageIndex) => {
           const emptyRowsCount = Math.max(0, ROWS_PER_PAGE - page.rows.length);
-          const templateDots = '··············';
+          const templateDots = '·······················';
           const pageSuffix = page.totalPages > 1 ? ` (${page.pageNum}/${page.totalPages})` : '';
+          
+          // Build template title with optional product/offer
+          let templateTitle = 'Registre des promotions';
+          if (isTemplate) {
+            const parts: string[] = [];
+            if (templateProductName) parts.push(templateProductName);
+            else parts.push(templateDots);
+            if (templateOfferDetail) parts.push(templateOfferDetail);
+            templateTitle = `Registre des promotions — ${parts.join(' — ')}${pageSuffix}`;
+          }
+          
           const pageTitle = isTemplate
-            ? `Registre des promotions — ${templateDots}${pageSuffix}`
+            ? templateTitle
             : page.productName
               ? `Registre des promotions — ${page.productName}${pageSuffix}`
               : `Registre des promotions${pageSuffix}`;
+
+          // Build template filter line (LTR: label first, then dots)
+          const templateFilterLine = isTemplate
+            ? [
+                `Employé: ${templateDots}`,
+                `Produit: ${templateProductName || templateDots}`,
+                `Période: ${templateDots}`,
+              ].join('  |  ')
+            : filterCriteria;
 
           return (
             <section
@@ -379,8 +402,10 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
                 <div className="print-logo"><img src={logoImage} alt="Laser Food" /></div>
                 <div className="print-title-section">
                   <h1 style={{ fontSize: page.productName || isTemplate ? '14pt' : '18pt' }}>{pageTitle}</h1>
-                  <p style={{ fontSize: '10pt', fontWeight: 600, marginTop: '3px' }}>{isTemplate ? `Employé: ${templateDots}  |  Produit: ${templateDots}  |  Période: ${templateDots}` : filterCriteria}</p>
-                  <p style={{ fontSize: '8pt', color: '#666', marginTop: '2px' }}>Date d'impression: {format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
+                  <p style={{ fontSize: '10pt', fontWeight: 600, marginTop: '3px' }} dir="ltr">{templateFilterLine}</p>
+                  {!isTemplate && (
+                    <p style={{ fontSize: '8pt', color: '#666', marginTop: '2px' }}>Date d'impression: {format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
+                  )}
                 </div>
                 <div className="print-logo"><img src={logoImage} alt="Laser Food" /></div>
               </div>
@@ -414,7 +439,7 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
 
                   {/* Empty rows: template shows all ROWS_PER_PAGE, normal fills remaining */}
                   {Array.from({ length: isTemplate ? ROWS_PER_PAGE : emptyRowsCount }).map((_, i) => (
-                    <tr key={`empty-${i}`}>
+                    <tr key={`empty-${i}`} style={isTemplate ? { height: '28px' } : undefined}>
                       {columns.map((col, j) => (
                         <td key={j}>
                           {isTemplate && col === 'number' ? (page.rowOffset + i + 1) : '\u00A0'}
@@ -425,7 +450,11 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
 
                   {page.showTotals && (
                     <tr className="totals-row">
-                      {buildTotalsRow(page.totals)}
+                      {isTemplate ? (
+                        <td colSpan={columns.length} className="totals-label">Total</td>
+                      ) : (
+                        buildTotalsRow(page.totals)
+                      )}
                     </tr>
                   )}
                 </tbody>

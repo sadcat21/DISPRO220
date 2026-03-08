@@ -17,6 +17,7 @@ import { ar } from 'date-fns/locale';
 import ThermalPreview, { ThermalLine } from '@/components/stock/ThermalPreview';
 import GiftsPrintView, { GiftPrintRow, SummaryRow } from '@/components/accounting/GiftsPrintView';
 import GiftsPrintSettingsDialog, { GiftPrintSettings } from '@/components/accounting/GiftsPrintSettingsDialog';
+import TemplatePrintDialog, { TemplatePrintConfig } from '@/components/accounting/TemplatePrintDialog';
 
 interface Props {
   open: boolean;
@@ -130,7 +131,9 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
   const [showPreview, setShowPreview] = useState(false);
   const [showPrintView, setShowPrintView] = useState(false);
   const [showPrintSettings, setShowPrintSettings] = useState(false);
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [printSettings, setPrintSettings] = useState<GiftPrintSettings | null>(null);
+  const [templateConfig, setTemplateConfig] = useState<TemplatePrintConfig | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
   // Date range: current month → 1st to today, past month → 1st to last day
@@ -564,13 +567,41 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
     return giftsData.items.map(item => ({ id: item.productId, name: item.productName }));
   }, [giftsData]);
 
+  // Available offers for template dialog
+  const templateOfferOptions = useMemo(() => {
+    if (!giftsData?.items?.length) return [];
+    const options: { productId: string; detail: string }[] = [];
+    for (const item of giftsData.items) {
+      for (const detail of (item.offerDetails || [])) {
+        options.push({ productId: item.productId, detail });
+      }
+    }
+    return options;
+  }, [giftsData]);
+
   const printProductLabel = useMemo(() => {
     if (!printSettings || printSettings.productFilter === 'all') return 'Tous les produits';
     return giftsData?.items?.find(i => i.productId === printSettings.productFilter)?.productName || '';
   }, [printSettings, giftsData]);
 
   const handleA4Print = useCallback((settings: GiftPrintSettings) => {
+    if (settings.isTemplate) {
+      // Open template dialog instead of printing directly
+      setPrintSettings(settings);
+      setShowTemplateDialog(true);
+      return;
+    }
     setPrintSettings(settings);
+    setTemplateConfig(null);
+    setShowPrintView(true);
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => setShowPrintView(false), 500);
+    }, 200);
+  }, []);
+
+  const handleTemplatePrint = useCallback((config: TemplatePrintConfig) => {
+    setTemplateConfig(config);
     setShowPrintView(true);
     setTimeout(() => {
       window.print();
@@ -922,6 +953,9 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
         printSummary={printSettings?.printSummary ?? false}
         summaryOnly={printSettings?.summaryOnly ?? false}
         isTemplate={printSettings?.isTemplate ?? false}
+        templatePageCount={templateConfig?.pageCount ?? 2}
+        templateProductName={templateConfig?.productName ?? ''}
+        templateOfferDetail={templateConfig?.offerDetail ?? ''}
       />
       <GiftsPrintSettingsDialog
         open={showPrintSettings}
@@ -929,6 +963,13 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
         products={availableProducts}
         onPrint={handleA4Print}
         isAdmin={!!activeBranch || true}
+      />
+      <TemplatePrintDialog
+        open={showTemplateDialog}
+        onOpenChange={setShowTemplateDialog}
+        products={availableProducts}
+        offers={templateOfferOptions}
+        onPrint={handleTemplatePrint}
       />
     </Dialog>
   );
