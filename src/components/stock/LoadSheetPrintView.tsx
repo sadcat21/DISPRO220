@@ -27,6 +27,7 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
   const [orders, setOrders] = useState<OrderWithDetails[]>([]);
   const [orderItems, setOrderItems] = useState<Map<string, any[]>>(new Map());
   const [products, setProducts] = useState<Product[]>([]);
+  const [surplusMap, setSurplusMap] = useState<Record<string, number>>({});
   const [isPrintReady, setIsPrintReady] = useState(false);
   const [previewScale, setPreviewScale] = useState(1);
 
@@ -100,6 +101,20 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
       setOrders(fetchedOrders);
       setOrderItems(itemsMap);
       setProducts(Array.from(productMap.values()).sort((a, b) => (a.name || '').localeCompare(b.name || '')));
+
+      // Fetch surplus for this worker
+      const { data: surplusData } = await supabase
+        .from('stock_discrepancies')
+        .select('product_id, remaining_quantity')
+        .eq('worker_id', workerId)
+        .eq('discrepancy_type', 'surplus')
+        .eq('status', 'pending');
+
+      const sMap: Record<string, number> = {};
+      for (const d of (surplusData || [])) {
+        sMap[d.product_id] = (sMap[d.product_id] || 0) + (d.remaining_quantity || 0);
+      }
+      setSurplusMap(sMap);
     } catch (err) {
       console.error('Error fetching load sheet data:', err);
     } finally {
@@ -119,6 +134,11 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
   const title = `ورقة الشحن - ${workerName}`;
   const printDate = format(new Date(), 'dd/MM/yyyy');
 
+  const hasSurplus = Object.values(surplusMap).some(v => v > 0);
+  const extraRows = hasSurplus
+    ? [{ label: 'الفائض', productQuantities: surplusMap, style: 'highlight' as const }]
+    : [];
+
   return (
     <>
       {isPrintReady && (
@@ -130,6 +150,7 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
           title={title}
           dateRange={printDate}
           isVisible
+          extraRows={extraRows}
         />
       )}
 
@@ -173,6 +194,7 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
                             dateRange={printDate}
                             isVisible
                             usePortal={false}
+                            extraRows={extraRows}
                           />
                         </div>
                       </div>
