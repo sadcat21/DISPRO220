@@ -651,6 +651,9 @@ const OrdersContent: React.FC = () => {
                 <Plus className="w-2.5 h-2.5 absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground rounded-full" />
               </Button>
             )}
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setShowManualPromoDialog(true)} title={t('promos.manual_entry') || 'تسجيل عرض يدوي'}>
+              <Gift className="w-4 h-4" />
+            </Button>
           </div>
         </div>
 
