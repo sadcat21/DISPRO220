@@ -122,6 +122,133 @@ const resolveAppliedOfferDetail = ({
   return (matchingRules.length > 0 ? matchingRules[matchingRules.length - 1] : rules[0]).detail;
 };
 
+/** Carousel view for expanded gift product with customer overlay */
+const GiftExpandedCarousel: React.FC<{
+  items: GiftProductAgg[];
+  expandedProduct: string;
+  onNavigate: (id: string) => void;
+  onClose: () => void;
+}> = ({ items, expandedProduct, onNavigate, onClose }) => {
+  const currentIdx = items.findIndex(i => (i.productId + '_' + i.offerName) === expandedProduct);
+  const item = items[currentIdx];
+  if (!item) return null;
+
+  const getKey = (i: GiftProductAgg) => i.productId + '_' + i.offerName;
+
+  const goPrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (currentIdx > 0) onNavigate(getKey(items[currentIdx - 1]));
+  };
+  const goNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (currentIdx < items.length - 1) onNavigate(getKey(items[currentIdx + 1]));
+  };
+
+  return (
+    <div className="flex flex-col gap-2 pb-2">
+      {/* Navigation with thumbnails */}
+      <div className="flex items-center justify-between px-1 py-1.5 gap-2">
+        {currentIdx > 0 ? (
+          <button onClick={goPrev} className="w-10 h-10 rounded-lg overflow-hidden border border-border hover:border-primary/50 transition-colors shrink-0">
+            {items[currentIdx - 1].imageUrl ? (
+              <img src={items[currentIdx - 1].imageUrl!} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-muted flex items-center justify-center">
+                <Package className="w-4 h-4 text-muted-foreground" />
+              </div>
+            )}
+          </button>
+        ) : (
+          <div className="w-10 h-10 shrink-0" />
+        )}
+        <span className="text-xs text-muted-foreground">{currentIdx + 1} / {items.length}</span>
+        {currentIdx < items.length - 1 ? (
+          <button onClick={goNext} className="w-10 h-10 rounded-lg overflow-hidden border border-border hover:border-primary/50 transition-colors shrink-0">
+            {items[currentIdx + 1].imageUrl ? (
+              <img src={items[currentIdx + 1].imageUrl!} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-muted flex items-center justify-center">
+                <Package className="w-4 h-4 text-muted-foreground" />
+              </div>
+            )}
+          </button>
+        ) : (
+          <div className="w-10 h-10 shrink-0" />
+        )}
+      </div>
+
+      {/* Product card with customer overlay */}
+      <div
+        className="flex flex-col rounded-2xl overflow-hidden shadow-lg border-2 border-primary ring-2 ring-primary/30 cursor-pointer"
+        onClick={onClose}
+      >
+        <div className="px-3 py-2 text-center bg-primary">
+          <span className="font-bold text-sm block truncate text-primary-foreground">{item.productName}</span>
+          {item.offerName && (
+            <span className="text-[10px] text-primary-foreground/70 block truncate">{item.offerName}</span>
+          )}
+        </div>
+
+        <div className="relative w-full overflow-hidden bg-muted h-[38vh] min-h-[200px] max-h-[400px]">
+          {item.imageUrl ? (
+            <img src={item.imageUrl} alt={item.productName} className="absolute inset-0 w-full h-full object-cover" />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Package className="w-16 h-16 text-primary/30" />
+            </div>
+          )}
+
+          {item.customers.length > 0 && (
+            <>
+              <div className="absolute inset-0 bg-background/40 backdrop-blur-[2px]" />
+              <div className="absolute inset-0 z-10 p-3 overflow-y-auto space-y-1.5">
+                {item.customers.map((c, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between py-2 px-3 rounded-lg bg-card/80 border border-border/60 text-sm"
+                    dir="rtl"
+                  >
+                    <div className="flex flex-col min-w-0 gap-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                        <span className="truncate font-medium">{c.storeName || c.customerName}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                        {c.sectorName && (
+                          <span className="flex items-center gap-0.5">
+                            <MapPin className="w-2.5 h-2.5" /> {c.sectorName}
+                          </span>
+                        )}
+                        {c.customerPhone && <span dir="ltr" className="shrink-0">{c.customerPhone}</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="font-bold text-primary text-base">
+                        🎁 {formatGiftDisplay(c.giftPieces, item.piecesPerBox)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="px-2 py-2 bg-card flex flex-col gap-1.5">
+          <div className="flex items-center gap-1.5">
+            <div className="flex-1 flex items-center justify-center gap-1 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 py-1.5 text-sm font-bold">
+              🎁 {formatGiftDisplay(item.totalGiftPieces, item.piecesPerBox)}
+            </div>
+            <div className="flex items-center justify-center gap-1 rounded-md bg-muted py-1.5 px-2 text-xs font-semibold text-muted-foreground">
+              {item.customers.length} عميل
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerId, workerName }) => {
   const { activeBranch } = useAuth();
   const { isConnected, scanAndConnect } = useBluetoothPrinter();
@@ -744,108 +871,83 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[92dvh] min-h-0 overflow-hidden flex flex-col" dir="rtl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Gift className="w-5 h-5 text-purple-600" />
-            {allWorkers ? 'تجميع العروض - جميع العمال' : `تجميع العروض - ${effectiveWorkerName || ''}`}
-          </DialogTitle>
-        </DialogHeader>
+        {!expandedProduct && (
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Gift className="w-5 h-5 text-purple-600" />
+              {allWorkers ? 'تجميع العروض - جميع العمال' : `تجميع العروض - ${effectiveWorkerName || ''}`}
+            </DialogTitle>
+          </DialogHeader>
+        )}
 
-        {/* Controls: all workers toggle + worker picker + month navigation */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Switch
-                id="all-workers"
-                checked={allWorkers}
-                onCheckedChange={setAllWorkers}
-              />
-              <Label htmlFor="all-workers" className="text-xs cursor-pointer flex items-center gap-1">
-                <Users className="w-3.5 h-3.5" />
-                جميع العمال
-              </Label>
+        {!expandedProduct && (
+          <>
+            {/* Controls: all workers toggle + worker picker + month navigation */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Switch id="all-workers" checked={allWorkers} onCheckedChange={setAllWorkers} />
+                  <Label htmlFor="all-workers" className="text-xs cursor-pointer flex items-center gap-1">
+                    <Users className="w-3.5 h-3.5" />
+                    جميع العمال
+                  </Label>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button size="sm" variant="outline" className="gap-1 text-[10px] h-7" onClick={() => setShowPrintSettings(true)} disabled={!giftsData?.items?.length}>
+                    <FileText className="w-3 h-3" />
+                    طباعة A4
+                  </Button>
+                  <Button size="sm" variant="outline" className="gap-1 text-[10px] h-7" onClick={() => setShowPreview(prev => !prev)} disabled={!giftsData?.items?.length}>
+                    <Printer className="w-3 h-3" />
+                    {showPreview ? 'إخفاء' : 'حرارية'}
+                  </Button>
+                </div>
+              </div>
+
+              {!allWorkers && workersList.length > 0 && (
+                <Select value={selectedWorkerId || workerId || ''} onValueChange={setSelectedWorkerId}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="اختر العامل" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {workersList.map(w => (
+                      <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              <div className="flex items-center justify-center gap-2 bg-muted/30 rounded-lg p-1.5">
+                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setCurrentMonth(m => addMonths(m, 1))}>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+                <div className="flex items-center gap-1.5 min-w-[140px] justify-center">
+                  <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span className="text-sm font-medium">{format(currentMonth, 'MMMM yyyy', { locale: ar })}</span>
+                </div>
+                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setCurrentMonth(m => subMonths(m, 1))}>
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <Button
-                size="sm"
-                variant="outline"
-                className="gap-1 text-[10px] h-7"
-                onClick={() => setShowPrintSettings(true)}
-                disabled={!giftsData?.items?.length}
-              >
-                <FileText className="w-3 h-3" />
-                طباعة A4
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="gap-1 text-[10px] h-7"
-                onClick={() => setShowPreview(prev => !prev)}
-                disabled={!giftsData?.items?.length}
-              >
-                <Printer className="w-3 h-3" />
-                {showPreview ? 'إخفاء' : 'حرارية'}
-              </Button>
+
+            <div className="flex flex-wrap gap-1.5 items-center text-xs">
+              <Badge variant="secondary" className="text-xs">{giftsData?.items?.length || 0} منتج</Badge>
+              <Badge className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border-0">🎁 {giftsData?.totalGifts || 0} قطعة عروض</Badge>
+              <Badge variant="outline" className="text-xs">{uniqueCustomerCount} عميل</Badge>
             </div>
-          </div>
 
-          {/* Worker picker when not all workers */}
-          {!allWorkers && workersList.length > 0 && (
-            <Select value={selectedWorkerId || workerId || ''} onValueChange={setSelectedWorkerId}>
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="اختر العامل" />
-              </SelectTrigger>
-              <SelectContent>
-                {workersList.map(w => (
-                  <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-
-          {/* Month navigation */}
-          <div className="flex items-center justify-center gap-2 bg-muted/30 rounded-lg p-1.5">
-            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setCurrentMonth(m => addMonths(m, 1))}>
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-            <div className="flex items-center gap-1.5 min-w-[140px] justify-center">
-              <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-              <span className="text-sm font-medium">
-                {format(currentMonth, 'MMMM yyyy', { locale: ar })}
-              </span>
-            </div>
-            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setCurrentMonth(m => subMonths(m, 1))}>
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-1.5 items-center text-xs">
-          <Badge variant="secondary" className="text-xs">
-            {giftsData?.items?.length || 0} منتج
-          </Badge>
-          <Badge className="text-xs bg-purple-100 text-purple-700 border-0">
-            🎁 {giftsData?.totalGifts || 0} قطعة عروض
-          </Badge>
-          <Badge variant="outline" className="text-xs">
-            {uniqueCustomerCount} عميل
-          </Badge>
-        </div>
-
-        {/* Thermal Preview */}
-        {showPreview && thermalLines.length > 0 && (
-          <div className="space-y-2">
-            <ThermalPreview lines={thermalLines} showLegendToggle={false} />
-            <Button
-              size="sm"
-              className="w-full gap-1.5"
-              onClick={handleThermalPrint}
-              disabled={isPrinting}
-            >
-              <Printer className="w-3.5 h-3.5" />
-              {isPrinting ? 'جاري الطباعة...' : 'طباعة حرارية 48mm'}
-            </Button>
-          </div>
+            {/* Thermal Preview */}
+            {showPreview && thermalLines.length > 0 && (
+              <div className="space-y-2">
+                <ThermalPreview lines={thermalLines} showLegendToggle={false} />
+                <Button size="sm" className="w-full gap-1.5" onClick={handleThermalPrint} disabled={isPrinting}>
+                  <Printer className="w-3.5 h-3.5" />
+                  {isPrinting ? 'جاري الطباعة...' : 'طباعة حرارية 48mm'}
+                </Button>
+              </div>
+            )}
+          </>
         )}
 
         <ScrollArea className="flex-1 min-h-0">
@@ -853,105 +955,54 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
             <div className="flex justify-center py-8">
               <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
             </div>
-          ) : !giftsData?.items?.length ? (
+          ) : !giftsData?.items?.length && !expandedProduct ? (
             <div className="py-10 text-center text-muted-foreground">
               <Gift className="w-10 h-10 mx-auto mb-2 opacity-40" />
               <p>لا توجد عروض في هذه الفترة</p>
             </div>
+          ) : expandedProduct ? (
+            <GiftExpandedCarousel
+              items={giftsData!.items}
+              expandedProduct={expandedProduct}
+              onNavigate={setExpandedProduct}
+              onClose={() => setExpandedProduct(null)}
+            />
           ) : (
             <div className="grid grid-cols-3 gap-2 pb-2">
-              {giftsData.items.map((item) => {
+              {giftsData!.items.map((item) => {
                 const toggleKey = item.productId + '_' + item.offerName;
-                const isExpanded = expandedProduct === toggleKey;
-
                 return (
-                  <Collapsible
+                  <div
                     key={toggleKey}
-                    open={isExpanded}
-                    onOpenChange={(val) => setExpandedProduct(val ? toggleKey : null)}
-                    className="col-span-3"
+                    className="flex flex-col rounded-2xl overflow-hidden shadow-lg border-2 border-border hover:border-purple-400/50 cursor-pointer active:scale-[0.97] transition-all"
+                    onClick={() => setExpandedProduct(toggleKey)}
                   >
-                    <div className="flex flex-col rounded-2xl overflow-hidden shadow-lg border-2 border-border hover:border-purple-400/50 transition-all">
-                      <CollapsibleTrigger className="w-full text-start">
-                        <div className="flex items-center gap-3 p-3">
-                          <div className="w-14 h-14 rounded-xl overflow-hidden bg-muted shrink-0">
-                            {item.imageUrl ? (
-                              <img src={item.imageUrl} alt={item.productName} className="w-full h-full object-cover" loading="lazy" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <Package className="w-6 h-6 text-primary/30" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-bold text-sm truncate">{item.productName}</p>
-                            {item.offerName && (
-                              <p className="text-[10px] text-muted-foreground truncate">{item.offerName}</p>
-                            )}
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-xs font-bold text-purple-600">
-                                🎁 {formatGiftDisplay(item.totalGiftPieces, item.piecesPerBox)}
-                              </span>
-                              <span className="text-[10px] text-muted-foreground">
-                                ({item.totalGiftPieces} قطعة)
-                              </span>
-                              <span className="text-[10px] text-muted-foreground">
-                                • {item.customers.length} عميل
-                              </span>
-                            </div>
-                          </div>
-                          {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />}
-                        </div>
-                      </CollapsibleTrigger>
-
-                      <CollapsibleContent>
-                        <div className="border-t bg-accent/30 p-2 space-y-1">
-                          <div className="grid grid-cols-12 gap-1 text-[9px] text-muted-foreground font-medium px-1 py-1 border-b border-border/50">
-                            <span className="col-span-4">العميل</span>
-                            <span className="col-span-2 text-center">العرض</span>
-                            <span className="col-span-3 text-center">الهاتف</span>
-                            <span className="col-span-3 text-end">العامل</span>
-                          </div>
-                          {item.customers.map((c, idx) => (
-                            <div key={idx} className="grid grid-cols-12 gap-1 text-[11px] px-1 py-1.5 border-b border-dashed border-border/30 last:border-0 items-center">
-                              <div className="col-span-4 flex items-center gap-1 min-w-0">
-                                <User className="w-3 h-3 text-muted-foreground shrink-0" />
-                                <div className="truncate">
-                                  {c.sectorName && (
-                                    <span className="text-[9px] text-primary font-medium block">
-                                      <MapPin className="w-2.5 h-2.5 inline" /> {c.sectorName}
-                                    </span>
-                                  )}
-                                  <span className="font-bold text-[11px]">{c.storeName || c.customerName || '-'}</span>
-                                </div>
-                              </div>
-                              <div className="col-span-2 text-center">
-                                <span className="font-semibold text-purple-600">
-                                  {formatGiftDisplay(c.giftPieces, item.piecesPerBox)}
-                                </span>
-                                <div className="text-[8px] text-muted-foreground">
-                                  {c.giftPieces} قطعة
-                                </div>
-                              </div>
-                              <div className="col-span-3 text-center">
-                                {c.customerPhone ? (
-                                  <a href={`tel:${c.customerPhone}`} className="text-[10px] text-blue-600 flex items-center justify-center gap-0.5">
-                                    <Phone className="w-2.5 h-2.5" />
-                                    {c.customerPhone}
-                                  </a>
-                                ) : (
-                                  <span className="text-[10px] text-muted-foreground">-</span>
-                                )}
-                              </div>
-                              <div className="col-span-3 text-end text-[9px] text-muted-foreground truncate">
-                                {c.workerName || '-'}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </CollapsibleContent>
+                    <div className="px-2 py-1.5 border-b text-center bg-muted border-border">
+                      <span className="font-bold text-xs leading-tight block truncate text-foreground">{item.productName}</span>
+                      {item.offerName && (
+                        <span className="text-[8px] text-muted-foreground block truncate">{item.offerName}</span>
+                      )}
                     </div>
-                  </Collapsible>
+                    <div className="w-full aspect-square bg-muted overflow-hidden">
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt={item.productName} className="w-full h-full object-cover" loading="lazy" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package className="w-10 h-10 text-primary/30" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="px-1.5 py-1.5 bg-card flex flex-col gap-1">
+                      <div className="flex items-center gap-1">
+                        <div className="flex-1 flex items-center justify-center gap-1 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 py-1 text-xs font-bold">
+                          🎁 {formatGiftDisplay(item.totalGiftPieces, item.piecesPerBox)}
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-center rounded-md bg-muted py-1 text-[10px] font-semibold text-muted-foreground">
+                        عميل {item.customers.length} • ({item.totalGiftPieces} قطعة)
+                      </div>
+                    </div>
+                  </div>
                 );
               })}
             </div>
