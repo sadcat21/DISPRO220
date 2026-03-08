@@ -921,6 +921,7 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
         separateByProduct={printSettings?.separateByProduct ?? true}
         printSummary={printSettings?.printSummary ?? false}
         summaryOnly={printSettings?.summaryOnly ?? false}
+        isTemplate={printSettings?.isTemplate ?? false}
       />
       <GiftsPrintSettingsDialog
         open={showPrintSettings}
