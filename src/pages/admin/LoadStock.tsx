@@ -1159,7 +1159,7 @@ const LoadStock: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
+    <div className="flex flex-col h-[calc(100dvh-8rem)] min-h-0">
       {/* Header */}
       <div className="px-3 pt-3 pb-1 space-y-2.5">
         <div className="flex items-center gap-2.5">
@@ -1207,7 +1207,7 @@ const LoadStock: React.FC = () => {
               </button>
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-2">
-              <div className="grid gap-1.5 max-h-[30vh] overflow-y-auto">
+              <div className="grid gap-1.5 max-h-[30dvh] overflow-y-auto">
                 {suggestions.map(s => {
                   const sessionLoad = sessionItems.filter(si => si.product_id === s.product_id);
                   const loadedBoxes = sessionLoad.reduce((sum: number, si: any) => sum + (si.quantity || 0), 0);
@@ -1693,7 +1693,7 @@ const LoadStock: React.FC = () => {
               </Button>
             )}
           </div>
-          <ScrollArea className="max-h-[55vh]">
+          <ScrollArea className="max-h-[55dvh]">
             <div className="space-y-2">
               {filteredSessions.length === 0 ? (
                 <p className="text-center text-muted-foreground py-6 text-sm">لا توجد جلسات سابقة</p>
@@ -1867,7 +1867,7 @@ const LoadStock: React.FC = () => {
                         <p className="text-xs text-muted-foreground">لا توجد فوارق في هذه الجلسة</p>
                       </div>
                     ) : (
-                      <ScrollArea className="max-h-[40vh]">
+                      <ScrollArea className="max-h-[40dvh]">
                         <div className="space-y-2">
                           {/* Show discrepancies first */}
                           {viewReviewDiscrepancies.length > 0 && (
@@ -1930,7 +1930,7 @@ const LoadStock: React.FC = () => {
                   ) : viewSessionItems.length === 0 ? (
                     <p className="text-center text-muted-foreground text-xs py-4">لا توجد منتجات في هذه الجلسة</p>
                   ) : (
-                    <ScrollArea className="max-h-[40vh]">
+                    <ScrollArea className="max-h-[40dvh]">
                       <div className="space-y-2">
                         {viewSessionItems.map(item => {
                           const ppb = (item.product as any)?.pieces_per_box || 20;
@@ -2039,7 +2039,7 @@ const LoadStock: React.FC = () => {
             </DialogTitle>
             <DialogDescription>{t('stock.empty_truck_confirm')}</DialogDescription>
           </DialogHeader>
-          <div className="max-h-[50vh] overflow-y-auto space-y-3">
+          <div className="max-h-[50dvh] overflow-y-auto space-y-3">
             {emptyTruckItems.map((item, idx) => {
               const ppb = item.piecesPerBox;
               return (

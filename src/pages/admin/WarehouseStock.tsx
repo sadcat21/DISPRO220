@@ -337,7 +337,7 @@ const WarehouseStock: React.FC = () => {
             </CardContent>
           </Card>
         ) : (
-          <ScrollArea className="max-h-[calc(100vh-22rem)]">
+          <ScrollArea className="max-h-[calc(100dvh-22rem)]">
             <div className="space-y-2 pb-2">
               {filteredSummaries.map(s => {
                 // Format gifts in boxes.pieces notation
