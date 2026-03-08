@@ -131,7 +131,9 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
   const [showPreview, setShowPreview] = useState(false);
   const [showPrintView, setShowPrintView] = useState(false);
   const [showPrintSettings, setShowPrintSettings] = useState(false);
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [printSettings, setPrintSettings] = useState<GiftPrintSettings | null>(null);
+  const [templateConfig, setTemplateConfig] = useState<TemplatePrintConfig | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
   // Date range: current month → 1st to today, past month → 1st to last day
