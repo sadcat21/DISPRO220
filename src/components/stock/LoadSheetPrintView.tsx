@@ -319,11 +319,20 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
             {/* Print-only content (hidden) */}
             <div style={{ display: 'none' }}>
               <div ref={printRef}>
-                <div className="header">
-                  <img src={logoImage} alt="" />
-                  <h1>ورقة الشحن</h1>
-                  <p><strong>{workerName}</strong> — {format(new Date(), 'dd/MM/yyyy')}</p>
+                {/* Header with logos */}
+                <div className="print-header-with-logo">
+                  <div className="print-logo">
+                    <img src={logoImage} alt="Laser Food" />
+                  </div>
+                  <div className="print-title-section">
+                    <h1>ورقة الشحن</h1>
+                    <p><strong>{workerName}</strong> — {format(new Date(), 'dd/MM/yyyy')}</p>
+                  </div>
+                  <div className="print-logo">
+                    <img src={logoImage} alt="Laser Food" />
+                  </div>
                 </div>
+
                 <table>
                   <thead>
                     <tr>
@@ -351,8 +360,8 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
                         })}
                       </tr>
                     ))}
-                    <tr className="total-row">
-                      <td>📦 إجمالي الطلبيات</td>
+                    <tr className="totals-row">
+                      <td style={{ textAlign: 'center', fontSize: '9pt' }}>📦 إجمالي الطلبيات</td>
                       {productColumns.map(p => (
                         <td key={p.id}>{productTotals[p.id] || '·'}</td>
                       ))}
@@ -375,6 +384,13 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
                     </tr>
                   </tbody>
                 </table>
+
+                {/* Footer */}
+                <div className="print-footer">
+                  <span>تاريخ الطباعة: {format(new Date(), 'dd/MM/yyyy HH:mm')}</span>
+                  <span>عدد العملاء: {customerRows.length}</span>
+                  <span>Laser Food</span>
+                </div>
               </div>
             </div>
 
