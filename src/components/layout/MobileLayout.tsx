@@ -124,7 +124,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col" dir={dir}>
+    <div className="h-[100dvh] min-h-[100dvh] bg-background flex flex-col overflow-hidden" dir={dir}>
       {/* Header */}
       <header className="sticky top-0 z-50 bg-secondary text-secondary-foreground safe-top">
         <div className="flex items-center gap-2 px-3 py-2 overflow-x-auto scrollbar-hide">
@@ -236,7 +236,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto pb-20">
+      <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y pb-20">
         {children}
       </main>
 
