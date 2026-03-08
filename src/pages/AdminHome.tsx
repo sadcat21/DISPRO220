@@ -11,6 +11,7 @@ import { useIsElementHidden } from '@/hooks/useUIOverrides';
 import InvoiceRequestDialog from '@/components/treasury/InvoiceRequestDialog';
 import CreateOrderDialog from '@/components/orders/CreateOrderDialog';
 import WorkerGiftsSummaryDialog from '@/components/accounting/WorkerGiftsSummaryDialog';
+import ManualPromoEntryDialog from '@/components/offers/ManualPromoEntryDialog';
 
 // Color mapping by path for semantic meaning
 const pathColors: Record<string, { bg: string; icon: string; border: string }> = {
@@ -60,6 +61,7 @@ const AdminHome: React.FC = () => {
   const [showCreateOrder, setShowCreateOrder] = useState(false);
   const [giftsOpen, setGiftsOpen] = useState(false);
   const [giftsWorkerIdx, setGiftsWorkerIdx] = useState(0);
+  const [manualPromoOpen, setManualPromoOpen] = useState(false);
 
   const isAccountingHidden = useIsElementHidden('page', '/accounting');
   const isDebtsHidden = useIsElementHidden('page', '/customer-debts');
@@ -186,6 +188,18 @@ const AdminHome: React.FC = () => {
           <p className="text-xs text-blue-700">{t('orders.create_order_desc')}</p>
         </div>
       </div>
+
+      <div
+        className="relative overflow-hidden rounded-xl border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-purple-100 p-4 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg flex items-center gap-3"
+        onClick={() => setManualPromoOpen(true)}
+      >
+        <Gift className="w-8 h-8 text-purple-600" />
+        <div>
+          <p className="font-bold text-sm text-purple-900">تسجيل عروض يدوي</p>
+          <p className="text-xs text-purple-700">تسجيل الهدايا المسلّمة حسب شرائح العروض</p>
+        </div>
+      </div>
+
       {/* Invoice Request Quick Button */}
       {showInvoiceButton && (
         <div
@@ -240,6 +254,7 @@ const AdminHome: React.FC = () => {
 
       <InvoiceRequestDialog open={invoiceRequestOpen} onOpenChange={setInvoiceRequestOpen} />
       <CreateOrderDialog open={showCreateOrder} onOpenChange={setShowCreateOrder} />
+      <ManualPromoEntryDialog open={manualPromoOpen} onOpenChange={setManualPromoOpen} />
       
       {giftsOpen && (
         <WorkerGiftsSummaryDialog
@@ -273,3 +288,4 @@ const AdminHome: React.FC = () => {
 };
 
 export default AdminHome;
+

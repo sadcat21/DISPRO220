@@ -25,6 +25,7 @@ import WorkerHandoverPreviewDialog from '@/components/accounting/WorkerHandoverP
 import TodayCustomersDialog from '@/components/sectors/TodayCustomersDialog';
 import PalletCalculatorDialog from '@/components/stock/PalletCalculatorDialog';
 import AttendanceButton from '@/components/attendance/AttendanceButton';
+import ManualPromoEntryDialog from '@/components/offers/ManualPromoEntryDialog';
 
 const WorkerHome: React.FC = () => {
   const { user, workerId, role } = useAuth();
@@ -43,7 +44,7 @@ const WorkerHome: React.FC = () => {
   const [showHandoverPreview, setShowHandoverPreview] = useState(false);
   const [showTodayCustomers, setShowTodayCustomers] = useState(false);
   const [showPalletCalculator, setShowPalletCalculator] = useState(false);
-  
+  const [showManualPromoEntry, setShowManualPromoEntry] = useState(false);
 
   const { trackVisit } = useTrackVisit();
   const isDirectSaleHidden = useIsElementHidden('button', 'home_direct_sale');
@@ -242,6 +243,16 @@ const WorkerHome: React.FC = () => {
 
       {hasPromoAccess ? (
         <>
+          <div className="px-4 mt-4">
+            <button
+              onClick={() => setShowManualPromoEntry(true)}
+              className="w-full rounded-2xl bg-gradient-to-br from-purple-500 to-purple-700 text-white p-4 flex items-center justify-center gap-2 shadow-lg active:scale-[0.97] transition-all"
+            >
+              <Gift className="w-5 h-5" />
+              <span className="font-bold text-sm">تسجيل عروض يدوية</span>
+            </button>
+          </div>
+
           {/* Products Section for Promo */}
           <div className="mt-4">
             <div className="px-4 mb-2">

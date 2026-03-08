@@ -3500,10 +3500,14 @@ export type Database = {
           bonus_amount: number | null
           created_at: string
           customer_id: string
+          gift_quantity_unit: string
           gratuite_quantity: number
           has_bonus: boolean | null
           id: string
           notes: string | null
+          offer_detail: string | null
+          offer_id: string | null
+          offer_tier_id: string | null
           product_id: string
           promo_date: string
           vente_quantity: number
@@ -3513,10 +3517,14 @@ export type Database = {
           bonus_amount?: number | null
           created_at?: string
           customer_id: string
+          gift_quantity_unit?: string
           gratuite_quantity?: number
           has_bonus?: boolean | null
           id?: string
           notes?: string | null
+          offer_detail?: string | null
+          offer_id?: string | null
+          offer_tier_id?: string | null
           product_id: string
           promo_date?: string
           vente_quantity: number
@@ -3526,10 +3534,14 @@ export type Database = {
           bonus_amount?: number | null
           created_at?: string
           customer_id?: string
+          gift_quantity_unit?: string
           gratuite_quantity?: number
           has_bonus?: boolean | null
           id?: string
           notes?: string | null
+          offer_detail?: string | null
+          offer_id?: string | null
+          offer_tier_id?: string | null
           product_id?: string
           promo_date?: string
           vente_quantity?: number
@@ -3541,6 +3553,20 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promos_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "product_offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promos_offer_tier_id_fkey"
+            columns: ["offer_tier_id"]
+            isOneToOne: false
+            referencedRelation: "product_offer_tiers"
             referencedColumns: ["id"]
           },
           {
