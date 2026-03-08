@@ -513,6 +513,7 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
           wilaya: c.customerWilaya || '',
           phone: c.customerPhone || '',
           productName: item.productName,
+          offerDetail: item.offerDetails?.[0] || '',
           venteQuantity: Math.round(c.quantitySold),
           giftQuantity: c.giftPieces,
           giftBoxPiece: formatGiftDisplay(c.giftPieces, ppb),
