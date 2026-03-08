@@ -399,25 +399,25 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
                 <img src={logoImage} alt="" style={{ width: '280px', height: 'auto' }} />
               </div>
 
-              <div className="print-header-with-logo" style={{ position: 'relative', zIndex: 1 }}>
-                <div className="print-logo"><img src={logoImage} alt="Laser Food" /></div>
-                <div className="print-title-section">
-                  <h1 style={{ fontSize: page.productName || isTemplate ? '14pt' : '18pt' }}>{pageTitle}</h1>
-                  <p style={{ fontSize: '10pt', fontWeight: 600, marginTop: '3px' }} dir="ltr">{templateFilterLine}</p>
+              <div className="print-header-with-logo" style={{ position: 'relative', zIndex: 1, marginBottom: isTemplate ? '4px' : '10px', paddingBottom: isTemplate ? '4px' : '8px' }}>
+                <div className="print-logo" style={isTemplate ? { width: '55px' } : undefined}><img src={logoImage} alt="Laser Food" /></div>
+                <div className="print-title-section" style={isTemplate ? { padding: '0 10px' } : undefined}>
+                  <h1 style={{ fontSize: isTemplate ? '12pt' : (page.productName ? '14pt' : '18pt'), marginBottom: isTemplate ? '2px' : '8px' }}>{pageTitle}</h1>
+                  <p style={{ fontSize: isTemplate ? '8pt' : '10pt', fontWeight: 600, marginTop: '2px' }} dir="ltr">{templateFilterLine}</p>
                   {!isTemplate && (
                     <p style={{ fontSize: '8pt', color: '#666', marginTop: '2px' }}>Date d'impression: {format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
                   )}
                 </div>
-                <div className="print-logo"><img src={logoImage} alt="Laser Food" /></div>
+                <div className="print-logo" style={isTemplate ? { width: '55px' } : undefined}><img src={logoImage} alt="Laser Food" /></div>
               </div>
 
-              <table className="word-table" dir="ltr" style={{ position: 'relative', zIndex: 1 }}>
+              <table className="word-table" dir="ltr" style={{ position: 'relative', zIndex: 1, marginTop: isTemplate ? '2px' : '5px' }}>
                 <thead>
                   <tr>
                     {columns.map(col => {
                       const cfg = COLUMN_CONFIG[col];
                       return (
-                        <th key={col} style={cfg.width ? { width: cfg.width } : undefined}>
+                        <th key={col} style={{ ...(cfg.width ? { width: cfg.width } : {}), ...(isTemplate ? { padding: '3px 4px', fontSize: '9pt' } : {}) }}>
                           {cfg.header}
                         </th>
                       );
@@ -440,9 +440,9 @@ const GiftsPrintView = forwardRef<HTMLDivElement, GiftsPrintViewProps>(
 
                   {/* Empty rows: template shows all ROWS_PER_PAGE, normal fills remaining */}
                   {Array.from({ length: isTemplate ? ROWS_PER_PAGE : emptyRowsCount }).map((_, i) => (
-                    <tr key={`empty-${i}`} style={isTemplate ? { height: '28px' } : undefined}>
+                    <tr key={`empty-${i}`} style={isTemplate ? { height: '20px' } : undefined}>
                       {columns.map((col, j) => (
-                        <td key={j}>
+                        <td key={j} style={isTemplate ? { padding: '2px 4px' } : undefined}>
                           {isTemplate && col === 'number' ? (page.rowOffset + i + 1) : '\u00A0'}
                         </td>
                       ))}
