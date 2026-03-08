@@ -400,7 +400,25 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
                     </td>
                   )}
                   {isColEffective('delivery_worker') && <td className="small-text">{order.assigned_worker?.full_name || '-'}</td>}
-                  {isColEffective('payment_info') && <td className="center small-text" style={{ fontSize: '8pt' }}>{getOrderSymbols(order)}</td>}
+                  {isColEffective('payment_info') && (() => {
+                    const paymentText = getOrderSymbols(order);
+                    const isCashInvoice = order.payment_type === 'with_invoice' && order.invoice_payment_method === 'cash';
+                    const orderTotal = getOrderTotalAmount(order);
+                    const stampAmt = isCashInvoice && stampTiers.length > 0 ? calculateStampAmount(orderTotal, stampTiers) : 0;
+                    const stampPct = stampAmt > 0 && orderTotal > 0
+                      ? Math.round((stampAmt / orderTotal) * 100 * 10) / 10
+                      : 0;
+                    return (
+                      <td className="center small-text" style={{ fontSize: '8pt', padding: '2px 1px' }}>
+                        <div>{paymentText}</div>
+                        {stampAmt > 0 && (
+                          <div style={{ fontSize: '6.5pt', fontWeight: 'normal', borderTop: '1px solid #ccc', marginTop: '1px', paddingTop: '1px', color: '#555' }}>
+                            {tp('print.header.stamp') || 'T'} {stampPct}% = {stampAmt.toLocaleString()}
+                          </div>
+                        )}
+                      </td>
+                    );
+                  })()}
                   {isColVisible('products') && productsWithOrders.map((product) => {
                     const qty = getQuantity(order.id, product.id);
                     const unitPrice = getItemUnitPrice(order, product.id);
@@ -445,19 +463,9 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
                         const orderTotal = getOrderTotalAmount(order);
                         const isCashInvoice = order.payment_type === 'with_invoice' && order.invoice_payment_method === 'cash';
                         const stampAmount = isCashInvoice && stampTiers.length > 0 ? calculateStampAmount(orderTotal, stampTiers) : 0;
-                        const stampPct = stampAmount > 0 && orderTotal > 0
-                          ? Math.round((stampAmount / (orderTotal - stampAmount)) * 100 * 10) / 10
-                          : 0;
-                        const totalWithStamp = orderTotal + (stampAmount > 0 ? stampAmount : 0);
+                        const totalWithStamp = orderTotal + stampAmount;
                         return (
-                          <>
-                            <div>{isCashInvoice && stampAmount > 0 ? totalWithStamp.toLocaleString() : orderTotal.toLocaleString()}</div>
-                            {stampAmount > 0 && (
-                              <div style={{ fontSize: '7pt', fontWeight: 'normal', borderTop: '1px solid #bbb', marginTop: '2px', paddingTop: '2px', color: '#555' }}>
-                                {tp('print.header.stamp') || 'T'} {stampPct}% = {stampAmount.toLocaleString()}
-                              </div>
-                            )}
-                          </>
+                          <div>{isCashInvoice && stampAmount > 0 ? totalWithStamp.toLocaleString() : orderTotal.toLocaleString()}</div>
                         );
                       })()}
                     </td>
