@@ -78,7 +78,21 @@ const MyDeliveries: React.FC = () => {
   const [reprintReceiptData, setReprintReceiptData] = useState<any>(null);
   const [showLoadRequestDialog, setShowLoadRequestDialog] = useState(false);
 
-  // UI override checks
+  // Print state
+  const [showPrintDialog, setShowPrintDialog] = useState(false);
+  const [isPrintReady, setIsPrintReady] = useState(false);
+  const [allOrderItems, setAllOrderItems] = useState<Map<string, any[]>>(new Map());
+  const [filteredOrdersForPrint, setFilteredOrdersForPrint] = useState<OrderWithDetails[]>([]);
+  const [printWorkerName, setPrintWorkerName] = useState<string | null>(null);
+  const [printColumnConfig, setPrintColumnConfig] = useState<PrintColumnConfig[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [workersList, setWorkersList] = useState<Worker[]>([]);
+  const printRef = useRef<HTMLDivElement>(null);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [previewOrders, setPreviewOrders] = useState<OrderWithDetails[]>([]);
+  const [previewItems, setPreviewItems] = useState<Map<string, any[]>>(new Map());
+  const [previewColumnConfig, setPreviewColumnConfig] = useState<PrintColumnConfig[]>([]);
+
   const isSearchHidden = useIsElementHidden('button', 'deliveries_search');
   const isModifyHidden = useIsElementHidden('action', 'modify_delivery');
   const isCancelHidden = useIsElementHidden('action', 'cancel_delivery');
