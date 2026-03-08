@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useCallback, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
@@ -746,11 +747,11 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Gift className="w-5 h-5 text-purple-600" />
-            {allWorkers ? 'تجميع العروض - جميع العمال' : `تجميع العروض - ${workerName || ''}`}
+            {allWorkers ? 'تجميع العروض - جميع العمال' : `تجميع العروض - ${effectiveWorkerName || ''}`}
           </DialogTitle>
         </DialogHeader>
 
-        {/* Controls: all workers toggle + month navigation */}
+        {/* Controls: all workers toggle + worker picker + month navigation */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
