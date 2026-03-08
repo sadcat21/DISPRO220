@@ -24,6 +24,13 @@ interface PrintColumnConfig {
   visible: boolean;
 }
 
+interface ExtraRow {
+  label: string;
+  productQuantities: Record<string, number>;
+  totalAmount?: number;
+  style?: 'highlight' | 'normal';
+}
+
 interface OrdersPrintViewProps {
   orders: OrderWithDetails[];
   orderItems: Map<string, OrderItemWithProduct[]>;
@@ -33,10 +40,11 @@ interface OrdersPrintViewProps {
   isVisible?: boolean;
   columnConfig?: PrintColumnConfig[];
   usePortal?: boolean;
+  extraRows?: ExtraRow[];
 }
 
 const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
-  ({ orders, orderItems, products, title, dateRange, isVisible = false, columnConfig = [], usePortal = true }, ref) => {
+  ({ orders, orderItems, products, title, dateRange, isVisible = false, columnConfig = [], usePortal = true, extraRows = [] }, ref) => {
     const [container, setContainer] = useState<HTMLDivElement | null>(null);
     const [customerDebts, setCustomerDebts] = useState<Record<string, number>>({});
     const [shortageProductIds, setShortageProductIds] = useState<Set<string>>(new Set());
