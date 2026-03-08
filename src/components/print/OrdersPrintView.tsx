@@ -463,19 +463,9 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
                         const orderTotal = getOrderTotalAmount(order);
                         const isCashInvoice = order.payment_type === 'with_invoice' && order.invoice_payment_method === 'cash';
                         const stampAmount = isCashInvoice && stampTiers.length > 0 ? calculateStampAmount(orderTotal, stampTiers) : 0;
-                        const stampPct = stampAmount > 0 && orderTotal > 0
-                          ? Math.round((stampAmount / (orderTotal - stampAmount)) * 100 * 10) / 10
-                          : 0;
-                        const totalWithStamp = orderTotal + (stampAmount > 0 ? stampAmount : 0);
+                        const totalWithStamp = orderTotal + stampAmount;
                         return (
-                          <>
-                            <div>{isCashInvoice && stampAmount > 0 ? totalWithStamp.toLocaleString() : orderTotal.toLocaleString()}</div>
-                            {stampAmount > 0 && (
-                              <div style={{ fontSize: '7pt', fontWeight: 'normal', borderTop: '1px solid #bbb', marginTop: '2px', paddingTop: '2px', color: '#555' }}>
-                                {tp('print.header.stamp') || 'T'} {stampPct}% = {stampAmount.toLocaleString()}
-                              </div>
-                            )}
-                          </>
+                          <div>{isCashInvoice && stampAmount > 0 ? totalWithStamp.toLocaleString() : orderTotal.toLocaleString()}</div>
                         );
                       })()}
                     </td>
