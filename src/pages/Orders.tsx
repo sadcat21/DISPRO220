@@ -1031,6 +1031,11 @@ const OrdersContent: React.FC = () => {
           orderItems={selectedOrderItems || []}
         />
       )}
+
+      <ManualPromoEntryDialog
+        open={showManualPromoDialog}
+        onOpenChange={setShowManualPromoDialog}
+      />
     </div>
   );
 };
