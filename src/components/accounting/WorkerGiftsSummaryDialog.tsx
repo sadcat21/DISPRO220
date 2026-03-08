@@ -147,7 +147,8 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
   const periodStartTz = periodStart + 'T00:00:00+01:00';
   const periodEndTz = periodEnd + 'T23:59:59+01:00';
 
-  const effectiveWorkerId = allWorkers ? null : workerId;
+  const effectiveWorkerId = allWorkers ? null : (selectedWorkerId || workerId);
+  const effectiveWorkerName = allWorkers ? 'جميع العمال' : (workersMap[effectiveWorkerId || ''] || workerName || '');
 
   useRealtimeSubscription(
     `worker-gifts-realtime-${effectiveWorkerId || 'all'}`,
