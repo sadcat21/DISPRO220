@@ -111,6 +111,7 @@ const SessionPrintView: React.FC<SessionPrintViewProps> = ({
   const { isConnected, scanAndConnect, status: printerStatus } = useBluetoothPrinter();
   const [isThermalPrinting, setIsThermalPrinting] = useState(false);
   const [activeTab, setActiveTab] = useState('preview');
+  const [showOrdersSheet, setShowOrdersSheet] = useState(false);
 
   useEffect(() => {
     const div = document.createElement('div');
