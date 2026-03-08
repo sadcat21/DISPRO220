@@ -789,6 +789,20 @@ const WorkerGiftsSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
             </div>
           </div>
 
+          {/* Worker picker when not all workers */}
+          {!allWorkers && workersList.length > 0 && (
+            <Select value={selectedWorkerId || workerId || ''} onValueChange={setSelectedWorkerId}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="اختر العامل" />
+              </SelectTrigger>
+              <SelectContent>
+                {workersList.map(w => (
+                  <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
           {/* Month navigation */}
           <div className="flex items-center justify-center gap-2 bg-muted/30 rounded-lg p-1.5">
             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setCurrentMonth(m => addMonths(m, 1))}>
