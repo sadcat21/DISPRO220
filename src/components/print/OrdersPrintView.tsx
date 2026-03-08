@@ -516,7 +516,7 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
         </table>
 
         {/* Footer */}
-        <div className="print-footer" style={{ marginTop: '10px' }}>
+        <div className="print-footer" style={{ marginTop: '4px' }}>
           <span>{tp('print.header.print_date')}: {format(new Date(), 'dd/MM/yyyy HH:mm')}</span>
           <span>{tp('print.header.orders_count')}: {orders.length}</span>
           <span>Laser Food</span>
