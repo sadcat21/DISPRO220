@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
-import { ArrowRight, Calculator, Truck, Banknote, Wallet, MapPin, ShoppingCart, Activity, Shield, HardHat, HandCoins, ArrowLeftRight, ClipboardList, Trophy, AlertTriangle, DollarSign, Package, PackageOpen, ClipboardCheck, TrendingUp, TrendingDown, Gift, CalendarDays, ShoppingBag, Settings } from 'lucide-react';
+import { ArrowRight, Calculator, Truck, Banknote, Wallet, MapPin, ShoppingCart, Activity, Shield, HardHat, HandCoins, ArrowLeftRight, ClipboardList, Trophy, AlertTriangle, DollarSign, Package, PackageOpen, ClipboardCheck, TrendingUp, TrendingDown, Gift, CalendarDays, ShoppingBag, Settings, History } from 'lucide-react';
 import { useWorkerLiability } from '@/hooks/useWorkerLiability';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { useMyUIOverrides } from '@/hooks/useUIOverrides';
@@ -51,6 +51,7 @@ const workerActions = [
   { key: 'truck_stock', icon: Package, path: '', labelKey: 'رصيد الشاحنة', color: 'bg-lime-50 border-lime-200 text-lime-700', isDialog: true },
   { key: 'unload_truck', icon: PackageOpen, path: '/load-stock', labelKey: 'تفريغ الشاحنة', color: 'bg-red-50 border-red-200 text-red-700' },
   { key: 'stock_review', icon: ClipboardCheck, path: '', labelKey: 'جلسة مراجعة', color: 'bg-fuchsia-50 border-fuchsia-200 text-fuchsia-700', isDialog: true },
+  { key: 'session_history', icon: History, path: '/load-stock', labelKey: 'سجل الشحن والتفريغ', color: 'bg-stone-50 border-stone-200 text-stone-700' },
   { key: 'worker_debts', icon: Banknote, path: '/worker-debts', labelKey: 'nav.worker_debts', color: 'bg-rose-50 border-rose-200 text-rose-700' },
   { key: 'liability', icon: HandCoins, path: '/worker-liability', labelKey: 'liability.title', color: 'bg-orange-50 border-orange-200 text-orange-700' },
   { key: 'coin_exchange', icon: ArrowLeftRight, path: '', labelKey: 'coin_exchange.title', color: 'bg-cyan-50 border-cyan-200 text-cyan-700', isDialog: true },
@@ -462,6 +463,10 @@ const WorkerActions: React.FC = () => {
     }
     if (action.key === 'tracking') {
       navigate(`${action.path}?worker=${selectedWorker.id}`);
+      return;
+    }
+    if (action.key === 'session_history') {
+      navigate(`${action.path}?worker=${selectedWorker.id}&history=1`);
       return;
     }
     navigate(action.path);

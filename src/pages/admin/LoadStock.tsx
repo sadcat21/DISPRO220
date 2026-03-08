@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -96,6 +97,7 @@ const LoadStock: React.FC = () => {
   const { workerId: currentWorkerId } = useAuth();
   const queryClient = useQueryClient();
   const { warehouseStock, workers, products, loadToWorker, isLoading, branchId, refresh } = useWarehouseStock();
+  const [searchParams] = useSearchParams();
 
   const { workerId: contextWorkerId } = useSelectedWorker();
   const [selectedWorker, setSelectedWorker] = useState(() => contextWorkerId || '');
@@ -107,6 +109,13 @@ const LoadStock: React.FC = () => {
   const [showSessionHistory, setShowSessionHistory] = useState(false);
   const [showPartialLoadDialog, setShowPartialLoadDialog] = useState(false);
   const [showLoadSheetPrint, setShowLoadSheetPrint] = useState(false);
+
+  // Auto-open history from URL params
+  useEffect(() => {
+    if (searchParams.get('history') === '1' && selectedWorker) {
+      setShowSessionHistory(true);
+    }
+  }, [searchParams, selectedWorker]);
   const [printSessionId, setPrintSessionId] = useState<string | null>(null);
   const [viewSessionId, setViewSessionId] = useState<string | null>(null);
   const [viewSessionItems, setViewSessionItems] = useState<any[]>([]);
