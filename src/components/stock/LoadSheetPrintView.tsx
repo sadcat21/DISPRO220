@@ -238,7 +238,8 @@ const LoadSheetPrintView: React.FC<LoadSheetPrintViewProps> = ({
   };
 
   const hasData = orders.length > 0;
-  const title = `${tp('print.load_sheet') || 'Fiche de Chargement'} - ${workerName}`;
+  const printWorkerName = workerPrintInfo?.printName || workerName;
+  const title = `${tp('print.load_sheet') || 'Fiche de Chargement'} - ${printWorkerName}`;
   const printDate = format(new Date(), 'dd/MM/yyyy');
 
   const hasSurplus = Object.values(surplusMap).some(v => v > 0);
