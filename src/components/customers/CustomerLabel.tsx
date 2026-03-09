@@ -59,12 +59,12 @@ const CustomerLabel: React.FC<CustomerLabelProps> = ({
           {customer.sector_name}
         </Badge>
       )}
-      {customer.customer_type && typeLabel && (
+      {customer.customer_type && typeShort && (
         <Badge
-          className="text-[10px] px-1.5 py-0 h-4 shrink-0 border-0"
+          className="text-[10px] px-1.5 py-0 h-4 shrink-0 border-0 font-bold"
           style={typeColor ? { backgroundColor: typeColor.bg, color: typeColor.text } : undefined}
         >
-          {typeLabel}
+          {typeShort}
         </Badge>
       )}
     </>
