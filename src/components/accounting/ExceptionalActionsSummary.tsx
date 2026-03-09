@@ -268,14 +268,41 @@ const ExceptionalActionsSummary: React.FC<ExceptionalActionsSummaryProps> = ({
 
       if (error) throw error;
 
-      return (data || []).filter((a) => {
+      const filtered = (data || []).filter((a) => {
         const details = asRecord(a.details);
-
         if (a.action_type === 'status_change' && isCancelledStatus(details?.الحالة_الجديدة)) return true;
         if (a.action_type === 'status_change' && isRoutineStatus(details?.الحالة_الجديدة)) return false;
         if (['delete', 'update', 'reprint', 'payment_update'].includes(a.action_type)) return true;
         return false;
       }) as ExceptionalAction[];
+
+      // Fetch customer names for order-related actions missing العميل
+      const orderIds = filtered
+        .filter(a => a.entity_type === 'order' && a.entity_id && !asRecord(a.details)?.العميل)
+        .map(a => a.entity_id!)
+        .filter((v, i, arr) => arr.indexOf(v) === i);
+
+      if (orderIds.length > 0) {
+        const { data: orders } = await supabase
+          .from('orders')
+          .select('id, customer:customers(name, store_name)')
+          .in('id', orderIds);
+
+        const orderCustomerMap = new Map<string, string>();
+        (orders || []).forEach((o: any) => {
+          const name = o.customer?.store_name || o.customer?.name;
+          if (name) orderCustomerMap.set(o.id, name);
+        });
+
+        // Inject customer name into details
+        filtered.forEach(a => {
+          if (a.entity_id && orderCustomerMap.has(a.entity_id) && !asRecord(a.details)?.العميل) {
+            a.details = { ...asRecord(a.details), العميل: orderCustomerMap.get(a.entity_id) };
+          }
+        });
+      }
+
+      return filtered;
     },
     enabled: !!workerId && !!periodStart && !!periodEnd,
   });
