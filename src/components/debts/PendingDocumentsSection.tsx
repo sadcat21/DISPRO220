@@ -52,7 +52,7 @@ const PendingDocumentsSection: React.FC = () => {
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium truncate">{doc.customerName}</p>
+                    <CustomerLabel customer={{ name: doc.customerName }} compact hideBadges />
                     <Badge className={`text-[10px] px-1.5 ${getDocColor(doc.documentType)}`}>
                       {getDocLabel(doc.documentType)}
                     </Badge>
