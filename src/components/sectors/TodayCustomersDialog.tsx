@@ -260,7 +260,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     queryFn: async () => {
       let query = supabase
         .from('debt_collections')
-        .select('debt_id, action, amount_collected, status')
+        .select('debt_id, action, amount_collected, status, created_at')
         .eq('collection_date', todayDateStr);
       if (!isAdmin || hasSpecificWorker) {
         query = query.eq('worker_id', effectiveWorkerId!);
