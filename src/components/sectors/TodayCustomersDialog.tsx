@@ -171,7 +171,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     queryFn: async () => {
       const { data } = await supabase
         .from('visit_tracking')
-        .select('customer_id, operation_type, notes')
+        .select('customer_id, operation_type, notes, created_at')
         .eq('worker_id', effectiveWorkerId!)
         .gte('created_at', todayStart);
       return data || [];
@@ -185,7 +185,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     queryFn: async () => {
       const { data } = await supabase
         .from('orders')
-        .select('customer_id')
+        .select('customer_id, created_at')
         .eq('created_by', effectiveWorkerId!)
         .gte('created_at', todayStart)
         .not('status', 'eq', 'cancelled');
@@ -260,7 +260,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     queryFn: async () => {
       let query = supabase
         .from('debt_collections')
-        .select('debt_id, action, amount_collected, status')
+        .select('debt_id, action, amount_collected, status, created_at')
         .eq('collection_date', todayDateStr);
       if (!isAdmin || hasSpecificWorker) {
         query = query.eq('worker_id', effectiveWorkerId!);
@@ -451,6 +451,55 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     });
     return map;
   }, [todayDeliveredOrders]);
+
+  // Time maps for visits, orders, and direct sales
+  const visitTimeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    todayVisits.forEach(v => {
+      if (v.customer_id && v.created_at) {
+        if (!map.has(v.customer_id) || v.created_at > map.get(v.customer_id)!) {
+          map.set(v.customer_id, v.created_at);
+        }
+      }
+    });
+    return map;
+  }, [todayVisits]);
+
+  const orderTimeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    todayOrders.forEach(o => {
+      if (o.customer_id && o.created_at) {
+        if (!map.has(o.customer_id) || o.created_at > map.get(o.customer_id)!) {
+          map.set(o.customer_id, o.created_at);
+        }
+      }
+    });
+    return map;
+  }, [todayOrders]);
+
+  const directSaleTimeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    todayDirectSales.forEach(s => {
+      if (s.customer_id && s.created_at) {
+        if (!map.has(s.customer_id) || s.created_at > map.get(s.customer_id)!) {
+          map.set(s.customer_id, s.created_at);
+        }
+      }
+    });
+    return map;
+  }, [todayDirectSales]);
+
+  const debtCollectionTimeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    todayCollections.forEach(c => {
+      if (c.debt_id && c.created_at) {
+        if (!map.has(c.debt_id) || c.created_at > map.get(c.debt_id)!) {
+          map.set(c.debt_id, c.created_at);
+        }
+      }
+    });
+    return map;
+  }, [todayCollections]);
   const deliveryVisitedCustomerIds = useMemo(() => new Set(todayVisits.filter(v => v.operation_type === 'delivery_visit').map(v => v.customer_id).filter(Boolean)), [todayVisits]);
   const deliveryNotDone = useMemo(() => deliveryCustomers.filter(c => !deliveredCustomerIds.has(c.id) && !deliveryVisitedCustomerIds.has(c.id)), [deliveryCustomers, deliveredCustomerIds, deliveryVisitedCustomerIds]);
   const deliveryNotReceived = useMemo(() => deliveryCustomers.filter(c => deliveryVisitedCustomerIds.has(c.id) && !deliveredCustomerIds.has(c.id)), [deliveryCustomers, deliveryVisitedCustomerIds, deliveredCustomerIds]);
@@ -1065,10 +1114,10 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                   <CustomerList customers={deliveryNotDone} emptyMessage="تم توصيل جميع العملاء ✓" onCustomerClick={handleDeliveryCustomerClick} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} onDebtRefused={handleDeliveryDebtRefused} showVisitButton visitButtonLabel="بدون تسليم" showActionButtons checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} />
                 </TabsContent>
                 <TabsContent value="not-received" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={deliveryNotReceived} emptyMessage="لا توجد زيارات بدون تسليم" onCustomerClick={handleDeliveryCustomerClick} showActionButtons onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} onDebtRefused={handleDeliveryDebtRefused} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} />
+                  <CustomerList customers={deliveryNotReceived} emptyMessage="لا توجد زيارات بدون تسليم" onCustomerClick={handleDeliveryCustomerClick} showActionButtons onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} onDebtRefused={handleDeliveryDebtRefused} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} timeMap={visitTimeMap} />
                 </TabsContent>
                 <TabsContent value="received" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={deliveryReceived} emptyMessage="لا توجد توصيلات بعد" onCustomerClick={handleShowDeliveredOrderDetails} showPrintButton onPrint={handlePrintDeliveredOrder} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} deliveryTimeMap={customerDeliveryTimeMap} />
+                  <CustomerList customers={deliveryReceived} emptyMessage="لا توجد توصيلات بعد" onCustomerClick={handleShowDeliveredOrderDetails} showPrintButton onPrint={handlePrintDeliveredOrder} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} deliveryTimeMap={customerDeliveryTimeMap} timeMap={customerDeliveryTimeMap} />
                 </TabsContent>
               </Tabs>
             </TabsContent>
@@ -1117,18 +1166,18 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                       </TabsTrigger>
                     </TabsList>
                     <TabsContent value="visit-only" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
-                      <CustomerList customers={salesVisitedOnly} emptyMessage="لا توجد زيارات بدون طلبيات" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} />
+                      <CustomerList customers={salesVisitedOnly} emptyMessage="لا توجد زيارات بدون طلبيات" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} timeMap={visitTimeMap} />
                     </TabsContent>
                     <TabsContent value="unavailable" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
-                      <CustomerList customers={salesUnavailable} emptyMessage="لا يوجد عملاء غير متاحين" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} />
+                      <CustomerList customers={salesUnavailable} emptyMessage="لا يوجد عملاء غير متاحين" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} timeMap={visitTimeMap} />
                     </TabsContent>
                     <TabsContent value="closed" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
-                      <CustomerList customers={salesClosed} emptyMessage="لا يوجد عملاء مغلقين" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} />
+                      <CustomerList customers={salesClosed} emptyMessage="لا يوجد عملاء مغلقين" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} timeMap={visitTimeMap} />
                     </TabsContent>
                   </Tabs>
                 </TabsContent>
                 <TabsContent value="with-orders" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={salesWithOrders} emptyMessage="لا توجد طلبيات بعد" onCustomerClick={handleShowOrderDetails} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} />
+                  <CustomerList customers={salesWithOrders} emptyMessage="لا توجد طلبيات بعد" onCustomerClick={handleShowOrderDetails} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} timeMap={orderTimeMap} />
                 </TabsContent>
               </Tabs>
             </TabsContent>
@@ -1158,10 +1207,10 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                   <CustomerList customers={directSalePending} emptyMessage="لا توجد محلات متاحة للبيع المباشر" onCustomerClick={handleDirectSaleClick} onClosed={handleDirectSaleClosed} onUnavailable={handleDirectSaleUnavailable} onDebtRefused={handleDirectSaleDebtRefused} onNoSale={handleDirectSaleNoSale} showActionButtons showNoSaleButton checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} salesRepStatusMap={salesRepStatusMap} />
                 </TabsContent>
                 <TabsContent value="sold" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={directSaleSold} emptyMessage="لا توجد مبيعات بعد" onCustomerClick={handleShowDirectSaleDetails} showPrintButton onPrint={handlePrintDirectSale} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} />
+                  <CustomerList customers={directSaleSold} emptyMessage="لا توجد مبيعات بعد" onCustomerClick={handleShowDirectSaleDetails} showPrintButton onPrint={handlePrintDirectSale} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} timeMap={directSaleTimeMap} />
                 </TabsContent>
                 <TabsContent value="no-sale" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={directSaleNoSale} emptyMessage="لا توجد زيارات بدون بيع" onCustomerClick={handleDirectSaleClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} />
+                  <CustomerList customers={directSaleNoSale} emptyMessage="لا توجد زيارات بدون بيع" onCustomerClick={handleDirectSaleClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} timeMap={visitTimeMap} />
                 </TabsContent>
               </Tabs>
             </TabsContent>
@@ -1196,10 +1245,10 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                   <DebtList debts={debtsToCollectToday} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="لا توجد ديون مستحقة اليوم ✓" searchQuery={searchQuery} />
                 </TabsContent>
                 <TabsContent value="collected" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <DebtList debts={debtsCollectedToday} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="لا توجد تحصيلات بعد" searchQuery={searchQuery} />
+                  <DebtList debts={debtsCollectedToday} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="لا توجد تحصيلات بعد" searchQuery={searchQuery} timeMap={debtCollectionTimeMap} />
                 </TabsContent>
                 <TabsContent value="no-payment" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <DebtList debts={debtsNoPaymentToday} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="لا توجد زيارات بدون دفع" searchQuery={searchQuery} />
+                  <DebtList debts={debtsNoPaymentToday} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="لا توجد زيارات بدون دفع" searchQuery={searchQuery} timeMap={debtCollectionTimeMap} />
                 </TabsContent>
                 <TabsContent value="all-debts" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
                   <DebtList debts={allDebtsFiltered} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="لا توجد ديون مستحقة" searchQuery={searchQuery} />
@@ -1442,16 +1491,28 @@ const CustomerList: React.FC<{
   sectors?: any[];
   salesRepStatusMap?: Map<string, string>;
   deliveryTimeMap?: Map<string, string>;
-}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, onClosed, onUnavailable, onDebtRefused, onNoSale, onPrint, showVisitButton, visitButtonLabel, showActionButtons, showPrintButton, showNoSaleButton, checkingLocationFor, loadingFor, searchQuery, sectors, salesRepStatusMap, deliveryTimeMap }) => {
+  timeMap?: Map<string, string>;
+}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, onClosed, onUnavailable, onDebtRefused, onNoSale, onPrint, showVisitButton, visitButtonLabel, showActionButtons, showPrintButton, showNoSaleButton, checkingLocationFor, loadingFor, searchQuery, sectors, salesRepStatusMap, deliveryTimeMap, timeMap }) => {
   const filtered = useMemo(() => {
-    if (!searchQuery?.trim()) return customers;
-    const q = searchQuery.trim().toLowerCase();
-    return customers.filter(c =>
-      (c.name || '').toLowerCase().includes(q) ||
-      (c.store_name || '').toLowerCase().includes(q) ||
-      (c.phone || '').includes(q)
-    );
-  }, [customers, searchQuery]);
+    let list = customers;
+    if (searchQuery?.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      list = list.filter(c =>
+        (c.name || '').toLowerCase().includes(q) ||
+        (c.store_name || '').toLowerCase().includes(q) ||
+        (c.phone || '').includes(q)
+      );
+    }
+    // Sort by timeMap descending (newest first) if available
+    if (timeMap && timeMap.size > 0) {
+      list = [...list].sort((a, b) => {
+        const tA = timeMap.get(a.id) || '';
+        const tB = timeMap.get(b.id) || '';
+        return tB.localeCompare(tA);
+      });
+    }
+    return list;
+  }, [customers, searchQuery, timeMap]);
 
   if (filtered.length === 0) {
     return <div className="p-6 text-center text-sm text-muted-foreground">{searchQuery?.trim() ? 'لا توجد نتائج' : emptyMessage}</div>;
@@ -1491,6 +1552,12 @@ const CustomerList: React.FC<{
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 {c.phone && <span>{c.phone}</span>}
                 {c.wilaya && <span>• {c.wilaya}</span>}
+                {timeMap?.has(c.id) && (
+                  <span className="flex items-center gap-0.5 text-[10px]">
+                    <Clock className="w-3 h-3" />
+                    {format(new Date(timeMap.get(c.id)!), 'HH:mm')}
+                  </span>
+                )}
               </div>
               {deliveryTimeMap?.has(c.id) && (
                 <div className="flex items-center gap-1 text-[10px] text-green-600 mt-0.5">
@@ -1551,17 +1618,27 @@ const CustomerList: React.FC<{
 };
 
 // Reusable DebtList component
-const DebtList: React.FC<{ debts: DueDebt[]; onCollect: (d: DueDebt) => void; onVisitNoPayment: (d: DueDebt) => void; onClosed: (d: DueDebt) => void; onUnavailable: (d: DueDebt) => void; onDebtRefused?: (d: DueDebt) => void; emptyMessage: string; searchQuery?: string }> = ({ debts, onCollect, onVisitNoPayment, onClosed, onUnavailable, onDebtRefused, emptyMessage, searchQuery }) => {
+const DebtList: React.FC<{ debts: DueDebt[]; onCollect: (d: DueDebt) => void; onVisitNoPayment: (d: DueDebt) => void; onClosed: (d: DueDebt) => void; onUnavailable: (d: DueDebt) => void; onDebtRefused?: (d: DueDebt) => void; emptyMessage: string; searchQuery?: string; timeMap?: Map<string, string> }> = ({ debts, onCollect, onVisitNoPayment, onClosed, onUnavailable, onDebtRefused, emptyMessage, searchQuery, timeMap }) => {
   const filtered = useMemo(() => {
-    if (!searchQuery?.trim()) return debts;
-    const q = searchQuery.trim().toLowerCase();
-    return debts.filter(d => {
-      const cust = d.customer as any;
-      return (cust?.name || '').toLowerCase().includes(q) ||
-        (cust?.store_name || '').toLowerCase().includes(q) ||
-        (cust?.phone || '').includes(q);
-    });
-  }, [debts, searchQuery]);
+    let list = debts;
+    if (searchQuery?.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      list = list.filter(d => {
+        const cust = d.customer as any;
+        return (cust?.name || '').toLowerCase().includes(q) ||
+          (cust?.store_name || '').toLowerCase().includes(q) ||
+          (cust?.phone || '').includes(q);
+      });
+    }
+    if (timeMap && timeMap.size > 0) {
+      list = [...list].sort((a, b) => {
+        const tA = timeMap.get(a.id) || '';
+        const tB = timeMap.get(b.id) || '';
+        return tB.localeCompare(tA);
+      });
+    }
+    return list;
+  }, [debts, searchQuery, timeMap]);
 
   if (filtered.length === 0) {
     return <div className="p-6 text-center text-sm text-muted-foreground">{searchQuery?.trim() ? 'لا توجد نتائج' : emptyMessage}</div>;
@@ -1580,6 +1657,11 @@ const DebtList: React.FC<{ debts: DueDebt[]; onCollect: (d: DueDebt) => void; on
               <Clock className="w-3 h-3" />
               <span>{debt.due_date ? format(new Date(debt.due_date + 'T00:00:00'), 'dd/MM/yyyy') : '—'}</span>
               {(debt.customer as any)?.phone && <span>• {(debt.customer as any).phone}</span>}
+              {timeMap?.has(debt.id) && (
+                <span className="flex items-center gap-0.5 text-[10px]">
+                  ⏰ {format(new Date(timeMap.get(debt.id)!), 'HH:mm')}
+                </span>
+              )}
             </div>
           </button>
           <div className="flex items-center gap-1 mt-1.5 justify-end flex-wrap">
