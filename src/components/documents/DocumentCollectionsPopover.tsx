@@ -192,6 +192,7 @@ const DocumentCollectionsPopover: React.FC = () => {
                   onApprove={handleApprove}
                   onReject={handleReject}
                   isLoading={approveCollection.isPending}
+                  sectorMap={sectorMap}
                 />
               </TabsContent>
             </Tabs>
