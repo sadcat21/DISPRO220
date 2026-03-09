@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import CustomerLabel from '@/components/customers/CustomerLabel';
+import { getLocalizedName } from '@/utils/sectorName';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -158,7 +160,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   const { data: customers = [] } = useQuery({
     queryKey: ['today-cust-customers', scopedBranchId],
     queryFn: async () => {
-      let query = supabase.from('customers').select('id, name, phone, wilaya, sector_id, store_name, latitude, longitude, customer_type').not('sector_id', 'is', null);
+      let query = supabase.from('customers').select('id, name, phone, wilaya, sector_id, zone_id, store_name, latitude, longitude, customer_type').not('sector_id', 'is', null);
       if (scopedBranchId) query = query.eq('branch_id', scopedBranchId);
       const { data } = await query;
       return data || [];
@@ -213,6 +215,15 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     enabled: !!effectiveWorkerId && open,
   });
 
+  // Fetch all zones for badge display and grouping
+  const { data: allZones = [] } = useQuery({
+    queryKey: ['today-cust-zones'],
+    queryFn: async () => {
+      const { data } = await supabase.from('sector_zones').select('*').order('name');
+      return data || [];
+    },
+    enabled: open,
+  });
 
   const { data: todayDeliveredOrders = [] } = useQuery({
     queryKey: ['today-delivered-dialog', effectiveWorkerId, selectedDayBounds.start, selectedDayBounds.end, isAdmin],
@@ -1131,13 +1142,13 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                 </TabsList>
 
                 <TabsContent value="not-delivered" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={deliveryNotDone} emptyMessage="تم توصيل جميع العملاء ✓" onCustomerClick={handleDeliveryCustomerClick} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} onDebtRefused={handleDeliveryDebtRefused} showVisitButton visitButtonLabel="بدون تسليم" showActionButtons checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} />
+                  <CustomerList customers={deliveryNotDone} emptyMessage="تم توصيل جميع العملاء ✓" onCustomerClick={handleDeliveryCustomerClick} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} onDebtRefused={handleDeliveryDebtRefused} showVisitButton visitButtonLabel="بدون تسليم" showActionButtons checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} />
                 </TabsContent>
                 <TabsContent value="not-received" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={deliveryNotReceived} emptyMessage="لا توجد زيارات بدون تسليم" onCustomerClick={handleDeliveryCustomerClick} showActionButtons onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} onDebtRefused={handleDeliveryDebtRefused} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
+                  <CustomerList customers={deliveryNotReceived} emptyMessage="لا توجد زيارات بدون تسليم" onCustomerClick={handleDeliveryCustomerClick} showActionButtons onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} onDebtRefused={handleDeliveryDebtRefused} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
                 </TabsContent>
                 <TabsContent value="received" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={deliveryReceived} emptyMessage="لا توجد توصيلات بعد" onCustomerClick={handleShowDeliveredOrderDetails} showPrintButton onPrint={handlePrintDeliveredOrder} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} deliveryTimeMap={customerDeliveryTimeMap} timeMap={customerDeliveryTimeMap} distanceMap={customerDistanceMap} />
+                  <CustomerList customers={deliveryReceived} emptyMessage="لا توجد توصيلات بعد" onCustomerClick={handleShowDeliveredOrderDetails} showPrintButton onPrint={handlePrintDeliveredOrder} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} deliveryTimeMap={customerDeliveryTimeMap} timeMap={customerDeliveryTimeMap} distanceMap={customerDistanceMap} />
                 </TabsContent>
               </Tabs>
             </TabsContent>
@@ -1164,7 +1175,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                 </TabsList>
 
                 <TabsContent value="not-visited" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={salesNotVisited} emptyMessage="تمت زيارة جميع العملاء ✓" onCustomerClick={handleSalesCustomerClick} onVisitWithoutOrder={handleVisitWithoutOrder} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} showVisitButton showActionButtons checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} />
+                  <CustomerList customers={salesNotVisited} emptyMessage="تمت زيارة جميع العملاء ✓" onCustomerClick={handleSalesCustomerClick} onVisitWithoutOrder={handleVisitWithoutOrder} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} showVisitButton showActionButtons checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} />
                 </TabsContent>
                 <TabsContent value="visited-no-order" className="m-0 flex-1 min-h-0">
                   <Tabs defaultValue="visit-only" className="flex flex-col h-full min-h-0">
@@ -1186,18 +1197,18 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                       </TabsTrigger>
                     </TabsList>
                     <TabsContent value="visit-only" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
-                      <CustomerList customers={salesVisitedOnly} emptyMessage="لا توجد زيارات بدون طلبيات" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
+                      <CustomerList customers={salesVisitedOnly} emptyMessage="لا توجد زيارات بدون طلبيات" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
                     </TabsContent>
                     <TabsContent value="unavailable" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
-                      <CustomerList customers={salesUnavailable} emptyMessage="لا يوجد عملاء غير متاحين" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
+                      <CustomerList customers={salesUnavailable} emptyMessage="لا يوجد عملاء غير متاحين" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
                     </TabsContent>
                     <TabsContent value="closed" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
-                      <CustomerList customers={salesClosed} emptyMessage="لا يوجد عملاء مغلقين" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
+                      <CustomerList customers={salesClosed} emptyMessage="لا يوجد عملاء مغلقين" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
                     </TabsContent>
                   </Tabs>
                 </TabsContent>
                 <TabsContent value="with-orders" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={salesWithOrders} emptyMessage="لا توجد طلبيات بعد" onCustomerClick={handleShowOrderDetails} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} timeMap={orderTimeMap} distanceMap={customerDistanceMap} />
+                  <CustomerList customers={salesWithOrders} emptyMessage="لا توجد طلبيات بعد" onCustomerClick={handleShowOrderDetails} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} timeMap={orderTimeMap} distanceMap={customerDistanceMap} />
                 </TabsContent>
               </Tabs>
             </TabsContent>
@@ -1224,13 +1235,13 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                 </TabsList>
 
                 <TabsContent value="pending" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={directSalePending} emptyMessage="لا توجد محلات متاحة للبيع المباشر" onCustomerClick={handleDirectSaleClick} onClosed={handleDirectSaleClosed} onUnavailable={handleDirectSaleUnavailable} onDebtRefused={handleDirectSaleDebtRefused} onNoSale={handleDirectSaleNoSale} showActionButtons showNoSaleButton checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} salesRepStatusMap={salesRepStatusMap} />
+                  <CustomerList customers={directSalePending} emptyMessage="لا توجد محلات متاحة للبيع المباشر" onCustomerClick={handleDirectSaleClick} onClosed={handleDirectSaleClosed} onUnavailable={handleDirectSaleUnavailable} onDebtRefused={handleDirectSaleDebtRefused} onNoSale={handleDirectSaleNoSale} showActionButtons showNoSaleButton checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} salesRepStatusMap={salesRepStatusMap} />
                 </TabsContent>
                 <TabsContent value="sold" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={directSaleSold} emptyMessage="لا توجد مبيعات بعد" onCustomerClick={handleShowDirectSaleDetails} showPrintButton onPrint={handlePrintDirectSale} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} timeMap={directSaleTimeMap} distanceMap={customerDistanceMap} />
+                  <CustomerList customers={directSaleSold} emptyMessage="لا توجد مبيعات بعد" onCustomerClick={handleShowDirectSaleDetails} showPrintButton onPrint={handlePrintDirectSale} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} timeMap={directSaleTimeMap} distanceMap={customerDistanceMap} />
                 </TabsContent>
                 <TabsContent value="no-sale" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={directSaleNoSale} emptyMessage="لا توجد زيارات بدون بيع" onCustomerClick={handleDirectSaleClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
+                  <CustomerList customers={directSaleNoSale} emptyMessage="لا توجد زيارات بدون بيع" onCustomerClick={handleDirectSaleClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
                 </TabsContent>
               </Tabs>
             </TabsContent>
@@ -1509,11 +1520,13 @@ const CustomerList: React.FC<{
   loadingFor?: string | null;
   searchQuery?: string;
   sectors?: any[];
+  allZones?: any[];
   salesRepStatusMap?: Map<string, string>;
   deliveryTimeMap?: Map<string, string>;
   timeMap?: Map<string, string>;
   distanceMap?: Map<string, number>;
-}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, onClosed, onUnavailable, onDebtRefused, onNoSale, onPrint, showVisitButton, visitButtonLabel, showActionButtons, showPrintButton, showNoSaleButton, checkingLocationFor, loadingFor, searchQuery, sectors, salesRepStatusMap, deliveryTimeMap, timeMap, distanceMap }) => {
+}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, onClosed, onUnavailable, onDebtRefused, onNoSale, onPrint, showVisitButton, visitButtonLabel, showActionButtons, showPrintButton, showNoSaleButton, checkingLocationFor, loadingFor, searchQuery, sectors, allZones, salesRepStatusMap, deliveryTimeMap, timeMap, distanceMap }) => {
+  const { language } = useLanguage();
   const filtered = useMemo(() => {
     let list = customers;
     if (searchQuery?.trim()) {
@@ -1539,99 +1552,142 @@ const CustomerList: React.FC<{
     return <div className="p-6 text-center text-sm text-muted-foreground">{searchQuery?.trim() ? 'لا توجد نتائج' : emptyMessage}</div>;
   }
 
-  return (
-    <div className="divide-y">
-      {filtered.map(c => {
-        const sector = sectors?.find(s => s.id === c.sector_id);
-        return (
-        <div key={c.id} className="p-3 hover:bg-muted/50 transition-colors">
-          <button
-            className="w-full flex items-center gap-2 text-start"
-            onClick={() => onCustomerClick(c)}
-            disabled={loadingFor === c.id}
-          >
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              {loadingFor === c.id ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <User className="w-4 h-4 text-primary" />}
-            </div>
-            <div className="flex-1 min-w-0">
-              <CustomerLabel
-                customer={{
-                  name: c.name,
-                  store_name: c.store_name,
-                  customer_type: c.customer_type,
-                  sector_name: sector?.name,
-                }}
-               />
-               {salesRepStatusMap && salesRepStatusMap.has(c.id) && (() => {
-                 const status = salesRepStatusMap.get(c.id);
-                 if (status === 'not_visited') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-amber-100 text-amber-700 border-0">بدون زيارة</Badge>;
-                 if (status === 'closed') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-red-100 text-red-700 border-0">مغلق</Badge>;
-                 if (status === 'unavailable') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-gray-100 text-gray-600 border-0">غير متاح</Badge>;
-                 if (status === 'visited') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-blue-100 text-blue-700 border-0">تمت الزيارة</Badge>;
-                 return null;
-               })()}
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                {c.phone && <span>{c.phone}</span>}
-                {distanceMap?.has(c.id) ? (
-                  <span>• 📍 {distanceMap.get(c.id)!} م</span>
-                ) : c.wilaya ? (
-                  <span>• {c.wilaya}</span>
-                ) : null}
-                {timeMap?.has(c.id) && (
-                  <span className="flex items-center gap-0.5 text-[10px]">
-                    <Clock className="w-3 h-3" />
-                    {format(new Date(timeMap.get(c.id)!), 'HH:mm')}
-                  </span>
-                )}
-              </div>
-            </div>
-          </button>
-          <div className="flex items-center gap-1 mt-1.5 justify-end flex-wrap">
-            {c.latitude && c.longitude && (
-              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.latitude},${c.longitude}`, '_blank')}>
-                <Navigation className="w-3 h-3" />
-                الموقع
-              </Button>
-            )}
-            {showPrintButton && onPrint && (
-              <Button variant="ghost" size="icon" className="h-6 w-6 text-primary" onClick={(e) => { e.stopPropagation(); onPrint(c); }}>
-                <Printer className="w-3.5 h-3.5" />
-              </Button>
-            )}
-            {showVisitButton && onVisitWithoutOrder && (
-              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-orange-600" onClick={() => onVisitWithoutOrder(c)} disabled={checkingLocationFor === c.id}>
-                {checkingLocationFor === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <MapPinOff className="w-3 h-3" />}
-                {visitButtonLabel || 'زيارة بدون طلبية'}
-              </Button>
-            )}
-            {showNoSaleButton && onNoSale && (
-              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-amber-600" onClick={() => onNoSale(c)} disabled={checkingLocationFor === c.id}>
-                {checkingLocationFor === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
-                بدون بيع
-              </Button>
-            )}
-            {showActionButtons && onClosed && (
-              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-destructive" onClick={() => onClosed(c)} disabled={checkingLocationFor === c.id}>
-                <DoorClosed className="w-3 h-3" />
-                مغلق
-              </Button>
-            )}
-            {showActionButtons && onUnavailable && (
-              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-muted-foreground" onClick={() => onUnavailable(c)} disabled={checkingLocationFor === c.id}>
-                <UserX className="w-3 h-3" />
-                غير متاح
-              </Button>
-            )}
-            {showActionButtons && onDebtRefused && (
-              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-purple-600" onClick={() => onDebtRefused(c)} disabled={checkingLocationFor === c.id}>
-                <BanknoteIcon className="w-3 h-3" />
-                رفض الدين
-              </Button>
-            )}
+  // Group by zone
+  const zoneGroups = useMemo(() => {
+    const groups = new Map<string | null, any[]>();
+    filtered.forEach(c => {
+      const key = c.zone_id || null;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(c);
+    });
+    // Sort zone keys: named zones first (sorted), then null
+    const sortedKeys = Array.from(groups.keys()).sort((a, b) => {
+      if (!a) return 1;
+      if (!b) return -1;
+      const nameA = allZones?.find(z => z.id === a)?.name || '';
+      const nameB = allZones?.find(z => z.id === b)?.name || '';
+      return nameA.localeCompare(nameB, 'ar');
+    });
+    return sortedKeys.map(key => ({
+      zoneId: key,
+      zoneName: key ? (allZones?.find(z => z.id === key) ? getLocalizedName(allZones.find(z => z.id === key)!, language) : 'منطقة غير معروفة') : 'بدون منطقة',
+      customers: groups.get(key)!,
+    }));
+  }, [filtered, allZones, language]);
+
+  const renderCustomer = (c: any) => {
+    const sector = sectors?.find(s => s.id === c.sector_id);
+    const zone = allZones?.find(z => z.id === c.zone_id);
+    return (
+      <div key={c.id} className="p-3 hover:bg-muted/50 transition-colors">
+        <button
+          className="w-full flex items-center gap-2 text-start"
+          onClick={() => onCustomerClick(c)}
+          disabled={loadingFor === c.id}
+        >
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+            {loadingFor === c.id ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <User className="w-4 h-4 text-primary" />}
           </div>
+          <div className="flex-1 min-w-0">
+            <CustomerLabel
+              customer={{
+                name: c.name,
+                store_name: c.store_name,
+                customer_type: c.customer_type,
+                sector_name: sector ? getLocalizedName(sector, language) : undefined,
+                zone_name: zone ? getLocalizedName(zone, language) : undefined,
+              }}
+             />
+             {salesRepStatusMap && salesRepStatusMap.has(c.id) && (() => {
+               const status = salesRepStatusMap.get(c.id);
+               if (status === 'not_visited') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-amber-100 text-amber-700 border-0">بدون زيارة</Badge>;
+               if (status === 'closed') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-red-100 text-red-700 border-0">مغلق</Badge>;
+               if (status === 'unavailable') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-gray-100 text-gray-600 border-0">غير متاح</Badge>;
+               if (status === 'visited') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-blue-100 text-blue-700 border-0">تمت الزيارة</Badge>;
+               return null;
+             })()}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {c.phone && <span>{c.phone}</span>}
+              {distanceMap?.has(c.id) ? (
+                <span>• 📍 {distanceMap.get(c.id)!} م</span>
+              ) : c.wilaya ? (
+                <span>• {c.wilaya}</span>
+              ) : null}
+              {timeMap?.has(c.id) && (
+                <span className="flex items-center gap-0.5 text-[10px]">
+                  <Clock className="w-3 h-3" />
+                  {format(new Date(timeMap.get(c.id)!), 'HH:mm')}
+                </span>
+              )}
+            </div>
+          </div>
+        </button>
+        <div className="flex items-center gap-1 mt-1.5 justify-end flex-wrap">
+          {c.latitude && c.longitude && (
+            <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.latitude},${c.longitude}`, '_blank')}>
+              <Navigation className="w-3 h-3" />
+              الموقع
+            </Button>
+          )}
+          {showPrintButton && onPrint && (
+            <Button variant="ghost" size="icon" className="h-6 w-6 text-primary" onClick={(e) => { e.stopPropagation(); onPrint(c); }}>
+              <Printer className="w-3.5 h-3.5" />
+            </Button>
+          )}
+          {showVisitButton && onVisitWithoutOrder && (
+            <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-orange-600" onClick={() => onVisitWithoutOrder(c)} disabled={checkingLocationFor === c.id}>
+              {checkingLocationFor === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <MapPinOff className="w-3 h-3" />}
+              {visitButtonLabel || 'زيارة بدون طلبية'}
+            </Button>
+          )}
+          {showNoSaleButton && onNoSale && (
+            <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-amber-600" onClick={() => onNoSale(c)} disabled={checkingLocationFor === c.id}>
+              {checkingLocationFor === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
+              بدون بيع
+            </Button>
+          )}
+          {showActionButtons && onClosed && (
+            <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-destructive" onClick={() => onClosed(c)} disabled={checkingLocationFor === c.id}>
+              <DoorClosed className="w-3 h-3" />
+              مغلق
+            </Button>
+          )}
+          {showActionButtons && onUnavailable && (
+            <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-muted-foreground" onClick={() => onUnavailable(c)} disabled={checkingLocationFor === c.id}>
+              <UserX className="w-3 h-3" />
+              غير متاح
+            </Button>
+          )}
+          {showActionButtons && onDebtRefused && (
+            <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-purple-600" onClick={() => onDebtRefused(c)} disabled={checkingLocationFor === c.id}>
+              <BanknoteIcon className="w-3 h-3" />
+              رفض الدين
+            </Button>
+          )}
         </div>
-        );
-      })}
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      {zoneGroups.length <= 1 ? (
+        <div className="divide-y">
+          {filtered.map(renderCustomer)}
+        </div>
+      ) : (
+        zoneGroups.map(group => (
+          <div key={group.zoneId || 'no-zone'}>
+            <div className="sticky top-0 z-10 bg-blue-600 text-white px-4 py-1.5 text-xs font-bold flex items-center justify-between">
+              <span>{group.zoneName}</span>
+              <Badge className="bg-white/20 text-white border-0 text-[10px]">{group.customers.length}</Badge>
+            </div>
+            <div className="divide-y">
+              {group.customers.map(renderCustomer)}
+            </div>
+          </div>
+        ))
+      )}
     </div>
   );
 };
