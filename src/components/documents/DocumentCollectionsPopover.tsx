@@ -253,7 +253,7 @@ const DocumentCollectionsPopover: React.FC = () => {
   );
 };
 
-const PendingDocList: React.FC<{ orders: PendingDocOrder[]; onCollect: (o: PendingDocOrder) => void; onVisit: (o: PendingDocOrder) => void }> = ({ orders, onCollect, onVisit }) => {
+const PendingDocList: React.FC<{ orders: PendingDocOrder[]; onCollect: (o: PendingDocOrder) => void; onVisit: (o: PendingDocOrder) => void; sectorMap?: Map<string, string> }> = ({ orders, onCollect, onVisit, sectorMap }) => {
   if (orders.length === 0) {
     return <div className="p-6 text-center text-sm text-muted-foreground">لا توجد مستندات معلقة</div>;
   }
@@ -264,7 +264,7 @@ const PendingDocList: React.FC<{ orders: PendingDocOrder[]; onCollect: (o: Pendi
         {orders.map(order => (
           <div key={order.id} className="p-3 space-y-2">
             <div className="flex items-center justify-between">
-              <CustomerLabel customer={{ name: order.customer?.name, store_name: order.customer?.store_name, customer_type: order.customer?.customer_type, sector_name: (order.customer as any)?.sector_id && sectorMap ? sectorMap.get((order.customer as any).sector_id) : undefined }} compact hideBadges />
+              <CustomerLabel customer={{ name: order.customer?.name, store_name: order.customer?.store_name, customer_type: order.customer?.customer_type, sector_name: order.customer?.sector_id && sectorMap ? sectorMap.get(order.customer.sector_id) : undefined }} compact hideBadges />
               <Badge className={`text-[10px] ${getDocColor(order.invoice_payment_method)}`}>
                 {getDocLabel(order.invoice_payment_method)}
               </Badge>
