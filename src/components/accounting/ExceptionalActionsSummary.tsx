@@ -9,6 +9,7 @@ import {
   Printer,
   RotateCcw,
   Trash2,
+  User,
   XCircle,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
