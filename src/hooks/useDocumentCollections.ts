@@ -14,7 +14,7 @@ export interface PendingDocOrder {
   doc_collection_days: string[] | null;
   created_at: string;
   assigned_worker_id: string | null;
-  customer?: { id: string; name: string; store_name?: string | null; phone: string | null; latitude: number | null; longitude: number | null; customer_type?: string | null; sector_id?: string | null; sector_id?: string | null };
+  customer?: { id: string; name: string; store_name?: string | null; phone: string | null; latitude: number | null; longitude: number | null; customer_type?: string | null; sector_id?: string | null };
 }
 
 export interface DocumentCollection {
