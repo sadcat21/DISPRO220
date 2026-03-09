@@ -39,6 +39,7 @@ import WorkerPointsDialog from '@/components/rewards/WorkerPointsDialog';
 import StockVerificationDialog from '@/components/stock/StockVerificationDialog';
 import WorkerAttendanceLogDialog from '@/components/attendance/WorkerAttendanceLogDialog';
 import WorkerSalesSummaryDialog from '@/components/accounting/WorkerSalesSummaryDialog';
+import WorkerOrdersSummaryDialog from '@/components/accounting/WorkerOrdersSummaryDialog';
 import WorkerGiftsSummaryDialog from '@/components/accounting/WorkerGiftsSummaryDialog';
 import EditWorkerProfileDialog from '@/components/workers/EditWorkerProfileDialog';
 import WorkerAchievementsDialog from '@/components/workers/WorkerAchievementsDialog';
@@ -70,6 +71,7 @@ const workerActions = [
   { key: 'gifts_summary', icon: Gift, path: '', labelKey: 'تجميع العروض', color: 'bg-purple-50 border-purple-200 text-purple-700', isDialog: true },
   { key: 'achievements', icon: Trophy, path: '', labelKey: 'المنجزات', color: 'bg-emerald-50 border-emerald-200 text-emerald-700', isDialog: true },
   { key: 'sector_schedule', icon: MapPin, path: '', labelKey: 'جدول السيكتور', color: 'bg-sky-50 border-sky-200 text-sky-700', isDialog: true },
+  { key: 'orders_summary', icon: ClipboardList, path: '', labelKey: 'تجميع الطلبيات', color: 'bg-blue-50 border-blue-200 text-blue-700', isDialog: true },
 ];
 
 const WorkerActions: React.FC = () => {
@@ -94,6 +96,7 @@ const WorkerActions: React.FC = () => {
   const [achievementsOpen, setAchievementsOpen] = useState(false);
   const [sectorScheduleOpen, setSectorScheduleOpen] = useState(false);
   const [sectorScheduleType, setSectorScheduleType] = useState<'delivery' | 'sales'>('delivery');
+  const [ordersSummaryOpen, setOrdersSummaryOpen] = useState(false);
 
   const isSelfMode = role === 'worker';
   const isSupervisorMode = role === 'supervisor';
@@ -458,6 +461,8 @@ const WorkerActions: React.FC = () => {
       } else if (action.key === 'sector_schedule') {
         setSectorScheduleType('delivery');
         setSectorScheduleOpen(true);
+      } else if (action.key === 'orders_summary') {
+        setOrdersSummaryOpen(true);
       }
       return;
     }
@@ -707,6 +712,12 @@ const WorkerActions: React.FC = () => {
         workerId={selectedWorker?.id}
         workerName={selectedWorker?.full_name}
         workerType={sectorScheduleType}
+      />
+      <WorkerOrdersSummaryDialog
+        open={ordersSummaryOpen}
+        onOpenChange={setOrdersSummaryOpen}
+        workerId={selectedWorker?.id}
+        workerName={selectedWorker?.full_name}
       />
     </div>
   );
