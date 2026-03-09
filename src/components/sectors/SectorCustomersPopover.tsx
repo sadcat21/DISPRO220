@@ -900,7 +900,7 @@ const SectorCustomersPopover: React.FC = () => {
                     </TabsTrigger>
                   </TabsList>
                   <TabsContent value="visit-only" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '40vh' }}>
-                    <CustomerList customers={salesVisitedOnly} emptyMessage="لا توجد زيارات بدون طلبيات" onCustomerClick={(c) => handleCustomerClick(c, 'sales')} showActionButtons onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} />
+                    <CustomerList customers={salesVisitedOnly} emptyMessage="لا توجد زيارات بدون طلبيات" onCustomerClick={(c) => handleCustomerClick(c, 'sales')} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} />
                   </TabsContent>
                   <TabsContent value="unavailable" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '40vh' }}>
                     <CustomerList customers={salesUnavailable} emptyMessage="لا يوجد عملاء غير متاحين" onCustomerClick={(c) => handleCustomerClick(c, 'sales')} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} />

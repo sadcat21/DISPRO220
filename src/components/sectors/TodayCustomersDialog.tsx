@@ -961,7 +961,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                       </TabsTrigger>
                     </TabsList>
                     <TabsContent value="visit-only" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
-                      <CustomerList customers={salesVisitedOnly} emptyMessage="لا توجد زيارات بدون طلبيات" onCustomerClick={handleSalesCustomerClick} showActionButtons onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} />
+                      <CustomerList customers={salesVisitedOnly} emptyMessage="لا توجد زيارات بدون طلبيات" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} />
                     </TabsContent>
                     <TabsContent value="unavailable" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
                       <CustomerList customers={salesUnavailable} emptyMessage="لا يوجد عملاء غير متاحين" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} />
