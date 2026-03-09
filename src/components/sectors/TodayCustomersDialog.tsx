@@ -1419,7 +1419,8 @@ const CustomerList: React.FC<{
   searchQuery?: string;
   sectors?: any[];
   salesRepStatusMap?: Map<string, string>;
-}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, onClosed, onUnavailable, onDebtRefused, onNoSale, onPrint, showVisitButton, visitButtonLabel, showActionButtons, showPrintButton, showNoSaleButton, checkingLocationFor, loadingFor, searchQuery, sectors, salesRepStatusMap }) => {
+  deliveryTimeMap?: Map<string, string>;
+}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, onClosed, onUnavailable, onDebtRefused, onNoSale, onPrint, showVisitButton, visitButtonLabel, showActionButtons, showPrintButton, showNoSaleButton, checkingLocationFor, loadingFor, searchQuery, sectors, salesRepStatusMap, deliveryTimeMap }) => {
   const filtered = useMemo(() => {
     if (!searchQuery?.trim()) return customers;
     const q = searchQuery.trim().toLowerCase();
