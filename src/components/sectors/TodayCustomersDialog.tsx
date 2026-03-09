@@ -1474,6 +1474,12 @@ const CustomerList: React.FC<{
                 غير متاح
               </Button>
             )}
+            {showActionButtons && onDebtRefused && (
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-purple-600" onClick={() => onDebtRefused(c)} disabled={checkingLocationFor === c.id}>
+                <BanknoteIcon className="w-3 h-3" />
+                رفض الدين
+              </Button>
+            )}
           </div>
         </div>
         );
