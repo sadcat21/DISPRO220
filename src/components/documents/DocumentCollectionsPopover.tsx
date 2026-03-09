@@ -184,7 +184,7 @@ const DocumentCollectionsPopover: React.FC = () => {
               <TabsContent value="due" className="m-0 flex-1">
                 {dayButtons}
                 <p className="text-[10px] text-muted-foreground text-center py-1">{selectedDateLabel}</p>
-                <PendingDocList orders={pendingOrders} onCollect={(o) => { setSelectedOrder(o); setDialogMode('collect'); }} onVisit={(o) => { setSelectedOrder(o); setDialogMode('visit'); }} />
+                <PendingDocList orders={pendingOrders} onCollect={(o) => { setSelectedOrder(o); setDialogMode('collect'); }} onVisit={(o) => { setSelectedOrder(o); setDialogMode('visit'); }} sectorMap={sectorMap} />
               </TabsContent>
               <TabsContent value="pending" className="m-0 flex-1">
                 <PendingDocCollectionsList
