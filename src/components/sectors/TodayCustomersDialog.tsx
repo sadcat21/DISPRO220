@@ -1199,8 +1199,7 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void }> = ({ ord
           {/* Customer Info */}
           <div className="bg-muted/50 rounded-lg p-3 space-y-1">
             <div className="flex items-center gap-2">
-              <User className="w-4 h-4 text-primary" />
-              <span className="font-bold text-sm">{customer?.store_name || customer?.name || order.customer_name || '—'}</span>
+              <CustomerLabel customer={{ name: customer?.name, store_name: customer?.store_name, customer_type: customer?.customer_type }} compact />
             </div>
             {customer?.phone && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
