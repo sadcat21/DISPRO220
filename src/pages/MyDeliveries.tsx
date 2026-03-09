@@ -50,7 +50,9 @@ type DeliveryType = 'orders' | 'direct_sales';
 
 const MyDeliveries: React.FC = () => {
   const { t, language, loadPrintSettingsFromDB } = useLanguage();
-  const { workerId, user } = useAuth();
+  const { workerId, user, role } = useAuth();
+  const isAdminOrBranchAdmin = role === 'admin' || role === 'branch_admin';
+  const { workerId: contextWorkerId, workerName: contextWorkerName } = useSelectedWorker();
   const { data: workerPrintInfo } = useWorkerPrintInfo(workerId);
   const { activeOffers } = useProductOffers();
   
