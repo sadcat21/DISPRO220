@@ -451,6 +451,55 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     });
     return map;
   }, [todayDeliveredOrders]);
+
+  // Time maps for visits, orders, and direct sales
+  const visitTimeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    todayVisits.forEach(v => {
+      if (v.customer_id && v.created_at) {
+        if (!map.has(v.customer_id) || v.created_at > map.get(v.customer_id)!) {
+          map.set(v.customer_id, v.created_at);
+        }
+      }
+    });
+    return map;
+  }, [todayVisits]);
+
+  const orderTimeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    todayOrders.forEach(o => {
+      if (o.customer_id && o.created_at) {
+        if (!map.has(o.customer_id) || o.created_at > map.get(o.customer_id)!) {
+          map.set(o.customer_id, o.created_at);
+        }
+      }
+    });
+    return map;
+  }, [todayOrders]);
+
+  const directSaleTimeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    todayDirectSales.forEach(s => {
+      if (s.customer_id && s.created_at) {
+        if (!map.has(s.customer_id) || s.created_at > map.get(s.customer_id)!) {
+          map.set(s.customer_id, s.created_at);
+        }
+      }
+    });
+    return map;
+  }, [todayDirectSales]);
+
+  const debtCollectionTimeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    todayCollections.forEach(c => {
+      if (c.debt_id && c.created_at) {
+        if (!map.has(c.debt_id) || c.created_at > map.get(c.debt_id)!) {
+          map.set(c.debt_id, c.created_at);
+        }
+      }
+    });
+    return map;
+  }, [todayCollections]);
   const deliveryVisitedCustomerIds = useMemo(() => new Set(todayVisits.filter(v => v.operation_type === 'delivery_visit').map(v => v.customer_id).filter(Boolean)), [todayVisits]);
   const deliveryNotDone = useMemo(() => deliveryCustomers.filter(c => !deliveredCustomerIds.has(c.id) && !deliveryVisitedCustomerIds.has(c.id)), [deliveryCustomers, deliveredCustomerIds, deliveryVisitedCustomerIds]);
   const deliveryNotReceived = useMemo(() => deliveryCustomers.filter(c => deliveryVisitedCustomerIds.has(c.id) && !deliveredCustomerIds.has(c.id)), [deliveryCustomers, deliveryVisitedCustomerIds, deliveredCustomerIds]);
