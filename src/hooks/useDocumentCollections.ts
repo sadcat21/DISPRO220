@@ -35,7 +35,7 @@ export interface DocumentCollection {
     id: string;
     total_amount: number;
     invoice_payment_method: string;
-    customer?: { id: string; name: string; store_name?: string | null };
+    customer?: { id: string; name: string; store_name?: string | null; customer_type?: string | null; sector_id?: string | null };
   };
 }
 
@@ -146,7 +146,7 @@ export const usePendingDocCollections = () => {
           worker:workers!document_collections_worker_id_fkey(id, full_name),
           order:orders!document_collections_order_id_fkey(
             id, total_amount, invoice_payment_method,
-            customer:customers!orders_customer_id_fkey(id, name, store_name, customer_type, sector_id)
+            customer:customers!orders_customer_id_fkey(id, name, store_name, customer_type, sector_id, customer_type, sector_id)
           )
         `)
         .eq('status', 'pending')

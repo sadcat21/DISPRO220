@@ -45,7 +45,7 @@ export interface DebtCollection {
   debt?: {
     id: string;
     remaining_amount: number;
-    customer?: { id: string; name: string };
+    customer?: { id: string; name: string; store_name?: string | null; customer_type?: string | null; sector_id?: string | null };
   };
 }
 
