@@ -39,6 +39,7 @@ import DeliverySaleDialog from '@/components/orders/DeliverySaleDialog';
 import ManualPromoEntryDialog from '@/components/offers/ManualPromoEntryDialog';
 import { Edit } from 'lucide-react';
 import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
+import AdminWorkerBar from '@/components/workers/AdminWorkerBar';
 
 const getDateLocale = (lang: string) => {
   switch (lang) {
