@@ -33,6 +33,8 @@ import { useIsElementHidden } from '@/hooks/useUIOverrides';
 import { getLocalizedName } from '@/utils/sectorName';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
+import AdminWorkerBar from '@/components/workers/AdminWorkerBar';
 import ReceiptDialog from '@/components/printing/ReceiptDialog';
 import { ReceiptItem, ReceiptType } from '@/types/receipt';
 import { useWorkerPrintInfo } from '@/hooks/useWorkerPrintInfo';
@@ -48,7 +50,9 @@ type DeliveryType = 'orders' | 'direct_sales';
 
 const MyDeliveries: React.FC = () => {
   const { t, language, loadPrintSettingsFromDB } = useLanguage();
-  const { workerId, user } = useAuth();
+  const { workerId, user, role } = useAuth();
+  const isAdminOrBranchAdmin = role === 'admin' || role === 'branch_admin';
+  const { workerId: contextWorkerId, workerName: contextWorkerName } = useSelectedWorker();
   const { data: workerPrintInfo } = useWorkerPrintInfo(workerId);
   const { activeOffers } = useProductOffers();
   
@@ -66,7 +70,14 @@ const MyDeliveries: React.FC = () => {
     lat: number; lng: number; name: string; address?: string;
   } | null>(null);
   
-  const { data: orders, isLoading, refetch: refetchOrders } = useAssignedOrders();
+  const { data: rawOrders, isLoading, refetch: refetchOrders } = useAssignedOrders();
+  
+  // Filter by selected worker for admin
+  const orders = React.useMemo(() => {
+    if (!rawOrders) return rawOrders;
+    if (!contextWorkerId || !isAdminOrBranchAdmin) return rawOrders;
+    return rawOrders.filter(o => o.assigned_worker_id === contextWorkerId || o.created_by === contextWorkerId);
+  }, [rawOrders, contextWorkerId, isAdminOrBranchAdmin]);
   const { data: selectedOrderItems } = useOrderItems(selectedOrderId);
   const updateStatus = useUpdateOrderStatus();
   const cancelOrder = useCancelOrder();
@@ -812,9 +823,14 @@ const MyDeliveries: React.FC = () => {
       {/* Order Search Dialog */}
       <OrderSearchDialog open={showSearchDialog} onOpenChange={setShowSearchDialog} />
       
+      {/* Admin Worker Bar */}
+      {isAdminOrBranchAdmin && <AdminWorkerBar />}
+
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold">{t('deliveries.title')}</h2>
+        <h2 className="text-xl font-bold">
+          {t('deliveries.title')}{contextWorkerId && contextWorkerName && <span className="text-primary"> - {contextWorkerName}</span>}
+        </h2>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" className="border-primary/30 text-primary" onClick={() => setShowLoadRequestDialog(true)}>
             <Truck className="w-4 h-4 me-1" />

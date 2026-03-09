@@ -39,6 +39,7 @@ import DeliverySaleDialog from '@/components/orders/DeliverySaleDialog';
 import ManualPromoEntryDialog from '@/components/offers/ManualPromoEntryDialog';
 import { Edit } from 'lucide-react';
 import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
+import AdminWorkerBar from '@/components/workers/AdminWorkerBar';
 
 const getDateLocale = (lang: string) => {
   switch (lang) {
@@ -622,6 +623,9 @@ const OrdersContent: React.FC = () => {
         onOpenChange={setShowSearchDialog}
       />
 
+      {/* Admin Worker Bar */}
+      {isAdminOrBranchAdmin && <AdminWorkerBar />}
+
       {/* Header */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
@@ -629,11 +633,6 @@ const OrdersContent: React.FC = () => {
             <h2 className="text-xl font-bold">
               {t('orders.title')}{contextWorkerId && contextWorkerName && <span className="text-primary"> - {contextWorkerName}</span>}
             </h2>
-            {contextWorkerId && (
-              <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-primary/20" onClick={() => clearSelectedWorker()}>
-                <X className="w-3 h-3" />
-              </Button>
-            )}
           </div>
           <div className="flex items-center gap-2">
             {!isSearchHidden && (
