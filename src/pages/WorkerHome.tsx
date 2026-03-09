@@ -187,7 +187,7 @@ const WorkerHome: React.FC = () => {
   }
 
   return (
-    <div className="pb-4">
+    <div className="pb-24 touch-pan-y">
       {/* Welcome Section */}
       <div className="bg-gradient-to-l from-primary to-primary/80 text-primary-foreground p-6">
         <div className="flex items-start justify-between">
