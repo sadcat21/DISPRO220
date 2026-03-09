@@ -1186,18 +1186,18 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                       </TabsTrigger>
                     </TabsList>
                     <TabsContent value="visit-only" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
-                      <CustomerList customers={salesVisitedOnly} emptyMessage="لا توجد زيارات بدون طلبيات" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} timeMap={visitTimeMap} />
+                      <CustomerList customers={salesVisitedOnly} emptyMessage="لا توجد زيارات بدون طلبيات" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
                     </TabsContent>
                     <TabsContent value="unavailable" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
-                      <CustomerList customers={salesUnavailable} emptyMessage="لا يوجد عملاء غير متاحين" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} timeMap={visitTimeMap} />
+                      <CustomerList customers={salesUnavailable} emptyMessage="لا يوجد عملاء غير متاحين" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
                     </TabsContent>
                     <TabsContent value="closed" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
-                      <CustomerList customers={salesClosed} emptyMessage="لا يوجد عملاء مغلقين" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} timeMap={visitTimeMap} />
+                      <CustomerList customers={salesClosed} emptyMessage="لا يوجد عملاء مغلقين" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
                     </TabsContent>
                   </Tabs>
                 </TabsContent>
                 <TabsContent value="with-orders" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={salesWithOrders} emptyMessage="لا توجد طلبيات بعد" onCustomerClick={handleShowOrderDetails} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} timeMap={orderTimeMap} />
+                  <CustomerList customers={salesWithOrders} emptyMessage="لا توجد طلبيات بعد" onCustomerClick={handleShowOrderDetails} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} timeMap={orderTimeMap} distanceMap={customerDistanceMap} />
                 </TabsContent>
               </Tabs>
             </TabsContent>
