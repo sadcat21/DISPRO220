@@ -1552,99 +1552,142 @@ const CustomerList: React.FC<{
     return <div className="p-6 text-center text-sm text-muted-foreground">{searchQuery?.trim() ? 'لا توجد نتائج' : emptyMessage}</div>;
   }
 
-  return (
-    <div className="divide-y">
-      {filtered.map(c => {
-        const sector = sectors?.find(s => s.id === c.sector_id);
-        return (
-        <div key={c.id} className="p-3 hover:bg-muted/50 transition-colors">
-          <button
-            className="w-full flex items-center gap-2 text-start"
-            onClick={() => onCustomerClick(c)}
-            disabled={loadingFor === c.id}
-          >
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              {loadingFor === c.id ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <User className="w-4 h-4 text-primary" />}
-            </div>
-            <div className="flex-1 min-w-0">
-              <CustomerLabel
-                customer={{
-                  name: c.name,
-                  store_name: c.store_name,
-                  customer_type: c.customer_type,
-                  sector_name: sector?.name,
-                }}
-               />
-               {salesRepStatusMap && salesRepStatusMap.has(c.id) && (() => {
-                 const status = salesRepStatusMap.get(c.id);
-                 if (status === 'not_visited') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-amber-100 text-amber-700 border-0">بدون زيارة</Badge>;
-                 if (status === 'closed') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-red-100 text-red-700 border-0">مغلق</Badge>;
-                 if (status === 'unavailable') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-gray-100 text-gray-600 border-0">غير متاح</Badge>;
-                 if (status === 'visited') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-blue-100 text-blue-700 border-0">تمت الزيارة</Badge>;
-                 return null;
-               })()}
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                {c.phone && <span>{c.phone}</span>}
-                {distanceMap?.has(c.id) ? (
-                  <span>• 📍 {distanceMap.get(c.id)!} م</span>
-                ) : c.wilaya ? (
-                  <span>• {c.wilaya}</span>
-                ) : null}
-                {timeMap?.has(c.id) && (
-                  <span className="flex items-center gap-0.5 text-[10px]">
-                    <Clock className="w-3 h-3" />
-                    {format(new Date(timeMap.get(c.id)!), 'HH:mm')}
-                  </span>
-                )}
-              </div>
-            </div>
-          </button>
-          <div className="flex items-center gap-1 mt-1.5 justify-end flex-wrap">
-            {c.latitude && c.longitude && (
-              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.latitude},${c.longitude}`, '_blank')}>
-                <Navigation className="w-3 h-3" />
-                الموقع
-              </Button>
-            )}
-            {showPrintButton && onPrint && (
-              <Button variant="ghost" size="icon" className="h-6 w-6 text-primary" onClick={(e) => { e.stopPropagation(); onPrint(c); }}>
-                <Printer className="w-3.5 h-3.5" />
-              </Button>
-            )}
-            {showVisitButton && onVisitWithoutOrder && (
-              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-orange-600" onClick={() => onVisitWithoutOrder(c)} disabled={checkingLocationFor === c.id}>
-                {checkingLocationFor === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <MapPinOff className="w-3 h-3" />}
-                {visitButtonLabel || 'زيارة بدون طلبية'}
-              </Button>
-            )}
-            {showNoSaleButton && onNoSale && (
-              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-amber-600" onClick={() => onNoSale(c)} disabled={checkingLocationFor === c.id}>
-                {checkingLocationFor === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
-                بدون بيع
-              </Button>
-            )}
-            {showActionButtons && onClosed && (
-              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-destructive" onClick={() => onClosed(c)} disabled={checkingLocationFor === c.id}>
-                <DoorClosed className="w-3 h-3" />
-                مغلق
-              </Button>
-            )}
-            {showActionButtons && onUnavailable && (
-              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-muted-foreground" onClick={() => onUnavailable(c)} disabled={checkingLocationFor === c.id}>
-                <UserX className="w-3 h-3" />
-                غير متاح
-              </Button>
-            )}
-            {showActionButtons && onDebtRefused && (
-              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-purple-600" onClick={() => onDebtRefused(c)} disabled={checkingLocationFor === c.id}>
-                <BanknoteIcon className="w-3 h-3" />
-                رفض الدين
-              </Button>
-            )}
+  // Group by zone
+  const zoneGroups = useMemo(() => {
+    const groups = new Map<string | null, any[]>();
+    filtered.forEach(c => {
+      const key = c.zone_id || null;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(c);
+    });
+    // Sort zone keys: named zones first (sorted), then null
+    const sortedKeys = Array.from(groups.keys()).sort((a, b) => {
+      if (!a) return 1;
+      if (!b) return -1;
+      const nameA = allZones?.find(z => z.id === a)?.name || '';
+      const nameB = allZones?.find(z => z.id === b)?.name || '';
+      return nameA.localeCompare(nameB, 'ar');
+    });
+    return sortedKeys.map(key => ({
+      zoneId: key,
+      zoneName: key ? (allZones?.find(z => z.id === key) ? getLocalizedName(allZones.find(z => z.id === key)!, language) : 'منطقة غير معروفة') : 'بدون منطقة',
+      customers: groups.get(key)!,
+    }));
+  }, [filtered, allZones, language]);
+
+  const renderCustomer = (c: any) => {
+    const sector = sectors?.find(s => s.id === c.sector_id);
+    const zone = allZones?.find(z => z.id === c.zone_id);
+    return (
+      <div key={c.id} className="p-3 hover:bg-muted/50 transition-colors">
+        <button
+          className="w-full flex items-center gap-2 text-start"
+          onClick={() => onCustomerClick(c)}
+          disabled={loadingFor === c.id}
+        >
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+            {loadingFor === c.id ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <User className="w-4 h-4 text-primary" />}
           </div>
+          <div className="flex-1 min-w-0">
+            <CustomerLabel
+              customer={{
+                name: c.name,
+                store_name: c.store_name,
+                customer_type: c.customer_type,
+                sector_name: sector ? getLocalizedName(sector, language) : undefined,
+                zone_name: zone ? getLocalizedName(zone, language) : undefined,
+              }}
+             />
+             {salesRepStatusMap && salesRepStatusMap.has(c.id) && (() => {
+               const status = salesRepStatusMap.get(c.id);
+               if (status === 'not_visited') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-amber-100 text-amber-700 border-0">بدون زيارة</Badge>;
+               if (status === 'closed') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-red-100 text-red-700 border-0">مغلق</Badge>;
+               if (status === 'unavailable') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-gray-100 text-gray-600 border-0">غير متاح</Badge>;
+               if (status === 'visited') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-blue-100 text-blue-700 border-0">تمت الزيارة</Badge>;
+               return null;
+             })()}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {c.phone && <span>{c.phone}</span>}
+              {distanceMap?.has(c.id) ? (
+                <span>• 📍 {distanceMap.get(c.id)!} م</span>
+              ) : c.wilaya ? (
+                <span>• {c.wilaya}</span>
+              ) : null}
+              {timeMap?.has(c.id) && (
+                <span className="flex items-center gap-0.5 text-[10px]">
+                  <Clock className="w-3 h-3" />
+                  {format(new Date(timeMap.get(c.id)!), 'HH:mm')}
+                </span>
+              )}
+            </div>
+          </div>
+        </button>
+        <div className="flex items-center gap-1 mt-1.5 justify-end flex-wrap">
+          {c.latitude && c.longitude && (
+            <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.latitude},${c.longitude}`, '_blank')}>
+              <Navigation className="w-3 h-3" />
+              الموقع
+            </Button>
+          )}
+          {showPrintButton && onPrint && (
+            <Button variant="ghost" size="icon" className="h-6 w-6 text-primary" onClick={(e) => { e.stopPropagation(); onPrint(c); }}>
+              <Printer className="w-3.5 h-3.5" />
+            </Button>
+          )}
+          {showVisitButton && onVisitWithoutOrder && (
+            <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-orange-600" onClick={() => onVisitWithoutOrder(c)} disabled={checkingLocationFor === c.id}>
+              {checkingLocationFor === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <MapPinOff className="w-3 h-3" />}
+              {visitButtonLabel || 'زيارة بدون طلبية'}
+            </Button>
+          )}
+          {showNoSaleButton && onNoSale && (
+            <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-amber-600" onClick={() => onNoSale(c)} disabled={checkingLocationFor === c.id}>
+              {checkingLocationFor === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
+              بدون بيع
+            </Button>
+          )}
+          {showActionButtons && onClosed && (
+            <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-destructive" onClick={() => onClosed(c)} disabled={checkingLocationFor === c.id}>
+              <DoorClosed className="w-3 h-3" />
+              مغلق
+            </Button>
+          )}
+          {showActionButtons && onUnavailable && (
+            <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-muted-foreground" onClick={() => onUnavailable(c)} disabled={checkingLocationFor === c.id}>
+              <UserX className="w-3 h-3" />
+              غير متاح
+            </Button>
+          )}
+          {showActionButtons && onDebtRefused && (
+            <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-purple-600" onClick={() => onDebtRefused(c)} disabled={checkingLocationFor === c.id}>
+              <BanknoteIcon className="w-3 h-3" />
+              رفض الدين
+            </Button>
+          )}
         </div>
-        );
-      })}
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      {zoneGroups.length <= 1 ? (
+        <div className="divide-y">
+          {filtered.map(renderCustomer)}
+        </div>
+      ) : (
+        zoneGroups.map(group => (
+          <div key={group.zoneId || 'no-zone'}>
+            <div className="sticky top-0 z-10 bg-blue-600 text-white px-4 py-1.5 text-xs font-bold flex items-center justify-between">
+              <span>{group.zoneName}</span>
+              <Badge className="bg-white/20 text-white border-0 text-[10px]">{group.customers.length}</Badge>
+            </div>
+            <div className="divide-y">
+              {group.customers.map(renderCustomer)}
+            </div>
+          </div>
+        ))
+      )}
     </div>
   );
 };
