@@ -419,82 +419,53 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
         onSuccess(data);
         onOpenChange(false);
       } else {
-        const locationPayload = {
-          latitude: sanitizedPayload.latitude,
-          longitude: sanitizedPayload.longitude,
-          address: sanitizedPayload.address,
-          wilaya: sanitizedPayload.wilaya,
-          location_type: sanitizedPayload.location_type,
-        };
-
-        const locationChanged =
-          String(customer.latitude ?? '') !== String(locationPayload.latitude ?? '') ||
-          String(customer.longitude ?? '') !== String(locationPayload.longitude ?? '') ||
-          String(customer.address ?? '') !== String(locationPayload.address ?? '') ||
-          String(customer.wilaya ?? '') !== String(locationPayload.wilaya ?? '') ||
-          String((customer as any).location_type ?? 'store') !== String(locationPayload.location_type ?? 'store');
-
-        const nonLocationKeys = [
+        // Build list of all changed fields for detailed tracking
+        const allTrackableKeys = [
           'name', 'name_fr', 'store_name', 'store_name_fr', 'internal_name', 'phone',
           'sector_id', 'zone_id', 'sales_rep_name', 'sales_rep_phone', 'is_trusted',
           'trust_notes', 'default_payment_type', 'default_price_subtype', 'customer_type',
-          'is_registered', 'default_delivery_worker_id'
+          'is_registered', 'default_delivery_worker_id',
+          'latitude', 'longitude', 'address', 'wilaya', 'location_type'
         ];
 
-        const hasNonLocationChanges = nonLocationKeys.some((key) =>
-          String((customer as any)[key] ?? '') !== String((sanitizedPayload as any)[key] ?? '')
-        );
+        const changedFields: { field: string; old_value: any; new_value: any }[] = [];
+        for (const key of allTrackableKeys) {
+          const oldVal = (customer as any)[key] ?? null;
+          const newVal = (sanitizedPayload as any)[key] ?? null;
+          if (String(oldVal ?? '') !== String(newVal ?? '')) {
+            changedFields.push({ field: key, old_value: oldVal, new_value: newVal });
+          }
+        }
 
-        if (!locationChanged && !hasNonLocationChanges) {
+        if (changedFields.length === 0) {
           toast.info('لا توجد تغييرات للحفظ');
           onOpenChange(false);
           return;
         }
 
-        let locationUpdatedCustomer: Customer | null = null;
+        // All changes (including GPS) go through approval for workers
+        const { error } = await supabase
+          .from('customer_approval_requests')
+          .insert({
+            operation_type: 'update',
+            customer_id: customer.id,
+            payload: {
+              ...sanitizedPayload,
+              new_debt_amount: parseFloat(debtAmount) || 0,
+              changed_fields: changedFields,
+            },
+            requested_by: workerId,
+            branch_id: customer.branch_id || null,
+            status: 'pending'
+          } as any);
 
-        // Allow immediate GPS persistence even for worker edits (if policy allows)
-        if (locationChanged) {
-          const { data: updatedLocationData, error: locationError } = await supabase
-            .from('customers')
-            .update(locationPayload)
-            .eq('id', customer.id)
-            .select()
-            .single();
+        if (error) throw error;
 
-          if (!locationError && updatedLocationData) {
-            locationUpdatedCustomer = updatedLocationData as Customer;
-          } else {
-            console.warn('Direct location update failed, fallback to approval request:', locationError);
-          }
-        }
-
-        // Keep approval workflow for any non-location changes or if direct location update is not allowed
-        if (hasNonLocationChanges || (locationChanged && !locationUpdatedCustomer)) {
-          const { error } = await supabase
-            .from('customer_approval_requests')
-            .insert({
-              operation_type: 'update',
-              customer_id: customer.id,
-              payload: { ...sanitizedPayload, new_debt_amount: parseFloat(debtAmount) || 0 },
-              requested_by: workerId,
-              branch_id: customer.branch_id || null,
-              status: 'pending'
-            } as any);
-
-          if (error) throw error;
-
-          if (locationUpdatedCustomer) {
-            toast.success('تم حفظ موقع GPS مباشرة وإرسال باقي التعديلات للمراجعة');
-          } else {
-            toast.success('تم إرسال طلب تعديل العميل للمراجعة');
-          }
+        const hasGpsChange = changedFields.some(f => f.field === 'latitude' || f.field === 'longitude');
+        if (hasGpsChange) {
+          toast.success('تم إرسال طلب تعديل العميل (بما فيه الموقع GPS) للمراجعة');
         } else {
-          toast.success('تم حفظ موقع GPS بنجاح');
-        }
-
-        if (locationUpdatedCustomer) {
-          onSuccess(locationUpdatedCustomer);
+          toast.success('تم إرسال طلب تعديل العميل للمراجعة');
         }
 
         onOpenChange(false);
