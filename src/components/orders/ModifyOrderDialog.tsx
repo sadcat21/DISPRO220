@@ -611,12 +611,16 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
                             </Badge>
                           )}
                         </div>
-                        {item.unit_price > 0 && (
+                        {item.unit_price > 0 && (() => {
+                          const boxPrice = getBoxPrice(item);
+                          const paidQty = getPaidQuantity(item);
+                          return (
                           <p className="text-xs text-muted-foreground">
-                            {item.unit_price.toLocaleString()} دج × {getPaidQuantity(item)} = {(item.unit_price * getPaidQuantity(item)).toLocaleString()} دج
-                            {item.gift_quantity > 0 ? ` (${getPaidQuantity(item)} + ${item.gift_quantity} عرض = ${item.new_quantity})` : ''}
+                            {boxPrice.toLocaleString()} دج × {paidQty} = {(boxPrice * paidQty).toLocaleString()} دج
+                            {item.gift_quantity > 0 ? ` (${paidQty} + ${item.gift_quantity} عرض = ${item.new_quantity})` : ''}
                           </p>
-                        )}
+                          );
+                        })()}
                       </div>
                     {!item.id && (
                       <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeNewItem(index)}>
