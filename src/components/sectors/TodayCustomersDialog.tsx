@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MapPin, Truck, ShoppingCart, Landmark, User, Phone, Eye, EyeOff, CheckCircle, PackageX, PackageCheck, Navigation, Loader2, MapPinOff, Clock, Check, X, DoorClosed, UserX, ShoppingBag, Printer, XCircle, Search } from 'lucide-react';
+import { MapPin, Truck, ShoppingCart, Landmark, User, Phone, Eye, EyeOff, CheckCircle, PackageX, PackageCheck, Navigation, Loader2, MapPinOff, Clock, Check, X, DoorClosed, UserX, ShoppingBag, Printer, XCircle, Search, BanknoteIcon } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
@@ -791,6 +791,35 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     } catch { toast.error('فشل في تسجيل الحالة'); }
   };
 
+  const handleDeliveryDebtRefused = async (customer: any) => {
+    const allowed = await checkLocationBeforeAction(customer);
+    if (!allowed) return;
+    try {
+      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `رفض الدين (توصيل) - ${customer.store_name || customer.name}` });
+      toast.success(`تم تسجيل رفض الدين لـ "${customer.store_name || customer.name}"`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
+  };
+
+  const handleDirectSaleDebtRefused = async (customer: any) => {
+    const allowed = await checkLocationBeforeAction(customer);
+    if (!allowed) return;
+    try {
+      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `رفض الدين (بيع مباشر) - ${customer.store_name || customer.name}` });
+      toast.success(`تم تسجيل رفض الدين لـ "${customer.store_name || customer.name}"`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
+  };
+
+  const handleDebtDebtRefused = async (debt: any) => {
+    const customer = debt.customer as any;
+    const customerObj = { id: debt.customer_id, latitude: customer?.latitude, longitude: customer?.longitude, store_name: customer?.store_name, name: customer?.name };
+    const allowed = await checkLocationBeforeAction(customerObj);
+    if (!allowed) return;
+    try {
+      await trackVisit({ customerId: debt.customer_id, operationType: 'visit', notes: `رفض الدين (تحصيل دين) - ${customer?.store_name || customer?.name}` });
+      toast.success(`تم تسجيل رفض الدين لـ "${customer?.store_name || customer?.name}"`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
+  };
+
   const handleDirectSaleClick = (customer: any) => {
     setDirectSaleCustomerId(customer.id);
     setShowDirectSale(true);
@@ -978,10 +1007,10 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                 </TabsList>
 
                 <TabsContent value="not-delivered" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={deliveryNotDone} emptyMessage="تم توصيل جميع العملاء ✓" onCustomerClick={handleDeliveryCustomerClick} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} showVisitButton visitButtonLabel="بدون تسليم" showActionButtons checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} />
+                  <CustomerList customers={deliveryNotDone} emptyMessage="تم توصيل جميع العملاء ✓" onCustomerClick={handleDeliveryCustomerClick} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} onDebtRefused={handleDeliveryDebtRefused} showVisitButton visitButtonLabel="بدون تسليم" showActionButtons checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} />
                 </TabsContent>
                 <TabsContent value="not-received" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={deliveryNotReceived} emptyMessage="لا توجد زيارات بدون تسليم" onCustomerClick={handleDeliveryCustomerClick} showActionButtons onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} />
+                  <CustomerList customers={deliveryNotReceived} emptyMessage="لا توجد زيارات بدون تسليم" onCustomerClick={handleDeliveryCustomerClick} showActionButtons onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} onDebtRefused={handleDeliveryDebtRefused} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} />
                 </TabsContent>
                 <TabsContent value="received" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
                   <CustomerList customers={deliveryReceived} emptyMessage="لا توجد توصيلات بعد" onCustomerClick={handleShowDeliveredOrderDetails} showPrintButton onPrint={handlePrintDeliveredOrder} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} />
@@ -1071,7 +1100,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                 </TabsList>
 
                 <TabsContent value="pending" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={directSalePending} emptyMessage="لا توجد محلات متاحة للبيع المباشر" onCustomerClick={handleDirectSaleClick} onClosed={handleDirectSaleClosed} onUnavailable={handleDirectSaleUnavailable} onNoSale={handleDirectSaleNoSale} showActionButtons showNoSaleButton checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} salesRepStatusMap={salesRepStatusMap} />
+                  <CustomerList customers={directSalePending} emptyMessage="لا توجد محلات متاحة للبيع المباشر" onCustomerClick={handleDirectSaleClick} onClosed={handleDirectSaleClosed} onUnavailable={handleDirectSaleUnavailable} onDebtRefused={handleDirectSaleDebtRefused} onNoSale={handleDirectSaleNoSale} showActionButtons showNoSaleButton checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} salesRepStatusMap={salesRepStatusMap} />
                 </TabsContent>
                 <TabsContent value="sold" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
                   <CustomerList customers={directSaleSold} emptyMessage="لا توجد مبيعات بعد" onCustomerClick={handleShowDirectSaleDetails} showPrintButton onPrint={handlePrintDirectSale} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} />
@@ -1109,16 +1138,16 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                 </TabsList>
 
                 <TabsContent value="today-collection" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <DebtList debts={debtsToCollectToday} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} emptyMessage="لا توجد ديون مستحقة اليوم ✓" searchQuery={searchQuery} />
+                  <DebtList debts={debtsToCollectToday} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="لا توجد ديون مستحقة اليوم ✓" searchQuery={searchQuery} />
                 </TabsContent>
                 <TabsContent value="collected" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <DebtList debts={debtsCollectedToday} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} emptyMessage="لا توجد تحصيلات بعد" searchQuery={searchQuery} />
+                  <DebtList debts={debtsCollectedToday} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="لا توجد تحصيلات بعد" searchQuery={searchQuery} />
                 </TabsContent>
                 <TabsContent value="no-payment" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <DebtList debts={debtsNoPaymentToday} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} emptyMessage="لا توجد زيارات بدون دفع" searchQuery={searchQuery} />
+                  <DebtList debts={debtsNoPaymentToday} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="لا توجد زيارات بدون دفع" searchQuery={searchQuery} />
                 </TabsContent>
                 <TabsContent value="all-debts" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <DebtList debts={allDebtsFiltered} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} emptyMessage="لا توجد ديون مستحقة" searchQuery={searchQuery} />
+                  <DebtList debts={allDebtsFiltered} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="لا توجد ديون مستحقة" searchQuery={searchQuery} />
                 </TabsContent>
               </Tabs>
             </TabsContent>
@@ -1344,6 +1373,7 @@ const CustomerList: React.FC<{
   onVisitWithoutOrder?: (c: any) => void;
   onClosed?: (c: any) => void;
   onUnavailable?: (c: any) => void;
+  onDebtRefused?: (c: any) => void;
   onNoSale?: (c: any) => void;
   onPrint?: (c: any) => void;
   showVisitButton?: boolean;
@@ -1356,7 +1386,7 @@ const CustomerList: React.FC<{
   searchQuery?: string;
   sectors?: any[];
   salesRepStatusMap?: Map<string, string>;
-}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, onClosed, onUnavailable, onNoSale, onPrint, showVisitButton, visitButtonLabel, showActionButtons, showPrintButton, showNoSaleButton, checkingLocationFor, loadingFor, searchQuery, sectors, salesRepStatusMap }) => {
+}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, onClosed, onUnavailable, onDebtRefused, onNoSale, onPrint, showVisitButton, visitButtonLabel, showActionButtons, showPrintButton, showNoSaleButton, checkingLocationFor, loadingFor, searchQuery, sectors, salesRepStatusMap }) => {
   const filtered = useMemo(() => {
     if (!searchQuery?.trim()) return customers;
     const q = searchQuery.trim().toLowerCase();
@@ -1444,6 +1474,12 @@ const CustomerList: React.FC<{
                 غير متاح
               </Button>
             )}
+            {showActionButtons && onDebtRefused && (
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-purple-600" onClick={() => onDebtRefused(c)} disabled={checkingLocationFor === c.id}>
+                <BanknoteIcon className="w-3 h-3" />
+                رفض الدين
+              </Button>
+            )}
           </div>
         </div>
         );
@@ -1453,7 +1489,7 @@ const CustomerList: React.FC<{
 };
 
 // Reusable DebtList component
-const DebtList: React.FC<{ debts: DueDebt[]; onCollect: (d: DueDebt) => void; onVisitNoPayment: (d: DueDebt) => void; onClosed: (d: DueDebt) => void; onUnavailable: (d: DueDebt) => void; emptyMessage: string; searchQuery?: string }> = ({ debts, onCollect, onVisitNoPayment, onClosed, onUnavailable, emptyMessage, searchQuery }) => {
+const DebtList: React.FC<{ debts: DueDebt[]; onCollect: (d: DueDebt) => void; onVisitNoPayment: (d: DueDebt) => void; onClosed: (d: DueDebt) => void; onUnavailable: (d: DueDebt) => void; onDebtRefused?: (d: DueDebt) => void; emptyMessage: string; searchQuery?: string }> = ({ debts, onCollect, onVisitNoPayment, onClosed, onUnavailable, onDebtRefused, emptyMessage, searchQuery }) => {
   const filtered = useMemo(() => {
     if (!searchQuery?.trim()) return debts;
     const q = searchQuery.trim().toLowerCase();
@@ -1501,6 +1537,12 @@ const DebtList: React.FC<{ debts: DueDebt[]; onCollect: (d: DueDebt) => void; on
               <UserX className="w-3 h-3" />
               غير متاح
             </Button>
+            {onDebtRefused && (
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-purple-600" onClick={(e) => { e.stopPropagation(); onDebtRefused(debt); }}>
+                <BanknoteIcon className="w-3 h-3" />
+                رفض الدين
+              </Button>
+            )}
           </div>
         </div>
       ))}
