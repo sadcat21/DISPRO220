@@ -179,7 +179,7 @@ export const usePendingCollections = () => {
           worker:workers!debt_collections_worker_id_fkey(id, full_name),
           debt:customer_debts!debt_collections_debt_id_fkey(
             id, remaining_amount,
-            customer:customers(id, name, store_name)
+            customer:customers(id, name, store_name, customer_type, sector_id)
           )
         `)
         .eq('status', 'pending')

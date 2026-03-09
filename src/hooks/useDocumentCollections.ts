@@ -14,7 +14,7 @@ export interface PendingDocOrder {
   doc_collection_days: string[] | null;
   created_at: string;
   assigned_worker_id: string | null;
-  customer?: { id: string; name: string; store_name?: string | null; phone: string | null; latitude: number | null; longitude: number | null; customer_type?: string | null; sector_id?: string | null };
+  customer?: { id: string; name: string; store_name?: string | null; phone: string | null; latitude: number | null; longitude: number | null; customer_type?: string | null; sector_id?: string | null; sector_id?: string | null };
 }
 
 export interface DocumentCollection {
@@ -69,7 +69,7 @@ export const usePendingDocOrders = (targetDate?: string) => {
           id, customer_id, total_amount, document_status, invoice_payment_method,
           doc_due_date, doc_collection_type, doc_collection_days,
           created_at, assigned_worker_id,
-          customer:customers!orders_customer_id_fkey(id, name, store_name, phone, latitude, longitude, customer_type)
+          customer:customers!orders_customer_id_fkey(id, name, store_name, phone, latitud, sector_ide, longitude, customer_type)
         `)
         .eq('document_status', 'pending')
         .eq('status', 'delivered')
