@@ -4,6 +4,8 @@ import { Landmark, Check, X, Clock, Banknote, Eye } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDueDebts, usePendingCollections, useApproveCollection, DueDebt } from '@/hooks/useDebtCollections';
+import { useSectors } from '@/hooks/useSectors';
+import { getLocalizedName } from '@/utils/sectorName';
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from '@/components/ui/popover';
