@@ -130,7 +130,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   const { data: customers = [] } = useQuery({
     queryKey: ['today-cust-customers', scopedBranchId],
     queryFn: async () => {
-      let query = supabase.from('customers').select('id, name, phone, wilaya, sector_id, store_name, latitude, longitude').not('sector_id', 'is', null);
+      let query = supabase.from('customers').select('id, name, phone, wilaya, sector_id, store_name, latitude, longitude, customer_type').not('sector_id', 'is', null);
       if (scopedBranchId) query = query.eq('branch_id', scopedBranchId);
       const { data } = await query;
       return data || [];
