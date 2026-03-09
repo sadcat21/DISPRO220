@@ -506,12 +506,15 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     const preventeSectorIds = new Set(preventeDeliverySectors.map(s => s.id));
     
     const cashVanCustomers = customers.filter(c => c.sector_id && cashVanSectorIds.has(c.sector_id) && !deliveredCustomerIds.has(c.id));
-    const preventeAllCustomers = customers.filter(c => 
-      c.sector_id && preventeSectorIds.has(c.sector_id) && 
-      !deliveryCustomerIdsWithOrders.has(c.id) && 
-      !deliveredCustomerIds.has(c.id) &&
-      !salesWorkerOrderedCustomerIds.has(c.id)
-    );
+    const preventeAllCustomers = customers.filter(c => {
+      if (!c.sector_id || !preventeSectorIds.has(c.sector_id)) return false;
+      if (deliveryCustomerIdsWithOrders.has(c.id) || deliveredCustomerIds.has(c.id)) return false;
+      if (salesWorkerOrderedCustomerIds.has(c.id)) return false;
+      // Only show customers NOT successfully visited by sales rep
+      const repStatus = salesRepStatusMap.get(c.id);
+      if (repStatus === 'visited') return false;
+      return true;
+    });
     
     const combined = new Map<string, typeof customers[0]>();
     [...cashVanCustomers, ...preventeAllCustomers].forEach(c => combined.set(c.id, c));
