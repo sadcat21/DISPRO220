@@ -861,8 +861,10 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                 <div className="flex gap-1.5 pb-1">
                   {workersList.filter(w => {
                     return sectors.some(s =>
-                      (s.delivery_worker_id === w.id && s.visit_day_delivery === todayName) ||
-                      (s.sales_worker_id === w.id && s.visit_day_sales === todayName)
+                      (s.delivery_worker_id === w.id && s.visit_day_delivery === selectedDay) ||
+                      (s.sales_worker_id === w.id && s.visit_day_sales === selectedDay)
+                    ) || sectorSchedules.some(sc =>
+                      sc.day === selectedDay && sc.worker_id === w.id
                     );
                   }).map(w => {
                     const isSelected = w.id === selectedAdminWorkerId;
