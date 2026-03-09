@@ -433,7 +433,7 @@ const WorkerLoadRequestDialog: React.FC<WorkerLoadRequestDialogProps> = ({ open,
             )}
 
             {/* Action buttons */}
-            <div className="flex gap-2 px-3 pt-2 pb-3 border-t bg-background shrink-0">
+            <div className="flex gap-2 px-3 pt-2 pb-3 border-t bg-background shrink-0 mt-auto">
               <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1 h-10 text-xs rounded-xl">
                 إلغاء
               </Button>
