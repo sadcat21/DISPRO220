@@ -1552,6 +1552,12 @@ const CustomerList: React.FC<{
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 {c.phone && <span>{c.phone}</span>}
                 {c.wilaya && <span>• {c.wilaya}</span>}
+                {timeMap?.has(c.id) && (
+                  <span className="flex items-center gap-0.5 text-[10px]">
+                    <Clock className="w-3 h-3" />
+                    {format(new Date(timeMap.get(c.id)!), 'HH:mm')}
+                  </span>
+                )}
               </div>
               {deliveryTimeMap?.has(c.id) && (
                 <div className="flex items-center gap-1 text-[10px] text-green-600 mt-0.5">
