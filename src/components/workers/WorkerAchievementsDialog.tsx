@@ -185,68 +185,12 @@ const WorkerAchievementsDialog: React.FC<WorkerAchievementsDialogProps> = ({
 
       {/* Achievement Detail Dialog */}
       <Dialog open={!!selectedVisit} onOpenChange={(o) => { if (!o) setSelectedVisit(null); }}>
-        <DialogContent className="max-w-sm" dir="rtl">
+        <DialogContent className="max-w-sm max-h-[85vh] overflow-y-auto" dir="rtl">
           {selectedVisit && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  {OPERATION_ICONS[selectedVisit.operation_type] || <MapPin className="w-5 h-5" />}
-                  تفاصيل الإنجاز
-                </DialogTitle>
-              </DialogHeader>
-              <div className="space-y-3 mt-2">
-                <div className={`p-3 rounded-lg border ${OPERATION_COLORS[selectedVisit.operation_type] || 'border-border'}`}>
-                  <p className="font-bold text-sm">{getOperationLabel(selectedVisit.operation_type as OperationType)}</p>
-                </div>
-
-                {selectedVisit.customer_name && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <User className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <span className="font-medium">العميل:</span>
-                    <span>{selectedVisit.customer_name}</span>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2 text-sm">
-                  <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <span className="font-medium">التوقيت:</span>
-                  <span dir="ltr">{format(new Date(selectedVisit.created_at), 'HH:mm:ss')}</span>
-                </div>
-
-                {selectedVisit.notes && (
-                  <div className="flex items-start gap-2 text-sm">
-                    <FileText className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                    <span className="font-medium">ملاحظات:</span>
-                    <span className="text-muted-foreground">{selectedVisit.notes}</span>
-                  </div>
-                )}
-
-                {selectedVisit.latitude && selectedVisit.longitude && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <span className="font-medium">الموقع:</span>
-                    <span dir="ltr" className="text-xs text-muted-foreground">
-                      {Number(selectedVisit.latitude).toFixed(5)}, {Number(selectedVisit.longitude).toFixed(5)}
-                    </span>
-                  </div>
-                )}
-
-                {selectedVisit.entity_id && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Package className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <span className="font-medium">المرجع:</span>
-                    <span className="text-xs text-muted-foreground font-mono" dir="ltr">
-                      {selectedVisit.entity_id.substring(0, 8)}...
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="mt-4">
-                <Button variant="outline" className="w-full" onClick={() => setSelectedVisit(null)}>
-                  إغلاق
-                </Button>
-              </div>
-            </>
+            <AchievementDetailContent
+              visit={selectedVisit}
+              onClose={() => setSelectedVisit(null)}
+            />
           )}
         </DialogContent>
       </Dialog>
