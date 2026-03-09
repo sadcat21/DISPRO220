@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import CustomerLabel from '@/components/customers/CustomerLabel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import ReceiptDialog from '@/components/printing/ReceiptDialog';
 import { ReceiptItem, ReceiptType } from '@/types/receipt';
@@ -923,12 +924,15 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <p className="font-bold">{order.customer?.store_name || order.customer?.name}</p>
-                      {(order.customer as any)?.sector && (
-                        <Badge variant="secondary" className="text-[10px] px-1.5 h-4">
-                          {(order.customer as any).sector?.name}
-                        </Badge>
-                      )}
+                      <CustomerLabel
+                        customer={{
+                          name: order.customer?.name,
+                          store_name: order.customer?.store_name,
+                          customer_type: order.customer?.customer_type,
+                          sector_name: (order.customer as any)?.sector?.name,
+                        }}
+                        compact
+                      />
                       <CustomerCreditBadges customerId={order.customer_id} />
                     </div>
                     <p className="text-xs text-muted-foreground">
