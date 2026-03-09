@@ -344,7 +344,7 @@ const WorkerHome: React.FC = () => {
             quickActions.push({ key: 'expenses', icon: <Wallet className="w-6 h-6" />, label: t('expenses.my_expenses'), onClick: () => navigate('/expenses') });
           }
           // Today's customers - always show
-          quickActions.push({ key: 'today-customers', icon: <MapPin className="w-6 h-6" />, label: 'عملاء اليوم', onClick: () => setShowTodayCustomers(true) });
+          quickActions.push({ key: 'today-customers', icon: <MapPin className="w-6 h-6" />, label: todayCustomersLabel, onClick: () => setShowTodayCustomers(true) });
           // Rewards page
           if (!isRewardsHidden && !isRewardsPageHidden) {
             quickActions.push({ key: 'rewards', icon: <Trophy className="w-6 h-6" />, label: 'المكافآت', onClick: () => navigate('/my-rewards') });
