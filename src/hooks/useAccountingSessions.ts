@@ -263,7 +263,11 @@ export const useDeleteSession = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (sessionId: string) => {
+      // Delete treasury entries created by this session
+      await supabase.from('manager_treasury').delete().eq('session_id', sessionId);
+      // Delete session items
       await supabase.from('accounting_session_items').delete().eq('session_id', sessionId);
+      // Delete the session itself
       const { error } = await supabase.from('accounting_sessions').delete().eq('id', sessionId);
       if (error) throw error;
     },
