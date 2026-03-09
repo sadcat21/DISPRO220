@@ -391,6 +391,36 @@ const CustomerApprovalTab: React.FC = () => {
                                         {request.payload.store_name && (
                                             <div className="flex items-center gap-1"><Store className="w-3.5 h-3.5" /><span>{request.payload.store_name}</span></div>
                                         )}
+                                        {/* Changed fields badges */}
+                                        {request.operation_type === 'update' && request.payload.changed_fields && Array.isArray(request.payload.changed_fields) && request.payload.changed_fields.length > 0 && (
+                                            <div className="col-span-full mt-2 pt-2 border-t space-y-1.5">
+                                                <p className="text-xs font-semibold text-foreground">الحقول المعدّلة:</p>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {(request.payload.changed_fields as Array<{field: string; old_value: any; new_value: any}>).map((cf) => {
+                                                        const isGps = cf.field === 'latitude' || cf.field === 'longitude';
+                                                        const fieldLabels: Record<string, string> = {
+                                                            name: 'الاسم', name_fr: 'الاسم (فرنسي)', store_name: 'اسم المحل', store_name_fr: 'اسم المحل (فرنسي)',
+                                                            internal_name: 'الاسم الداخلي', phone: 'الهاتف', customer_type: 'نوع العميل', address: 'العنوان',
+                                                            wilaya: 'الولاية', sector_id: 'القطاع', zone_id: 'المنطقة', location_type: 'نوع الموقع',
+                                                            latitude: 'خط العرض', longitude: 'خط الطول', default_payment_type: 'نوع الدفع',
+                                                            default_price_subtype: 'فئة السعر', is_trusted: 'موثوق', trust_notes: 'ملاحظات الثقة',
+                                                            is_registered: 'مسجل', sales_rep_name: 'مندوب المبيعات', sales_rep_phone: 'هاتف المندوب',
+                                                            default_delivery_worker_id: 'عامل التوصيل', status: 'الحالة',
+                                                        };
+                                                        return (
+                                                            <Badge
+                                                                key={cf.field}
+                                                                variant="secondary"
+                                                                className={`text-[10px] px-1.5 py-0.5 ${isGps ? 'border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400' : ''}`}
+                                                            >
+                                                                {isGps && <MapPin className="w-3 h-3 ml-0.5" />}
+                                                                {fieldLabels[cf.field] || cf.field}
+                                                            </Badge>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
                                         <div className="flex items-center gap-1 col-span-full mt-2 pt-2 border-t">
                                             <UserCircle className="w-3.5 h-3.5 text-primary" />
                                             <span>المقدم بواسطة: </span>
