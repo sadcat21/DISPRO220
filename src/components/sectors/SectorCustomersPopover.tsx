@@ -791,7 +791,7 @@ const SectorCustomersPopover: React.FC = () => {
       <PopoverContent align="end" className="w-[360px] p-0 max-h-[80vh] flex flex-col" dir="rtl">
         <div className="p-3 border-b font-bold text-sm flex items-center gap-2">
           <MapPin className="w-4 h-4 text-primary" />
-          عملاء اليوم — {selectedAdminWorkerId ? workersList.find(w => w.id === selectedAdminWorkerId)?.full_name || '' : DAY_NAMES[todayName] || todayName}
+          {popoverTitle}
         </div>
 
         {/* Admin worker picker strip */}
