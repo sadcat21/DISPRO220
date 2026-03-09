@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { ar, fr, enUS } from 'date-fns/locale';
 import { useLanguage } from '@/contexts/LanguageContext';
 import PrintColumnsConfigDialog, { PrintColumnConfig, DEFAULT_PRINT_COLUMNS } from '@/components/print/PrintColumnsConfigDialog';
+import { usePrintColumnsConfig } from '@/hooks/usePrintColumnsConfig';
 
 interface PrintOrdersDialogProps {
   open: boolean;
@@ -36,6 +37,7 @@ const PrintOrdersDialog: React.FC<PrintOrdersDialogProps> = ({
   onPreview,
 }) => {
   const { t, language, dir } = useLanguage();
+  const { columns: dbColumns, saveColumns } = usePrintColumnsConfig();
   const [selectedWorkerFilter, setSelectedWorkerFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('active');
   const [printPerWorker, setPrintPerWorker] = useState(false);
@@ -44,17 +46,16 @@ const PrintOrdersDialog: React.FC<PrintOrdersDialogProps> = ({
   const [groupCustomers, setGroupCustomers] = useState(true);
   const [groupProducts, setGroupProducts] = useState(true);
   const [showColumnsConfig, setShowColumnsConfig] = useState(false);
-  const [columnConfig, setColumnConfig] = useState<PrintColumnConfig[]>(() => {
-    const saved = localStorage.getItem('print_columns_config');
-    if (saved) {
-      try { return JSON.parse(saved); } catch { return DEFAULT_PRINT_COLUMNS; }
-    }
-    return DEFAULT_PRINT_COLUMNS;
-  });
+  const [columnConfig, setColumnConfig] = useState<PrintColumnConfig[]>(dbColumns);
+
+  // Sync from DB when loaded
+  React.useEffect(() => {
+    setColumnConfig(dbColumns);
+  }, [dbColumns]);
 
   const handleColumnsChange = (cols: PrintColumnConfig[]) => {
     setColumnConfig(cols);
-    localStorage.setItem('print_columns_config', JSON.stringify(cols));
+    saveColumns(cols);
   };
 
   const getDateLocale = () => {
