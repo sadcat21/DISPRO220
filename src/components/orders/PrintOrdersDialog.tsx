@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { ar, fr, enUS } from 'date-fns/locale';
 import { useLanguage } from '@/contexts/LanguageContext';
 import PrintColumnsConfigDialog, { PrintColumnConfig, DEFAULT_PRINT_COLUMNS } from '@/components/print/PrintColumnsConfigDialog';
+import { usePrintColumnsConfig } from '@/hooks/usePrintColumnsConfig';
 
 interface PrintOrdersDialogProps {
   open: boolean;
