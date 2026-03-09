@@ -4,7 +4,7 @@ import { FileCheck, Check, X, Clock, Eye, FileWarning } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSectors } from '@/hooks/useSectors';
 import { getLocalizedName } from '@/utils/sectorName';
-import { useLanguage } from '@/contexts/LanguageContext';
+import {
   usePendingDocOrders, usePendingDocCollections, useApproveDocCollection,
   useCreateDocCollection,
   PendingDocOrder,
