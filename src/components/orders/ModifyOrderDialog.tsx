@@ -30,11 +30,19 @@ interface ModifiedItem {
   product_name: string;
   original_quantity: number;
   new_quantity: number;
-  unit_price: number;
+  unit_price: number; // per-unit price (per kg, per piece, or per box)
   gift_quantity: number;
   original_gift_quantity: number;
   pieces_per_box: number;
+  pricing_unit: string; // 'box' | 'kg' | 'unit'
+  weight_per_box: number;
 }
+
+const getBoxMultiplier = (pricingUnit: string, weightPerBox: number, piecesPerBox: number): number => {
+  if (pricingUnit === 'kg') return Math.max(1, weightPerBox);
+  if (pricingUnit === 'unit') return Math.max(1, piecesPerBox);
+  return 1;
+};
 
 const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
   open, onOpenChange, order, orderItems,
