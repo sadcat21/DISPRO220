@@ -431,6 +431,39 @@ const SectorCustomersPopover: React.FC = () => {
   const totalCount = deliveryCustomers.length + salesCustomers.length;
   const debtBadgeCount = filteredDueDebts.length;
 
+  const popoverTodaySectorNames = useMemo(() => {
+    const ids = new Set<string>();
+
+    sectorSchedules.forEach((sc: any) => {
+      if (sc.day !== todayName) return;
+      if ((!hasSpecificWorker && isAdmin) || sc.worker_id === effectiveWorkerId) {
+        ids.add(sc.sector_id);
+      }
+    });
+
+    // Fallback: legacy sector fields when no multi-schedule exists for that sector
+    sectors.forEach((s: any) => {
+      const hasNewSchedule = sectorSchedules.some((sc: any) => sc.sector_id === s.id);
+      if (hasNewSchedule) return;
+
+      const matchesDelivery = s.visit_day_delivery === todayName && ((!hasSpecificWorker && isAdmin) || s.delivery_worker_id === effectiveWorkerId);
+      const matchesSales = s.visit_day_sales === todayName && ((!hasSpecificWorker && isAdmin) || s.sales_worker_id === effectiveWorkerId);
+
+      if (matchesDelivery || matchesSales) ids.add(s.id);
+    });
+
+    return sectors
+      .filter((s: any) => ids.has(s.id))
+      .map((s: any) => s.name)
+      .join(' / ');
+  }, [sectorSchedules, sectors, todayName, isAdmin, hasSpecificWorker, effectiveWorkerId]);
+
+  const dayLabel = DAY_NAMES[todayName] || todayName;
+  const selectedWorkerName = selectedAdminWorkerId ? workersList.find(w => w.id === selectedAdminWorkerId)?.full_name || '' : '';
+  const workerSuffix = selectedWorkerName ? ` — ${selectedWorkerName}` : '';
+  const sectorSuffix = popoverTodaySectorNames ? ` — ${popoverTodaySectorNames}` : '';
+  const popoverTitle = `عملاء اليوم — ${dayLabel}${workerSuffix}${sectorSuffix}`;
+
   if (mySectors.length === 0 && dueDebts.length === 0 && allDebts.length === 0) return null;
 
   const handleApproveCollection = async (collectionId: string) => {
