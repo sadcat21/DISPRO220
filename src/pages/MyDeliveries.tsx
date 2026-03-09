@@ -41,6 +41,7 @@ import PrintOrdersDialog from '@/components/orders/PrintOrdersDialog';
 import OrdersPrintView from '@/components/print/OrdersPrintView';
 import { PrintColumnConfig } from '@/components/print/PrintColumnsConfigDialog';
 import { Eye } from 'lucide-react';
+import CustomerLabel from '@/components/customers/CustomerLabel';
 
 type TabStatus = 'all' | OrderStatus;
 type DeliveryType = 'orders' | 'direct_sales';

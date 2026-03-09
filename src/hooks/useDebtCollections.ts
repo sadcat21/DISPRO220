@@ -71,7 +71,7 @@ export const useDueDebts = (targetDate?: string) => {
         .from('customer_debts')
         .select(`
           *,
-          customer:customers(id, name, store_name, phone, latitude, longitude)
+          customer:customers(id, name, store_name, phone, latitude, longitude, customer_type)
         `)
         .in('status', ['active', 'partially_paid'])
         .order('due_date', { ascending: false });
