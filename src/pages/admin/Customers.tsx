@@ -82,8 +82,10 @@ const Customers: React.FC = () => {
   const [showSectorsDialog, setShowSectorsDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sectorFilter, setSectorFilter] = useState<string>('all');
+  const [zoneFilter, setZoneFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [missingFilter, setMissingFilter] = useState<string>('all');
+  const [sectorZones, setSectorZones] = useState<{ id: string; name: string; name_fr: string | null; sector_id: string }[]>([]);
   const [expandAllSectors, setExpandAllSectors] = useState(false);
   const isAddCustomerHidden = useIsElementHidden('button', 'add_customer');
   const isEditCustomerHidden = useIsElementHidden('action', 'edit_customer');
@@ -243,6 +245,14 @@ const Customers: React.FC = () => {
       }
     }
 
+    if (zoneFilter !== 'all') {
+      if (zoneFilter === 'none') {
+        filtered = filtered.filter(c => !c.zone_id);
+      } else {
+        filtered = filtered.filter(c => c.zone_id === zoneFilter);
+      }
+    }
+
     if (typeFilter !== 'all') {
       if (typeFilter === 'none') {
         filtered = filtered.filter(c => !c.customer_type);
@@ -288,7 +298,7 @@ const Customers: React.FC = () => {
       );
     }
     return filtered;
-  }, [searchQuery, filteredByBranch, sectorFilter, typeFilter, missingFilter]);
+  }, [searchQuery, filteredByBranch, sectorFilter, zoneFilter, typeFilter, missingFilter]);
 
   // Fetch last delivered orders for all customers
   useEffect(() => {
@@ -435,6 +445,17 @@ const Customers: React.FC = () => {
     }
   };
 
+  // Fetch zones when sector filter changes
+  useEffect(() => {
+    setZoneFilter('all');
+    if (sectorFilter && sectorFilter !== 'all' && sectorFilter !== 'none') {
+      supabase.from('sector_zones').select('*').eq('sector_id', sectorFilter).order('name').then(({ data }) => {
+        setSectorZones((data || []) as any);
+      });
+    } else {
+      setSectorZones([]);
+    }
+  }, [sectorFilter]);
 
   const renderCustomersList = () => (
     <div className="space-y-2">
@@ -746,6 +767,20 @@ const Customers: React.FC = () => {
                 <SelectItem value="none">{t('customers.no_sector')}</SelectItem>
                 {sectors.map(s => (
                   <SelectItem key={s.id} value={s.id}>{getLocalizedName(s, language)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {sectorZones.length > 0 && sectorFilter !== 'all' && sectorFilter !== 'none' && (
+            <Select value={zoneFilter} onValueChange={setZoneFilter}>
+              <SelectTrigger className="flex-1 h-8 text-xs">
+                <SelectValue placeholder="كل المناطق" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover z-[100]">
+                <SelectItem value="all">كل المناطق</SelectItem>
+                <SelectItem value="none">بدون منطقة</SelectItem>
+                {sectorZones.map(z => (
+                  <SelectItem key={z.id} value={z.id}>{getLocalizedName(z, language)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
