@@ -333,13 +333,17 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
         } else if (!item.id && item.new_quantity > 0) {
           // New product added
           const paidQty = Math.max(0, item.new_quantity - (item.gift_quantity || 0));
+          const multiplier = getBoxMultiplier(item.pricing_unit, item.weight_per_box, item.pieces_per_box);
           await supabase.from('order_items').insert({
             order_id: order.id,
             product_id: item.product_id,
             quantity: item.new_quantity,
             gift_quantity: item.gift_quantity || 0,
             unit_price: item.unit_price,
-            total_price: paidQty * item.unit_price,
+            total_price: paidQty * item.unit_price * multiplier,
+            pricing_unit: item.pricing_unit,
+            weight_per_box: item.weight_per_box,
+            pieces_per_box: item.pieces_per_box,
           });
           changes.push({
             منتج: item.product_name,
