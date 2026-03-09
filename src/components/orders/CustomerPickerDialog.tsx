@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Customer, Sector } from '@/types/database';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getLocalizedName } from '@/utils/sectorName';
+import CustomerLabel from '@/components/customers/CustomerLabel';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
