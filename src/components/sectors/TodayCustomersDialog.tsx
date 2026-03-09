@@ -198,7 +198,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
       // Use stock_movements to determine actual delivery time accurately
       let smQuery = supabase
         .from('stock_movements')
-        .select('order_id')
+        .select('order_id, created_at')
         .eq('movement_type', 'delivery')
         .gte('created_at', todayStart)
         .lte('created_at', todayEnd);
@@ -208,15 +208,23 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
       const { data: movements } = await smQuery;
       if (!movements || movements.length === 0) return [];
 
+      // Build a map of order_id -> earliest delivery time
+      const deliveryTimeMap: Record<string, string> = {};
+      movements.forEach(m => {
+        if (m.order_id && (!deliveryTimeMap[m.order_id] || m.created_at < deliveryTimeMap[m.order_id])) {
+          deliveryTimeMap[m.order_id] = m.created_at;
+        }
+      });
+
       const orderIds = [...new Set(movements.map(m => m.order_id).filter(Boolean))];
       if (orderIds.length === 0) return [];
 
       const { data } = await supabase
         .from('orders')
-        .select('customer_id, status, assigned_worker_id')
+        .select('id, customer_id, status, assigned_worker_id')
         .in('id', orderIds)
         .eq('status', 'delivered');
-      return data || [];
+      return (data || []).map(o => ({ ...o, delivered_at: deliveryTimeMap[o.id] || null }));
     },
     enabled: !!effectiveWorkerId && open,
     refetchInterval: 10000,
@@ -414,6 +422,13 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   const salesWithOrders = useMemo(() => salesCustomers.filter(c => orderedCustomerIds.has(c.id)), [salesCustomers, orderedCustomerIds]);
 
   const deliveredCustomerIds = useMemo(() => new Set(todayDeliveredOrders.map(o => o.customer_id).filter(Boolean)), [todayDeliveredOrders]);
+  const customerDeliveryTimeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    todayDeliveredOrders.forEach(o => {
+      if (o.customer_id && o.delivered_at) map.set(o.customer_id, o.delivered_at);
+    });
+    return map;
+  }, [todayDeliveredOrders]);
   const deliveryVisitedCustomerIds = useMemo(() => new Set(todayVisits.filter(v => v.operation_type === 'delivery_visit').map(v => v.customer_id).filter(Boolean)), [todayVisits]);
   const deliveryNotDone = useMemo(() => deliveryCustomers.filter(c => !deliveredCustomerIds.has(c.id) && !deliveryVisitedCustomerIds.has(c.id)), [deliveryCustomers, deliveredCustomerIds, deliveryVisitedCustomerIds]);
   const deliveryNotReceived = useMemo(() => deliveryCustomers.filter(c => deliveryVisitedCustomerIds.has(c.id) && !deliveredCustomerIds.has(c.id)), [deliveryCustomers, deliveryVisitedCustomerIds, deliveredCustomerIds]);
@@ -1031,7 +1046,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                   <CustomerList customers={deliveryNotReceived} emptyMessage="لا توجد زيارات بدون تسليم" onCustomerClick={handleDeliveryCustomerClick} showActionButtons onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} onDebtRefused={handleDeliveryDebtRefused} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} />
                 </TabsContent>
                 <TabsContent value="received" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList customers={deliveryReceived} emptyMessage="لا توجد توصيلات بعد" onCustomerClick={handleShowDeliveredOrderDetails} showPrintButton onPrint={handlePrintDeliveredOrder} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} />
+                  <CustomerList customers={deliveryReceived} emptyMessage="لا توجد توصيلات بعد" onCustomerClick={handleShowDeliveredOrderDetails} showPrintButton onPrint={handlePrintDeliveredOrder} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} deliveryTimeMap={customerDeliveryTimeMap} />
                 </TabsContent>
               </Tabs>
             </TabsContent>
@@ -1404,7 +1419,8 @@ const CustomerList: React.FC<{
   searchQuery?: string;
   sectors?: any[];
   salesRepStatusMap?: Map<string, string>;
-}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, onClosed, onUnavailable, onDebtRefused, onNoSale, onPrint, showVisitButton, visitButtonLabel, showActionButtons, showPrintButton, showNoSaleButton, checkingLocationFor, loadingFor, searchQuery, sectors, salesRepStatusMap }) => {
+  deliveryTimeMap?: Map<string, string>;
+}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, onClosed, onUnavailable, onDebtRefused, onNoSale, onPrint, showVisitButton, visitButtonLabel, showActionButtons, showPrintButton, showNoSaleButton, checkingLocationFor, loadingFor, searchQuery, sectors, salesRepStatusMap, deliveryTimeMap }) => {
   const filtered = useMemo(() => {
     if (!searchQuery?.trim()) return customers;
     const q = searchQuery.trim().toLowerCase();
@@ -1454,6 +1470,12 @@ const CustomerList: React.FC<{
                 {c.phone && <span>{c.phone}</span>}
                 {c.wilaya && <span>• {c.wilaya}</span>}
               </div>
+              {deliveryTimeMap?.has(c.id) && (
+                <div className="flex items-center gap-1 text-[10px] text-green-600 mt-0.5">
+                  <Check className="w-3 h-3" />
+                  <span>تم التسليم: {format(new Date(deliveryTimeMap.get(c.id)!), 'HH:mm')}</span>
+                </div>
+              )}
             </div>
           </button>
           <div className="flex items-center gap-1 mt-1.5 justify-end flex-wrap">
