@@ -458,33 +458,64 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     enabled: !!effectiveWorkerId && open && salesWorkerIds.length > 0,
   });
 
-  // Customers visited or ordered by sales worker = should NOT be in direct sale
-  const salesWorkerTouchedCustomerIds = useMemo(() => {
+  // Customers visited or ordered by sales worker (for reference)
+  const salesWorkerOrderedCustomerIds = useMemo(() => {
     const ids = new Set<string>();
-    salesWorkerVisits.forEach(v => { if (v.customer_id) ids.add(v.customer_id); });
     salesWorkerOrders.forEach(o => { if (o.customer_id) ids.add(o.customer_id); });
     return ids;
-  }, [salesWorkerVisits, salesWorkerOrders]);
+  }, [salesWorkerOrders]);
+
+  // Sales rep visit status map for Prévente customers (used for badges)
+  // Status: 'ordered' | 'visited' | 'closed' | 'unavailable' | 'not_visited'
+  const salesRepStatusMap = useMemo(() => {
+    const map = new Map<string, string>();
+    const preventeSectorIds = new Set(preventeDeliverySectors.map(s => s.id));
+    // Mark all Prévente customers as not_visited by default
+    customers.forEach(c => {
+      if (c.sector_id && preventeSectorIds.has(c.sector_id)) {
+        map.set(c.id, 'not_visited');
+      }
+    });
+    // Override with actual visit status
+    salesWorkerVisits.forEach(v => {
+      if (!v.customer_id) return;
+      if (!map.has(v.customer_id)) return;
+      if (v.notes && /مغلق/.test(v.notes)) {
+        map.set(v.customer_id, 'closed');
+      } else if (v.notes && /غير متاح/.test(v.notes)) {
+        map.set(v.customer_id, 'unavailable');
+      } else if (map.get(v.customer_id) === 'not_visited') {
+        map.set(v.customer_id, 'visited');
+      }
+    });
+    // Override with ordered status (highest priority)
+    salesWorkerOrders.forEach(o => {
+      if (o.customer_id && map.has(o.customer_id)) {
+        map.set(o.customer_id, 'ordered');
+      }
+    });
+    return map;
+  }, [salesWorkerVisits, salesWorkerOrders, customers, preventeDeliverySectors]);
 
   // Direct sale customers:
   // 1. Cash Van sectors (today delivery) → ALL customers
-  // 2. Prévente sectors (today delivery) → customers NOT visited/ordered by sales worker AND not having pending delivery orders
+  // 2. Prévente sectors (today delivery) → ALL customers EXCEPT those with pending delivery orders or already ordered by sales rep
   const directSaleCustomers = useMemo(() => {
     const cashVanSectorIds = new Set(todayDeliverySectors.filter(s => (s as any).sector_type === 'cash_van').map(s => s.id));
     const preventeSectorIds = new Set(preventeDeliverySectors.map(s => s.id));
     
     const cashVanCustomers = customers.filter(c => c.sector_id && cashVanSectorIds.has(c.sector_id) && !deliveredCustomerIds.has(c.id));
-    const preventeUnvisitedCustomers = customers.filter(c => 
+    const preventeAllCustomers = customers.filter(c => 
       c.sector_id && preventeSectorIds.has(c.sector_id) && 
       !deliveryCustomerIdsWithOrders.has(c.id) && 
       !deliveredCustomerIds.has(c.id) &&
-      !salesWorkerTouchedCustomerIds.has(c.id)
+      !salesWorkerOrderedCustomerIds.has(c.id)
     );
     
     const combined = new Map<string, typeof customers[0]>();
-    [...cashVanCustomers, ...preventeUnvisitedCustomers].forEach(c => combined.set(c.id, c));
+    [...cashVanCustomers, ...preventeAllCustomers].forEach(c => combined.set(c.id, c));
     return Array.from(combined.values());
-  }, [todayDeliverySectors, preventeDeliverySectors, customers, deliveredCustomerIds, deliveryCustomerIdsWithOrders, salesWorkerTouchedCustomerIds]);
+  }, [todayDeliverySectors, preventeDeliverySectors, customers, deliveredCustomerIds, deliveryCustomerIdsWithOrders, salesWorkerOrderedCustomerIds]);
 
   // Direct sale sub-categorization
   const directSoldCustomerIds = useMemo(() => new Set(todayDirectSales.map(s => s.customer_id).filter(Boolean)), [todayDirectSales]);
