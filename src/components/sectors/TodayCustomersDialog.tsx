@@ -186,18 +186,36 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     enabled: !!effectiveWorkerId && open,
   });
 
+  const todayEnd = useMemo(() => {
+    const d = new Date();
+    d.setHours(23, 59, 59, 999);
+    return d.toISOString();
+  }, []);
+
   const { data: todayDeliveredOrders = [] } = useQuery({
-    queryKey: ['today-delivered-dialog', effectiveWorkerId, todayStart, isAdmin],
+    queryKey: ['today-delivered-dialog', effectiveWorkerId, todayStart, todayEnd, isAdmin],
     queryFn: async () => {
-      let query = supabase
+      // Use stock_movements to determine actual delivery time accurately
+      let smQuery = supabase
+        .from('stock_movements')
+        .select('order_id')
+        .eq('movement_type', 'delivery')
+        .gte('created_at', todayStart)
+        .lte('created_at', todayEnd);
+      if (!isAdmin || hasSpecificWorker) {
+        smQuery = smQuery.eq('worker_id', effectiveWorkerId!);
+      }
+      const { data: movements } = await smQuery;
+      if (!movements || movements.length === 0) return [];
+
+      const orderIds = [...new Set(movements.map(m => m.order_id).filter(Boolean))];
+      if (orderIds.length === 0) return [];
+
+      const { data } = await supabase
         .from('orders')
         .select('customer_id, status, assigned_worker_id')
-        .gte('updated_at', todayStart)
+        .in('id', orderIds)
         .eq('status', 'delivered');
-      if (!isAdmin || hasSpecificWorker) {
-        query = query.eq('assigned_worker_id', effectiveWorkerId!);
-      }
-      const { data } = await query;
       return data || [];
     },
     enabled: !!effectiveWorkerId && open,
