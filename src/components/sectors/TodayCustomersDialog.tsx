@@ -379,6 +379,17 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   const orderedCustomerIds = useMemo(() => new Set(todayOrders.map(o => o.customer_id).filter(Boolean)), [todayOrders]);
   const salesNotVisited = useMemo(() => salesCustomers.filter(c => !visitedCustomerIds.has(c.id) && !orderedCustomerIds.has(c.id)), [salesCustomers, visitedCustomerIds, orderedCustomerIds]);
   const salesVisitedNoOrder = useMemo(() => salesCustomers.filter(c => visitedCustomerIds.has(c.id) && !orderedCustomerIds.has(c.id)), [salesCustomers, visitedCustomerIds, orderedCustomerIds]);
+
+  // Sub-categorize salesVisitedNoOrder based on visit notes
+  const closedCustomerIds = useMemo(() => new Set(
+    todayVisits.filter(v => v.operation_type === 'visit' && v.notes && /مغلق/.test(v.notes)).map(v => v.customer_id).filter(Boolean)
+  ), [todayVisits]);
+  const unavailableCustomerIds = useMemo(() => new Set(
+    todayVisits.filter(v => v.operation_type === 'visit' && v.notes && /غير متاح/.test(v.notes)).map(v => v.customer_id).filter(Boolean)
+  ), [todayVisits]);
+  const salesVisitedOnly = useMemo(() => salesVisitedNoOrder.filter(c => !closedCustomerIds.has(c.id) && !unavailableCustomerIds.has(c.id)), [salesVisitedNoOrder, closedCustomerIds, unavailableCustomerIds]);
+  const salesClosed = useMemo(() => salesVisitedNoOrder.filter(c => closedCustomerIds.has(c.id)), [salesVisitedNoOrder, closedCustomerIds]);
+  const salesUnavailable = useMemo(() => salesVisitedNoOrder.filter(c => unavailableCustomerIds.has(c.id)), [salesVisitedNoOrder, unavailableCustomerIds]);
   const salesWithOrders = useMemo(() => salesCustomers.filter(c => orderedCustomerIds.has(c.id)), [salesCustomers, orderedCustomerIds]);
 
   const deliveredCustomerIds = useMemo(() => new Set(todayDeliveredOrders.map(o => o.customer_id).filter(Boolean)), [todayDeliveredOrders]);
