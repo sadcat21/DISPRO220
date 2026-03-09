@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Check, X, Loader2, ArrowLeft, Eye } from 'lucide-react';
+import { Check, X, Loader2, ArrowLeft, Eye, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
@@ -55,7 +55,12 @@ const ALL_FIELDS: { key: string; label: string }[] = [
   { key: 'status', label: 'الحالة' },
 ];
 
-const IGNORED_FIELDS = ['new_debt_amount', 'debtAmount', 'initial_debt', 'branch_id', 'created_by', 'created_at', 'updated_at', 'id', 'pending_changes'];
+const FIELD_LABEL_MAP: Record<string, string> = {};
+ALL_FIELDS.forEach(f => { FIELD_LABEL_MAP[f.key] = f.label; });
+
+const IGNORED_FIELDS = ['new_debt_amount', 'debtAmount', 'initial_debt', 'branch_id', 'created_by', 'created_at', 'updated_at', 'id', 'pending_changes', 'changed_fields'];
+
+const GPS_FIELDS = ['latitude', 'longitude'];
 
 const CustomerChangeReviewDialog: React.FC<Props> = ({ open, onOpenChange, customer, requests, onProcessed }) => {
   const { workerId } = useAuth();
@@ -67,7 +72,7 @@ const CustomerChangeReviewDialog: React.FC<Props> = ({ open, onOpenChange, custo
     setProcessingId(request.id);
     try {
       if (request.operation_type === 'update' && request.customer_id) {
-        const { new_debt_amount, initial_debt, debtAmount, ...updateData } = request.payload;
+        const { new_debt_amount, initial_debt, debtAmount, changed_fields, ...updateData } = request.payload;
         const { error: updateError } = await supabase
           .from('customers').update(updateData).eq('id', request.customer_id);
         if (updateError) throw updateError;
@@ -115,10 +120,40 @@ const CustomerChangeReviewDialog: React.FC<Props> = ({ open, onOpenChange, custo
     return String(val);
   };
 
+  // Extract changed_fields from payload if available (new format)
+  const getChangedFieldsFromPayload = (payload: any): { field: string; old_value: any; new_value: any }[] | null => {
+    if (payload?.changed_fields && Array.isArray(payload.changed_fields)) {
+      return payload.changed_fields;
+    }
+    return null;
+  };
+
   const getFieldsComparison = (payload: any) => {
     const changed: { key: string; label: string; oldVal: any; newVal: any }[] = [];
     const unchanged: { key: string; label: string; value: any }[] = [];
 
+    // Use embedded changed_fields if available
+    const embeddedChanges = getChangedFieldsFromPayload(payload);
+    if (embeddedChanges) {
+      for (const cf of embeddedChanges) {
+        changed.push({
+          key: cf.field,
+          label: FIELD_LABEL_MAP[cf.field] || cf.field,
+          oldVal: cf.old_value,
+          newVal: cf.new_value,
+        });
+      }
+      // Unchanged: fields in payload but not in changed_fields
+      const changedKeys = new Set(embeddedChanges.map(c => c.field));
+      for (const field of ALL_FIELDS) {
+        if (field.key in payload && !changedKeys.has(field.key) && !IGNORED_FIELDS.includes(field.key)) {
+          unchanged.push({ key: field.key, label: field.label, value: (customer as any)[field.key] });
+        }
+      }
+      return { changed, unchanged };
+    }
+
+    // Fallback: compare with current customer data
     for (const field of ALL_FIELDS) {
       if (!(field.key in payload)) continue;
       const oldVal = (customer as any)[field.key];
@@ -146,15 +181,24 @@ const CustomerChangeReviewDialog: React.FC<Props> = ({ open, onOpenChange, custo
               const isProcessing = processingId === request.id;
               const isExpanded = expandedRequest === request.id;
               const { changed, unchanged } = request.operation_type === 'update' ? getFieldsComparison(request.payload) : { changed: [], unchanged: [] };
+              const hasGpsChange = changed.some(f => GPS_FIELDS.includes(f.key));
 
               return (
                 <div key={request.id} className="border rounded-lg overflow-hidden">
                   {/* Header bar */}
                   <div className="bg-muted/50 p-3 space-y-2">
                     <div className="flex items-center justify-between">
-                      <Badge variant={request.operation_type === 'update' ? 'outline' : 'destructive'} className="text-xs">
-                        {request.operation_type === 'update' ? 'تعديل' : 'حذف'}
-                      </Badge>
+                      <div className="flex items-center gap-1.5">
+                        <Badge variant={request.operation_type === 'update' ? 'outline' : 'destructive'} className="text-xs">
+                          {request.operation_type === 'update' ? 'تعديل' : 'حذف'}
+                        </Badge>
+                        {hasGpsChange && (
+                          <Badge variant="outline" className="text-xs border-amber-500 text-amber-600">
+                            <MapPin className="w-3 h-3 ml-0.5" />
+                            GPS
+                          </Badge>
+                        )}
+                      </div>
                       <span className="text-[10px] text-muted-foreground">
                         {new Date(request.created_at).toLocaleString('ar-DZ')}
                       </span>
@@ -163,7 +207,22 @@ const CustomerChangeReviewDialog: React.FC<Props> = ({ open, onOpenChange, custo
                       <p className="text-xs text-muted-foreground">بواسطة: <span className="font-medium text-foreground">{request.requester_name}</span></p>
                     )}
 
-                    {/* Action buttons - Direct approve, review, reject */}
+                    {/* Quick summary of changed fields */}
+                    {request.operation_type === 'update' && changed.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {changed.map(f => (
+                          <Badge
+                            key={f.key}
+                            variant="secondary"
+                            className={`text-[10px] px-1.5 py-0 ${GPS_FIELDS.includes(f.key) ? 'border-amber-500/50 bg-amber-50 dark:bg-amber-950/30' : ''}`}
+                          >
+                            {f.label}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Action buttons */}
                     <div className="flex items-center gap-1.5">
                       <Button
                         size="sm"
@@ -216,8 +275,11 @@ const CustomerChangeReviewDialog: React.FC<Props> = ({ open, onOpenChange, custo
                             الحقول المعدّلة ({changed.length})
                           </p>
                           {changed.map((f) => (
-                            <div key={f.key} className="bg-muted/40 rounded-md p-2 text-xs space-y-1">
-                              <p className="font-semibold text-foreground">{f.label}</p>
+                            <div key={f.key} className={`rounded-md p-2 text-xs space-y-1 ${GPS_FIELDS.includes(f.key) ? 'bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800' : 'bg-muted/40'}`}>
+                              <p className="font-semibold text-foreground flex items-center gap-1">
+                                {GPS_FIELDS.includes(f.key) && <MapPin className="w-3 h-3 text-amber-600" />}
+                                {f.label}
+                              </p>
                               <div className="flex items-center gap-2">
                                 <div className="flex-1 bg-destructive/10 text-destructive rounded px-2 py-1 line-through text-[11px]">
                                   {formatValue(f.oldVal)}
