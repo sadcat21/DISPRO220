@@ -396,7 +396,7 @@ const WorkerLoadRequestDialog: React.FC<WorkerLoadRequestDialogProps> = ({ open,
 
                 {/* Aggregated products summary */}
                 {selectedOrderIds.size > 0 && (
-                  <div className="border-t bg-muted/20 px-3 pt-2.5 pb-1 shrink-0">
+                  <div className="border-t bg-background px-3 pt-2.5 pb-1 shrink-0 relative z-10">
                     <p className="text-[11px] font-semibold text-foreground mb-1.5 flex items-center gap-1.5">
                       <Package className="w-3.5 h-3.5 text-primary" />
                       ملخص المنتجات ({aggregatedProducts.length})
