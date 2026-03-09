@@ -198,6 +198,39 @@ const Customers: React.FC = () => {
     return customers;
   }, [customers, activeBranch, role]);
 
+  const getCustomerCompletion = (customer: Customer) => {
+    const fieldStatus = {
+      name: !!customer.name?.trim(),
+      name_fr: !!customer.name_fr?.trim(),
+      phone: !!customer.phone?.trim(),
+      store_name: !!customer.store_name?.trim(),
+      customer_type: !!customer.customer_type,
+      internal_name: !!customer.internal_name?.trim(),
+      sales_rep_name: !!customer.sales_rep_name?.trim(),
+      sector_id: !!customer.sector_id,
+      zone_id: !!customer.zone_id,
+      address: !!customer.address?.trim(),
+      wilaya: !!customer.wilaya,
+      location: !!(customer.latitude && customer.longitude),
+      default_delivery_worker_id: !!customer.default_delivery_worker_id,
+    };
+
+    const completionKeys = customerFieldSettings.completionFields;
+    const requiredKeys = customerFieldSettings.requiredOnEdit;
+
+    const filled = completionKeys.filter((key) => fieldStatus[key]).length;
+    const percent = completionKeys.length === 0 ? 100 : Math.round((filled / completionKeys.length) * 100);
+    const missing = requiredKeys
+      .filter((key) => !fieldStatus[key])
+      .map((key) => ({
+        key,
+        label: CUSTOMER_FIELD_LABELS[key],
+        icon: AlertTriangle,
+      }));
+
+    return { percent, missing };
+  };
+
   // Then filter by search query and sector
   const filteredCustomers = useMemo(() => {
     let filtered = filteredByBranch;
@@ -402,38 +435,6 @@ const Customers: React.FC = () => {
     }
   };
 
-  const getCustomerCompletion = (customer: Customer) => {
-    const fieldStatus = {
-      name: !!customer.name?.trim(),
-      name_fr: !!customer.name_fr?.trim(),
-      phone: !!customer.phone?.trim(),
-      store_name: !!customer.store_name?.trim(),
-      customer_type: !!customer.customer_type,
-      internal_name: !!customer.internal_name?.trim(),
-      sales_rep_name: !!customer.sales_rep_name?.trim(),
-      sector_id: !!customer.sector_id,
-      zone_id: !!customer.zone_id,
-      address: !!customer.address?.trim(),
-      wilaya: !!customer.wilaya,
-      location: !!(customer.latitude && customer.longitude),
-      default_delivery_worker_id: !!customer.default_delivery_worker_id,
-    };
-
-    const completionKeys = customerFieldSettings.completionFields;
-    const requiredKeys = customerFieldSettings.requiredOnEdit;
-
-    const filled = completionKeys.filter((key) => fieldStatus[key]).length;
-    const percent = completionKeys.length === 0 ? 100 : Math.round((filled / completionKeys.length) * 100);
-    const missing = requiredKeys
-      .filter((key) => !fieldStatus[key])
-      .map((key) => ({
-        key,
-        label: CUSTOMER_FIELD_LABELS[key],
-        icon: AlertTriangle,
-      }));
-
-    return { percent, missing };
-  };
 
   const renderCustomersList = () => (
     <div className="space-y-2">
