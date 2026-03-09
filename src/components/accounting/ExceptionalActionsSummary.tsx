@@ -6,6 +6,8 @@ import {
   ChevronDown,
   ChevronUp,
   Edit,
+  Eye,
+  Loader2,
   Printer,
   RotateCcw,
   Trash2,
@@ -13,6 +15,9 @@ import {
   XCircle,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import {
@@ -243,6 +248,38 @@ const ExceptionalActionsSummary: React.FC<ExceptionalActionsSummaryProps> = ({
   periodEnd,
 }) => {
   const [openItems, setOpenItems] = useState<Record<string, boolean>>({});
+  const [detailDialog, setDetailDialog] = useState<{ open: boolean; entityId: string | null; entityType: string }>({ open: false, entityId: null, entityType: '' });
+  const [detailData, setDetailData] = useState<any>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
+  const fetchEntityDetails = async (entityId: string, entityType: string) => {
+    setLoadingDetail(true);
+    setDetailData(null);
+    try {
+      if (entityType === 'order') {
+        const { data } = await supabase
+          .from('orders')
+          .select('*, customer:customers(name, store_name, phone), items:order_items(quantity, unit_price, total_price, gift_quantity, product:products(name))')
+          .eq('id', entityId)
+          .single();
+        setDetailData(data);
+      } else if (entityType === 'receipt') {
+        const { data } = await supabase
+          .from('receipts')
+          .select('*')
+          .eq('id', entityId)
+          .single();
+        setDetailData(data);
+      }
+    } catch { /* ignore */ }
+    setLoadingDetail(false);
+  };
+
+  const handleShowDetails = (action: ExceptionalAction) => {
+    if (!action.entity_id) return;
+    setDetailDialog({ open: true, entityId: action.entity_id, entityType: action.entity_type });
+    fetchEntityDetails(action.entity_id, action.entity_type);
+  };
 
   useRealtimeSubscription(
     `session-exceptional-actions-${workerId || 'none'}`,
@@ -406,6 +443,19 @@ const ExceptionalActionsSummary: React.FC<ExceptionalActionsSummaryProps> = ({
                           </div>
                         ))
                       )}
+
+                      {/* Details button */}
+                      {action.entity_id && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full h-7 text-[11px] gap-1 mt-1"
+                          onClick={() => handleShowDetails(action)}
+                        >
+                          <Eye className="w-3 h-3" />
+                          عرض التفاصيل الكاملة
+                        </Button>
+                      )}
                     </div>
                   </CollapsibleContent>
                 </div>
@@ -414,6 +464,104 @@ const ExceptionalActionsSummary: React.FC<ExceptionalActionsSummaryProps> = ({
           })}
         </div>
       )}
+
+      {/* Entity Details Dialog */}
+      <Dialog open={detailDialog.open} onOpenChange={(o) => setDetailDialog(prev => ({ ...prev, open: o }))}>
+        <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[80vh] flex flex-col p-0 gap-0" dir="rtl">
+          <DialogHeader className="px-4 pt-4 pb-2 border-b shrink-0">
+            <DialogTitle className="text-sm">
+              تفاصيل {detailDialog.entityType === 'order' ? 'الطلبية' : 'الإجراء'}
+              {detailDialog.entityId && (
+                <span className="text-[10px] text-muted-foreground font-mono ms-2">#{detailDialog.entityId.slice(0, 8)}</span>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+
+          <ScrollArea className="flex-1 px-4 py-3">
+            {loadingDetail ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : !detailData ? (
+              <p className="text-xs text-muted-foreground text-center py-8">لا توجد بيانات</p>
+            ) : detailDialog.entityType === 'order' ? (
+              <div className="space-y-3">
+                {/* Customer info */}
+                <div className="rounded-lg bg-muted/40 p-2.5 space-y-1">
+                  <p className="text-[11px] font-semibold text-muted-foreground">العميل</p>
+                  <p className="text-xs font-medium">{detailData.customer?.store_name || detailData.customer?.name || '—'}</p>
+                  {detailData.customer?.phone && <p className="text-[11px] text-muted-foreground">{detailData.customer.phone}</p>}
+                </div>
+
+                {/* Order info */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-lg bg-muted/40 p-2 space-y-0.5">
+                    <p className="text-[10px] text-muted-foreground">الحالة</p>
+                    <p className="text-xs font-semibold">{detailData.status || '—'}</p>
+                  </div>
+                  <div className="rounded-lg bg-muted/40 p-2 space-y-0.5">
+                    <p className="text-[10px] text-muted-foreground">المبلغ</p>
+                    <p className="text-xs font-semibold tabular-nums">{Number(detailData.total_amount || 0).toLocaleString()} د.ج</p>
+                  </div>
+                  <div className="rounded-lg bg-muted/40 p-2 space-y-0.5">
+                    <p className="text-[10px] text-muted-foreground">طريقة الدفع</p>
+                    <p className="text-xs font-semibold">{detailData.payment_type === 'full' ? 'كامل' : detailData.payment_type === 'partial' ? 'جزئي' : detailData.payment_type === 'debt' ? 'دين' : detailData.payment_type || '—'}</p>
+                  </div>
+                  <div className="rounded-lg bg-muted/40 p-2 space-y-0.5">
+                    <p className="text-[10px] text-muted-foreground">التاريخ</p>
+                    <p className="text-xs font-semibold">{detailData.created_at ? format(new Date(detailData.created_at), 'MM/dd HH:mm') : '—'}</p>
+                  </div>
+                  {detailData.paid_amount != null && (
+                    <div className="rounded-lg bg-muted/40 p-2 space-y-0.5">
+                      <p className="text-[10px] text-muted-foreground">المبلغ المدفوع</p>
+                      <p className="text-xs font-semibold tabular-nums">{Number(detailData.paid_amount).toLocaleString()} د.ج</p>
+                    </div>
+                  )}
+                  {detailData.notes && (
+                    <div className="rounded-lg bg-muted/40 p-2 space-y-0.5 col-span-2">
+                      <p className="text-[10px] text-muted-foreground">ملاحظات</p>
+                      <p className="text-xs">{detailData.notes}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Products */}
+                {detailData.items && detailData.items.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-[11px] font-semibold text-muted-foreground">المنتجات ({detailData.items.length})</p>
+                    <div className="space-y-1">
+                      {detailData.items.map((item: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between rounded-lg bg-muted/30 border border-border/40 px-2.5 py-1.5">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-medium truncate">{item.product?.name || '—'}</p>
+                            <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                              <span>الكمية: {item.quantity}</span>
+                              {item.gift_quantity > 0 && <span className="text-primary">هدية: {item.gift_quantity}</span>}
+                              {item.unit_price > 0 && <span>{Number(item.unit_price).toLocaleString()} د.ج/وحدة</span>}
+                            </div>
+                          </div>
+                          <span className="text-[11px] font-bold tabular-nums shrink-0 ms-2">
+                            {Number(item.total_price || 0).toLocaleString()} د.ج
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {Object.entries(detailData || {}).filter(([k]) => !['id', 'created_at', 'updated_at'].includes(k)).map(([key, val]) => (
+                  <div key={key} className="rounded-lg bg-muted/40 p-2 space-y-0.5">
+                    <p className="text-[10px] text-muted-foreground">{key}</p>
+                    <p className="text-xs font-medium">{typeof val === 'object' ? JSON.stringify(val) : String(val ?? '—')}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
