@@ -1047,7 +1047,7 @@ const SectorCustomersPopover: React.FC = () => {
         <DialogContent className="max-w-[95vw] sm:max-w-sm p-4 gap-3" dir="rtl">
           <DialogHeader className="pb-0">
             <DialogTitle className="text-base truncate">
-              {selectedDebt.customer?.store_name || selectedDebt.customer?.name || '—'}
+              <CustomerLabel customer={{ name: selectedDebt.customer?.name, store_name: selectedDebt.customer?.store_name, customer_type: selectedDebt.customer?.customer_type }} compact />
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
