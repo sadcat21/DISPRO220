@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Loader2, Calculator, User, Calendar, ClipboardList, TrendingUp, TrendingDown, Banknote, ArrowDownCircle, CreditCard, AlertTriangle, ChevronDown, Trash2, RotateCcw } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAccountingSessions, AccountingSession, AccountingSessionItem, useDeleteSession } from '@/hooks/useAccountingSessions';
+import { useAccountingSessions, AccountingSession, AccountingSessionItem, useDeleteSession, useCancelSession } from '@/hooks/useAccountingSessions';
 import CreateSessionDialog from '@/components/accounting/CreateSessionDialog';
 import SessionDetailsDialog from '@/components/accounting/SessionDetailsDialog';
 import WorkerHandoverPreviewDialog from '@/components/accounting/WorkerHandoverPreviewDialog';
