@@ -332,15 +332,31 @@ const AccountingSessions: React.FC = () => {
         />
       )}
 
-      {/* Confirm Delete Session */}
+      {/* Confirm Cancel (Revert) Session */}
+      <AlertDialog open={!!cancelSession2} onOpenChange={() => setCancelSession2(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2"><RotateCcw className="w-5 h-5 text-orange-500" />إلغاء جلسة المحاسبة</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم إلغاء جلسة محاسبة "{cancelSession2?.worker?.full_name}" واستعادة جميع الحسابات والأرقام كما كانت قبل الجلسة (بما فيها سجلات الخزينة).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>تراجع</AlertDialogCancel>
+            <AlertDialogAction className="bg-orange-500 text-white hover:bg-orange-600" onClick={confirmCancelSession}>إلغاء الجلسة واستعادة</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm Delete Session (no revert) */}
       <AlertDialog open={!!deleteSession2} onOpenChange={() => setDeleteSession2(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2"><Trash2 className="w-5 h-5 text-destructive" />حذف جلسة المحاسبة</AlertDialogTitle>
-            <AlertDialogDescription>هل أنت متأكد من حذف جلسة محاسبة "{deleteSession2?.worker?.full_name}"؟ لا يمكن التراجع عن هذا الإجراء.</AlertDialogDescription>
+            <AlertDialogDescription>هل أنت متأكد من حذف جلسة محاسبة "{deleteSession2?.worker?.full_name}"؟ سيتم حذف السجل فقط بدون استعادة الحسابات.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogCancel>تراجع</AlertDialogCancel>
             <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={confirmDeleteSession}>حذف</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
