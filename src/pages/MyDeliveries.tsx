@@ -540,24 +540,19 @@ const MyDeliveries: React.FC = () => {
                 {/* Customer Info */}
                 <div className="flex items-center gap-2 mb-0.5">
                   <Store className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <span className="font-bold text-sm truncate">{order.customer?.store_name || order.customer?.name}</span>
+                  <CustomerLabel
+                    customer={{
+                      name: order.customer?.name,
+                      store_name: order.customer?.store_name,
+                      customer_type: order.customer?.customer_type,
+                      sector_name: (order.customer as any)?.sector ? getLocalizedName((order.customer as any).sector, language) : undefined,
+                    }}
+                    compact
+                  />
                   {customerDebts[order.customer_id] && (
                     <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
                   )}
                 </div>
-                {order.customer?.store_name && order.customer?.name && (
-                  <p className="text-xs text-muted-foreground mr-6 mb-0.5">{order.customer.name}</p>
-                )}
-                {/* Sector & Zone */}
-                {(order.customer as any)?.sector && (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mr-6 mb-1">
-                    <Map className="w-3 h-3 shrink-0" />
-                    <span>{getLocalizedName((order.customer as any).sector, language)}</span>
-                    {(order.customer as any)?.zone && (
-                      <span className="text-muted-foreground/70">• {getLocalizedName((order.customer as any).zone, language)}</span>
-                    )}
-                  </div>
-                )}
                 
                 {order.customer?.phone && (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground mb-0.5">
