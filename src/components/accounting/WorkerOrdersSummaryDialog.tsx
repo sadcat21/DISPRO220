@@ -166,13 +166,13 @@ const WorkerOrdersSummaryDialog: React.FC<Props> = ({ open, onOpenChange, worker
         <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as any); setExpandedProduct(null); }} className="flex-1 min-h-0 flex flex-col">
           <div className="px-3 pt-2 shrink-0">
             <TabsList className="grid grid-cols-2 h-9 bg-muted/60 rounded-lg p-0.5">
-              <TabsTrigger value="assigned" className="text-[11px] rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1 h-full">
+             <TabsTrigger value="assigned" className="text-[11px] rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1 h-full">
                 <UserCheck className="w-3.5 h-3.5" />
-                معيّنة ({data?.assigned?.length || 0})
+                معيّنة ({assignedCustomers})
               </TabsTrigger>
               <TabsTrigger value="created" className="text-[11px] rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1 h-full">
                 <ShoppingCart className="w-3.5 h-3.5" />
-                طلبياته ({data?.created?.length || 0})
+                طلبياته ({createdCustomers})
               </TabsTrigger>
             </TabsList>
           </div>
