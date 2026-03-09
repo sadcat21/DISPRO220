@@ -9,6 +9,7 @@ export interface CustomerLabelData {
   store_name?: string | null;
   customer_type?: string | null;
   sector_name?: string | null;
+  zone_name?: string | null;
 }
 
 interface CustomerLabelProps {
