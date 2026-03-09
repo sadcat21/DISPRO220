@@ -626,18 +626,16 @@ const Customers: React.FC = () => {
                   )}
                 </div>
               </div>
-              {(percent < 100 || missing.length > 0) && (
+              {percent < 100 && (
                 <div className="mt-2 space-y-1">
                   <div className="flex items-center gap-2">
                     <Progress value={percent} className="h-1.5 flex-1" />
-                    <span className={`text-[10px] font-semibold ${percent === 100 ? 'text-primary' : percent >= 60 ? 'text-muted-foreground' : 'text-destructive'}`}>{percent}%</span>
+                    <span className={`text-[10px] font-semibold ${percent >= 60 ? 'text-muted-foreground' : 'text-destructive'}`}>{percent}%</span>
                   </div>
-                  {missing.length > 0 && (
+                  {missingCompletion.length > 0 && (
                     <div className="flex items-center gap-1 flex-wrap">
-                      <AlertTriangle className="w-3 h-3 text-destructive shrink-0" />
-                      {missing.map(m => (
-                        <Badge key={m.key} variant="outline" className="text-[9px] px-1 py-0 border-destructive/40 text-destructive gap-0.5">
-                          <m.icon className="w-2.5 h-2.5" />
+                      {missingCompletion.map(m => (
+                        <Badge key={m.key} variant="outline" className="text-[9px] px-1.5 py-0 border-destructive/30 text-destructive bg-destructive/5">
                           {m.label}
                         </Badge>
                       ))}
