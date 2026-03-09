@@ -248,6 +248,38 @@ const ExceptionalActionsSummary: React.FC<ExceptionalActionsSummaryProps> = ({
   periodEnd,
 }) => {
   const [openItems, setOpenItems] = useState<Record<string, boolean>>({});
+  const [detailDialog, setDetailDialog] = useState<{ open: boolean; entityId: string | null; entityType: string }>({ open: false, entityId: null, entityType: '' });
+  const [detailData, setDetailData] = useState<any>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
+  const fetchEntityDetails = async (entityId: string, entityType: string) => {
+    setLoadingDetail(true);
+    setDetailData(null);
+    try {
+      if (entityType === 'order') {
+        const { data } = await supabase
+          .from('orders')
+          .select('*, customer:customers(name, store_name, phone), items:order_items(quantity, unit_price, total_price, gift_quantity, product:products(name))')
+          .eq('id', entityId)
+          .single();
+        setDetailData(data);
+      } else if (entityType === 'receipt') {
+        const { data } = await supabase
+          .from('receipts')
+          .select('*')
+          .eq('id', entityId)
+          .single();
+        setDetailData(data);
+      }
+    } catch { /* ignore */ }
+    setLoadingDetail(false);
+  };
+
+  const handleShowDetails = (action: ExceptionalAction) => {
+    if (!action.entity_id) return;
+    setDetailDialog({ open: true, entityId: action.entity_id, entityType: action.entity_type });
+    fetchEntityDetails(action.entity_id, action.entity_type);
+  };
 
   useRealtimeSubscription(
     `session-exceptional-actions-${workerId || 'none'}`,
