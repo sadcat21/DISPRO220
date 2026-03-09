@@ -422,6 +422,13 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   const salesWithOrders = useMemo(() => salesCustomers.filter(c => orderedCustomerIds.has(c.id)), [salesCustomers, orderedCustomerIds]);
 
   const deliveredCustomerIds = useMemo(() => new Set(todayDeliveredOrders.map(o => o.customer_id).filter(Boolean)), [todayDeliveredOrders]);
+  const customerDeliveryTimeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    todayDeliveredOrders.forEach(o => {
+      if (o.customer_id && o.delivered_at) map.set(o.customer_id, o.delivered_at);
+    });
+    return map;
+  }, [todayDeliveredOrders]);
   const deliveryVisitedCustomerIds = useMemo(() => new Set(todayVisits.filter(v => v.operation_type === 'delivery_visit').map(v => v.customer_id).filter(Boolean)), [todayVisits]);
   const deliveryNotDone = useMemo(() => deliveryCustomers.filter(c => !deliveredCustomerIds.has(c.id) && !deliveryVisitedCustomerIds.has(c.id)), [deliveryCustomers, deliveredCustomerIds, deliveryVisitedCustomerIds]);
   const deliveryNotReceived = useMemo(() => deliveryCustomers.filter(c => deliveryVisitedCustomerIds.has(c.id) && !deliveredCustomerIds.has(c.id)), [deliveryCustomers, deliveryVisitedCustomerIds, deliveredCustomerIds]);
