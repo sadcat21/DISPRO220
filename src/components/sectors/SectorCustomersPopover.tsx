@@ -888,13 +888,13 @@ const SectorCustomersPopover: React.FC = () => {
               </TabsList>
 
               <TabsContent value="not-delivered" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
-                <CustomerList customers={deliveryNotDone} emptyMessage="تم توصيل جميع العملاء ✓" onCustomerClick={(c) => handleCustomerClick(c, 'delivery')} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} showVisitButton visitButtonLabel="بدون تسليم" showActionButtons checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} sectors={sectors} sectors={sectors} sectors={sectors} sectors={sectors} sectors={sectors} />
+                <CustomerList customers={deliveryNotDone} emptyMessage="تم توصيل جميع العملاء ✓" onCustomerClick={(c) => handleCustomerClick(c, 'delivery')} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} showVisitButton visitButtonLabel="بدون تسليم" showActionButtons checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} sectors={sectors} sectors={sectors} sectors={sectors} sectors={sectors} sectors={sectors} sectors={sectors} />
               </TabsContent>
               <TabsContent value="not-received" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
-                <CustomerList customers={deliveryNotReceived} emptyMessage="لا توجد زيارات بدون تسليم" onCustomerClick={(c) => handleCustomerClick(c, 'delivery')} showActionButtons onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} checkingLosectors={sectors} cationFor={checkinsectors={sectors} gLocationFor} loadsectors={sectors} ingFor={loadingDelsectors={sectors} iveryFor} searchQusectors={sectors} ery={searchQuery} />
+                <CustomerList customers={deliveryNotReceived} emptyMessage="لا توجد زيارات بدون تسليم" onCustomerClick={(c) => handleCustomerClick(c, 'delivery')} showActionButtons onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavasectors={sectors} ilable} checkingLosectors={sectors} cationFor={checkinsectors={sectors} gLocationFor} loadsectors={sectors} ingFor={loadingDelsectors={sectors} iveryFor} searchQusectors={sectors} ery={searchQuery} />
               </TabsContent>
               <TabsContent value="received" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
-                <CustomerList customers={deliveryReceived} emptyMessage="لا توجد توصيلات بعد" onCustomerClick={handleShowDeliveredOrderDetails} showPrinsectors={sectors} tButton onPrint={handlePrintDeliveresectors={sectors} dOrder} checkingLocationFor={checkinsectors={sectors} gLocationFor} loadingFor={loadingDelsectors={sectors} iveryFor} searchQuery={searchQuery} />
+                <CustomerList customers={deliveryReceived} emptyMessage="لا توجد توصيلات بعد" onCustomerClick={handlsectors={sectors} eShowDeliveredOrderDetails} showPrinsectors={sectors} tButton onPrint={handlePrintDeliveresectors={sectors} dOrder} checkingLocationFor={checkinsectors={sectors} gLocationFor} loadingFor={loadingDelsectors={sectors} iveryFor} searchQuery={searchQuery} />
               </TabsContent>
             </Tabs>
           </TabsContent>
@@ -921,7 +921,7 @@ const SectorCustomersPopover: React.FC = () => {
               </TabsList>
 
               <TabsContent value="not-visited" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '45vh' }}>
-                <CustomerList customers={salesNotVisited} emptyMessage="تمت زيارة جميع العملاء ✓" onCustomerClick={(c) => handleCustomerClick(c, 'sales')} onVisitWithoutOrder={handleVisitWithoutOrder} onClosed={handsectors={sectors} leCustomerClosed} onUnavailable={handleCustomerUnavailsectors={sectors} able} showVisitButton showActionButtons checkingLocatisectors={sectors} onFor={checkingLocationFor} searchQuery={searchQuery} />
+                <CustomerList customers={salesNotVisited} emptyMessage="تمت زيارة جميع العملاء ✓" onCustomerClick={(c) => handleCustomerClick(c, 'sales')} onVisisectors={sectors} tWithoutOrder={handleVisitWithoutOrder} onClosed={handsectors={sectors} leCustomerClosed} onUnavailable={handleCustomerUnavailsectors={sectors} able} showVisitButton showActionButtons checkingLocatisectors={sectors} onFor={checkingLocationFor} searchQuery={searchQuery} />
               </TabsContent>
               <TabsContent value="visited-no-order" className="m-0 flex-1 min-h-0">
                 <Tabs defaultValue="visit-only" className="flex flex-col h-full min-h-0">
@@ -943,13 +943,13 @@ const SectorCustomersPopover: React.FC = () => {
                     </TabsTrigger>
                   </TabsList>
                   <TabsContent value="visit-only" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '40vh' }}>
-                    <CustomerList customers={salesVisitedOnly} emptyMessage="لا توجد زيارات بدsectors={sectors} ون طلبيات" onCustomerClick={(c) => handleCustomerClick(c, 'salessectors={sectors} ')} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} />
+                    <CustomerList cusectors={sectors} stomers={salesVisitedOnly} emptyMessage="لا توجد زيارات بدsectors={sectors} ون طلبيات" onCustomerClick={(c) => handleCustomerClick(c, 'salessectors={sectors} ')} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} />
                   </TabsContent>
                   <TabsContent value="unavailable" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '40vh' }}>
-                    <CustomerList customers={salesUnavailable} emptyMessage="لا يوجد عملاء غير متاحين" onCustomerClick={(c) => handleCustosectors={sectors} merClick(c, 'sales')} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} />
+                    <CustomerList customers={salesUnavailable} emptysectors={sectors} Message="لا يوجد عملاء غير متاحين" onCustomerClick={(c) => handleCustosectors={sectors} merClick(c, 'sales')} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} />
                   </TabsContent>
                   <TabsContent value="closed" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '40vh' }}>
-                    <CustomerList customers={salesClosed} emptyMessage="لا يوجد عملاء مغلقين" onCustomerClick={(c) => handleCustomerClick(c, 'sales')} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} />
+                    <CustomerList customers={salesClosed} emptyMessage="لا يوجد عملاء مغلقين" onCustomerClick={sectors={sectors} (c) => handleCustomerClick(c, 'sales')} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} />
                   </TabsContent>
                 </Tabs>
               </TabsContent>
