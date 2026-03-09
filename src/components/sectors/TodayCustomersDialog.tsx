@@ -49,6 +49,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   const navigate = useNavigate();
   const isAdmin = role === 'admin' || role === 'branch_admin';
   const todayName = JS_DAY_TO_NAME[new Date().getDay()] || '';
+  const [selectedDay, setSelectedDay] = useState(todayName);
   const { trackVisit } = useTrackVisit();
   const { data: locationThreshold } = useLocationThreshold();
   const canBypassLocation = useHasPermission('bypass_location_check');
