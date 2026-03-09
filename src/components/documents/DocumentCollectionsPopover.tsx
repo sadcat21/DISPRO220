@@ -301,7 +301,8 @@ const PendingDocCollectionsList: React.FC<{
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
   isLoading: boolean;
-}> = ({ collections, onApprove, onReject, isLoading }) => {
+  sectorMap?: Map<string, string>;
+}> = ({ collections, onApprove, onReject, isLoading, sectorMap }) => {
   if (collections.length === 0) {
     return <div className="p-6 text-center text-sm text-muted-foreground">لا توجد طلبات في الانتظار</div>;
   }
@@ -317,7 +318,7 @@ const PendingDocCollectionsList: React.FC<{
         {collections.map(c => (
           <div key={c.id} className="p-3 space-y-2">
             <div className="flex items-center justify-between">
-              <CustomerLabel customer={{ name: c.order?.customer?.name, store_name: c.order?.customer?.store_name, customer_type: c.order?.customer?.customer_type }} compact hideBadges />
+              <CustomerLabel customer={{ name: c.order?.customer?.name, store_name: c.order?.customer?.store_name, customer_type: c.order?.customer?.customer_type, sector_name: c.order?.customer?.sector_id && sectorMap ? sectorMap.get(c.order.customer.sector_id) : undefined }} compact hideBadges />
               <Badge variant="outline" className="text-xs">{actionLabels[c.action] || c.action}</Badge>
             </div>
             <div className="text-xs text-muted-foreground">
