@@ -234,6 +234,7 @@ const Customers: React.FC = () => {
             case 'store': return !c.store_name?.trim();
             case 'address': return !c.address?.trim();
             case 'wilaya': return !c.wilaya;
+            case 'zone': return !c.zone_id;
             default: return true;
           }
         });
