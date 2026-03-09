@@ -889,7 +889,33 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
             </div>
           )}
 
-          {/* Search bar */}
+          {/* Day picker strip */}
+          <div className="border-b px-2 py-1.5 shrink-0">
+            <ScrollArea className="w-full" dir="rtl">
+              <div className="flex gap-1.5 pb-1">
+                {Object.entries(DAY_NAMES).map(([key, label]) => {
+                  const isSelected = key === selectedDay;
+                  const isToday = key === todayName;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setSelectedDay(key)}
+                      className={`px-2.5 py-1 rounded-full border text-[11px] font-medium whitespace-nowrap transition-colors shrink-0
+                        ${isSelected
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background border-border hover:bg-accent text-foreground'}
+                      `}
+                    >
+                      {label}
+                      {isToday && !isSelected && <span className="mr-0.5 text-[9px] text-primary">●</span>}
+                    </button>
+                  );
+                })}
+              </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
+          </div>
+
           <div className="px-3 pt-2 pb-1 shrink-0">
             <div className="relative">
               <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
