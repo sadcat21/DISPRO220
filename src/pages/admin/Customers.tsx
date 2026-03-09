@@ -86,6 +86,7 @@ const Customers: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [missingFilter, setMissingFilter] = useState<string>('all');
   const [sectorZones, setSectorZones] = useState<{ id: string; name: string; name_fr: string | null; sector_id: string }[]>([]);
+  const [allZones, setAllZones] = useState<{ id: string; name: string; name_fr: string | null; sector_id: string }[]>([]);
   const [expandAllSectors, setExpandAllSectors] = useState(false);
   const isAddCustomerHidden = useIsElementHidden('button', 'add_customer');
   const isEditCustomerHidden = useIsElementHidden('action', 'edit_customer');
@@ -190,6 +191,10 @@ const Customers: React.FC = () => {
 
   useEffect(() => {
     fetchData();
+    // Fetch all zones for badge display
+    supabase.from('sector_zones').select('*').order('name').then(({ data }) => {
+      setAllZones((data || []) as any);
+    });
   }, []);
 
   // Filter customers by activeBranch
@@ -358,6 +363,12 @@ const Customers: React.FC = () => {
     if (!sectorId) return null;
     const sector = sectors.find(s => s.id === sectorId);
     return sector ? getLocalizedName(sector, language) : null;
+  };
+
+  const getZoneName = (zoneId: string | null | undefined) => {
+    if (!zoneId) return null;
+    const zone = allZones.find(z => z.id === zoneId);
+    return zone ? getLocalizedName(zone, language) : null;
   };
 
   const handleCustomerAdded = (newCustomer: Customer) => {
@@ -534,6 +545,11 @@ const Customers: React.FC = () => {
                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-semibold">
                         <MapPin className="w-2.5 h-2.5 ml-0.5" />
                         {getSectorName(customer.sector_id)}
+                      </Badge>
+                    )}
+                    {getZoneName(customer.zone_id) && (
+                      <Badge className="text-[10px] px-1.5 py-0 font-semibold border-0 bg-blue-600 text-white">
+                        {getZoneName(customer.zone_id)}
                       </Badge>
                     )}
                   </div>

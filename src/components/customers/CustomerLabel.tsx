@@ -9,6 +9,7 @@ export interface CustomerLabelData {
   store_name?: string | null;
   customer_type?: string | null;
   sector_name?: string | null;
+  zone_name?: string | null;
 }
 
 interface CustomerLabelProps {
@@ -57,6 +58,13 @@ const CustomerLabel: React.FC<CustomerLabelProps> = ({
           className="text-[10px] px-1.5 py-0 h-4 shrink-0 border-primary/30 text-primary"
         >
           {customer.sector_name}
+        </Badge>
+      )}
+      {customer.zone_name && (
+        <Badge
+          className="text-[10px] px-1.5 py-0 h-4 shrink-0 border-0 font-bold bg-blue-600 text-white"
+        >
+          {customer.zone_name}
         </Badge>
       )}
       {customer.customer_type && typeShort && (
