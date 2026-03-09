@@ -146,7 +146,7 @@ export const usePendingDocCollections = () => {
           worker:workers!document_collections_worker_id_fkey(id, full_name),
           order:orders!document_collections_order_id_fkey(
             id, total_amount, invoice_payment_method,
-            customer:customers!orders_customer_id_fkey(id, name, store_name)
+            customer:customers!orders_customer_id_fkey(id, name, store_name, customer_type, sector_id)
           )
         `)
         .eq('status', 'pending')
