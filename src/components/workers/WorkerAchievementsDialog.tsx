@@ -42,7 +42,7 @@ const OPERATION_COLORS: Record<string, string> = {
 // Sub-component for achievement detail with order items
 const AchievementDetailContent: React.FC<{ visit: any; onClose: () => void }> = ({ visit, onClose }) => {
   const isOrderType = ['order', 'direct_sale', 'delivery'].includes(visit.operation_type);
-  const entityId = visit.entity_id;
+  const entityId = visit.operation_id || visit.entity_id;
 
   const { data: orderData, isLoading: orderLoading } = useQuery({
     queryKey: ['achievement-order-detail', entityId],
