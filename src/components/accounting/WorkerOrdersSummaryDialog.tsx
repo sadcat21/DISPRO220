@@ -104,7 +104,7 @@ const OrdersCarousel: React.FC<{
         </div>
 
         {/* Image area with customer overlay */}
-        <div className="relative w-full overflow-hidden bg-muted h-[38vh] min-h-[200px] max-h-[400px]">
+        <div className="relative w-full overflow-hidden bg-muted min-h-[200px]" style={{ height: item.customers.length > 3 ? '45vh' : '38vh', maxHeight: '450px' }}>
           {item.imageUrl ? (
             <img src={item.imageUrl} alt={item.name} className="absolute inset-0 w-full h-full object-cover" />
           ) : (
@@ -123,7 +123,7 @@ const OrdersCarousel: React.FC<{
                     className="flex items-center justify-between py-2 px-3 rounded-lg bg-card/80 border border-border/60 text-sm"
                     dir="rtl"
                   >
-                    <div className="flex flex-col min-w-0 gap-0.5">
+                    <div className="flex flex-col min-w-0 flex-1 gap-0.5">
                       <div className="flex items-center gap-1.5">
                         <User className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                         <span className="truncate font-medium">{c.storeName || c.customerName}</span>
@@ -138,7 +138,9 @@ const OrdersCarousel: React.FC<{
                         {c.phone && <span dir="ltr" className="shrink-0">{c.phone}</span>}
                       </div>
                     </div>
-                    <span className="font-bold text-primary text-base shrink-0">{c.quantity}</span>
+                    <div className="flex items-center shrink-0 ms-2">
+                      <span className="font-bold text-primary text-base">{c.quantity}</span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -147,8 +149,8 @@ const OrdersCarousel: React.FC<{
         </div>
 
         {/* Footer */}
-        <div className="px-2 py-2 bg-card flex items-center gap-1.5">
-          <div className="flex-1 flex items-center justify-center gap-1 rounded-md bg-primary/10 text-primary py-1.5 text-sm font-bold">
+        <div className="px-2 py-2 bg-card flex flex-col gap-1.5">
+          <div className="flex items-center justify-center gap-1 rounded-md bg-primary/10 text-primary py-1.5 text-sm font-bold">
             <Package className="w-3.5 h-3.5" />
             {item.quantity}
           </div>
