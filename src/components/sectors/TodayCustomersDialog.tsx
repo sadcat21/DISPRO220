@@ -835,7 +835,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     return sectors.filter(s => allTodayIds.has(s.id)).map(s => s.name).join(' / ');
   }, [sectors, todaySalesSectorIds, todayDeliverySectorIds]);
 
-  const dayLabel = DAY_NAMES[todayName] || todayName;
+  const dayLabel = DAY_NAMES[selectedDay] || selectedDay;
   const sectorSuffix = todaySectorNames ? ` — ${todaySectorNames}` : '';
   const title = effectiveWorkerName
     ? `عملاء اليوم — ${dayLabel} — ${effectiveWorkerName}${sectorSuffix}`
