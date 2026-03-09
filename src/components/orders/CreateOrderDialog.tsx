@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import CustomerLabel from '@/components/customers/CustomerLabel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { addDays, format } from 'date-fns';
 import { Button } from '@/components/ui/button';
