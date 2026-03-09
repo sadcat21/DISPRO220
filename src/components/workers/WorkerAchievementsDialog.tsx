@@ -39,6 +39,140 @@ const OPERATION_COLORS: Record<string, string> = {
   delivery_visit: 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border-teal-200',
 };
 
+// Sub-component for achievement detail with order items
+const AchievementDetailContent: React.FC<{ visit: any; onClose: () => void }> = ({ visit, onClose }) => {
+  const isOrderType = ['order', 'direct_sale', 'delivery'].includes(visit.operation_type);
+  const entityId = visit.entity_id;
+
+  const { data: orderData, isLoading: orderLoading } = useQuery({
+    queryKey: ['achievement-order-detail', entityId],
+    queryFn: async () => {
+      // Fetch order with items
+      const { data: order, error: orderErr } = await supabase
+        .from('orders')
+        .select('id, total_amount, status, payment_status, invoice_payment_method, created_at, delivery_date')
+        .eq('id', entityId!)
+        .maybeSingle();
+      if (orderErr) throw orderErr;
+      if (!order) return null;
+
+      const { data: items, error: itemsErr } = await supabase
+        .from('order_items')
+        .select('id, quantity, unit_price, total_price, product:products(id, name, image_url)')
+        .eq('order_id', entityId!);
+      if (itemsErr) throw itemsErr;
+
+      return { order, items: items || [] };
+    },
+    enabled: isOrderType && !!entityId,
+  });
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
+          {OPERATION_ICONS[visit.operation_type] || <MapPin className="w-5 h-5" />}
+          تفاصيل الإنجاز
+        </DialogTitle>
+      </DialogHeader>
+      <div className="space-y-3 mt-2">
+        <div className={`p-3 rounded-lg border ${OPERATION_COLORS[visit.operation_type] || 'border-border'}`}>
+          <p className="font-bold text-sm">{getOperationLabel(visit.operation_type as OperationType)}</p>
+        </div>
+
+        {visit.customer_name && (
+          <div className="flex items-center gap-2 text-sm">
+            <User className="w-4 h-4 text-muted-foreground shrink-0" />
+            <span className="font-medium">العميل:</span>
+            <span>{visit.customer_name}</span>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 text-sm">
+          <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
+          <span className="font-medium">التوقيت:</span>
+          <span dir="ltr">{format(new Date(visit.created_at), 'HH:mm:ss')}</span>
+        </div>
+
+        {visit.latitude && visit.longitude && (
+          <div className="flex items-center gap-2 text-sm">
+            <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+            <span className="font-medium">الموقع:</span>
+            <span dir="ltr" className="text-xs text-muted-foreground">
+              {Number(visit.latitude).toFixed(5)}, {Number(visit.longitude).toFixed(5)}
+            </span>
+          </div>
+        )}
+
+        {visit.notes && (
+          <div className="flex items-start gap-2 text-sm">
+            <FileText className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+            <span className="font-medium">ملاحظات:</span>
+            <span className="text-muted-foreground">{visit.notes}</span>
+          </div>
+        )}
+
+        {/* Order items section */}
+        {isOrderType && entityId && (
+          <div className="border-t pt-3 mt-3">
+            <p className="font-bold text-sm mb-2 flex items-center gap-1.5">
+              <Package className="w-4 h-4" />
+              تفاصيل الطلبية
+            </p>
+            {orderLoading ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : orderData ? (
+              <div className="space-y-2">
+                {/* Order meta */}
+                <div className="flex items-center justify-between text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
+                  <span>الإجمالي: <strong className="text-foreground">{Number(orderData.order.total_amount).toLocaleString()} د.ج</strong></span>
+                  {orderData.order.invoice_payment_method && (
+                    <Badge variant="outline" className="text-[10px]">
+                      {orderData.order.invoice_payment_method === 'cash' ? 'نقدي' :
+                       orderData.order.invoice_payment_method === 'check' ? 'شيك' :
+                       orderData.order.invoice_payment_method === 'transfer' ? 'تحويل' :
+                       orderData.order.invoice_payment_method === 'receipt' ? 'وصل' : orderData.order.invoice_payment_method}
+                    </Badge>
+                  )}
+                </div>
+                {/* Product list */}
+                <div className="space-y-1.5">
+                  {orderData.items.map((item: any) => (
+                    <div key={item.id} className="flex items-center gap-2 bg-card border rounded-lg p-2">
+                      {item.product?.image_url ? (
+                        <img src={item.product.image_url} alt="" className="w-9 h-9 rounded object-cover shrink-0" />
+                      ) : (
+                        <div className="w-9 h-9 rounded bg-muted flex items-center justify-center shrink-0">
+                          <Package className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate">{item.product?.name || '—'}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {item.quantity} × {Number(item.unit_price).toLocaleString()} = <strong>{Number(item.total_price).toLocaleString()}</strong>
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-2">لا توجد تفاصيل</p>
+            )}
+          </div>
+        )}
+      </div>
+      <div className="mt-4">
+        <Button variant="outline" className="w-full" onClick={onClose}>
+          إغلاق
+        </Button>
+      </div>
+    </>
+  );
+};
+
 const WorkerAchievementsDialog: React.FC<WorkerAchievementsDialogProps> = ({
   open, onOpenChange, workerId, workerName
 }) => {
@@ -185,68 +319,12 @@ const WorkerAchievementsDialog: React.FC<WorkerAchievementsDialogProps> = ({
 
       {/* Achievement Detail Dialog */}
       <Dialog open={!!selectedVisit} onOpenChange={(o) => { if (!o) setSelectedVisit(null); }}>
-        <DialogContent className="max-w-sm" dir="rtl">
+        <DialogContent className="max-w-sm max-h-[85vh] overflow-y-auto" dir="rtl">
           {selectedVisit && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  {OPERATION_ICONS[selectedVisit.operation_type] || <MapPin className="w-5 h-5" />}
-                  تفاصيل الإنجاز
-                </DialogTitle>
-              </DialogHeader>
-              <div className="space-y-3 mt-2">
-                <div className={`p-3 rounded-lg border ${OPERATION_COLORS[selectedVisit.operation_type] || 'border-border'}`}>
-                  <p className="font-bold text-sm">{getOperationLabel(selectedVisit.operation_type as OperationType)}</p>
-                </div>
-
-                {selectedVisit.customer_name && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <User className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <span className="font-medium">العميل:</span>
-                    <span>{selectedVisit.customer_name}</span>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2 text-sm">
-                  <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <span className="font-medium">التوقيت:</span>
-                  <span dir="ltr">{format(new Date(selectedVisit.created_at), 'HH:mm:ss')}</span>
-                </div>
-
-                {selectedVisit.notes && (
-                  <div className="flex items-start gap-2 text-sm">
-                    <FileText className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                    <span className="font-medium">ملاحظات:</span>
-                    <span className="text-muted-foreground">{selectedVisit.notes}</span>
-                  </div>
-                )}
-
-                {selectedVisit.latitude && selectedVisit.longitude && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <span className="font-medium">الموقع:</span>
-                    <span dir="ltr" className="text-xs text-muted-foreground">
-                      {Number(selectedVisit.latitude).toFixed(5)}, {Number(selectedVisit.longitude).toFixed(5)}
-                    </span>
-                  </div>
-                )}
-
-                {selectedVisit.entity_id && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Package className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <span className="font-medium">المرجع:</span>
-                    <span className="text-xs text-muted-foreground font-mono" dir="ltr">
-                      {selectedVisit.entity_id.substring(0, 8)}...
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="mt-4">
-                <Button variant="outline" className="w-full" onClick={() => setSelectedVisit(null)}>
-                  إغلاق
-                </Button>
-              </div>
-            </>
+            <AchievementDetailContent
+              visit={selectedVisit}
+              onClose={() => setSelectedVisit(null)}
+            />
           )}
         </DialogContent>
       </Dialog>
