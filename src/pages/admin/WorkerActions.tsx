@@ -96,6 +96,7 @@ const WorkerActions: React.FC = () => {
   const [achievementsOpen, setAchievementsOpen] = useState(false);
   const [sectorScheduleOpen, setSectorScheduleOpen] = useState(false);
   const [sectorScheduleType, setSectorScheduleType] = useState<'delivery' | 'sales'>('delivery');
+  const [ordersSummaryOpen, setOrdersSummaryOpen] = useState(false);
 
   const isSelfMode = role === 'worker';
   const isSupervisorMode = role === 'supervisor';
