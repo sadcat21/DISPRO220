@@ -168,7 +168,7 @@ const DebtCollectionsPopover: React.FC = () => {
               <TabsContent value="due" className="m-0 flex-1">
                 {dayButtons}
                 <p className="text-[10px] text-muted-foreground text-center py-1">{selectedDateLabel}</p>
-                <DueDebtsList debts={dueDebts} onSelect={setSelectedDebt} />
+                <DueDebtsList debts={dueDebts} onSelect={setSelectedDebt} sectorMap={sectorMap} />
               </TabsContent>
               <TabsContent value="pending" className="m-0 flex-1">
                 <PendingCollectionsList
