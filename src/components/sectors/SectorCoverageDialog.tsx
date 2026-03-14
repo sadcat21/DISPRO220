@@ -153,6 +153,33 @@ const SectorCoverageDialog: React.FC<SectorCoverageDialogProps> = ({ open, onOpe
     }
   };
 
+  const handleEditSubstitute = async (coverageId: string, newSubstituteId: string) => {
+    try {
+      const { error } = await supabase
+        .from('sector_coverage')
+        .update({ substitute_worker_id: newSubstituteId } as any)
+        .eq('id', coverageId);
+      if (error) throw error;
+      toast.success('تم تحديث البديل بنجاح');
+      setEditingId(null);
+      setEditSubstituteId('');
+    } catch {
+      toast.error('حدث خطأ أثناء التحديث');
+    }
+  };
+
+  // Get day name for a coverage based on its sector schedule
+  const getCoverageDays = (coverage: SectorCoverage) => {
+    const sectorSchedules = schedules.filter(
+      s => s.sector_id === coverage.sector_id && 
+           s.worker_id === coverage.absent_worker_id && 
+           s.schedule_type === coverage.schedule_type
+    );
+    const days = sectorSchedules.map(s => s.day);
+    days.sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b));
+    return days;
+  };
+
   // Active/upcoming coverages
   const activeCoverages = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
