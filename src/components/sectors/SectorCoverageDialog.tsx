@@ -248,7 +248,7 @@ const SectorCoverageDialog: React.FC<SectorCoverageDialogProps> = ({ open, onOpe
             <span>دمج التعيينات مع التعويضات</span>
           </div>
           <Switch
-            checked={mergeAssignments}
+            checked={mergeSettingValue}
             onCheckedChange={handleToggleMerge}
             disabled={loadingMergeSetting}
           />
