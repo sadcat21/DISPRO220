@@ -60,6 +60,7 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const hasFittedBoundsRef = useRef(false);
   const routeLayerRef = useRef<L.Polyline | null>(null);
+  const stopsRouteLayerRef = useRef<L.LayerGroup | null>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const userInteractedRef = useRef(false);
   const [routeInfo, setRouteInfo] = useState<{ distance: number; duration: number } | null>(null);
