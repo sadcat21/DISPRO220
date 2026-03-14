@@ -4294,6 +4294,114 @@ export type Database = {
           },
         ]
       }
+      sector_coverage: {
+        Row: {
+          absent_worker_id: string
+          branch_id: string | null
+          coverage_type: string
+          created_at: string
+          created_by: string | null
+          end_date: string
+          id: string
+          is_active: boolean
+          reason: string | null
+          schedule_type: string
+          sector_id: string
+          start_date: string
+          substitute_worker_id: string
+          updated_at: string
+        }
+        Insert: {
+          absent_worker_id: string
+          branch_id?: string | null
+          coverage_type?: string
+          created_at?: string
+          created_by?: string | null
+          end_date: string
+          id?: string
+          is_active?: boolean
+          reason?: string | null
+          schedule_type?: string
+          sector_id: string
+          start_date: string
+          substitute_worker_id: string
+          updated_at?: string
+        }
+        Update: {
+          absent_worker_id?: string
+          branch_id?: string | null
+          coverage_type?: string
+          created_at?: string
+          created_by?: string | null
+          end_date?: string
+          id?: string
+          is_active?: boolean
+          reason?: string | null
+          schedule_type?: string
+          sector_id?: string
+          start_date?: string
+          substitute_worker_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sector_coverage_absent_worker_id_fkey"
+            columns: ["absent_worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sector_coverage_absent_worker_id_fkey"
+            columns: ["absent_worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sector_coverage_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sector_coverage_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sector_coverage_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sector_coverage_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sector_coverage_substitute_worker_id_fkey"
+            columns: ["substitute_worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sector_coverage_substitute_worker_id_fkey"
+            columns: ["substitute_worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sector_schedule_overrides: {
         Row: {
           branch_id: string | null

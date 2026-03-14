@@ -11,6 +11,7 @@ import { MapPin, Truck, ShoppingCart, Landmark, User, Phone, Eye, EyeOff, CheckC
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
+import { useSectorCoverage } from '@/hooks/useSectorCoverage';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDueDebts, DueDebt } from '@/hooks/useDebtCollections';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
@@ -352,6 +353,21 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     refetchInterval: 10000,
   });
 
+  // Sector coverage (substitution system)
+  const { getCoveredSectorsForWorker } = useSectorCoverage();
+  const selectedDateStr = useMemo(() => {
+    const now = new Date();
+    const currentJsDay = now.getDay();
+    const daysFromSaturday = currentJsDay === 6 ? 0 : currentJsDay + 1;
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - daysFromSaturday);
+    const targetJsDay = NAME_TO_JS_DAY[selectedDay] ?? currentJsDay;
+    const targetOffset = targetJsDay === 6 ? 0 : targetJsDay + 1;
+    const targetDate = new Date(weekStart);
+    targetDate.setDate(weekStart.getDate() + targetOffset);
+    return targetDate.toISOString().split('T')[0];
+  }, [selectedDay]);
+
   // Computed data - use sector_schedules for determining today's sectors
   const todaySalesSectorIds = useMemo(() => {
     const ids = new Set<string>();
@@ -374,8 +390,13 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         else if (s.sales_worker_id === effectiveWorkerId) ids.add(s.id);
       }
     });
+    // Add covered sectors from substitution system
+    if (effectiveWorkerId) {
+      const coveredSales = getCoveredSectorsForWorker(effectiveWorkerId, 'sales', selectedDateStr);
+      coveredSales.forEach(c => ids.add(c.sector_id));
+    }
     return ids;
-  }, [sectorSchedules, sectors, selectedDay, effectiveWorkerId, isAdmin, hasSpecificWorker]);
+  }, [sectorSchedules, sectors, selectedDay, effectiveWorkerId, isAdmin, hasSpecificWorker, getCoveredSectorsForWorker, selectedDateStr]);
 
   const todayDeliverySectorIds = useMemo(() => {
     const ids = new Set<string>();
@@ -396,8 +417,13 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         else if (s.delivery_worker_id === effectiveWorkerId) ids.add(s.id);
       }
     });
+    // Add covered sectors from substitution system
+    if (effectiveWorkerId) {
+      const coveredDelivery = getCoveredSectorsForWorker(effectiveWorkerId, 'delivery', selectedDateStr);
+      coveredDelivery.forEach(c => ids.add(c.sector_id));
+    }
     return ids;
-  }, [sectorSchedules, sectors, selectedDay, effectiveWorkerId, isAdmin, hasSpecificWorker]);
+  }, [sectorSchedules, sectors, selectedDay, effectiveWorkerId, isAdmin, hasSpecificWorker, getCoveredSectorsForWorker, selectedDateStr]);
 
   const workerSectors = useMemo(() => {
     if (hasSpecificWorker) {

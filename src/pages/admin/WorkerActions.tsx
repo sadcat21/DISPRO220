@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
-import { ArrowRight, Calculator, Truck, Banknote, Wallet, MapPin, ShoppingCart, Activity, Shield, HardHat, HandCoins, ArrowLeftRight, ClipboardList, Trophy, AlertTriangle, DollarSign, Package, PackageOpen, ClipboardCheck, TrendingUp, TrendingDown, Gift, CalendarDays, ShoppingBag, Settings, History } from 'lucide-react';
+import { ArrowRight, Calculator, Truck, Banknote, Wallet, MapPin, ShoppingCart, Activity, Shield, HardHat, HandCoins, ArrowLeftRight, ClipboardList, Trophy, AlertTriangle, DollarSign, Package, PackageOpen, ClipboardCheck, TrendingUp, TrendingDown, Gift, CalendarDays, ShoppingBag, Settings, History, RefreshCw } from 'lucide-react';
 import { useWorkerLiability } from '@/hooks/useWorkerLiability';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { useMyUIOverrides } from '@/hooks/useUIOverrides';
@@ -44,6 +44,7 @@ import WorkerGiftsSummaryDialog from '@/components/accounting/WorkerGiftsSummary
 import EditWorkerProfileDialog from '@/components/workers/EditWorkerProfileDialog';
 import WorkerAchievementsDialog from '@/components/workers/WorkerAchievementsDialog';
 import SectorScheduleDialog from '@/components/sectors/SectorScheduleDialog';
+import SectorCoverageDialog from '@/components/sectors/SectorCoverageDialog';
 
 const workerActions = [
   { key: 'worker_profile', icon: Settings, path: '', labelKey: 'إعدادات البيانات', color: 'bg-gray-50 border-gray-200 text-gray-700', isDialog: true },
@@ -71,6 +72,7 @@ const workerActions = [
   { key: 'gifts_summary', icon: Gift, path: '', labelKey: 'تجميع العروض', color: 'bg-purple-50 border-purple-200 text-purple-700', isDialog: true },
   { key: 'achievements', icon: Trophy, path: '', labelKey: 'المنجزات', color: 'bg-emerald-50 border-emerald-200 text-emerald-700', isDialog: true },
   { key: 'sector_schedule', icon: MapPin, path: '', labelKey: 'جدول السيكتور', color: 'bg-sky-50 border-sky-200 text-sky-700', isDialog: true },
+  { key: 'sector_coverage', icon: RefreshCw, path: '', labelKey: 'تعويض السيكتورات', color: 'bg-orange-50 border-orange-200 text-orange-700', isDialog: true },
   { key: 'orders_summary', icon: ClipboardList, path: '', labelKey: 'تجميع الطلبيات', color: 'bg-blue-50 border-blue-200 text-blue-700', isDialog: true },
 ];
 
@@ -97,6 +99,7 @@ const WorkerActions: React.FC = () => {
   const [sectorScheduleOpen, setSectorScheduleOpen] = useState(false);
   const [sectorScheduleType, setSectorScheduleType] = useState<'delivery' | 'sales'>('delivery');
   const [ordersSummaryOpen, setOrdersSummaryOpen] = useState(false);
+  const [sectorCoverageOpen, setSectorCoverageOpen] = useState(false);
 
   const isSelfMode = role === 'worker';
   const isSupervisorMode = role === 'supervisor';
@@ -461,6 +464,8 @@ const WorkerActions: React.FC = () => {
       } else if (action.key === 'sector_schedule') {
         setSectorScheduleType('delivery');
         setSectorScheduleOpen(true);
+      } else if (action.key === 'sector_coverage') {
+        setSectorCoverageOpen(true);
       } else if (action.key === 'orders_summary') {
         setOrdersSummaryOpen(true);
       }
@@ -718,6 +723,10 @@ const WorkerActions: React.FC = () => {
         onOpenChange={setOrdersSummaryOpen}
         workerId={selectedWorker?.id}
         workerName={selectedWorker?.full_name}
+      />
+      <SectorCoverageDialog
+        open={sectorCoverageOpen}
+        onOpenChange={setSectorCoverageOpen}
       />
     </div>
   );
