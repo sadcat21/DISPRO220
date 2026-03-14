@@ -247,6 +247,9 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
       observerRef.current?.disconnect();
       timersRef.current.forEach(clearTimeout);
       customerMarkersRef.current.clear();
+      if (stopsRouteLayerRef.current && mapRef.current) {
+        mapRef.current.removeLayer(stopsRouteLayerRef.current);
+      }
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
