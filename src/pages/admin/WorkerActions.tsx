@@ -44,6 +44,7 @@ import WorkerGiftsSummaryDialog from '@/components/accounting/WorkerGiftsSummary
 import EditWorkerProfileDialog from '@/components/workers/EditWorkerProfileDialog';
 import WorkerAchievementsDialog from '@/components/workers/WorkerAchievementsDialog';
 import SectorScheduleDialog from '@/components/sectors/SectorScheduleDialog';
+import SectorCoverageDialog from '@/components/sectors/SectorCoverageDialog';
 
 const workerActions = [
   { key: 'worker_profile', icon: Settings, path: '', labelKey: 'إعدادات البيانات', color: 'bg-gray-50 border-gray-200 text-gray-700', isDialog: true },
