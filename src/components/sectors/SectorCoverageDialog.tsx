@@ -78,7 +78,7 @@ const SectorCoverageDialog: React.FC<SectorCoverageDialogProps> = ({ open, onOpe
     return sectorIds.map(sid => {
       const sector = sectors.find(s => s.id === sid);
       const days = workerSchedules.filter(ws => ws.sector_id === sid).map(ws => ws.day);
-      return { sectorId: sid, sectorName: sector ? getLocalizedName(sector.name, sector.name_fr, language) : sid, days };
+      return { sectorId: sid, sectorName: sector ? getLocalizedName(sector, language) : sid, days };
     });
   }, [absentWorkerId, scheduleType, schedules, sectors, language]);
 
