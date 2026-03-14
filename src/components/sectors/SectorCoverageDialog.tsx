@@ -117,6 +117,9 @@ const SectorCoverageDialog: React.FC<SectorCoverageDialogProps> = ({ open, onOpe
     }
     setSaving(true);
     try {
+      // Ensure dates are in correct order (swap if user entered them backwards)
+      const actualStart = startDate <= endDate ? startDate : endDate;
+      const actualEnd = startDate <= endDate ? endDate : startDate;
       for (const [sectorId, substituteId] of entries) {
         await createCoverage({
           sector_id: sectorId,
@@ -124,8 +127,8 @@ const SectorCoverageDialog: React.FC<SectorCoverageDialogProps> = ({ open, onOpe
           substitute_worker_id: substituteId,
           coverage_type: entries.length === 1 && absentWorkerSectors.length === 1 ? 'full' : 'split',
           schedule_type: scheduleType,
-          start_date: startDate,
-          end_date: endDate,
+          start_date: actualStart,
+          end_date: actualEnd,
           reason: reason || undefined,
           created_by: workerId || undefined,
           branch_id: activeBranch?.id || undefined,
