@@ -5,6 +5,8 @@ import { Loader2, MapPin, Users, Warehouse, Clock, Navigation, Route } from 'luc
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { calculateDistance } from '@/utils/geoUtils';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
