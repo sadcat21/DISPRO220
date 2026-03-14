@@ -120,6 +120,8 @@ const WorkerTracking: React.FC = () => {
         highlightWorkerId={highlightWorkerId}
         showOnlyHighlighted={!!highlightWorkerId && !showAll}
         trackableWorkerIds={trackableIds ?? undefined}
+        showNearbyCustomers={showNearbyCustomers && !!highlightWorkerId}
+        nearbyDistanceMeters={nearbyDistance}
       />
 
       <TrackingSettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
