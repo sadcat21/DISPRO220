@@ -42,9 +42,11 @@ interface WorkerTrackingMapProps {
   trackableWorkerIds?: string[];
   showNearbyCustomers?: boolean;
   nearbyDistanceMeters?: number;
+  showStopsRoute?: boolean;
+  stops?: { lat: number; lng: number; started_at: string; ended_at?: string; duration_min: number; address?: string }[];
 }
 
-const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId, showOnlyHighlighted, trackableWorkerIds, showNearbyCustomers, nearbyDistanceMeters = 500 }) => {
+const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId, showOnlyHighlighted, trackableWorkerIds, showNearbyCustomers, nearbyDistanceMeters = 500, showStopsRoute, stops }) => {
   const { t, dir } = useLanguage();
   const { data: rawLocations, isLoading } = useWorkerLocations();
   const filteredByTrackable = trackableWorkerIds
