@@ -42,9 +42,11 @@ interface WorkerTrackingMapProps {
   trackableWorkerIds?: string[];
   showNearbyCustomers?: boolean;
   nearbyDistanceMeters?: number;
+  showStopsRoute?: boolean;
+  stops?: { lat: number; lng: number; started_at: string; ended_at?: string; duration_min: number; address?: string }[];
 }
 
-const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId, showOnlyHighlighted, trackableWorkerIds, showNearbyCustomers, nearbyDistanceMeters = 500 }) => {
+const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId, showOnlyHighlighted, trackableWorkerIds, showNearbyCustomers, nearbyDistanceMeters = 500, showStopsRoute, stops }) => {
   const { t, dir } = useLanguage();
   const { data: rawLocations, isLoading } = useWorkerLocations();
   const filteredByTrackable = trackableWorkerIds
@@ -58,6 +60,7 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const hasFittedBoundsRef = useRef(false);
   const routeLayerRef = useRef<L.Polyline | null>(null);
+  const stopsRouteLayerRef = useRef<L.LayerGroup | null>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const userInteractedRef = useRef(false);
   const [routeInfo, setRouteInfo] = useState<{ distance: number; duration: number } | null>(null);
@@ -244,6 +247,9 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
       observerRef.current?.disconnect();
       timersRef.current.forEach(clearTimeout);
       customerMarkersRef.current.clear();
+      if (stopsRouteLayerRef.current && mapRef.current) {
+        mapRef.current.removeLayer(stopsRouteLayerRef.current);
+      }
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -438,7 +444,54 @@ const WorkerTrackingMap: React.FC<WorkerTrackingMapProps> = ({ highlightWorkerId
     fetchRoute();
   }, [locations, highlightWorkerId, showOnlyHighlighted]);
 
-  // Fast reverse geocode highlighted worker's location (single Nominatim call)
+  // Draw stops route on map
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    // Clear previous stops layer
+    if (stopsRouteLayerRef.current) {
+      mapRef.current.removeLayer(stopsRouteLayerRef.current);
+      stopsRouteLayerRef.current = null;
+    }
+
+    if (!showStopsRoute || !stops || stops.length === 0) return;
+
+    const group = L.layerGroup().addTo(mapRef.current);
+    stopsRouteLayerRef.current = group;
+
+    // Sort stops oldest first
+    const sorted = [...stops].sort((a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime());
+
+    // Add stop markers
+    sorted.forEach((stop, idx) => {
+      const icon = L.divIcon({
+        html: `<div style="position:relative;">
+          <div style="background:#f59e0b;width:22px;height:22px;border-radius:50%;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;color:white;">
+            ${idx + 1}
+          </div>
+        </div>`,
+        className: '',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
+      });
+
+      L.marker([stop.lat, stop.lng], { icon })
+        .bindPopup(`<div class="text-center p-1" dir="rtl"><p class="font-bold text-xs">توقف #${idx + 1}</p><p class="text-xs">⏸ ${stop.duration_min} دقيقة</p>${stop.address ? `<p class="text-xs">${stop.address}</p>` : ''}</div>`)
+        .addTo(group);
+    });
+
+    // Draw polyline connecting stops
+    if (sorted.length >= 2) {
+      const points: [number, number][] = sorted.map(s => [s.lat, s.lng]);
+      L.polyline(points, {
+        color: '#f59e0b',
+        weight: 4,
+        opacity: 0.8,
+        dashArray: '8, 6',
+      }).addTo(group);
+    }
+  }, [showStopsRoute, stops]);
+
   useEffect(() => {
     if (!highlightWorkerId || !locations) {
       setWorkerAddress(null);

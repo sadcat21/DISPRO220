@@ -6158,6 +6158,7 @@ export type Database = {
           latitude: number
           longitude: number
           speed: number | null
+          stops: Json | null
           updated_at: string
           worker_id: string
         }
@@ -6172,6 +6173,7 @@ export type Database = {
           latitude: number
           longitude: number
           speed?: number | null
+          stops?: Json | null
           updated_at?: string
           worker_id: string
         }
@@ -6186,6 +6188,7 @@ export type Database = {
           latitude?: number
           longitude?: number
           speed?: number | null
+          stops?: Json | null
           updated_at?: string
           worker_id?: string
         }

@@ -3,6 +3,15 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
+export interface WorkerStopRecord {
+  lat: number;
+  lng: number;
+  address?: string;
+  started_at: string;
+  ended_at?: string;
+  duration_min: number;
+}
+
 export interface WorkerLocationData {
   worker_id: string;
   latitude: number;
@@ -14,6 +23,8 @@ export interface WorkerLocationData {
   updated_at: string;
   worker_name?: string;
   has_location?: boolean;
+  idle_since?: string | null;
+  stops?: WorkerStopRecord[];
 }
 
 // Hook for workers to broadcast their location
@@ -23,10 +34,12 @@ export const useLocationBroadcast = () => {
   const [error, setError] = useState<string | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const lastUpdateRef = useRef<number>(0);
-  // Idle detection: track anchor point and time
   const anchorRef = useRef<{ lat: number; lng: number; since: number } | null>(null);
+  const stopsRef = useRef<WorkerStopRecord[]>([]);
+  const lastStopSavedRef = useRef<string | null>(null);
   const IDLE_RADIUS_KM = 0.02; // 20 meters
   const IDLE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+  const STOP_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes for stop recording
 
   const haversine = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const R = 6371;
@@ -51,18 +64,57 @@ export const useLocationBroadcast = () => {
     if (anchorRef.current) {
       const dist = haversine(anchorRef.current.lat, anchorRef.current.lng, lat, lng);
       if (dist <= IDLE_RADIUS_KM) {
-        // Still within anchor radius
         const elapsedMs = now - anchorRef.current.since;
         if (elapsedMs >= IDLE_THRESHOLD_MS) {
           idleSince = new Date(anchorRef.current.since).toISOString();
         }
+        // Stop recording: if stayed > 15 min, record as a stop
+        if (elapsedMs >= STOP_THRESHOLD_MS) {
+          const stopKey = `${anchorRef.current.lat.toFixed(5)}_${anchorRef.current.lng.toFixed(5)}_${anchorRef.current.since}`;
+          if (lastStopSavedRef.current !== stopKey) {
+            // First time recording this stop
+            const stopRecord: WorkerStopRecord = {
+              lat: anchorRef.current.lat,
+              lng: anchorRef.current.lng,
+              started_at: new Date(anchorRef.current.since).toISOString(),
+              duration_min: Math.floor(elapsedMs / 60000),
+            };
+            stopsRef.current = [...stopsRef.current, stopRecord];
+            lastStopSavedRef.current = stopKey;
+          } else {
+            // Update duration of last stop
+            const lastIdx = stopsRef.current.length - 1;
+            if (lastIdx >= 0) {
+              stopsRef.current[lastIdx] = {
+                ...stopsRef.current[lastIdx],
+                duration_min: Math.floor(elapsedMs / 60000),
+                ended_at: new Date().toISOString(),
+              };
+            }
+          }
+        }
       } else {
-        // Moved outside radius — reset anchor
+        // Moved outside radius — finalize last stop if any, reset anchor
+        if (lastStopSavedRef.current && stopsRef.current.length > 0) {
+          const lastIdx = stopsRef.current.length - 1;
+          stopsRef.current[lastIdx] = {
+            ...stopsRef.current[lastIdx],
+            ended_at: new Date().toISOString(),
+          };
+        }
         anchorRef.current = { lat, lng, since: now };
+        lastStopSavedRef.current = null;
       }
     } else {
       anchorRef.current = { lat, lng, since: now };
     }
+
+    // Get retention hours setting (default 5 hours)
+    const retentionMs = 5 * 60 * 60 * 1000;
+    const cutoff = now - retentionMs;
+    // Filter out old stops
+    const filteredStops = stopsRef.current.filter(s => new Date(s.started_at).getTime() > cutoff);
+    stopsRef.current = filteredStops;
 
     try {
       const { error } = await supabase
@@ -77,6 +129,7 @@ export const useLocationBroadcast = () => {
           speed: position.coords.speed,
           is_tracking: true,
           idle_since: idleSince,
+          stops: filteredStops as any,
           updated_at: new Date().toISOString(),
         }, { onConflict: 'worker_id' });
 
@@ -95,6 +148,8 @@ export const useLocationBroadcast = () => {
     setError(null);
     setIsTracking(true);
     anchorRef.current = null;
+    stopsRef.current = [];
+    lastStopSavedRef.current = null;
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       updateLocation,
@@ -186,6 +241,7 @@ export const useWorkerLocations = () => {
             ...location,
             worker_name: w.full_name || '',
             has_location: true,
+            stops: (location as any).stops || [],
           };
         }
 
@@ -201,6 +257,7 @@ export const useWorkerLocations = () => {
           updated_at: new Date(0).toISOString(),
           worker_name: w.full_name || '',
           has_location: false,
+          stops: [],
         };
       }) as WorkerLocationData[];
     },
