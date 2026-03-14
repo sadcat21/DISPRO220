@@ -11,6 +11,7 @@ import { MapPin, Truck, ShoppingCart, Landmark, User, Phone, Eye, EyeOff, CheckC
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
+import { useSectorCoverage } from '@/hooks/useSectorCoverage';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDueDebts, DueDebt } from '@/hooks/useDebtCollections';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
