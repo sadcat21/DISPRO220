@@ -237,11 +237,20 @@ const SectorCoverageDialog: React.FC<SectorCoverageDialogProps> = ({ open, onOpe
           </DialogTitle>
         </DialogHeader>
 
+        {/* Merge assignments switch */}
+        <div className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2 mb-2">
+          <div className="flex items-center gap-2 text-sm">
+            <Truck className="w-4 h-4 text-primary" />
+            <span>دمج التعيينات مع التعويضات</span>
+          </div>
+          <Switch
+            checked={mergeAssignments}
+            onCheckedChange={handleToggleMerge}
+            disabled={loadingMergeSetting}
+          />
+        </div>
+
         <Tabs value={tab} onValueChange={v => setTab(v as any)}>
-          <TabsList className="w-full">
-            <TabsTrigger value="active" className="flex-1">
-              التعويضات النشطة ({activeCoverages.length})
-            </TabsTrigger>
             <TabsTrigger value="create" className="flex-1">
               <Plus className="w-4 h-4 ml-1" />
               تعويض جديد
