@@ -29,6 +29,16 @@ const SCHEDULE_TYPES = [
   { value: 'sales', label: 'مبيعات', icon: ShoppingCart },
 ] as const;
 
+const DAY_ORDER = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday'];
+const DAY_NAMES: Record<string, string> = {
+  saturday: 'السبت',
+  sunday: 'الأحد',
+  monday: 'الإثنين',
+  tuesday: 'الثلاثاء',
+  wednesday: 'الأربعاء',
+  thursday: 'الخميس',
+};
+
 const SectorCoverageDialog: React.FC<SectorCoverageDialogProps> = ({ open, onOpenChange }) => {
   const { workerId, activeBranch, role } = useAuth();
   const { language } = useLanguage();
