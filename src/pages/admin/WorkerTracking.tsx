@@ -16,6 +16,8 @@ const WorkerTracking: React.FC = () => {
   const highlightWorkerId = searchParams.get('worker') || undefined;
   const [showAll, setShowAll] = useState(!highlightWorkerId);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showNearbyCustomers, setShowNearbyCustomers] = useState(false);
+  const [nearbyDistance, setNearbyDistance] = useState(500); // meters
   const { data: allWorkers } = useWorkerLocations();
   const { data: trackableIds } = useTrackableWorkers();
 
