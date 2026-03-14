@@ -1132,14 +1132,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
             <div className="border-b px-2 py-1.5 shrink-0">
               <ScrollArea className="w-full" dir="rtl">
                 <div className="flex gap-1.5 pb-1">
-                  {workersList.filter(w => {
-                    return sectors.some(s =>
-                      (s.delivery_worker_id === w.id && s.visit_day_delivery === selectedDay) ||
-                      (s.sales_worker_id === w.id && s.visit_day_sales === selectedDay)
-                    ) || sectorSchedules.some(sc =>
-                      sc.day === selectedDay && sc.worker_id === w.id
-                    );
-                  }).map(w => {
+                  {workersList.filter(w => availableWorkerIdsForSelectedDay.has(w.id)).map(w => {
                     const isSelected = w.id === selectedAdminWorkerId;
                     return (
                       <button
