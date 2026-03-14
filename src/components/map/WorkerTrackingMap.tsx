@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback, useState } from 'react';
+import React, { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import { useWorkerLocations, WorkerLocationData } from '@/hooks/useWorkerLocation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Loader2, MapPin, Users, Warehouse, Clock, Navigation, Route } from 'lucide-react';
@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { calculateDistance } from '@/utils/geoUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { useCustomerTypes, getCustomerTypeColor } from '@/hooks/useCustomerTypes';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
