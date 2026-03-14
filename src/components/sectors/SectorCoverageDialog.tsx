@@ -17,7 +17,7 @@ import { getLocalizedName } from '@/utils/sectorName';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { UserX, UserCheck, ArrowRight, Trash2, Plus, Calendar, Truck, ShoppingCart, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { UserX, UserCheck, ArrowRight, Trash2, Plus, Calendar, Truck, ShoppingCart, Loader2, AlertCircle, RefreshCw, Pencil, UserCog } from 'lucide-react';
 
 interface SectorCoverageDialogProps {
   open: boolean;
@@ -28,6 +28,16 @@ const SCHEDULE_TYPES = [
   { value: 'delivery', label: 'توصيل', icon: Truck },
   { value: 'sales', label: 'مبيعات', icon: ShoppingCart },
 ] as const;
+
+const DAY_ORDER = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday'];
+const DAY_NAMES: Record<string, string> = {
+  saturday: 'السبت',
+  sunday: 'الأحد',
+  monday: 'الإثنين',
+  tuesday: 'الثلاثاء',
+  wednesday: 'الأربعاء',
+  thursday: 'الخميس',
+};
 
 const SectorCoverageDialog: React.FC<SectorCoverageDialogProps> = ({ open, onOpenChange }) => {
   const { workerId, activeBranch, role } = useAuth();
@@ -43,6 +53,8 @@ const SectorCoverageDialog: React.FC<SectorCoverageDialogProps> = ({ open, onOpe
   const [reason, setReason] = useState('');
   const [assignments, setAssignments] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editSubstituteId, setEditSubstituteId] = useState<string>('');
 
   // Fetch workers
   const { data: workers = [] } = useQuery({
@@ -78,7 +90,13 @@ const SectorCoverageDialog: React.FC<SectorCoverageDialogProps> = ({ open, onOpe
     return sectorIds.map(sid => {
       const sector = sectors.find(s => s.id === sid);
       const days = workerSchedules.filter(ws => ws.sector_id === sid).map(ws => ws.day);
+      // Sort days by DAY_ORDER
+      days.sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b));
       return { sectorId: sid, sectorName: sector ? getLocalizedName(sector, language) : sid, days };
+    }).sort((a, b) => {
+      const aMin = Math.min(...a.days.map(d => DAY_ORDER.indexOf(d)));
+      const bMin = Math.min(...b.days.map(d => DAY_ORDER.indexOf(d)));
+      return aMin - bMin;
     });
   }, [absentWorkerId, scheduleType, schedules, sectors, language]);
 
@@ -135,6 +153,33 @@ const SectorCoverageDialog: React.FC<SectorCoverageDialogProps> = ({ open, onOpe
     }
   };
 
+  const handleEditSubstitute = async (coverageId: string, newSubstituteId: string) => {
+    try {
+      const { error } = await supabase
+        .from('sector_coverage')
+        .update({ substitute_worker_id: newSubstituteId } as any)
+        .eq('id', coverageId);
+      if (error) throw error;
+      toast.success('تم تحديث البديل بنجاح');
+      setEditingId(null);
+      setEditSubstituteId('');
+    } catch {
+      toast.error('حدث خطأ أثناء التحديث');
+    }
+  };
+
+  // Get day name for a coverage based on its sector schedule
+  const getCoverageDays = (coverage: SectorCoverage) => {
+    const sectorSchedules = schedules.filter(
+      s => s.sector_id === coverage.sector_id && 
+           s.worker_id === coverage.absent_worker_id && 
+           s.schedule_type === coverage.schedule_type
+    );
+    const days = sectorSchedules.map(s => s.day);
+    days.sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b));
+    return days;
+  };
+
   // Active/upcoming coverages
   const activeCoverages = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -182,16 +227,39 @@ const SectorCoverageDialog: React.FC<SectorCoverageDialogProps> = ({ open, onOpe
                 </div>
               ) : (
                 <div className="space-y-3 p-1">
-                  {activeCoverages.map(c => (
+                  {activeCoverages.map(c => {
+                    const days = getCoverageDays(c);
+                    const isEditing = editingId === c.id;
+                    return (
                     <Card key={c.id} className="border-border">
                       <CardContent className="p-3 space-y-2">
                         <div className="flex items-center justify-between">
-                          <Badge variant="outline" className="text-xs">
-                            {c.schedule_type === 'delivery' ? '🚚 توصيل' : '🛒 مبيعات'}
-                          </Badge>
-                          <Button variant="ghost" size="sm" onClick={() => handleCancel(c.id)}>
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Badge variant="outline" className="text-xs">
+                              {c.schedule_type === 'delivery' ? '🚚 توصيل' : '🛒 مبيعات'}
+                            </Badge>
+                            {days.map(d => (
+                              <Badge key={d} variant="secondary" className="text-[10px]">
+                                {DAY_NAMES[d] || d}
+                              </Badge>
+                            ))}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => {
+                              if (isEditing) {
+                                setEditingId(null);
+                                setEditSubstituteId('');
+                              } else {
+                                setEditingId(c.id);
+                                setEditSubstituteId(c.substitute_worker_id);
+                              }
+                            }}>
+                              <Pencil className="w-4 h-4 text-muted-foreground" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleCancel(c.id)}>
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
                         </div>
                         <div className="text-sm font-medium">{getSectorName(c.sector_id)}</div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -210,9 +278,33 @@ const SectorCoverageDialog: React.FC<SectorCoverageDialogProps> = ({ open, onOpe
                             {c.reason}
                           </div>
                         )}
+                        {isEditing && (
+                          <div className="flex items-center gap-2 pt-1 border-t border-border">
+                            <UserCog className="w-4 h-4 text-muted-foreground shrink-0" />
+                            <Select value={editSubstituteId} onValueChange={setEditSubstituteId}>
+                              <SelectTrigger className="h-8 flex-1">
+                                <SelectValue placeholder="اختر البديل الجديد" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {workers.filter(w => w.id !== c.absent_worker_id).map(w => (
+                                  <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              size="sm"
+                              className="h-8"
+                              disabled={!editSubstituteId || editSubstituteId === c.substitute_worker_id}
+                              onClick={() => handleEditSubstitute(c.id, editSubstituteId)}
+                            >
+                              حفظ
+                            </Button>
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </ScrollArea>
@@ -288,13 +380,13 @@ const SectorCoverageDialog: React.FC<SectorCoverageDialogProps> = ({ open, onOpe
                           <CardContent className="p-3 space-y-2">
                             <div className="flex items-center justify-between">
                               <span className="text-sm font-medium">{s.sectorName}</span>
-                              <div className="flex gap-1">
+                             <div className="flex gap-1 flex-wrap">
                                 {s.days.map(d => (
                                   <Badge key={d} variant="secondary" className="text-[10px]">
-                                    {d === 'saturday' ? 'سب' : d === 'sunday' ? 'أح' : d === 'monday' ? 'إث' : d === 'tuesday' ? 'ثل' : d === 'wednesday' ? 'أر' : 'خم'}
+                                    {DAY_NAMES[d] || d}
                                   </Badge>
                                 ))}
-                              </div>
+                               </div>
                             </div>
                             <Select value={assignments[s.sectorId] || ''} onValueChange={v => handleAssign(s.sectorId, v)}>
                               <SelectTrigger className="h-9">
