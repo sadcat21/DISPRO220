@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
-import { ArrowRight, Calculator, Truck, Banknote, Wallet, MapPin, ShoppingCart, Activity, Shield, HardHat, HandCoins, ArrowLeftRight, ClipboardList, Trophy, AlertTriangle, DollarSign, Package, PackageOpen, ClipboardCheck, TrendingUp, TrendingDown, Gift, CalendarDays, ShoppingBag, Settings, History } from 'lucide-react';
+import { ArrowRight, Calculator, Truck, Banknote, Wallet, MapPin, ShoppingCart, Activity, Shield, HardHat, HandCoins, ArrowLeftRight, ClipboardList, Trophy, AlertTriangle, DollarSign, Package, PackageOpen, ClipboardCheck, TrendingUp, TrendingDown, Gift, CalendarDays, ShoppingBag, Settings, History, RefreshCw } from 'lucide-react';
 import { useWorkerLiability } from '@/hooks/useWorkerLiability';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { useMyUIOverrides } from '@/hooks/useUIOverrides';
