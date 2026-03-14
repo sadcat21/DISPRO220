@@ -54,6 +54,40 @@ const WorkerTracking: React.FC = () => {
         </div>
       </div>
 
+      {/* Nearby customers toggle */}
+      {highlightWorkerId && (
+        <div className="flex items-center gap-2 flex-wrap" dir={dir}>
+          <div className="flex items-center gap-2">
+            <Store className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">عملاء قريبون</span>
+            <Switch checked={showNearbyCustomers} onCheckedChange={setShowNearbyCustomers} />
+          </div>
+          {showNearbyCustomers && (
+            <div className="flex items-center gap-1.5 bg-muted rounded-full px-2 py-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 rounded-full"
+                onClick={() => setNearbyDistance(d => Math.max(100, d - 100))}
+                disabled={nearbyDistance <= 100}
+              >
+                <Minus className="w-3 h-3" />
+              </Button>
+              <span className="text-xs font-bold min-w-[40px] text-center">{nearbyDistance} م</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 rounded-full"
+                onClick={() => setNearbyDistance(d => Math.min(2000, d + 100))}
+                disabled={nearbyDistance >= 2000}
+              >
+                <Plus className="w-3 h-3" />
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Worker quick-pick strip */}
       {workers && workers.length > 0 && (
         <ScrollArea className="w-full" dir={dir}>
