@@ -425,22 +425,10 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     return ids;
   }, [sectorSchedules, sectors, selectedDay, effectiveWorkerId, isAdmin, hasSpecificWorker, getCoveredSectorsForWorker, selectedDateStr]);
 
-  const workerSectors = useMemo(() => {
-    if (hasSpecificWorker) {
-      return sectors.filter(s => {
-        const hasSchedule = sectorSchedules.some(sc => sc.sector_id === s.id && sc.worker_id === effectiveWorkerId);
-        return hasSchedule || s.delivery_worker_id === effectiveWorkerId || s.sales_worker_id === effectiveWorkerId;
-      });
-    }
-    if (isAdmin) return sectors;
-    return sectors.filter(s => {
-      const hasSchedule = sectorSchedules.some(sc => sc.sector_id === s.id && sc.worker_id === effectiveWorkerId);
-      return hasSchedule || s.delivery_worker_id === effectiveWorkerId || s.sales_worker_id === effectiveWorkerId;
-    });
-  }, [sectors, sectorSchedules, effectiveWorkerId, isAdmin, hasSpecificWorker]);
-
-  const todaySalesSectors = useMemo(() => workerSectors.filter(s => todaySalesSectorIds.has(s.id)), [workerSectors, todaySalesSectorIds]);
-  const todayDeliverySectors = useMemo(() => workerSectors.filter(s => todayDeliverySectorIds.has(s.id)), [workerSectors, todayDeliverySectorIds]);
+  // IMPORTANT: filter from all sectors using the computed IDs (which already include coverage substitutions)
+  // so covered sectors appear immediately in direct-sale/delivery lists for substitute workers.
+  const todaySalesSectors = useMemo(() => sectors.filter(s => todaySalesSectorIds.has(s.id)), [sectors, todaySalesSectorIds]);
+  const todayDeliverySectors = useMemo(() => sectors.filter(s => todayDeliverySectorIds.has(s.id)), [sectors, todayDeliverySectorIds]);
 
   const deliveryCustomerIdsWithOrders = useMemo(() => {
     const ids = new Set<string>();
