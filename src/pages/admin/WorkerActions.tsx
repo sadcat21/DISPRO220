@@ -724,6 +724,10 @@ const WorkerActions: React.FC = () => {
         workerId={selectedWorker?.id}
         workerName={selectedWorker?.full_name}
       />
+      <SectorCoverageDialog
+        open={sectorCoverageOpen}
+        onOpenChange={setSectorCoverageOpen}
+      />
     </div>
   );
 };
