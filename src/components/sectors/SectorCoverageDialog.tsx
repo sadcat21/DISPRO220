@@ -18,6 +18,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { UserX, UserCheck, ArrowRight, Trash2, Plus, Calendar, Truck, ShoppingCart, Loader2, AlertCircle, RefreshCw, Pencil, UserCog } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
 interface SectorCoverageDialogProps {
   open: boolean;
