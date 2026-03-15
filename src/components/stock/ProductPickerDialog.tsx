@@ -113,7 +113,7 @@ const ProductPickerDialog: React.FC<ProductPickerDialogProps> = ({
         {p.image_url ? (
           <img src={p.image_url} alt={p.name} className="w-full aspect-square object-cover" loading="lazy" />
         ) : (
-          <div className={`w-full aspect-square flex items-center justify-center ${isOutOfStock ? 'bg-destructive/10' : neededQty > 0 ? 'bg-orange-50/50' : 'bg-red-50'}`}>
+          <div className={`w-full aspect-square flex items-center justify-center ${isOutOfStock ? 'bg-destructive/10' : neededQty > 0 ? 'bg-destructive/5' : 'bg-red-50'}`}>
             <Package className={`w-10 h-10 ${isOutOfStock ? 'text-destructive' : 'text-primary/40'}`} />
           </div>
         )}
