@@ -455,9 +455,9 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
           // INCREASE: customer owes more
           let remainingDiff = totalDiff;
           
-          if (paymentType === 'partial' && paidAmount) {
+          if (diffPaymentType === 'partial' && paidAmount) {
             remainingDiff = totalDiff - paidAmount;
-          } else if (paymentType === 'full') {
+          } else if (diffPaymentType === 'full') {
             remainingDiff = 0;
           }
 
