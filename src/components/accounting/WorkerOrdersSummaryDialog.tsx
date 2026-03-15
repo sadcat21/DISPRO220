@@ -270,6 +270,62 @@ const WorkerOrdersSummaryDialog: React.FC<Props> = ({ open, onOpenChange, worker
   const createdCustomers = new Set((data?.created || []).flatMap(p => p.customers.map(c => c.customerId))).size;
   const assignedCustomers = new Set((data?.assigned || []).flatMap(p => p.customers.map(c => c.customerId))).size;
 
+  const handlePrint = async () => {
+    if (!workerId) return;
+    setIsPrintLoading(true);
+    try {
+      const dayStart = `${selectedDate}T00:00:00+01:00`;
+      const dayEnd = `${selectedDate}T23:59:59+01:00`;
+
+      const filterCol = activeTab === 'created' ? 'created_by' : 'assigned_worker_id';
+      const { data: ordersData } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          customer:customers(*, sector:sectors(name, name_fr), zone:sector_zones(name, name_fr)),
+          assigned_worker:workers!orders_assigned_worker_id_fkey(id, full_name),
+          order_items(*, product:products(*))
+        `)
+        .eq(filterCol, workerId)
+        .gte('created_at', dayStart)
+        .lte('created_at', dayEnd)
+        .in('status', ['pending', 'assigned', 'in_progress', 'delivered', 'completed', 'confirmed'])
+        .order('created_at', { ascending: true });
+
+      const fetchedOrders = (ordersData || []) as unknown as OrderWithDetails[];
+      if (fetchedOrders.length === 0) {
+        toast.info('لا توجد طلبيات للطباعة');
+        setIsPrintLoading(false);
+        return;
+      }
+
+      const itemsMap = new Map<string, any[]>();
+      const productMap = new Map<string, Product>();
+      for (const order of fetchedOrders) {
+        const items = (order as any).order_items || [];
+        itemsMap.set(order.id, items);
+        for (const item of items) {
+          if (item.product) productMap.set(item.product_id, item.product as Product);
+        }
+      }
+
+      setPrintOrders(fetchedOrders);
+      setPrintOrderItems(itemsMap);
+      setPrintProducts(Array.from(productMap.values()).sort((a, b) => (a.name || '').localeCompare(b.name || '')));
+      setIsPrintReady(true);
+
+      setTimeout(() => {
+        window.print();
+        setTimeout(() => setIsPrintReady(false), 500);
+      }, 400);
+    } catch (err) {
+      console.error('Print error:', err);
+      toast.error('حدث خطأ أثناء تحضير الطباعة');
+    } finally {
+      setIsPrintLoading(false);
+    }
+  };
+
   const goDay = (dir: number) => {
     const d = dir > 0 ? addDays(new Date(selectedDate), 1) : subDays(new Date(selectedDate), 1);
     setSelectedDate(format(d, 'yyyy-MM-dd'));
