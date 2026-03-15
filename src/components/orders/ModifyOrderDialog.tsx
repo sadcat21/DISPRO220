@@ -646,7 +646,7 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
                     {deliveryDate ? format(deliveryDate, 'yyyy-MM-dd') : 'بدون تاريخ'}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 z-[10060]" align="start">
                   <Calendar
                     mode="single"
                     selected={deliveryDate}
