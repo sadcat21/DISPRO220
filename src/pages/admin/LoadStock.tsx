@@ -1456,6 +1456,17 @@ const LoadStock: React.FC = () => {
                   شحن من الطلبيات
                 </Button>
               </div>
+              {hasDeficit && (
+                <Button
+                  variant="outline"
+                  className="w-full h-10 rounded-xl text-[13px] border-destructive/40 text-destructive bg-destructive/5 hover:bg-destructive/10"
+                  onClick={() => setShowBulkLoadNeeds(true)}
+                  disabled={isSaving}
+                >
+                  <AlertTriangle className="w-4 h-4 me-1" />
+                  شحن الاحتياج ({totalDeficit} صندوق)
+                </Button>
+              )}
               <div className="flex gap-2">
                 <Button
                   variant="default"
