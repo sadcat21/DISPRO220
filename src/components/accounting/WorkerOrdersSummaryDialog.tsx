@@ -314,10 +314,14 @@ const WorkerOrdersSummaryDialog: React.FC<Props> = ({ open, onOpenChange, worker
       setPrintOrderItems(itemsMap);
       setPrintProducts(Array.from(productMap.values()).sort((a, b) => (a.name || '').localeCompare(b.name || '')));
       setIsPrintReady(true);
+      isPrintingRef.current = true;
 
       setTimeout(() => {
         window.print();
-        setTimeout(() => setIsPrintReady(false), 500);
+        setTimeout(() => {
+          setIsPrintReady(false);
+          isPrintingRef.current = false;
+        }, 500);
       }, 400);
     } catch (err) {
       console.error('Print error:', err);
