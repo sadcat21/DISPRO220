@@ -1156,21 +1156,9 @@ const LoadStock: React.FC = () => {
     finally { setIsEmptying(false); }
   };
 
-  // Hide header on scroll
-  const [headerVisible, setHeaderVisible] = useState(true);
-  const lastScrollY = useRef(0);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  // Bottom tab state for action buttons
+  const [bottomTab, setBottomTab] = useState<'actions' | 'tools'>('actions');
 
-  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    const currentY = e.currentTarget.scrollTop;
-    const delta = currentY - lastScrollY.current;
-    if (delta > 8 && currentY > 40) {
-      setHeaderVisible(false);
-    } else if (delta < -8) {
-      setHeaderVisible(true);
-    }
-    lastScrollY.current = currentY;
-  }, []);
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
