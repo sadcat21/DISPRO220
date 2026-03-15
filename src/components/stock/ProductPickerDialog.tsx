@@ -29,6 +29,7 @@ const ProductPickerDialog: React.FC<ProductPickerDialogProps> = ({
   products,
   selectedProductIds,
   onSelect,
+  needsMap = {},
 }) => {
   const { t } = useLanguage();
   const [search, setSearch] = useState('');
