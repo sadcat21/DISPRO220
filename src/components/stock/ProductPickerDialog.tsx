@@ -98,7 +98,7 @@ const ProductPickerDialog: React.FC<ProductPickerDialogProps> = ({
         {/* Needs badge */}
         {neededQty > 0 && !isSelected && (
           <div className="absolute top-0 start-0 z-10">
-            <Badge className="rounded-none rounded-ee-xl rounded-ss-2xl bg-orange-500 text-white text-[9px] px-1.5 py-0.5 font-bold shadow-md">
+            <Badge className="rounded-none rounded-ee-xl rounded-ss-2xl bg-destructive text-destructive-foreground text-[9px] px-1.5 py-0.5 font-bold shadow-md">
               يحتاج {fmtQty(neededQty)}
             </Badge>
           </div>
