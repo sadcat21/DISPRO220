@@ -1376,108 +1376,138 @@ const LoadStock: React.FC = () => {
 
       {/* Fixed Bottom Buttons */}
       {selectedWorker && (
-        <div className="px-2 pt-1 pb-1.5 border-t bg-gradient-to-t from-background to-background/95 shadow-[0_-2px_8px_-2px_hsl(var(--foreground)/0.06)] space-y-1">
-           {!activeSessionId ? (
-            <>
-              {!hasReviewToday && (
-                <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-amber-50 dark:bg-amber-900/10 ring-1 ring-amber-200 dark:ring-amber-800 text-amber-700 dark:text-amber-400 text-[9px]">
-                  <AlertTriangle className="w-2.5 h-2.5 shrink-0" />
-                  <span>مراجعة مطلوبة أولاً</span>
+        <div className="shrink-0 border-t bg-gradient-to-t from-background to-background/95 shadow-[0_-2px_8px_-2px_hsl(var(--foreground)/0.06)]">
+          {/* Sub-tabs */}
+          <div className="flex border-b border-border/40">
+            <button
+              className={`flex-1 py-1 text-[10px] font-medium transition-colors ${bottomTab === 'actions' ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground'}`}
+              onClick={() => setBottomTab('actions')}
+            >
+              {activeSessionId ? 'الشحن' : 'إجراءات'}
+            </button>
+            <button
+              className={`flex-1 py-1 text-[10px] font-medium transition-colors ${bottomTab === 'tools' ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground'}`}
+              onClick={() => setBottomTab('tools')}
+            >
+              أدوات
+            </button>
+          </div>
+
+          <div className="px-2 py-1.5 space-y-1">
+            {!activeSessionId ? (
+              bottomTab === 'actions' ? (
+                <>
+                  {!hasReviewToday && (
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-amber-50 dark:bg-amber-900/10 ring-1 ring-amber-200 dark:ring-amber-800 text-amber-700 dark:text-amber-400 text-[9px]">
+                      <AlertTriangle className="w-2.5 h-2.5 shrink-0" />
+                      <span>مراجعة مطلوبة أولاً</span>
+                    </div>
+                  )}
+                  <div className="flex gap-1">
+                    <Button
+                      variant="outline"
+                      className={`flex-1 h-8 rounded-md text-[10px] px-2 ${hasReviewToday 
+                        ? "border-green-400 text-green-700 bg-green-50/50 dark:bg-green-900/10"
+                        : "border-blue-400 text-blue-700 bg-blue-50/50 dark:bg-blue-900/10"
+                      }`}
+                      onClick={() => setShowVerificationDialog(true)}
+                      disabled={isEmptying}
+                    >
+                      {hasReviewToday ? <CheckCircle className="w-3 h-3 me-1" /> : <Search className="w-3 h-3 me-1" />}
+                      {hasReviewToday ? 'مراجعة ✓' : 'مراجعة'}
+                    </Button>
+                    <Button onClick={handleStartSession} className="flex-[2] h-8 rounded-md text-[10px] shadow-sm" disabled={createSession.isPending || !hasReviewToday}>
+                      {createSession.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3 me-0.5" />}
+                      بدء شحن
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="grid grid-cols-4 gap-1">
+                  <Button variant="outline" onClick={() => setShowSessionHistory(true)} className="h-8 rounded-md text-[9px] px-1">
+                    <History className="w-3 h-3 me-0.5" />
+                    السجل
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-8 rounded-md text-[9px] px-1 text-destructive border-destructive/30"
+                    onClick={handleEmptyTruckPreview}
+                    disabled={isEmptying || !hasReviewToday}
+                  >
+                    <PackageX className="w-3 h-3 me-0.5" />
+                    تفريغ
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-8 rounded-md text-[9px] px-1 border-orange-400 text-orange-700"
+                    onClick={() => setShowExchangeDialog(true)}
+                  >
+                    <RefreshCw className="w-3 h-3 me-0.5" />
+                    تغيير
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-8 rounded-md text-[9px] px-1 border-primary/30 text-primary"
+                    onClick={() => setShowLoadSheetPrint(true)}
+                  >
+                    <Printer className="w-3 h-3 me-0.5" />
+                    طباعة
+                  </Button>
                 </div>
-              )}
-              <div className="flex gap-1">
-                <Button
-                  variant="outline"
-                  className={`flex-1 h-7 rounded-md text-[10px] px-2 ${hasReviewToday 
-                    ? "border-green-400 text-green-700 bg-green-50/50 dark:bg-green-900/10"
-                    : "border-blue-400 text-blue-700 bg-blue-50/50 dark:bg-blue-900/10"
-                  }`}
-                  onClick={() => setShowVerificationDialog(true)}
-                  disabled={isEmptying}
-                >
-                  {hasReviewToday ? <CheckCircle className="w-3 h-3" /> : <Search className="w-3 h-3" />}
-                </Button>
-                <Button onClick={handleStartSession} className="flex-[2] h-7 rounded-md text-[10px] shadow-sm" disabled={createSession.isPending || !hasReviewToday}>
-                  {createSession.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3 me-0.5" />}
-                  بدء شحن
-                </Button>
-              </div>
-              <div className="grid grid-cols-4 gap-0.5">
-                <Button variant="ghost" onClick={() => setShowSessionHistory(true)} className="h-6 rounded text-[9px] px-0.5">
-                  <History className="w-3 h-3" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="h-6 rounded text-[9px] px-0.5 text-destructive"
-                  onClick={handleEmptyTruckPreview}
-                  disabled={isEmptying || !hasReviewToday}
-                >
-                  <PackageX className="w-3 h-3" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="h-6 rounded text-[9px] px-0.5 text-orange-600"
-                  onClick={() => setShowExchangeDialog(true)}
-                >
-                  <RefreshCw className="w-3 h-3" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="h-6 rounded text-[9px] px-0.5 text-primary"
-                  onClick={() => setShowLoadSheetPrint(true)}
-                >
-                  <Printer className="w-3 h-3" />
-                </Button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex gap-1">
-                <Button onClick={handleOpenAddProduct} className="flex-1 h-7 rounded-md text-[10px] shadow-sm">
-                  <Plus className="w-3 h-3 me-0.5" />
-                  إضافة
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1 h-7 rounded-md text-[10px] border-primary/30 text-primary"
-                  onClick={() => setShowPartialLoadDialog(true)}
-                  disabled={isSaving}
-                >
-                  <ShoppingCart className="w-3 h-3 me-0.5" />
-                  طلبيات
-                </Button>
-              </div>
-              {hasDeficit && (
-                <Button
-                  variant="outline"
-                  className="w-full h-6 rounded-md text-[9px] border-destructive/40 text-destructive bg-destructive/5"
-                  onClick={() => setShowBulkLoadNeeds(true)}
-                  disabled={isSaving}
-                >
-                  <AlertTriangle className="w-3 h-3 me-0.5" />
-                  احتياج ({totalDeficit})
-                </Button>
-              )}
-              <div className="flex gap-1">
-                <Button
-                  className="flex-1 h-7 rounded-md text-[10px] shadow-sm"
-                  onClick={handleCompleteSession}
-                  disabled={sessionItems.length === 0 || completeSession.isPending}
-                >
-                  {completeSession.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3 me-0.5" />}
-                  تأكيد
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-7 rounded-md text-[10px] text-destructive border-destructive/30 px-3"
-                  onClick={() => handleDeleteSession(activeSessionId!)}
-                  disabled={deleteSession.isPending}
-                >
-                  <X className="w-3 h-3" />
-                </Button>
-              </div>
-            </>
-          )}
+              )
+            ) : (
+              bottomTab === 'actions' ? (
+                <>
+                  <div className="flex gap-1">
+                    <Button onClick={handleOpenAddProduct} className="flex-1 h-8 rounded-md text-[10px] shadow-sm">
+                      <Plus className="w-3 h-3 me-0.5" />
+                      إضافة
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1 h-8 rounded-md text-[10px] border-primary/30 text-primary"
+                      onClick={() => setShowPartialLoadDialog(true)}
+                      disabled={isSaving}
+                    >
+                      <ShoppingCart className="w-3 h-3 me-0.5" />
+                      طلبيات
+                    </Button>
+                  </div>
+                  {hasDeficit && (
+                    <Button
+                      variant="outline"
+                      className="w-full h-7 rounded-md text-[9px] border-destructive/40 text-destructive bg-destructive/5"
+                      onClick={() => setShowBulkLoadNeeds(true)}
+                      disabled={isSaving}
+                    >
+                      <AlertTriangle className="w-3 h-3 me-0.5" />
+                      احتياج ({totalDeficit})
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <div className="flex gap-1">
+                  <Button
+                    className="flex-1 h-8 rounded-md text-[10px] shadow-sm"
+                    onClick={handleCompleteSession}
+                    disabled={sessionItems.length === 0 || completeSession.isPending}
+                  >
+                    {completeSession.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3 me-0.5" />}
+                    تأكيد
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-8 rounded-md text-[10px] text-destructive border-destructive/30 px-4"
+                    onClick={() => handleDeleteSession(activeSessionId!)}
+                    disabled={deleteSession.isPending}
+                  >
+                    <X className="w-3 h-3 me-0.5" />
+                    إلغاء
+                  </Button>
+                </div>
+              )
+            )}
+          </div>
         </div>
       )}
       {/* Add Product Dialog */}
