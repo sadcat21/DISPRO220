@@ -450,7 +450,7 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
 
       // Handle post-delivery payment difference
       const totalDiff = orderTotal - originalTotal;
-      if (order.status === 'delivered' && totalDiff !== 0 && paymentType) {
+      if (order.status === 'delivered' && totalDiff !== 0 && diffPaymentType) {
         if (totalDiff > 0) {
           // INCREASE: customer owes more
           let remainingDiff = totalDiff;
