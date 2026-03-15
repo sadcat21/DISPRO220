@@ -332,7 +332,23 @@ const WorkerOrdersSummaryDialog: React.FC<Props> = ({ open, onOpenChange, worker
     setExpandedProduct(null);
   };
 
+  const printTitle = `${activeTab === 'created' ? 'طلبيات' : 'معيّنة'} - ${workerPrintInfo?.printName || workerName || ''} - ${format(new Date(selectedDate), 'dd/MM/yyyy')}`;
+
   return (
+    <>
+      {isPrintReady && (
+        <OrdersPrintView
+          ref={printRef}
+          orders={printOrders}
+          orderItems={printOrderItems}
+          products={printProducts}
+          title={printTitle}
+          dateRange={format(new Date(selectedDate), 'dd/MM/yyyy')}
+          isVisible
+          columnConfig={columnConfig}
+        />
+      )}
+
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[92dvh] flex flex-col overflow-hidden p-0 gap-0 rounded-2xl" dir="rtl">
         {/* Header */}
@@ -342,7 +358,16 @@ const WorkerOrdersSummaryDialog: React.FC<Props> = ({ open, onOpenChange, worker
               <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
                 <ClipboardList className="w-5 h-5 text-primary" />
               </div>
-              تجميع الطلبيات {workerName ? `- ${workerName}` : ''}
+              <span className="flex-1">تجميع الطلبيات {workerName ? `- ${workerName}` : ''}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={handlePrint}
+                disabled={isPrintLoading || currentData.length === 0}
+              >
+                {isPrintLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
+              </Button>
             </DialogTitle>
           </DialogHeader>
 
