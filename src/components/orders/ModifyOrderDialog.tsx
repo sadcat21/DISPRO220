@@ -93,7 +93,7 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
       setAssignedWorkerId(order.assigned_worker_id || '');
       setDeliveryDate(order.delivery_date ? new Date(order.delivery_date) : undefined);
       setPaymentType(order.payment_type || 'with_invoice');
-      setInvoicePaymentMethod(order.invoice_payment_method || '');
+      setInvoicePaymentMethod((order.invoice_payment_method as InvoicePaymentMethod) || null);
     }
   }, [open, orderItems, order.assigned_worker_id, order.delivery_date, order.payment_type, order.invoice_payment_method]);
 
