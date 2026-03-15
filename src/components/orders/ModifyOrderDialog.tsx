@@ -4,8 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Minus, Loader2, Package, Save, PlusCircle, Trash2, Truck, Gift } from 'lucide-react';
+import { Plus, Minus, Loader2, Package, Save, PlusCircle, Trash2, Truck, Gift, CalendarDays, CreditCard } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { ar } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -61,6 +66,9 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [customerDebtTotal, setCustomerDebtTotal] = useState(0);
   const [customerCreditTotal, setCustomerCreditTotal] = useState(0);
+  const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(order.delivery_date ? new Date(order.delivery_date) : undefined);
+  const [paymentType, setPaymentType] = useState<string>(order.payment_type || 'with_invoice');
+  const [invoicePaymentMethod, setInvoicePaymentMethod] = useState<string>(order.invoice_payment_method || '');
 
   const canChangeWorker = role === 'admin' || role === 'branch_admin' || order.created_by === workerId;
 
@@ -81,8 +89,11 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
         weight_per_box: Number((item as any).weight_per_box || item.product?.weight_per_box || 1),
       })));
       setAssignedWorkerId(order.assigned_worker_id || '');
+      setDeliveryDate(order.delivery_date ? new Date(order.delivery_date) : undefined);
+      setPaymentType(order.payment_type || 'with_invoice');
+      setInvoicePaymentMethod(order.invoice_payment_method || '');
     }
-  }, [open, orderItems, order.assigned_worker_id]);
+  }, [open, orderItems, order.assigned_worker_id, order.delivery_date, order.payment_type, order.invoice_payment_method]);
 
   // Fetch available products for adding
   useEffect(() => {
@@ -222,8 +233,16 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
   };
 
   const workerChanged = assignedWorkerId !== (order.assigned_worker_id || '');
+  const deliveryDateChanged = (() => {
+    const origDate = order.delivery_date ? order.delivery_date.split('T')[0] : '';
+    const newDate = deliveryDate ? format(deliveryDate, 'yyyy-MM-dd') : '';
+    return origDate !== newDate;
+  })();
+  const paymentTypeChanged = paymentType !== (order.payment_type || 'with_invoice');
+  const invoiceMethodChanged = invoicePaymentMethod !== (order.invoice_payment_method || '');
+
   const hasChanges = items.some(i => i.new_quantity !== i.original_quantity) ||
-    items.some(i => !i.id && i.new_quantity > 0) || workerChanged;
+    items.some(i => !i.id && i.new_quantity > 0) || workerChanged || deliveryDateChanged || paymentTypeChanged || invoiceMethodChanged;
 
   const getBoxPrice = useCallback((item: ModifiedItem) => {
     const multiplier = getBoxMultiplier(item.pricing_unit, item.weight_per_box, item.pieces_per_box);
@@ -284,12 +303,12 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
     handleSave();
   };
 
-  const handlePostDeliveryConfirm = async (paymentType: 'full' | 'partial' | 'no_payment', paidAmount?: number) => {
+  const handlePostDeliveryConfirm = async (diffPaymentType: 'full' | 'partial' | 'no_payment', paidAmount?: number) => {
     setShowConfirmDialog(false);
-    await handleSave(paymentType, paidAmount);
+    await handleSave(diffPaymentType, paidAmount);
   };
 
-  const handleSave = async (paymentType?: 'full' | 'partial' | 'no_payment', paidAmount?: number) => {
+  const handleSave = async (diffPaymentType?: 'full' | 'partial' | 'no_payment', paidAmount?: number) => {
     if (!hasChanges || !workerId) return;
     setIsSubmitting(true);
 
@@ -379,6 +398,19 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
         changes.push({ عملية: 'تغيير عامل التوصيل' });
       }
 
+      // Update delivery date if changed
+      if (deliveryDateChanged) {
+        orderUpdate.delivery_date = deliveryDate ? format(deliveryDate, 'yyyy-MM-dd') : null;
+        changes.push({ عملية: 'تغيير تاريخ التوصيل', تاريخ_جديد: deliveryDate ? format(deliveryDate, 'yyyy-MM-dd') : 'بدون' });
+      }
+
+      // Update payment type if changed
+      if (paymentTypeChanged || invoiceMethodChanged) {
+        orderUpdate.payment_type = paymentType;
+        orderUpdate.invoice_payment_method = paymentType === 'with_invoice' ? (invoicePaymentMethod || null) : null;
+        changes.push({ عملية: 'تغيير طريقة الدفع', نوع: paymentType, طريقة_فرعية: invoicePaymentMethod || 'بدون' });
+      }
+
       if (Object.keys(orderUpdate).length > 0) {
         await supabase.from('orders')
           .update(orderUpdate)
@@ -418,14 +450,14 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
 
       // Handle post-delivery payment difference
       const totalDiff = orderTotal - originalTotal;
-      if (order.status === 'delivered' && totalDiff !== 0 && paymentType) {
+      if (order.status === 'delivered' && totalDiff !== 0 && diffPaymentType) {
         if (totalDiff > 0) {
           // INCREASE: customer owes more
           let remainingDiff = totalDiff;
           
-          if (paymentType === 'partial' && paidAmount) {
+          if (diffPaymentType === 'partial' && paidAmount) {
             remainingDiff = totalDiff - paidAmount;
-          } else if (paymentType === 'full') {
+          } else if (diffPaymentType === 'full') {
             remainingDiff = 0;
           }
 
@@ -474,9 +506,9 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
           const refundAmount = Math.abs(totalDiff);
           let remainingRefund = refundAmount;
 
-          if (paymentType === 'full') {
+          if (diffPaymentType === 'full') {
             remainingRefund = 0; // Refunded in cash
-          } else if (paymentType === 'partial' && paidAmount) {
+          } else if (diffPaymentType === 'partial' && paidAmount) {
             remainingRefund = refundAmount - paidAmount;
           }
 
@@ -546,7 +578,7 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
           نوع_التعديل: order.status === 'delivered' ? 'تعديل بعد التوصيل' : 'تعديل أثناء التوصيل',
           العميل: order.customer?.name,
           التغييرات: changes,
-          ...(paymentType && { طريقة_دفع_الفارق: paymentType, المبلغ_المدفوع: paidAmount }),
+          ...(diffPaymentType && { طريقة_دفع_الفارق: diffPaymentType, المبلغ_المدفوع: paidAmount }),
         },
       });
 
@@ -600,6 +632,66 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
                 />
               </div>
             )}
+
+            {/* Delivery date */}
+            <div className="border rounded-lg p-3 space-y-2 bg-muted/30">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <CalendarDays className="w-3.5 h-3.5" />
+                تاريخ التوصيل
+              </label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-start h-9", !deliveryDate && "text-muted-foreground")}>
+                    <CalendarDays className="w-4 h-4 me-2" />
+                    {deliveryDate ? format(deliveryDate, 'yyyy-MM-dd') : 'بدون تاريخ'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={deliveryDate}
+                    onSelect={setDeliveryDate}
+                    className={cn("p-3 pointer-events-auto")}
+                    locale={ar}
+                  />
+                </PopoverContent>
+              </Popover>
+              {deliveryDate && (
+                <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={() => setDeliveryDate(undefined)}>
+                  إزالة التاريخ
+                </Button>
+              )}
+            </div>
+
+            {/* Payment type */}
+            <div className="border rounded-lg p-3 space-y-2 bg-muted/30">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <CreditCard className="w-3.5 h-3.5" />
+                طريقة الدفع
+              </label>
+              <Select value={paymentType} onValueChange={(v) => { setPaymentType(v); if (v !== 'with_invoice') setInvoicePaymentMethod(''); }}>
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="with_invoice">بفاتورة</SelectItem>
+                  <SelectItem value="without_invoice">بدون فاتورة</SelectItem>
+                </SelectContent>
+              </Select>
+              {paymentType === 'with_invoice' && (
+                <Select value={invoicePaymentMethod} onValueChange={setInvoicePaymentMethod}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="طريقة الدفع الفرعية" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">نقدي</SelectItem>
+                    <SelectItem value="check">شيك</SelectItem>
+                    <SelectItem value="receipt">وصل</SelectItem>
+                    <SelectItem value="transfer">تحويل</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
 
             {/* Current items */}
             {items.map((item, index) => {
