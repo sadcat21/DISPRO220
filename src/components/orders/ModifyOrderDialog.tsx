@@ -241,7 +241,7 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
     return origDate !== newDate;
   })();
   const paymentTypeChanged = paymentType !== (order.payment_type || 'with_invoice');
-  const invoiceMethodChanged = invoicePaymentMethod !== (order.invoice_payment_method || '');
+  const invoiceMethodChanged = (invoicePaymentMethod || null) !== (order.invoice_payment_method || null);
 
   const hasChanges = items.some(i => i.new_quantity !== i.original_quantity) ||
     items.some(i => !i.id && i.new_quantity > 0) || workerChanged || deliveryDateChanged || paymentTypeChanged || invoiceMethodChanged;
