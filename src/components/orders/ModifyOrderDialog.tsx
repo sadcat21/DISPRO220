@@ -303,12 +303,12 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
     handleSave();
   };
 
-  const handlePostDeliveryConfirm = async (paymentType: 'full' | 'partial' | 'no_payment', paidAmount?: number) => {
+  const handlePostDeliveryConfirm = async (diffPaymentType: 'full' | 'partial' | 'no_payment', paidAmount?: number) => {
     setShowConfirmDialog(false);
-    await handleSave(paymentType, paidAmount);
+    await handleSave(diffPaymentType, paidAmount);
   };
 
-  const handleSave = async (paymentType?: 'full' | 'partial' | 'no_payment', paidAmount?: number) => {
+  const handleSave = async (diffPaymentType?: 'full' | 'partial' | 'no_payment', paidAmount?: number) => {
     if (!hasChanges || !workerId) return;
     setIsSubmitting(true);
 
