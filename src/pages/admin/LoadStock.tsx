@@ -32,6 +32,7 @@ import ExchangeSessionDialog from '@/components/stock/ExchangeSessionDialog';
 import CustomerPickerDialog from '@/components/orders/CustomerPickerDialog';
 import PartialLoadFromOrdersDialog from '@/components/stock/PartialLoadFromOrdersDialog';
 import WorkerLoadRequestBanner from '@/components/stock/WorkerLoadRequestBanner';
+import BulkLoadNeedsDialog from '@/components/stock/BulkLoadNeedsDialog';
 import LoadSheetPrintView from '@/components/stock/LoadSheetPrintView';
 import SessionPrintView from '@/components/stock/SessionPrintView';
 import { Customer, Sector } from '@/types/database';
