@@ -646,7 +646,7 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
                     {deliveryDate ? format(deliveryDate, 'yyyy-MM-dd') : 'بدون تاريخ'}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 z-[10060]" align="start">
                   <Calendar
                     mode="single"
                     selected={deliveryDate}
@@ -699,6 +699,13 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
               return (
                 <div key={item.product_id} className={`border rounded-lg p-3 space-y-2 ${changed ? 'border-primary/50 bg-primary/5' : ''}`}>
                     <div className="flex items-center justify-between">
+                      {(() => {
+                        const product = products.find(p => p.id === item.product_id);
+                        const imgUrl = product?.image_url || (orderItems.find(oi => oi.product_id === item.product_id)?.product as any)?.image_url;
+                        return imgUrl ? (
+                          <img src={imgUrl} alt={item.product_name} className="w-10 h-10 rounded-md object-cover flex-shrink-0" />
+                        ) : null;
+                      })()}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
                           <span className="font-medium text-sm">{item.product_name}</span>
