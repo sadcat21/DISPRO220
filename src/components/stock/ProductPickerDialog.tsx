@@ -19,6 +19,8 @@ interface ProductPickerDialogProps {
   products: ProductOption[];
   selectedProductIds: string[];
   onSelect: (productId: string) => void;
+  /** Map of product_id → needed quantity (deficit) */
+  needsMap?: Record<string, number>;
 }
 
 const ProductPickerDialog: React.FC<ProductPickerDialogProps> = ({
