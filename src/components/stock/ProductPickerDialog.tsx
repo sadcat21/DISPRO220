@@ -104,8 +104,8 @@ const ProductPickerDialog: React.FC<ProductPickerDialogProps> = ({
           </div>
         )}
         {/* اسم المنتج أعلى الصورة */}
-        <div className={`px-2 py-2 border-b ${isSelected ? 'bg-primary border-primary' : neededQty > 0 ? 'bg-orange-50 border-orange-200' : 'bg-red-50 border-red-100'}`}>
-          <span className={`font-bold leading-tight block text-center truncate text-sm ${isSelected ? 'text-white' : neededQty > 0 ? 'text-orange-900' : 'text-red-900'}`}>
+        <div className={`px-2 py-2 border-b ${isSelected ? 'bg-primary border-primary' : neededQty > 0 ? 'bg-destructive/10 border-destructive/30' : 'bg-red-50 border-red-100'}`}>
+          <span className={`font-bold leading-tight block text-center truncate text-sm ${isSelected ? 'text-white' : neededQty > 0 ? 'text-destructive' : 'text-red-900'}`}>
             {p.name}
           </span>
         </div>
