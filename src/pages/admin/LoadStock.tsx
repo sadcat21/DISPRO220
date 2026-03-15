@@ -2277,6 +2277,20 @@ const LoadStock: React.FC = () => {
           workerName={workers.find(w => w.id === selectedWorker)?.full_name || ''}
         />
       )}
+      {selectedWorker && activeSessionId && (
+        <BulkLoadNeedsDialog
+          open={showBulkLoadNeeds}
+          onOpenChange={setShowBulkLoadNeeds}
+          suggestions={suggestions}
+          products={allProductOptions.map(p => {
+            const prod = products.find(pr => pr.id === p.id);
+            return { id: p.id, name: p.name, image_url: p.image_url, pieces_per_box: prod?.pieces_per_box || 20 };
+          })}
+          warehouseStock={warehouseStock.map(s => ({ product_id: s.product_id, quantity: s.quantity }))}
+          isLoading={suggestionsLoading}
+          onConfirm={handlePartialLoadConfirm}
+        />
+      )}
     </div>
   );
 };
