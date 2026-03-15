@@ -2172,6 +2172,7 @@ const LoadStock: React.FC = () => {
         products={allProductOptions}
         selectedProductIds={sessionItems.map((i: any) => i.product_id)}
         onSelect={handleProductSelected}
+        needsMap={suggestions.reduce((acc, s) => { if (s.suggested_load > 0) acc[s.product_id] = s.suggested_load; return acc; }, {} as Record<string, number>)}
       />
 
       {/* Edit Session Item Dialog */}
