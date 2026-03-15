@@ -474,6 +474,7 @@ const WorkerOrdersSummaryDialog: React.FC<Props> = ({ open, onOpenChange, worker
         </Tabs>
       </DialogContent>
     </Dialog>
+    </>
   );
 };
 
