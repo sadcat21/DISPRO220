@@ -398,6 +398,19 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
         changes.push({ عملية: 'تغيير عامل التوصيل' });
       }
 
+      // Update delivery date if changed
+      if (deliveryDateChanged) {
+        orderUpdate.delivery_date = deliveryDate ? format(deliveryDate, 'yyyy-MM-dd') : null;
+        changes.push({ عملية: 'تغيير تاريخ التوصيل', تاريخ_جديد: deliveryDate ? format(deliveryDate, 'yyyy-MM-dd') : 'بدون' });
+      }
+
+      // Update payment type if changed
+      if (paymentTypeChanged || invoiceMethodChanged) {
+        orderUpdate.payment_type = paymentType;
+        orderUpdate.invoice_payment_method = paymentType === 'with_invoice' ? (invoicePaymentMethod || null) : null;
+        changes.push({ عملية: 'تغيير طريقة الدفع', نوع: paymentType, طريقة_فرعية: invoicePaymentMethod || 'بدون' });
+      }
+
       if (Object.keys(orderUpdate).length > 0) {
         await supabase.from('orders')
           .update(orderUpdate)
