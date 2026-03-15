@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -6,8 +6,14 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { ClipboardList, Package, User, Calendar, ChevronLeft, ChevronRight, Loader2, ShoppingCart, UserCheck } from 'lucide-react';
+import { ClipboardList, Package, User, Calendar, ChevronLeft, ChevronRight, Loader2, ShoppingCart, UserCheck, Printer } from 'lucide-react';
 import { format, addDays, subDays } from 'date-fns';
+import OrdersPrintView from '@/components/print/OrdersPrintView';
+import type { PrintColumnConfig } from '@/components/print/OrdersPrintView';
+import { usePrintColumnsConfig } from '@/hooks/usePrintColumnsConfig';
+import { OrderWithDetails, Product } from '@/types/database';
+import { useWorkerPrintInfo } from '@/hooks/useWorkerPrintInfo';
+import { toast } from 'sonner';
 
 interface Props {
   open: boolean;
@@ -164,6 +170,15 @@ const WorkerOrdersSummaryDialog: React.FC<Props> = ({ open, onOpenChange, worker
   const [activeTab, setActiveTab] = useState<'created' | 'assigned'>('assigned');
   const [selectedDate, setSelectedDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
+  const [isPrintReady, setIsPrintReady] = useState(false);
+  const [printOrders, setPrintOrders] = useState<OrderWithDetails[]>([]);
+  const [printOrderItems, setPrintOrderItems] = useState<Map<string, any[]>>(new Map());
+  const [printProducts, setPrintProducts] = useState<Product[]>([]);
+  const [isPrintLoading, setIsPrintLoading] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const { columns: columnConfig } = usePrintColumnsConfig();
+  const { data: workerPrintInfo } = useWorkerPrintInfo(workerId);
 
   const { data, isLoading } = useQuery({
     queryKey: ['worker-orders-summary', workerId, selectedDate],
@@ -255,13 +270,85 @@ const WorkerOrdersSummaryDialog: React.FC<Props> = ({ open, onOpenChange, worker
   const createdCustomers = new Set((data?.created || []).flatMap(p => p.customers.map(c => c.customerId))).size;
   const assignedCustomers = new Set((data?.assigned || []).flatMap(p => p.customers.map(c => c.customerId))).size;
 
+  const handlePrint = async () => {
+    if (!workerId) return;
+    setIsPrintLoading(true);
+    try {
+      const dayStart = `${selectedDate}T00:00:00+01:00`;
+      const dayEnd = `${selectedDate}T23:59:59+01:00`;
+
+      const filterCol = activeTab === 'created' ? 'created_by' : 'assigned_worker_id';
+      const { data: ordersData } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          customer:customers(*, sector:sectors(name, name_fr), zone:sector_zones(name, name_fr)),
+          assigned_worker:workers!orders_assigned_worker_id_fkey(id, full_name),
+          order_items(*, product:products(*))
+        `)
+        .eq(filterCol, workerId)
+        .gte('created_at', dayStart)
+        .lte('created_at', dayEnd)
+        .in('status', ['pending', 'assigned', 'in_progress', 'delivered', 'completed', 'confirmed'])
+        .order('created_at', { ascending: true });
+
+      const fetchedOrders = (ordersData || []) as unknown as OrderWithDetails[];
+      if (fetchedOrders.length === 0) {
+        toast.info('لا توجد طلبيات للطباعة');
+        setIsPrintLoading(false);
+        return;
+      }
+
+      const itemsMap = new Map<string, any[]>();
+      const productMap = new Map<string, Product>();
+      for (const order of fetchedOrders) {
+        const items = (order as any).order_items || [];
+        itemsMap.set(order.id, items);
+        for (const item of items) {
+          if (item.product) productMap.set(item.product_id, item.product as Product);
+        }
+      }
+
+      setPrintOrders(fetchedOrders);
+      setPrintOrderItems(itemsMap);
+      setPrintProducts(Array.from(productMap.values()).sort((a, b) => (a.name || '').localeCompare(b.name || '')));
+      setIsPrintReady(true);
+
+      setTimeout(() => {
+        window.print();
+        setTimeout(() => setIsPrintReady(false), 500);
+      }, 400);
+    } catch (err) {
+      console.error('Print error:', err);
+      toast.error('حدث خطأ أثناء تحضير الطباعة');
+    } finally {
+      setIsPrintLoading(false);
+    }
+  };
+
   const goDay = (dir: number) => {
     const d = dir > 0 ? addDays(new Date(selectedDate), 1) : subDays(new Date(selectedDate), 1);
     setSelectedDate(format(d, 'yyyy-MM-dd'));
     setExpandedProduct(null);
   };
 
+  const printTitle = `${activeTab === 'created' ? 'طلبيات' : 'معيّنة'} - ${workerPrintInfo?.printName || workerName || ''} - ${format(new Date(selectedDate), 'dd/MM/yyyy')}`;
+
   return (
+    <>
+      {isPrintReady && (
+        <OrdersPrintView
+          ref={printRef}
+          orders={printOrders}
+          orderItems={printOrderItems}
+          products={printProducts}
+          title={printTitle}
+          dateRange={format(new Date(selectedDate), 'dd/MM/yyyy')}
+          isVisible
+          columnConfig={columnConfig}
+        />
+      )}
+
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[92dvh] flex flex-col overflow-hidden p-0 gap-0 rounded-2xl" dir="rtl">
         {/* Header */}
@@ -271,7 +358,16 @@ const WorkerOrdersSummaryDialog: React.FC<Props> = ({ open, onOpenChange, worker
               <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
                 <ClipboardList className="w-5 h-5 text-primary" />
               </div>
-              تجميع الطلبيات {workerName ? `- ${workerName}` : ''}
+              <span className="flex-1">تجميع الطلبيات {workerName ? `- ${workerName}` : ''}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={handlePrint}
+                disabled={isPrintLoading || currentData.length === 0}
+              >
+                {isPrintLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
+              </Button>
             </DialogTitle>
           </DialogHeader>
 
@@ -378,6 +474,7 @@ const WorkerOrdersSummaryDialog: React.FC<Props> = ({ open, onOpenChange, worker
         </Tabs>
       </DialogContent>
     </Dialog>
+    </>
   );
 };
 
