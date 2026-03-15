@@ -354,7 +354,7 @@ const WorkerOrdersSummaryDialog: React.FC<Props> = ({ open, onOpenChange, worker
         />
       )}
 
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(v) => { if (isPrintingRef.current) return; onOpenChange(v); }}>
       <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[92dvh] flex flex-col overflow-hidden p-0 gap-0 rounded-2xl" dir="rtl">
         {/* Header */}
         <div className="bg-primary/5 border-b px-4 pt-4 pb-3 shrink-0">
