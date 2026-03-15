@@ -89,8 +89,11 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
         weight_per_box: Number((item as any).weight_per_box || item.product?.weight_per_box || 1),
       })));
       setAssignedWorkerId(order.assigned_worker_id || '');
+      setDeliveryDate(order.delivery_date ? new Date(order.delivery_date) : undefined);
+      setPaymentType(order.payment_type || 'with_invoice');
+      setInvoicePaymentMethod(order.invoice_payment_method || '');
     }
-  }, [open, orderItems, order.assigned_worker_id]);
+  }, [open, orderItems, order.assigned_worker_id, order.delivery_date, order.payment_type, order.invoice_payment_method]);
 
   // Fetch available products for adding
   useEffect(() => {
