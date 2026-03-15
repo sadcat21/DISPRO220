@@ -282,7 +282,7 @@ const Customers: React.FC = () => {
       } else {
         filtered = filtered.filter(c => {
           switch (missingFilter) {
-            case 'phone': return !c.phone?.trim();
+            case 'phone': return !c.phone?.trim() || c.phone?.trim() === '0555443322';
             case 'location': return !(c.latitude && c.longitude);
             case 'type': return !c.customer_type;
             case 'sector': return !c.sector_id;
