@@ -77,12 +77,13 @@ const ProductPickerDialog: React.FC<ProductPickerDialogProps> = ({
   const renderProductButton = (p: ProductOption) => {
     const isSelected = selectedProductIds.includes(p.id);
     const isOutOfStock = p.warehouseQty === 0;
+    const neededQty = needsMap[p.id] || 0;
     return (
       <button
         key={p.id}
         disabled={isSelected}
         className={`flex flex-col rounded-2xl overflow-hidden text-center transition-all relative bg-white shadow-lg border-2
-          ${isSelected ? 'border-primary ring-2 ring-primary/40 opacity-60 cursor-not-allowed' : 'border-red-200 hover:border-primary/60 hover:shadow-xl cursor-pointer'}
+          ${isSelected ? 'border-primary ring-2 ring-primary/40 opacity-60 cursor-not-allowed' : neededQty > 0 ? 'border-orange-400 ring-2 ring-orange-300/40 hover:border-orange-500 hover:shadow-xl cursor-pointer' : 'border-red-200 hover:border-primary/60 hover:shadow-xl cursor-pointer'}
           ${isOutOfStock && !isSelected ? 'border-orange-400/60' : ''}
         `}
         onClick={() => {
@@ -94,9 +95,17 @@ const ProductPickerDialog: React.FC<ProductPickerDialogProps> = ({
           }
         }}
       >
+        {/* Needs badge */}
+        {neededQty > 0 && !isSelected && (
+          <div className="absolute top-0 start-0 z-10">
+            <Badge className="rounded-none rounded-ee-xl rounded-ss-2xl bg-orange-500 text-white text-[9px] px-1.5 py-0.5 font-bold shadow-md">
+              يحتاج {fmtQty(neededQty)}
+            </Badge>
+          </div>
+        )}
         {/* اسم المنتج أعلى الصورة */}
-        <div className={`px-2 py-2 border-b ${isSelected ? 'bg-primary border-primary' : 'bg-red-50 border-red-100'}`}>
-          <span className={`font-bold leading-tight block text-center truncate text-sm ${isSelected ? 'text-white' : 'text-red-900'}`}>
+        <div className={`px-2 py-2 border-b ${isSelected ? 'bg-primary border-primary' : neededQty > 0 ? 'bg-orange-50 border-orange-200' : 'bg-red-50 border-red-100'}`}>
+          <span className={`font-bold leading-tight block text-center truncate text-sm ${isSelected ? 'text-white' : neededQty > 0 ? 'text-orange-900' : 'text-red-900'}`}>
             {p.name}
           </span>
         </div>
@@ -104,7 +113,7 @@ const ProductPickerDialog: React.FC<ProductPickerDialogProps> = ({
         {p.image_url ? (
           <img src={p.image_url} alt={p.name} className="w-full aspect-square object-cover" loading="lazy" />
         ) : (
-          <div className={`w-full aspect-square flex items-center justify-center ${isOutOfStock ? 'bg-destructive/10' : 'bg-red-50'}`}>
+          <div className={`w-full aspect-square flex items-center justify-center ${isOutOfStock ? 'bg-destructive/10' : neededQty > 0 ? 'bg-orange-50/50' : 'bg-red-50'}`}>
             <Package className={`w-10 h-10 ${isOutOfStock ? 'text-destructive' : 'text-primary/40'}`} />
           </div>
         )}
