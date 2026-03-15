@@ -110,6 +110,7 @@ const LoadStock: React.FC = () => {
   const [showSessionHistory, setShowSessionHistory] = useState(false);
   const [showPartialLoadDialog, setShowPartialLoadDialog] = useState(false);
   const [showLoadSheetPrint, setShowLoadSheetPrint] = useState(false);
+  const [showBulkLoadNeeds, setShowBulkLoadNeeds] = useState(false);
 
   // Auto-open history from URL params
   useEffect(() => {
