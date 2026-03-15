@@ -506,9 +506,9 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
           const refundAmount = Math.abs(totalDiff);
           let remainingRefund = refundAmount;
 
-          if (paymentType === 'full') {
+          if (diffPaymentType === 'full') {
             remainingRefund = 0; // Refunded in cash
-          } else if (paymentType === 'partial' && paidAmount) {
+          } else if (diffPaymentType === 'partial' && paidAmount) {
             remainingRefund = refundAmount - paidAmount;
           }
 
