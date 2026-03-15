@@ -1323,41 +1323,56 @@ const LoadStock: React.FC = () => {
       {/* Scrollable Session Items */}
       <ScrollArea className="flex-1 px-3">
         {activeSessionId && sessionItems.length > 0 ? (
-          <div className="space-y-1.5 pb-4 pt-1">
-            {sessionItems.map((item: any) => (
-              <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl ring-1 ring-border/40 bg-card cursor-pointer hover:bg-muted/30 active:scale-[0.99] transition-all" onClick={() => handleEditSessionItem(item)}>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <Package className="w-3.5 h-3.5 text-primary shrink-0" />
-                    <span className="font-medium text-[13px] truncate">{item.product?.name || item.notes || ''}</span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1 text-[11px] text-muted-foreground flex-wrap">
-                    <span>الكمية: <strong>{fmtQty(item.quantity)}</strong></span>
-                    {item.gift_quantity > 0 && (
-                      <>
-                        <span className="text-border">|</span>
-                        <span className="text-destructive">هدايا: <strong>{fmtQty(item.gift_quantity)} {item.gift_unit === 'box' ? 'صندوق' : 'قطعة'}</strong></span>
-                      </>
-                    )}
-                    {item.is_custom_load && (
-                      <Badge className="bg-blue-500 text-white text-[9px] px-1.5 py-0 rounded-full">شحن مخصص</Badge>
-                    )}
-                  </div>
-                  {item.is_custom_load && item.custom_load_note && (
-                    <div className="text-[10px] text-blue-600 mt-0.5">{item.custom_load_note}</div>
-                  )}
-                </div>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="shrink-0 text-destructive hover:bg-destructive/10 h-8 w-8 rounded-lg"
-                  onClick={(e) => { e.stopPropagation(); handleRemoveSessionItem(item); }}
-                  disabled={deleteSessionItem.isPending}
+          <div className="grid grid-cols-3 gap-2 pb-4 pt-1">
+            {sessionItems.map((item: any) => {
+              const productData = allProductOptions.find(p => p.id === item.product_id);
+              const imageUrl = productData?.image_url || (item.product as any)?.image_url;
+              return (
+                <div
+                  key={item.id}
+                  className="relative rounded-xl ring-1 ring-border/40 bg-card overflow-hidden cursor-pointer hover:ring-primary/50 active:scale-[0.97] transition-all"
+                  onClick={() => handleEditSessionItem(item)}
                 >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            ))}
+                  {/* Product Image */}
+                  <div className="aspect-square bg-muted/30 flex items-center justify-center overflow-hidden">
+                    {imageUrl ? (
+                      <img src={imageUrl} alt={item.product?.name || ''} className="w-full h-full object-cover" />
+                    ) : (
+                      <Package className="w-10 h-10 text-muted-foreground/30" />
+                    )}
+                  </div>
+
+                  {/* Delete button */}
+                  <button
+                    className="absolute top-1 left-1 w-6 h-6 rounded-full bg-destructive/90 text-destructive-foreground flex items-center justify-center hover:bg-destructive transition-colors"
+                    onClick={(e) => { e.stopPropagation(); handleRemoveSessionItem(item); }}
+                    disabled={deleteSessionItem.isPending}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+
+                  {/* Quantity badge */}
+                  <div className="absolute top-1 right-1 flex flex-col gap-0.5 items-end">
+                    <Badge className="text-[10px] px-1.5 py-0 rounded-full shadow-sm">{fmtQty(item.quantity)}</Badge>
+                    {item.gift_quantity > 0 && (
+                      <Badge variant="destructive" className="text-[9px] px-1.5 py-0 rounded-full shadow-sm">
+                        <Gift className="w-2.5 h-2.5 me-0.5" />{fmtQty(item.gift_quantity)}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Product Name */}
+                  <div className="p-1.5 border-t">
+                    <p className="text-[11px] font-semibold leading-tight line-clamp-2 text-center">{item.product?.name || item.notes || ''}</p>
+                    {item.is_custom_load && (
+                      <div className="flex justify-center mt-0.5">
+                        <Badge className="bg-blue-500 text-white text-[8px] px-1 py-0 rounded-full">مخصص</Badge>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : activeSessionId ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
