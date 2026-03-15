@@ -20,7 +20,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { OrderWithDetails, OrderItem, Product } from '@/types/database';
 import DeliveryWorkerSelect from './DeliveryWorkerSelect';
 import PostDeliveryConfirmDialog from './PostDeliveryConfirmDialog';
+import InvoicePaymentMethodSelect from './InvoicePaymentMethodSelect';
 import { useProductOffers } from '@/hooks/useProductOffers';
+import { InvoicePaymentMethod } from '@/types/stamp';
 
 interface ModifyOrderDialogProps {
   open: boolean;
