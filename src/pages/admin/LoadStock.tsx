@@ -1170,55 +1170,43 @@ const LoadStock: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-8rem)] min-h-0">
-      {/* Header */}
-      <div className="px-3 pt-3 pb-1 space-y-2.5">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-            <Truck className="w-5 h-5 text-primary" />
-          </div>
-          <h2 className="text-lg font-bold flex-1">{t('stock.load_to_worker')}</h2>
+    <div className="flex flex-col h-[calc(100dvh-4rem)] min-h-0">
+      {/* Compact Header */}
+      <div className="px-2 pt-2 pb-1 space-y-1.5">
+        {/* Title + Worker inline */}
+        <div className="flex items-center gap-2">
+          <button
+            className="flex-1 flex items-center gap-2 h-9 px-2.5 rounded-lg ring-1 ring-border/60 bg-card hover:bg-muted/30 active:scale-[0.99] transition-all"
+            onClick={() => setShowWorkerPicker(true)}
+          >
+            <Truck className="w-4 h-4 text-primary shrink-0" />
+            <span className="text-[13px] font-semibold truncate flex-1 text-right">
+              {selectedWorker ? workers.find(w => w.id === selectedWorker)?.full_name : t('stock.select_worker')}
+            </span>
+            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          </button>
           {selectedWorker && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 rounded-xl hover:bg-muted"
-              onClick={() => setShowSessionHistory(true)}
-            >
-              <History className="w-5 h-5 text-muted-foreground" />
+            <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 rounded-lg" onClick={() => setShowSessionHistory(true)}>
+              <History className="w-4 h-4 text-muted-foreground" />
             </Button>
           )}
         </div>
 
-        {/* Worker Selection */}
-        <button
-          className="w-full flex items-center justify-between h-12 px-3 rounded-xl ring-1 ring-border/60 bg-card hover:bg-muted/30 active:scale-[0.99] transition-all"
-          onClick={() => setShowWorkerPicker(true)}
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <User className="w-4 h-4 text-primary" />
-            </div>
-            <span className="text-sm font-medium">{selectedWorker ? workers.find(w => w.id === selectedWorker)?.full_name : t('stock.select_worker')}</span>
-          </div>
-          <ChevronDown className="w-4 h-4 text-muted-foreground" />
-        </button>
-
-        {/* Stock Summary Collapsible */}
+        {/* Stock Summary - collapsed by default */}
         {selectedWorker && !suggestionsLoading && suggestions.length > 0 && (
           <Collapsible>
             <CollapsibleTrigger asChild>
-              <button className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl ring-1 ring-border/60 bg-card hover:bg-muted/30 active:scale-[0.99] transition-all">
-                <div className="flex items-center gap-2">
-                  {hasDeficit ? <AlertTriangle className="w-4 h-4 text-destructive" /> : <CheckCircle className="w-4 h-4 text-green-600" />}
-                  <span className="font-semibold text-[13px]">{hasDeficit ? t('stock.needs_loading') : t('stock.stock_sufficient')}</span>
-                  {hasDeficit && <Badge variant="destructive" className="text-[10px] px-2 rounded-full">{totalDeficit} {t('stock.boxes')}</Badge>}
+              <button className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg ring-1 ring-border/60 bg-card hover:bg-muted/30 active:scale-[0.99] transition-all">
+                <div className="flex items-center gap-1.5">
+                  {hasDeficit ? <AlertTriangle className="w-3.5 h-3.5 text-destructive" /> : <CheckCircle className="w-3.5 h-3.5 text-green-600" />}
+                  <span className="font-semibold text-[12px]">{hasDeficit ? t('stock.needs_loading') : t('stock.stock_sufficient')}</span>
+                  {hasDeficit && <Badge variant="destructive" className="text-[9px] px-1.5 rounded-full h-4">{totalDeficit} {t('stock.boxes')}</Badge>}
                 </div>
-                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
             </CollapsibleTrigger>
-            <CollapsibleContent className="mt-2">
-              <div className="grid gap-1.5 max-h-[30dvh] overflow-y-auto">
+            <CollapsibleContent className="mt-1">
+              <div className="grid gap-1 max-h-[25dvh] overflow-y-auto">
                 {suggestions.map(s => {
                   const sessionLoad = sessionItems.filter(si => si.product_id === s.product_id);
                   const loadedBoxes = sessionLoad.reduce((sum: number, si: any) => sum + (si.quantity || 0), 0);
@@ -1234,50 +1222,50 @@ const LoadStock: React.FC = () => {
                   const totalGiftsCustom = newGiftInCustom;
                   const hasGifts = totalGiftsCustom > 0;
                   return (
-                    <div key={s.product_id} className="rounded-xl ring-1 ring-border/40 bg-card p-2.5">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <div className="flex items-center gap-1.5">
-                          <Package className="w-3.5 h-3.5 text-primary" />
-                          <span className="font-semibold text-[12px]">{s.product_name}</span>
+                    <div key={s.product_id} className="rounded-lg ring-1 ring-border/40 bg-card p-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1">
+                          <Package className="w-3 h-3 text-primary" />
+                          <span className="font-semibold text-[11px]">{s.product_name}</span>
                         </div>
                         {s.suggested_load > 0 ? (
-                          <Badge variant="destructive" className="text-[9px] px-1.5 py-0 h-4 rounded-full">يحتاج +{fmtQty(s.suggested_load)}</Badge>
+                          <Badge variant="destructive" className="text-[8px] px-1 py-0 h-3.5 rounded-full">+{fmtQty(s.suggested_load)}</Badge>
                         ) : (
-                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 rounded-full border-green-400 text-green-600">✓ كافي</Badge>
+                          <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5 rounded-full border-green-400 text-green-600">✓</Badge>
                         )}
                       </div>
-                      <div className={`grid ${hasGifts ? 'grid-cols-8' : 'grid-cols-7'} gap-0.5 text-[10px]`}>
-                        <div className="bg-muted/50 rounded-lg p-1 text-center">
-                          <div className="text-muted-foreground text-[8px]">المتبقي</div>
+                      <div className={`grid ${hasGifts ? 'grid-cols-8' : 'grid-cols-7'} gap-0.5 text-[9px]`}>
+                        <div className="bg-muted/50 rounded p-0.5 text-center">
+                          <div className="text-muted-foreground text-[7px]">المتبقي</div>
                           <div className="font-bold">{fmtQty(oldStock)}</div>
                         </div>
-                        <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-1 text-center">
-                          <div className="text-muted-foreground text-[8px]">شحن</div>
+                        <div className="bg-blue-50 dark:bg-blue-950/30 rounded p-0.5 text-center">
+                          <div className="text-muted-foreground text-[7px]">شحن</div>
                           <div className="font-bold text-blue-600 dark:text-blue-400">{fmtQty((workerLoadedData || {})[s.product_id] || 0)}</div>
                         </div>
-                        <div className="bg-orange-50 dark:bg-orange-950/30 rounded-lg p-1 text-center">
-                          <div className="text-muted-foreground text-[8px]">بدون محاسبة</div>
+                        <div className="bg-orange-50 dark:bg-orange-950/30 rounded p-0.5 text-center">
+                          <div className="text-muted-foreground text-[7px]">بدون محاسبة</div>
                           <div className="font-bold text-orange-600 dark:text-orange-400">{fmtQty((workerLoadedSinceAccounting || {})[s.product_id] || 0)}</div>
                         </div>
-                        <div className="bg-primary/5 rounded-lg p-1 text-center">
-                          <div className="text-muted-foreground text-[8px]">جديد</div>
+                        <div className="bg-primary/5 rounded p-0.5 text-center">
+                          <div className="text-muted-foreground text-[7px]">جديد</div>
                           <div className="font-bold text-primary">{loadedBoxes > 0 ? `+${fmtQty(loadedBoxes)}` : '—'}</div>
                         </div>
-                        <div className="bg-muted/50 rounded-lg p-1 text-center">
-                          <div className="text-muted-foreground text-[8px]">الكلي</div>
+                        <div className="bg-muted/50 rounded p-0.5 text-center">
+                          <div className="text-muted-foreground text-[7px]">الكلي</div>
                           <div className="font-bold">{fmtQty(s.current_stock)}</div>
                         </div>
-                        <div className="bg-muted/50 rounded-lg p-1 text-center">
-                          <div className="text-muted-foreground text-[8px]">طلبات</div>
+                        <div className="bg-muted/50 rounded p-0.5 text-center">
+                          <div className="text-muted-foreground text-[7px]">طلبات</div>
                           <div className="font-bold">{fmtQty(s.pending_orders_quantity)}</div>
                         </div>
-                        <div className="bg-muted/50 rounded-lg p-1 text-center">
-                          <div className="text-muted-foreground text-[8px]">فائض</div>
+                        <div className="bg-muted/50 rounded p-0.5 text-center">
+                          <div className="text-muted-foreground text-[7px]">فائض</div>
                           <div className="font-bold">{fmtQty(surplus)}</div>
                         </div>
                         {hasGifts && (
-                          <div className="bg-destructive/5 rounded-lg p-1 text-center">
-                            <div className="text-muted-foreground text-[8px]">هدايا</div>
+                          <div className="bg-destructive/5 rounded p-0.5 text-center">
+                            <div className="text-muted-foreground text-[7px]">هدايا</div>
                             <div className="font-bold text-destructive">{fmtQty(totalGiftsCustom)}</div>
                           </div>
                         )}
@@ -1291,22 +1279,18 @@ const LoadStock: React.FC = () => {
         )}
 
         {suggestionsLoading && selectedWorker && (
-          <div className="flex items-center justify-center py-3">
-            <Loader2 className="w-5 h-5 animate-spin text-primary" />
+          <div className="flex items-center justify-center py-2">
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
           </div>
         )}
 
-        {/* Session Status */}
+        {/* Session Status - compact inline */}
         {activeSessionId && (
-          <div className="flex items-center justify-between bg-primary/5 ring-1 ring-primary/20 rounded-xl px-3 py-2.5">
-            <div className="flex items-center gap-2 text-sm">
-              <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Package className="w-3.5 h-3.5 text-primary" />
-              </div>
-              <span className="font-medium text-[13px]">جلسة شحن نشطة</span>
-              <Badge variant="secondary" className="text-[10px] rounded-full">{sessionItems.length} منتج</Badge>
-              {totalSessionQty > 0 && <Badge className="text-[10px] rounded-full">{totalSessionQty} صندوق</Badge>}
-            </div>
+          <div className="flex items-center gap-1.5 bg-primary/5 ring-1 ring-primary/20 rounded-lg px-2.5 py-1.5">
+            <Package className="w-3.5 h-3.5 text-primary" />
+            <span className="font-medium text-[11px]">جلسة نشطة</span>
+            <Badge variant="secondary" className="text-[9px] rounded-full h-4">{sessionItems.length} منتج</Badge>
+            {totalSessionQty > 0 && <Badge className="text-[9px] rounded-full h-4">{totalSessionQty} صندوق</Badge>}
           </div>
         )}
 
