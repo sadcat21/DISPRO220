@@ -233,8 +233,16 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
   };
 
   const workerChanged = assignedWorkerId !== (order.assigned_worker_id || '');
+  const deliveryDateChanged = (() => {
+    const origDate = order.delivery_date ? order.delivery_date.split('T')[0] : '';
+    const newDate = deliveryDate ? format(deliveryDate, 'yyyy-MM-dd') : '';
+    return origDate !== newDate;
+  })();
+  const paymentTypeChanged = paymentType !== (order.payment_type || 'with_invoice');
+  const invoiceMethodChanged = invoicePaymentMethod !== (order.invoice_payment_method || '');
+
   const hasChanges = items.some(i => i.new_quantity !== i.original_quantity) ||
-    items.some(i => !i.id && i.new_quantity > 0) || workerChanged;
+    items.some(i => !i.id && i.new_quantity > 0) || workerChanged || deliveryDateChanged || paymentTypeChanged || invoiceMethodChanged;
 
   const getBoxPrice = useCallback((item: ModifiedItem) => {
     const multiplier = getBoxMultiplier(item.pricing_unit, item.weight_per_box, item.pieces_per_box);
