@@ -1177,7 +1177,7 @@ const LoadStock: React.FC = () => {
   return (
     <div className="flex flex-col h-[calc(100dvh-4rem)] min-h-0">
       {/* Compact Header - hides on scroll */}
-      <div className={`px-2 pt-2 pb-1 space-y-1.5 transition-transform duration-300 ease-out will-change-transform origin-top ${headerVisible ? 'translate-y-0 scale-y-100' : '-translate-y-full scale-y-0 h-0 overflow-hidden'}`}>
+      <div className="px-2 pt-2 pb-1 space-y-1.5 shrink-0">
         {/* Title + Worker inline */}
         <div className="flex items-center gap-2">
           <button
