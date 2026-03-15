@@ -633,6 +633,66 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
               </div>
             )}
 
+            {/* Delivery date */}
+            <div className="border rounded-lg p-3 space-y-2 bg-muted/30">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <CalendarDays className="w-3.5 h-3.5" />
+                تاريخ التوصيل
+              </label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-start h-9", !deliveryDate && "text-muted-foreground")}>
+                    <CalendarDays className="w-4 h-4 me-2" />
+                    {deliveryDate ? format(deliveryDate, 'yyyy-MM-dd') : 'بدون تاريخ'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={deliveryDate}
+                    onSelect={setDeliveryDate}
+                    className={cn("p-3 pointer-events-auto")}
+                    locale={ar}
+                  />
+                </PopoverContent>
+              </Popover>
+              {deliveryDate && (
+                <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={() => setDeliveryDate(undefined)}>
+                  إزالة التاريخ
+                </Button>
+              )}
+            </div>
+
+            {/* Payment type */}
+            <div className="border rounded-lg p-3 space-y-2 bg-muted/30">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <CreditCard className="w-3.5 h-3.5" />
+                طريقة الدفع
+              </label>
+              <Select value={paymentType} onValueChange={(v) => { setPaymentType(v); if (v !== 'with_invoice') setInvoicePaymentMethod(''); }}>
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="with_invoice">بفاتورة</SelectItem>
+                  <SelectItem value="without_invoice">بدون فاتورة</SelectItem>
+                </SelectContent>
+              </Select>
+              {paymentType === 'with_invoice' && (
+                <Select value={invoicePaymentMethod} onValueChange={setInvoicePaymentMethod}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="طريقة الدفع الفرعية" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">نقدي</SelectItem>
+                    <SelectItem value="check">شيك</SelectItem>
+                    <SelectItem value="receipt">وصل</SelectItem>
+                    <SelectItem value="transfer">تحويل</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
             {/* Current items */}
             {items.map((item, index) => {
               const changed = item.new_quantity !== item.original_quantity;
