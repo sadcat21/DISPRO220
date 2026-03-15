@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -1177,9 +1178,9 @@ const LoadStock: React.FC = () => {
   return (
     <div className="flex flex-col h-[calc(100dvh-4rem)] min-h-0">
       {/* Compact Header - hides on scroll */}
-      <div className="px-2 pt-2 pb-1 space-y-1.5 shrink-0">
+      <div className="px-2 pt-2 pb-1 shrink-0">
         {/* Title + Worker inline */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mb-1.5">
           <button
             className="flex-1 flex items-center gap-2 h-9 px-2.5 rounded-lg ring-1 ring-border/60 bg-card hover:bg-muted/30 active:scale-[0.99] transition-all"
             onClick={() => setShowWorkerPicker(true)}
@@ -1197,106 +1198,118 @@ const LoadStock: React.FC = () => {
           )}
         </div>
 
-        {/* Stock Summary - collapsed by default */}
-        {selectedWorker && !suggestionsLoading && suggestions.length > 0 && (
-          <Collapsible>
-            <CollapsibleTrigger asChild>
-              <button className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg ring-1 ring-border/60 bg-card hover:bg-muted/30 active:scale-[0.99] transition-all">
-                <div className="flex items-center gap-1.5">
-                  {hasDeficit ? <AlertTriangle className="w-3.5 h-3.5 text-destructive" /> : <CheckCircle className="w-3.5 h-3.5 text-green-600" />}
-                  <span className="font-semibold text-[12px]">{hasDeficit ? t('stock.needs_loading') : t('stock.stock_sufficient')}</span>
-                  {hasDeficit && <Badge variant="destructive" className="text-[9px] px-1.5 rounded-full h-4">{totalDeficit} {t('stock.boxes')}</Badge>}
+        {/* Sub-tabs for session info & stock summary */}
+        {selectedWorker && (
+          <Tabs defaultValue="session" className="w-full">
+            <TabsList className="w-full h-7 p-0.5 bg-muted/60">
+              <TabsTrigger value="session" className="flex-1 h-6 text-[10px] data-[state=active]:shadow-sm">
+                <Package className="w-3 h-3 me-1" />
+                الجلسة
+                {activeSessionId && <Badge variant="secondary" className="text-[8px] px-1 py-0 rounded-full h-3.5 ms-1">{sessionItems.length}</Badge>}
+              </TabsTrigger>
+              <TabsTrigger value="stock" className="flex-1 h-6 text-[10px] data-[state=active]:shadow-sm">
+                {hasDeficit ? <AlertTriangle className="w-3 h-3 me-1 text-destructive" /> : <CheckCircle className="w-3 h-3 me-1 text-green-600" />}
+                المخزون
+                {hasDeficit && <Badge variant="destructive" className="text-[8px] px-1 py-0 rounded-full h-3.5 ms-1">{totalDeficit}</Badge>}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="session" className="mt-1">
+              {activeSessionId ? (
+                <div className="flex items-center gap-1.5 bg-primary/5 ring-1 ring-primary/20 rounded-lg px-2.5 py-1.5">
+                  <Package className="w-3.5 h-3.5 text-primary" />
+                  <span className="font-medium text-[11px]">جلسة نشطة</span>
+                  <Badge variant="secondary" className="text-[9px] rounded-full h-4">{sessionItems.length} منتج</Badge>
+                  {totalSessionQty > 0 && <Badge className="text-[9px] rounded-full h-4">{totalSessionQty} صندوق</Badge>}
                 </div>
-                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-              </button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="mt-1">
-              <div className="grid gap-1 max-h-[25dvh] overflow-y-auto">
-                {suggestions.map(s => {
-                  const sessionLoad = sessionItems.filter(si => si.product_id === s.product_id);
-                  const loadedBoxes = sessionLoad.reduce((sum: number, si: any) => sum + (si.quantity || 0), 0);
-                  const newGiftQty = sessionLoad.reduce((sum: number, si: any) => sum + (si.gift_quantity || 0), 0);
-                  const newGiftUnit = sessionLoad[0]?.gift_unit || 'piece';
-                  const product = products.find(p => p.id === s.product_id);
-                  const piecesPerBox = product?.pieces_per_box || 20;
-                  const giftInCustom = newGiftUnit === 'box' ? newGiftQty : totalPiecesToCustom(newGiftQty, piecesPerBox);
-                  const totalNewLoaded = newGiftQty > 0 ? addCustomQty(loadedBoxes, giftInCustom, piecesPerBox) : loadedBoxes;
-                  const oldStock = totalNewLoaded > 0 ? subtractCustomQty(s.current_stock, totalNewLoaded, piecesPerBox) : s.current_stock;
-                  const surplus = Math.max(0, s.current_stock - s.pending_orders_quantity);
-                  const newGiftInCustom = newGiftUnit === 'box' ? newGiftQty : totalPiecesToCustom(newGiftQty, piecesPerBox);
-                  const totalGiftsCustom = newGiftInCustom;
-                  const hasGifts = totalGiftsCustom > 0;
-                  return (
-                    <div key={s.product_id} className="rounded-lg ring-1 ring-border/40 bg-card p-2">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-1">
-                          <Package className="w-3 h-3 text-primary" />
-                          <span className="font-semibold text-[11px]">{s.product_name}</span>
-                        </div>
-                        {s.suggested_load > 0 ? (
-                          <Badge variant="destructive" className="text-[8px] px-1 py-0 h-3.5 rounded-full">+{fmtQty(s.suggested_load)}</Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5 rounded-full border-green-400 text-green-600">✓</Badge>
-                        )}
-                      </div>
-                      <div className={`grid ${hasGifts ? 'grid-cols-8' : 'grid-cols-7'} gap-0.5 text-[9px]`}>
-                        <div className="bg-muted/50 rounded p-0.5 text-center">
-                          <div className="text-muted-foreground text-[7px]">المتبقي</div>
-                          <div className="font-bold">{fmtQty(oldStock)}</div>
-                        </div>
-                        <div className="bg-blue-50 dark:bg-blue-950/30 rounded p-0.5 text-center">
-                          <div className="text-muted-foreground text-[7px]">شحن</div>
-                          <div className="font-bold text-blue-600 dark:text-blue-400">{fmtQty((workerLoadedData || {})[s.product_id] || 0)}</div>
-                        </div>
-                        <div className="bg-orange-50 dark:bg-orange-950/30 rounded p-0.5 text-center">
-                          <div className="text-muted-foreground text-[7px]">بدون محاسبة</div>
-                          <div className="font-bold text-orange-600 dark:text-orange-400">{fmtQty((workerLoadedSinceAccounting || {})[s.product_id] || 0)}</div>
-                        </div>
-                        <div className="bg-primary/5 rounded p-0.5 text-center">
-                          <div className="text-muted-foreground text-[7px]">جديد</div>
-                          <div className="font-bold text-primary">{loadedBoxes > 0 ? `+${fmtQty(loadedBoxes)}` : '—'}</div>
-                        </div>
-                        <div className="bg-muted/50 rounded p-0.5 text-center">
-                          <div className="text-muted-foreground text-[7px]">الكلي</div>
-                          <div className="font-bold">{fmtQty(s.current_stock)}</div>
-                        </div>
-                        <div className="bg-muted/50 rounded p-0.5 text-center">
-                          <div className="text-muted-foreground text-[7px]">طلبات</div>
-                          <div className="font-bold">{fmtQty(s.pending_orders_quantity)}</div>
-                        </div>
-                        <div className="bg-muted/50 rounded p-0.5 text-center">
-                          <div className="text-muted-foreground text-[7px]">فائض</div>
-                          <div className="font-bold">{fmtQty(surplus)}</div>
-                        </div>
-                        {hasGifts && (
-                          <div className="bg-destructive/5 rounded p-0.5 text-center">
-                            <div className="text-muted-foreground text-[7px]">هدايا</div>
-                            <div className="font-bold text-destructive">{fmtQty(totalGiftsCustom)}</div>
+              ) : (
+                <div className="text-center text-muted-foreground text-[11px] py-1.5">
+                  لا توجد جلسة نشطة
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="stock" className="mt-1">
+              {!suggestionsLoading && suggestions.length > 0 ? (
+                <div className="grid gap-1 max-h-[30dvh] overflow-y-auto">
+                  {suggestions.map(s => {
+                    const sessionLoad = sessionItems.filter(si => si.product_id === s.product_id);
+                    const loadedBoxes = sessionLoad.reduce((sum: number, si: any) => sum + (si.quantity || 0), 0);
+                    const newGiftQty = sessionLoad.reduce((sum: number, si: any) => sum + (si.gift_quantity || 0), 0);
+                    const newGiftUnit = sessionLoad[0]?.gift_unit || 'piece';
+                    const product = products.find(p => p.id === s.product_id);
+                    const piecesPerBox = product?.pieces_per_box || 20;
+                    const giftInCustom = newGiftUnit === 'box' ? newGiftQty : totalPiecesToCustom(newGiftQty, piecesPerBox);
+                    const totalNewLoaded = newGiftQty > 0 ? addCustomQty(loadedBoxes, giftInCustom, piecesPerBox) : loadedBoxes;
+                    const oldStock = totalNewLoaded > 0 ? subtractCustomQty(s.current_stock, totalNewLoaded, piecesPerBox) : s.current_stock;
+                    const surplus = Math.max(0, s.current_stock - s.pending_orders_quantity);
+                    const newGiftInCustom = newGiftUnit === 'box' ? newGiftQty : totalPiecesToCustom(newGiftQty, piecesPerBox);
+                    const totalGiftsCustom = newGiftInCustom;
+                    const hasGifts = totalGiftsCustom > 0;
+                    return (
+                      <div key={s.product_id} className="rounded-lg ring-1 ring-border/40 bg-card p-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-1">
+                            <Package className="w-3 h-3 text-primary" />
+                            <span className="font-semibold text-[11px]">{s.product_name}</span>
                           </div>
-                        )}
+                          {s.suggested_load > 0 ? (
+                            <Badge variant="destructive" className="text-[8px] px-1 py-0 h-3.5 rounded-full">+{fmtQty(s.suggested_load)}</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5 rounded-full border-green-400 text-green-600">✓</Badge>
+                          )}
+                        </div>
+                        <div className={`grid ${hasGifts ? 'grid-cols-8' : 'grid-cols-7'} gap-0.5 text-[9px]`}>
+                          <div className="bg-muted/50 rounded p-0.5 text-center">
+                            <div className="text-muted-foreground text-[7px]">المتبقي</div>
+                            <div className="font-bold">{fmtQty(oldStock)}</div>
+                          </div>
+                          <div className="bg-blue-50 dark:bg-blue-950/30 rounded p-0.5 text-center">
+                            <div className="text-muted-foreground text-[7px]">شحن</div>
+                            <div className="font-bold text-blue-600 dark:text-blue-400">{fmtQty((workerLoadedData || {})[s.product_id] || 0)}</div>
+                          </div>
+                          <div className="bg-orange-50 dark:bg-orange-950/30 rounded p-0.5 text-center">
+                            <div className="text-muted-foreground text-[7px]">بدون محاسبة</div>
+                            <div className="font-bold text-orange-600 dark:text-orange-400">{fmtQty((workerLoadedSinceAccounting || {})[s.product_id] || 0)}</div>
+                          </div>
+                          <div className="bg-primary/5 rounded p-0.5 text-center">
+                            <div className="text-muted-foreground text-[7px]">جديد</div>
+                            <div className="font-bold text-primary">{loadedBoxes > 0 ? `+${fmtQty(loadedBoxes)}` : '—'}</div>
+                          </div>
+                          <div className="bg-muted/50 rounded p-0.5 text-center">
+                            <div className="text-muted-foreground text-[7px]">الكلي</div>
+                            <div className="font-bold">{fmtQty(s.current_stock)}</div>
+                          </div>
+                          <div className="bg-muted/50 rounded p-0.5 text-center">
+                            <div className="text-muted-foreground text-[7px]">طلبات</div>
+                            <div className="font-bold">{fmtQty(s.pending_orders_quantity)}</div>
+                          </div>
+                          <div className="bg-muted/50 rounded p-0.5 text-center">
+                            <div className="text-muted-foreground text-[7px]">فائض</div>
+                            <div className="font-bold">{fmtQty(surplus)}</div>
+                          </div>
+                          {hasGifts && (
+                            <div className="bg-destructive/5 rounded p-0.5 text-center">
+                              <div className="text-muted-foreground text-[7px]">هدايا</div>
+                              <div className="font-bold text-destructive">{fmtQty(totalGiftsCustom)}</div>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        )}
-
-        {suggestionsLoading && selectedWorker && (
-          <div className="flex items-center justify-center py-2">
-            <Loader2 className="w-4 h-4 animate-spin text-primary" />
-          </div>
-        )}
-
-        {/* Session Status - compact inline */}
-        {activeSessionId && (
-          <div className="flex items-center gap-1.5 bg-primary/5 ring-1 ring-primary/20 rounded-lg px-2.5 py-1.5">
-            <Package className="w-3.5 h-3.5 text-primary" />
-            <span className="font-medium text-[11px]">جلسة نشطة</span>
-            <Badge variant="secondary" className="text-[9px] rounded-full h-4">{sessionItems.length} منتج</Badge>
-            {totalSessionQty > 0 && <Badge className="text-[9px] rounded-full h-4">{totalSessionQty} صندوق</Badge>}
-          </div>
+                    );
+                  })}
+                </div>
+              ) : suggestionsLoading ? (
+                <div className="flex items-center justify-center py-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                </div>
+              ) : (
+                <div className="text-center text-muted-foreground text-[11px] py-1.5">
+                  لا توجد بيانات مخزون
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         )}
 
         {/* Worker Load Request Banner */}
