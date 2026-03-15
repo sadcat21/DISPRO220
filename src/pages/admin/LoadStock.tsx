@@ -1319,56 +1319,54 @@ const LoadStock: React.FC = () => {
         )}
       </div>
 
-      {/* Scrollable Session Items */}
-      <ScrollArea className="flex-1 px-2">
+      {/* Scrollable Session Items - horizontal compact list */}
+      <div className="flex-1 overflow-y-auto px-2" onScroll={handleScroll} ref={scrollContainerRef}>
         {activeSessionId && sessionItems.length > 0 ? (
-          <div className="grid grid-cols-4 gap-1.5 pb-2 pt-1">
+          <div className="space-y-1 pb-2 pt-1">
             {sessionItems.map((item: any) => {
               const productData = allProductOptions.find(p => p.id === item.product_id);
               const imageUrl = productData?.image_url || (item.product as any)?.image_url;
               return (
                 <div
                   key={item.id}
-                  className="relative rounded-lg ring-1 ring-border/40 bg-card overflow-hidden cursor-pointer hover:ring-primary/50 active:scale-[0.97] transition-all"
+                  className="flex items-center gap-2 rounded-xl bg-card ring-1 ring-border/30 shadow-sm hover:shadow-md hover:ring-primary/40 active:scale-[0.99] transition-all cursor-pointer px-2 py-1.5"
                   onClick={() => handleEditSessionItem(item)}
                 >
-                  {/* Product Image - compact */}
-                  <div className="aspect-[4/3] bg-muted/30 flex items-center justify-center overflow-hidden">
+                  {/* Thumbnail */}
+                  <div className="w-10 h-10 rounded-lg bg-muted/40 overflow-hidden shrink-0 shadow-inner">
                     {imageUrl ? (
-                      <img src={imageUrl} alt={item.product?.name || ''} className="w-full h-full object-cover" />
+                      <img src={imageUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <Package className="w-7 h-7 text-muted-foreground/30" />
-                    )}
-                  </div>
-
-                  {/* Delete button */}
-                  <button
-                    className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-destructive/90 text-destructive-foreground flex items-center justify-center"
-                    onClick={(e) => { e.stopPropagation(); handleRemoveSessionItem(item); }}
-                    disabled={deleteSessionItem.isPending}
-                  >
-                    <Trash2 className="w-2.5 h-2.5" />
-                  </button>
-
-                  {/* Quantity badge */}
-                  <div className="absolute top-0.5 right-0.5 flex flex-col gap-0.5 items-end">
-                    <Badge className="text-[9px] px-1 py-0 rounded-full shadow-sm h-4">{fmtQty(item.quantity)}</Badge>
-                    {item.gift_quantity > 0 && (
-                      <Badge variant="destructive" className="text-[8px] px-1 py-0 rounded-full shadow-sm h-3.5">
-                        <Gift className="w-2 h-2 me-0.5" />{fmtQty(item.gift_quantity)}
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* Product Name */}
-                  <div className="px-1 py-0.5 border-t">
-                    <p className="text-[9px] font-semibold leading-tight line-clamp-1 text-center">{item.product?.name || item.notes || ''}</p>
-                    {item.is_custom_load && (
-                      <div className="flex justify-center">
-                        <Badge className="bg-blue-500 text-white text-[7px] px-0.5 py-0 rounded-full h-3">مخصص</Badge>
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package className="w-5 h-5 text-muted-foreground/30" />
                       </div>
                     )}
                   </div>
+
+                  {/* Name + details */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] font-semibold leading-tight truncate">{item.product?.name || item.notes || ''}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <Badge className="text-[9px] px-1.5 py-0 rounded-full h-4 shadow-sm bg-primary/90">{fmtQty(item.quantity)}</Badge>
+                      {item.gift_quantity > 0 && (
+                        <Badge variant="destructive" className="text-[8px] px-1 py-0 rounded-full h-3.5 shadow-sm">
+                          <Gift className="w-2 h-2 me-0.5" />{fmtQty(item.gift_quantity)}
+                        </Badge>
+                      )}
+                      {item.is_custom_load && (
+                        <Badge className="bg-blue-500/90 text-white text-[7px] px-1 py-0 rounded-full h-3.5">مخصص</Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Delete */}
+                  <button
+                    className="w-7 h-7 rounded-full bg-destructive/10 hover:bg-destructive/20 text-destructive flex items-center justify-center shrink-0 transition-colors"
+                    onClick={(e) => { e.stopPropagation(); handleRemoveSessionItem(item); }}
+                    disabled={deleteSessionItem.isPending}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
                 </div>
               );
             })}
