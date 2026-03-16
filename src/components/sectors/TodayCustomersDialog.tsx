@@ -43,6 +43,30 @@ const JS_DAY_TO_NAME: Record<number, string> = {
   6: 'saturday', 0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday', 4: 'thursday',
 };
 
+const toSafeNumber = (value: unknown): number => {
+  const n = Number(value ?? 0);
+  return Number.isFinite(n) ? n : 0;
+};
+
+const toNullableNumber = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+};
+
+const normalizeSaleItem = (item: any) => ({
+  productId: item?.product_id || item?.productId || item?.product?.id || '',
+  productName: item?.product?.name || item?.product_name || item?.productName || '—',
+  quantity: toSafeNumber(item?.quantity),
+  unitPrice: toSafeNumber(item?.unit_price ?? item?.unitPrice),
+  totalPrice: toSafeNumber(item?.total_price ?? item?.totalPrice),
+  giftQuantity: toSafeNumber(item?.gift_quantity ?? item?.giftQuantity),
+  giftPieces: toSafeNumber(item?.gift_pieces ?? item?.giftPieces),
+  piecesPerBox: toSafeNumber(item?.pieces_per_box ?? item?.piecesPerBox ?? item?.product?.pieces_per_box),
+  pricingUnit: item?.pricing_unit ?? item?.pricingUnit ?? item?.product?.pricing_unit ?? undefined,
+  weightPerBox: toNullableNumber(item?.weight_per_box ?? item?.weightPerBox ?? item?.product?.weight_per_box),
+});
+
 interface TodayCustomersDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
