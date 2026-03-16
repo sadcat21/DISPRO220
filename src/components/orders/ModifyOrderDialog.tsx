@@ -459,21 +459,29 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
         changes.push({ عملية: 'تغيير تاريخ التوصيل', تاريخ_جديد: deliveryDate ? format(deliveryDate, 'yyyy-MM-dd') : 'بدون' });
       }
 
-      // Update payment type if changed
+      // Update payment type / pricing tier if changed
       if (paymentTypeChanged || invoiceMethodChanged || priceSubTypeChanged) {
         orderUpdate.payment_type = paymentType;
         orderUpdate.invoice_payment_method = paymentType === 'with_invoice' ? (invoicePaymentMethod || null) : null;
         changes.push({ عملية: 'تغيير طريقة الدفع', نوع: paymentType, طريقة_فرعية: invoicePaymentMethod || 'بدون', تسعير: priceSubType });
 
-        // Update price_subtype on all order items
+        // Update price_subtype AND recalculated prices on all order items
         const newSubtype = paymentType === 'with_invoice' ? 'invoice' : priceSubType;
-        await supabase.from('order_items')
-          .update({ 
-            price_subtype: newSubtype,
-            payment_type: paymentType,
-            invoice_payment_method: paymentType === 'with_invoice' ? (invoicePaymentMethod || null) : null,
-          })
-          .eq('order_id', order.id);
+        for (const item of items) {
+          if (!item.id) continue; // new items handled separately
+          const paidQty = Math.max(0, item.new_quantity - (item.gift_quantity || 0));
+          const multiplier = getBoxMultiplier(item.pricing_unit, item.weight_per_box, item.pieces_per_box);
+          const boxPrice = item.unit_price * multiplier;
+          await supabase.from('order_items')
+            .update({ 
+              price_subtype: newSubtype,
+              payment_type: paymentType,
+              invoice_payment_method: paymentType === 'with_invoice' ? (invoicePaymentMethod || null) : null,
+              unit_price: boxPrice,
+              total_price: paidQty * boxPrice,
+            })
+            .eq('id', item.id);
+        }
       }
 
       // Update paid/remaining amounts for delivered orders
