@@ -797,6 +797,8 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     const cashVanCustomers = customers.filter(c => c.sector_id && cashVanSectorIds.has(c.sector_id) && !deliveredCustomerIds.has(c.id));
     const preventeAllCustomers = customers.filter(c => {
       if (!c.sector_id || !preventeSectorIds.has(c.sector_id)) return false;
+      // If this sector is also in the worker's sales schedule, customers are handled by orders tab
+      if (todaySalesSectorIds.has(c.sector_id)) return false;
       if (deliveryCustomerIdsWithOrders.has(c.id) || deliveredCustomerIds.has(c.id)) return false;
       if (salesWorkerOrderedCustomerIds.has(c.id)) return false;
       // Only show customers NOT successfully visited by sales rep
@@ -808,7 +810,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     const combined = new Map<string, typeof customers[0]>();
     [...cashVanCustomers, ...preventeAllCustomers].forEach(c => combined.set(c.id, c));
     return Array.from(combined.values());
-  }, [todayDeliverySectors, preventeDeliverySectors, customers, deliveredCustomerIds, deliveryCustomerIdsWithOrders, salesWorkerOrderedCustomerIds, salesRepStatusMap]);
+  }, [todayDeliverySectors, preventeDeliverySectors, customers, deliveredCustomerIds, deliveryCustomerIdsWithOrders, salesWorkerOrderedCustomerIds, salesRepStatusMap, todaySalesSectorIds]);
 
   // Direct sale sub-categorization
   const directSoldCustomerIds = useMemo(() => new Set(todayDirectSales.map(s => s.customer_id).filter(Boolean)), [todayDirectSales]);
