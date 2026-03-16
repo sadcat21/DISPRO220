@@ -545,16 +545,48 @@ const MyDeliveries: React.FC = () => {
     }
   };
 
+  const handlePostponeOrder = async (orderId: string, newDate: Date) => {
+    try {
+      const dateStr = format(newDate, 'yyyy-MM-dd');
+      const { error } = await supabase
+        .from('orders')
+        .update({ delivery_date: dateStr })
+        .eq('id', orderId);
+      if (error) throw error;
+      await logActivity.mutateAsync({
+        actionType: 'postpone',
+        entityType: 'order',
+        entityId: orderId,
+        details: { التاريخ_الجديد: dateStr },
+      });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['assigned-orders'] });
+      toast.success(`تم تأجيل الطلبية إلى ${format(newDate, 'dd/MM/yyyy')}`);
+      setPostponeOrderId(null);
+    } catch {
+      toast.error('فشل في تأجيل الطلبية');
+    }
+  };
+
   const selectedOrder = orders?.find(o => o.id === selectedOrderId);
 
   // Helper to check if an order is a direct sale
   const isDirectSale = (order: OrderWithDetails) => 
     order.notes?.includes('بيع مباشر') || false;
 
+  // Helper to check if order is postponed (delivery_date is in the future, not today)
+  const isPostponed = (order: OrderWithDetails) => {
+    if (!order.delivery_date) return false;
+    const today = format(new Date(), 'yyyy-MM-dd');
+    return order.delivery_date > today && !isDirectSale(order);
+  };
+
   // Filter by delivery type first
-  const typeFilteredOrders = orders?.filter(o => 
-    deliveryType === 'direct_sales' ? isDirectSale(o) : !isDirectSale(o)
-  );
+  const typeFilteredOrders = orders?.filter(o => {
+    if (deliveryType === 'direct_sales') return isDirectSale(o);
+    if (deliveryType === 'postponed') return isPostponed(o);
+    return !isDirectSale(o) && !isPostponed(o);
+  });
 
   // Count per status (based on type-filtered orders)
   const statusCounts: Record<string, number> = {
@@ -567,8 +599,9 @@ const MyDeliveries: React.FC = () => {
   };
 
   // Type-level counts
-  const orderTypeCount = orders?.filter(o => !isDirectSale(o)).length || 0;
+  const orderTypeCount = orders?.filter(o => !isDirectSale(o) && !isPostponed(o)).length || 0;
   const directSaleCount = orders?.filter(o => isDirectSale(o)).length || 0;
+  const postponedCount = orders?.filter(o => isPostponed(o)).length || 0;
 
   // Filtered orders
   const filteredOrders = activeTab === 'all' 
