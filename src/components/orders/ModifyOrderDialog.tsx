@@ -77,19 +77,29 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
   // Initialize items from orderItems
   useEffect(() => {
     if (open && orderItems.length > 0) {
-      setItems(orderItems.map(item => ({
-        id: item.id,
-        product_id: item.product_id,
-        product_name: item.product?.name || '',
-        original_quantity: item.quantity,
-        new_quantity: item.quantity,
-        unit_price: Number(item.unit_price || 0),
-        gift_quantity: Number(item.gift_quantity || 0),
-        original_gift_quantity: Number(item.gift_quantity || 0),
-        pieces_per_box: Number((item as any).pieces_per_box || item.product?.pieces_per_box || 1),
-        pricing_unit: (item as any).pricing_unit || item.product?.pricing_unit || 'box',
-        weight_per_box: Number((item as any).weight_per_box || item.product?.weight_per_box || 1),
-      })));
+      setItems(orderItems.map(item => {
+        const piecesPerBox = Number((item as any).pieces_per_box || item.product?.pieces_per_box || 1);
+        const pricingUnit = (item as any).pricing_unit || item.product?.pricing_unit || 'box';
+        const weightPerBox = Number((item as any).weight_per_box || item.product?.weight_per_box || 1);
+        // unit_price in order_items is already the BOX price (pre-multiplied).
+        // Reverse the multiplier so getBoxPrice() doesn't double-multiply.
+        const storedUnitPrice = Number(item.unit_price || 0);
+        const multiplier = getBoxMultiplier(pricingUnit, weightPerBox, piecesPerBox);
+        const rawUnitPrice = multiplier > 0 ? storedUnitPrice / multiplier : storedUnitPrice;
+        return {
+          id: item.id,
+          product_id: item.product_id,
+          product_name: item.product?.name || '',
+          original_quantity: item.quantity,
+          new_quantity: item.quantity,
+          unit_price: rawUnitPrice,
+          gift_quantity: Number(item.gift_quantity || 0),
+          original_gift_quantity: Number(item.gift_quantity || 0),
+          pieces_per_box: piecesPerBox,
+          pricing_unit: pricingUnit,
+          weight_per_box: weightPerBox,
+        };
+      }));
       setAssignedWorkerId(order.assigned_worker_id || '');
       setDeliveryDate(order.delivery_date ? new Date(order.delivery_date) : undefined);
       setPaymentType(order.payment_type || 'with_invoice');
@@ -254,11 +264,8 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
   const originalTotal = orderItems.reduce((sum, item) => {
     const giftQty = Number((item as any).gift_quantity || 0);
     const paidQty = Math.max(0, Number(item.quantity) - giftQty);
-    const pricingUnit = (item as any).pricing_unit || item.product?.pricing_unit || 'box';
-    const weightPerBox = Number((item as any).weight_per_box || item.product?.weight_per_box || 1);
-    const piecesPerBox = Number((item as any).pieces_per_box || item.product?.pieces_per_box || 1);
-    const multiplier = getBoxMultiplier(pricingUnit, weightPerBox, piecesPerBox);
-    return sum + (paidQty * Number(item.unit_price || 0) * multiplier);
+    // unit_price in order_items is already the box price
+    return sum + (paidQty * Number(item.unit_price || 0));
   }, 0);
 
   const orderTotal = items.reduce((sum, item) => {
@@ -334,12 +341,13 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
             // Update quantity + gift after recalculation
             const paidQty = Math.max(0, item.new_quantity - (item.gift_quantity || 0));
             const multiplier = getBoxMultiplier(item.pricing_unit, item.weight_per_box, item.pieces_per_box);
+            const boxPrice = item.unit_price * multiplier;
             await supabase.from('order_items')
               .update({
                 quantity: item.new_quantity,
                 gift_quantity: item.gift_quantity || 0,
-                unit_price: item.unit_price,
-                total_price: paidQty * item.unit_price * multiplier,
+                unit_price: boxPrice, // store as box price (consistent with creation)
+                total_price: paidQty * boxPrice,
               })
               .eq('id', item.id);
             changes.push({
@@ -355,13 +363,14 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
           // New product added
           const paidQty = Math.max(0, item.new_quantity - (item.gift_quantity || 0));
           const multiplier = getBoxMultiplier(item.pricing_unit, item.weight_per_box, item.pieces_per_box);
+          const boxPrice = item.unit_price * multiplier;
           await supabase.from('order_items').insert({
             order_id: order.id,
             product_id: item.product_id,
             quantity: item.new_quantity,
             gift_quantity: item.gift_quantity || 0,
-            unit_price: item.unit_price,
-            total_price: paidQty * item.unit_price * multiplier,
+            unit_price: boxPrice, // store as box price (consistent with creation)
+            total_price: paidQty * boxPrice,
             pricing_unit: item.pricing_unit,
             weight_per_box: item.weight_per_box,
             pieces_per_box: item.pieces_per_box,
@@ -383,8 +392,8 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
 
       const newTotal = updatedItems?.reduce((sum, i: any) => {
         const paidQty = Math.max(0, Number(i.quantity) - Number(i.gift_quantity || 0));
-        const mult = getBoxMultiplier(i.pricing_unit || 'box', Number(i.weight_per_box || 1), Number(i.pieces_per_box || 1));
-        return sum + (paidQty * Number(i.unit_price || 0) * mult);
+        // unit_price in DB is already the box price, no need to multiply again
+        return sum + (paidQty * Number(i.unit_price || 0));
       }, 0) || 0;
 
       const orderUpdate: Record<string, any> = {};
