@@ -595,6 +595,9 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   const todaySalesSectors = useMemo(() => sectors.filter(s => todaySalesSectorIds.has(s.id)), [sectors, todaySalesSectorIds]);
   const todayDeliverySectors = useMemo(() => sectors.filter(s => todayDeliverySectorIds.has(s.id)), [sectors, todayDeliverySectorIds]);
 
+  // Direct sold customer IDs (declared early for use in delivery filtering)
+  const directSoldCustomerIds = useMemo(() => new Set(todayDirectSales.map(s => s.customer_id).filter(Boolean)), [todayDirectSales]);
+
   const deliveryCustomerIdsWithOrders = useMemo(() => {
     const ids = new Set<string>();
     const deliverySectorIds = new Set(todayDeliverySectors.map(s => s.id));
