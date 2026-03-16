@@ -27,7 +27,7 @@ import { useLoadingSessions } from '@/hooks/useLoadingSessions';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
-import { useCreateDiscrepancy } from '@/hooks/useStockDiscrepancies';
+
 import StockVerificationDialog from '@/components/stock/StockVerificationDialog';
 import ExchangeSessionDialog from '@/components/stock/ExchangeSessionDialog';
 import CustomerPickerDialog from '@/components/orders/CustomerPickerDialog';
@@ -48,9 +48,6 @@ interface EmptyTruckItem {
   piecesPerBox: number;
   keepAllocations: { reason: string; quantity: number }[];
   allocationMode: boolean;
-  surplusQty: number;
-  actualQty: number; // actual physical count
-  verificationStatus: 'equivalent' | 'surplus' | 'deficit' | 'unverified';
 }
 
 const KEEP_REASONS = ['cash_sale', 'offer_gifts', 'reserve', 'other'] as const;
@@ -195,7 +192,7 @@ const LoadStock: React.FC = () => {
 
   const { data: stockAlerts = [] } = useStockAlerts();
   const { data: suggestions = [], isLoading: suggestionsLoading } = useWorkerLoadSuggestions(selectedWorker || null);
-  const createDiscrepancy = useCreateDiscrepancy();
+  
   const {
     sessions, createSession, addSessionItem, completeSession, deleteSession,
     deleteSessionItem, sessionItemsQuery, refetch: refetchSessions,
@@ -1035,13 +1032,12 @@ const LoadStock: React.FC = () => {
         return {
           id: ws.id, product_id: ws.product_id,
           product_name: (ws.product as any)?.name || ws.product_id,
-          quantity: ws.quantity, pendingNeeded: pending,
+          quantity: ws.quantity,
+          pendingNeeded: pending,
           returnQty: ws.quantity,
           piecesPerBox,
-          keepAllocations: [] as { reason: string; quantity: number }[], allocationMode: false,
-          surplusQty: 0,
-          actualQty: ws.quantity, // default: system balance
-          verificationStatus: 'unverified' as const,
+          keepAllocations: [] as { reason: string; quantity: number }[],
+          allocationMode: false,
         };
       });
     if (itemsToReturn.length === 0) { toast.error(t('stock.empty_truck_nothing')); return; }
@@ -1050,34 +1046,38 @@ const LoadStock: React.FC = () => {
   };
 
   const handleEmptyTruckConfirm = async () => {
-    if (!branchId || !currentWorkerId) return;
+    if (!branchId || !currentWorkerId || !selectedWorker) return;
     setIsEmptying(true);
     setShowEmptyDialog(false);
     try {
-      const hasSurplus = emptyTruckItems.some(item => item.verificationStatus === 'surplus');
-      const hasDeficitItems = emptyTruckItems.some(item => item.verificationStatus === 'deficit');
-      const discrepancyNotes = hasSurplus ? ' (مع فائض)' : hasDeficitItems ? ' (مع عجز)' : '';
+      const itemsToReturn = emptyTruckItems.filter(item => item.returnQty > 0);
+      if (itemsToReturn.length === 0) {
+        toast.error('لم يتم تحديد أي كمية للإرجاع');
+        return;
+      }
 
-      // Build unloading details JSONB
+      const isFullUnload = emptyTruckItems.every(item => {
+        const returnPieces = customToTotalPieces(item.returnQty, item.piecesPerBox);
+        const systemPieces = customToTotalPieces(item.quantity, item.piecesPerBox);
+        return returnPieces === systemPieces;
+      });
+
       const unloadingDetails = emptyTruckItems.map(item => ({
         product_id: item.product_id,
         product_name: item.product_name,
         system_qty: item.quantity,
-        actual_qty: item.actualQty,
-        surplus_qty: item.verificationStatus === 'surplus' ? item.surplusQty : 0,
-        deficit_qty: item.verificationStatus === 'deficit' ? item.quantity - item.actualQty : 0,
-        status: item.verificationStatus,
+        return_qty: item.returnQty,
+        remaining_qty: subtractCustomQty(item.quantity, item.returnQty, item.piecesPerBox),
       }));
 
-      // Create an unloading session record
       const { data: unloadSession, error: sessionError } = await supabase
         .from('loading_sessions')
         .insert({
-          worker_id: selectedWorker!,
-          manager_id: currentWorkerId!,
+          worker_id: selectedWorker,
+          manager_id: currentWorkerId,
           branch_id: branchId,
           status: 'unloaded',
-          notes: `تفريغ الشاحنة${discrepancyNotes}`,
+          notes: isFullUnload ? 'تفريغ كلي للشاحنة' : 'تفريغ جزئي للشاحنة',
           completed_at: new Date().toISOString(),
           unloading_details: unloadingDetails,
         } as any)
@@ -1086,71 +1086,47 @@ const LoadStock: React.FC = () => {
 
       if (sessionError) throw sessionError;
 
-      for (const item of emptyTruckItems) {
-        const actualReturn = item.actualQty;
-        if (actualReturn <= 0 && item.verificationStatus !== 'deficit') continue;
-
+      for (const item of itemsToReturn) {
         const ppb = item.piecesPerBox;
-        const surplusQty = item.verificationStatus === 'surplus' ? item.surplusQty : 0;
-        const deficitQty = item.verificationStatus === 'deficit' 
-          ? subtractCustomQty(item.quantity, item.actualQty, ppb) 
-          : 0;
+        const returnQty = item.returnQty;
+        const newWorkerQty = subtractCustomQty(item.quantity, returnQty, ppb);
 
-        // Save unloading session item
         await supabase.from('loading_session_items').insert({
           session_id: unloadSession.id,
           product_id: item.product_id,
-          quantity: Math.min(actualReturn, item.quantity), // returnQty capped at system balance
+          quantity: returnQty,
           gift_quantity: 0,
-          surplus_quantity: surplusQty,
+          surplus_quantity: 0,
           previous_quantity: item.quantity,
-          notes: surplusQty > 0 ? `فائض: ${fmtQty(surplusQty)}` : deficitQty > 0 ? `عجز: ${fmtQty(deficitQty)}` : null,
+          notes: `تفريغ ${fmtQty(returnQty)} من ${fmtQty(item.quantity)} - متبقي: ${fmtQty(newWorkerQty)}`,
         });
 
-        // Record discrepancies
-        if (item.verificationStatus === 'surplus' && surplusQty > 0) {
-          await createDiscrepancy.mutateAsync({
-            worker_id: selectedWorker!,
-            product_id: item.product_id,
-            branch_id: branchId,
-            discrepancy_type: 'surplus',
-            quantity: surplusQty,
-            source_session_id: unloadSession.id,
-            notes: `فائض أثناء التفريغ - ${item.product_name}`,
-          });
-        }
-        if (item.verificationStatus === 'deficit' && deficitQty > 0) {
-          await createDiscrepancy.mutateAsync({
-            worker_id: selectedWorker!,
-            product_id: item.product_id,
-            branch_id: branchId,
-            discrepancy_type: 'deficit',
-            quantity: deficitQty,
-            source_session_id: unloadSession.id,
-            notes: `عجز أثناء التفريغ - ${item.product_name}`,
-          });
-        }
+        await supabase.from('worker_stock').update({ quantity: newWorkerQty }).eq('id', item.id);
 
-        // Deduct from worker stock (set to 0 since everything is returned/accounted for)
-        await supabase.from('worker_stock').update({ quantity: 0 }).eq('id', item.id);
-        
-        // Add actual return to warehouse (including surplus)
-        const totalToWarehouse = actualReturn;
         const existingWarehouse = warehouseStock.find(s => s.product_id === item.product_id);
         if (existingWarehouse) {
-          const newWhQty = addCustomQty(existingWarehouse.quantity, totalToWarehouse, ppb);
+          const newWhQty = addCustomQty(existingWarehouse.quantity, returnQty, ppb);
           await supabase.from('warehouse_stock').update({ quantity: newWhQty }).eq('id', existingWarehouse.id);
-        } else if (totalToWarehouse > 0) {
-          await supabase.from('warehouse_stock').insert({ branch_id: branchId, product_id: item.product_id, quantity: totalToWarehouse });
+        } else {
+          await supabase.from('warehouse_stock').insert({
+            branch_id: branchId,
+            product_id: item.product_id,
+            quantity: returnQty,
+          });
         }
-        
-        const statusNote = item.verificationStatus === 'surplus' ? ` | فائض: ${fmtQty(surplusQty)}` : item.verificationStatus === 'deficit' ? ` | عجز: ${fmtQty(deficitQty)}` : '';
+
         await supabase.from('stock_movements').insert({
-          product_id: item.product_id, branch_id: branchId, quantity: totalToWarehouse,
-          movement_type: 'return', status: 'approved', created_by: currentWorkerId,
-          worker_id: selectedWorker, notes: `تفريغ الشاحنة - ${item.product_name}${statusNote}`,
+          product_id: item.product_id,
+          branch_id: branchId,
+          quantity: returnQty,
+          movement_type: 'return',
+          status: 'approved',
+          created_by: currentWorkerId,
+          worker_id: selectedWorker,
+          notes: `تفريغ ${fmtQty(returnQty)} من ${item.product_name} (متبقي في الشاحنة ${fmtQty(newWorkerQty)})`,
         });
       }
+
       setSessionItems([]);
       setActiveSessionId(null);
       await refresh();
@@ -1162,8 +1138,11 @@ const LoadStock: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['stock-discrepancies'] });
       queryClient.invalidateQueries({ queryKey: ['stock-discrepancies-pending'] });
       toast.success(t('stock.empty_truck_success'));
-    } catch (error: any) { toast.error(error.message); }
-    finally { setIsEmptying(false); }
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsEmptying(false);
+    }
   };
 
   // Bottom tab state for action buttons
@@ -2149,57 +2128,52 @@ const LoadStock: React.FC = () => {
                       </div>
                     </div>
                     
-                    {/* Stock Verification */}
                     <div className="space-y-2 bg-muted/30 rounded-lg p-2.5">
-                      <div className="flex items-center gap-2">
-                        <Label className="text-xs font-semibold">الرصيد الفعلي:</Label>
-                        <Input
-                          type="number" min={0} step="any"
-                          value={item.actualQty}
-                          onFocus={e => e.target.select()}
-                          onChange={e => {
-                            const val = parseFloat(e.target.value) || 0;
-                            const systemQty = item.quantity;
-                            const ppb = item.piecesPerBox;
-                            const actualPieces = customToTotalPieces(val, ppb);
-                            const systemPieces = customToTotalPieces(systemQty, ppb);
-                            let status: EmptyTruckItem['verificationStatus'] = 'equivalent';
-                            let surplusVal = 0;
-                            if (actualPieces > systemPieces) {
-                              status = 'surplus';
-                              surplusVal = totalPiecesToCustom(actualPieces - systemPieces, ppb);
-                            } else if (actualPieces < systemPieces) {
-                              status = 'deficit';
-                            }
-                            setEmptyTruckItems(prev => prev.map((it, i2) => 
-                              it.product_id === item.product_id 
-                                ? { ...it, actualQty: val, verificationStatus: status, surplusQty: surplusVal, returnQty: val }
-                                : it
-                            ));
-                          }}
-                          className="text-center h-8 flex-1"
-                        />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs font-semibold">إرجاع للمخزن</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            step="any"
+                            value={item.returnQty}
+                            onFocus={e => e.target.select()}
+                            onChange={e => {
+                              const raw = parseFloat(e.target.value) || 0;
+                              const systemPieces = customToTotalPieces(item.quantity, item.piecesPerBox);
+                              const returnPieces = Math.min(Math.max(0, customToTotalPieces(raw, item.piecesPerBox)), systemPieces);
+                              const nextReturn = totalPiecesToCustom(returnPieces, item.piecesPerBox);
+
+                              setEmptyTruckItems(prev => prev.map((it) =>
+                                it.product_id === item.product_id ? { ...it, returnQty: nextReturn } : it,
+                              ));
+                            }}
+                            className="text-center h-8"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-xs font-semibold">يبقى في الشاحنة</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            step="any"
+                            value={subtractCustomQty(item.quantity, item.returnQty, ppb)}
+                            onFocus={e => e.target.select()}
+                            onChange={e => {
+                              const rawKeep = parseFloat(e.target.value) || 0;
+                              const systemPieces = customToTotalPieces(item.quantity, item.piecesPerBox);
+                              const keepPieces = Math.min(Math.max(0, customToTotalPieces(rawKeep, item.piecesPerBox)), systemPieces);
+                              const nextReturn = totalPiecesToCustom(systemPieces - keepPieces, item.piecesPerBox);
+
+                              setEmptyTruckItems(prev => prev.map((it) =>
+                                it.product_id === item.product_id ? { ...it, returnQty: nextReturn } : it,
+                              ));
+                            }}
+                            className="text-center h-8"
+                          />
+                        </div>
                       </div>
-                      
-                      {/* Verification status badge */}
-                      {item.verificationStatus === 'equivalent' && item.actualQty === item.quantity && (
-                        <div className="flex items-center gap-1 text-xs text-green-600 bg-green-50 dark:bg-green-900/20 rounded px-2 py-1">
-                          <CheckCircle className="w-3 h-3" />
-                          <span>مطابق ✓</span>
-                        </div>
-                      )}
-                      {item.verificationStatus === 'surplus' && (
-                        <div className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 rounded px-2 py-1">
-                          <AlertTriangle className="w-3 h-3" />
-                          <span>فائض: {fmtQty(item.surplusQty)} — سيتم تسجيله كفائض</span>
-                        </div>
-                      )}
-                      {item.verificationStatus === 'deficit' && (
-                        <div className="flex items-center gap-1 text-xs text-destructive bg-destructive/5 rounded px-2 py-1">
-                          <AlertTriangle className="w-3 h-3" />
-                          <span>عجز: {fmtQty(subtractCustomQty(item.quantity, item.actualQty, item.piecesPerBox))} — سيتم تسجيله كعجز</span>
-                        </div>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -2209,24 +2183,16 @@ const LoadStock: React.FC = () => {
           <div className="flex flex-col gap-1.5 text-sm bg-muted/50 rounded-md p-2">
             <div className="flex items-center justify-between">
               <span className="font-medium">إجمالي الإرجاع</span>
-              <Badge variant="secondary">{fmtQty(emptyTruckItems.reduce((s, it) => s + it.actualQty, 0))} صندوق</Badge>
+              <Badge variant="secondary">{fmtQty(emptyTruckItems.reduce((sum, item) => sum + item.returnQty, 0))} صندوق</Badge>
             </div>
-            {emptyTruckItems.some(it => it.verificationStatus === 'surplus') && (
-              <div className="flex items-center justify-between text-xs text-amber-600">
-                <span>فائض</span>
-                <span className="font-bold">{fmtQty(emptyTruckItems.filter(it => it.verificationStatus === 'surplus').reduce((s, it) => s + it.surplusQty, 0))}</span>
-              </div>
-            )}
-            {emptyTruckItems.some(it => it.verificationStatus === 'deficit') && (
-              <div className="flex items-center justify-between text-xs text-destructive">
-                <span>عجز</span>
-                <span className="font-bold">{fmtQty(emptyTruckItems.filter(it => it.verificationStatus === 'deficit').reduce((s, it) => subtractCustomQty(it.quantity, it.actualQty, it.piecesPerBox) + s, 0))}</span>
-              </div>
-            )}
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>إجمالي المتبقي في الشاحنة</span>
+              <span className="font-bold">{fmtQty(emptyTruckItems.reduce((sum, item) => sum + subtractCustomQty(item.quantity, item.returnQty, item.piecesPerBox), 0))} صندوق</span>
+            </div>
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowEmptyDialog(false)}>{t('common.cancel')}</Button>
-            <Button variant="destructive" onClick={handleEmptyTruckConfirm} disabled={isEmptying || emptyTruckItems.every(it => it.actualQty === 0)}>
+            <Button variant="destructive" onClick={handleEmptyTruckConfirm} disabled={isEmptying || emptyTruckItems.every(item => item.returnQty === 0)}>
               {isEmptying && <Loader2 className="w-4 h-4 animate-spin me-2" />}
               {t('stock.confirm_return')}
             </Button>
