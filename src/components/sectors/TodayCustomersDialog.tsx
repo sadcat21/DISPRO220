@@ -24,7 +24,7 @@ import { calculateDistance } from '@/utils/geoUtils';
 import { OrderWithDetails } from '@/types/database';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, addDays, isFriday } from 'date-fns';
 import DeliverySaleDialog from '@/components/orders/DeliverySaleDialog';
 import CreateOrderDialog from '@/components/orders/CreateOrderDialog';
 import VisitNoPaymentDialog from '@/components/debts/VisitNoPaymentDialog';
