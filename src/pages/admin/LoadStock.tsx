@@ -48,9 +48,6 @@ interface EmptyTruckItem {
   piecesPerBox: number;
   keepAllocations: { reason: string; quantity: number }[];
   allocationMode: boolean;
-  surplusQty: number;
-  actualQty: number; // actual physical count
-  verificationStatus: 'equivalent' | 'surplus' | 'deficit' | 'unverified';
 }
 
 const KEEP_REASONS = ['cash_sale', 'offer_gifts', 'reserve', 'other'] as const;
