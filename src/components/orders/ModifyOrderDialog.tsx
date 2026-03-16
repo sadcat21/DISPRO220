@@ -258,9 +258,12 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
   })();
   const paymentTypeChanged = paymentType !== (order.payment_type || 'with_invoice');
   const invoiceMethodChanged = (invoicePaymentMethod || null) !== (order.invoice_payment_method || null);
+  const originalPaidAmount = Number((order as any).paid_amount || order.total_amount || 0);
+  const originalRemainingAmount = Number((order as any).remaining_amount || 0);
+  const paymentAmountChanged = order.status === 'delivered' && (adjustPaidAmount !== originalPaidAmount || adjustRemainingAmount !== originalRemainingAmount);
 
   const hasChanges = items.some(i => i.new_quantity !== i.original_quantity) ||
-    items.some(i => !i.id && i.new_quantity > 0) || workerChanged || deliveryDateChanged || paymentTypeChanged || invoiceMethodChanged;
+    items.some(i => !i.id && i.new_quantity > 0) || workerChanged || deliveryDateChanged || paymentTypeChanged || invoiceMethodChanged || paymentAmountChanged;
 
   const getBoxPrice = useCallback((item: ModifiedItem) => {
     const multiplier = getBoxMultiplier(item.pricing_unit, item.weight_per_box, item.pieces_per_box);
