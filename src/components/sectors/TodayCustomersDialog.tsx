@@ -1720,8 +1720,24 @@ const CustomerList: React.FC<{
   deliveryTimeMap?: Map<string, string>;
   timeMap?: Map<string, string>;
   distanceMap?: Map<string, number>;
-}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, onClosed, onUnavailable, onDebtRefused, onNoSale, onPrint, showVisitButton, visitButtonLabel, showActionButtons, showPrintButton, showNoSaleButton, checkingLocationFor, loadingFor, searchQuery, sectors, allZones, salesRepStatusMap, deliveryTimeMap, timeMap, distanceMap }) => {
+  workerPosition?: { lat: number; lng: number } | null;
+  sortByDistance?: boolean;
+}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, onClosed, onUnavailable, onDebtRefused, onNoSale, onPrint, showVisitButton, visitButtonLabel, showActionButtons, showPrintButton, showNoSaleButton, checkingLocationFor, loadingFor, searchQuery, sectors, allZones, salesRepStatusMap, deliveryTimeMap, timeMap, distanceMap, workerPosition, sortByDistance }) => {
   const { language } = useLanguage();
+
+  // Compute live distance from worker to each customer
+  const liveDistanceMap = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!workerPosition) return map;
+    customers.forEach(c => {
+      if (c.latitude && c.longitude) {
+        const distKm = calculateDistance(workerPosition.lat, workerPosition.lng, c.latitude, c.longitude);
+        map.set(c.id, Math.round(distKm * 1000));
+      }
+    });
+    return map;
+  }, [customers, workerPosition]);
+
   const filtered = useMemo(() => {
     let list = customers;
     if (searchQuery?.trim()) {
@@ -1732,12 +1748,20 @@ const CustomerList: React.FC<{
         (c.phone || '').includes(q)
       );
     }
-    // Sort by timeMap descending (newest first) if available
-    if (timeMap && timeMap.size > 0) {
+    // Sort by distance if enabled and worker position available
+    if (sortByDistance && workerPosition && liveDistanceMap.size > 0) {
+      list = [...list].sort((a, b) => {
+        const dA = liveDistanceMap.get(a.id) ?? Infinity;
+        const dB = liveDistanceMap.get(b.id) ?? Infinity;
+        return dA - dB;
+      });
+    } else if (timeMap && timeMap.size > 0) {
+      // Fallback: sort by timeMap descending (newest first) if available
       list = [...list].sort((a, b) => {
         const tA = timeMap.get(a.id) || '';
         const tB = timeMap.get(b.id) || '';
         return tB.localeCompare(tA);
+      });
       });
     }
     return list;
