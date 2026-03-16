@@ -72,6 +72,10 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
   const [paymentType, setPaymentType] = useState<string>(order.payment_type || 'with_invoice');
   const [invoicePaymentMethod, setInvoicePaymentMethod] = useState<InvoicePaymentMethod | null>((order.invoice_payment_method as InvoicePaymentMethod) || null);
 
+  // Payment adjustment for delivered orders
+  const [adjustPaidAmount, setAdjustPaidAmount] = useState<number>(Number(order.paid_amount || order.total_amount || 0));
+  const [adjustRemainingAmount, setAdjustRemainingAmount] = useState<number>(Number(order.remaining_amount || 0));
+
   const canChangeWorker = role === 'admin' || role === 'branch_admin' || order.created_by === workerId;
 
   // Initialize items from orderItems
