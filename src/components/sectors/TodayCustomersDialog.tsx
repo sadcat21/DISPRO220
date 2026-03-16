@@ -1762,6 +1762,30 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
           receiptData={printReceiptData}
         />
       )}
+      {/* Bulk Postpone Dialog */}
+      <Dialog open={showBulkPostpone} onOpenChange={setShowBulkPostpone}>
+        <DialogContent className="max-w-xs" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarClock className="w-5 h-5 text-amber-600" />
+              تأجيل جماعي ({deliveryNotDone.length} عميل)
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">اختر يوم التوصيل الجديد لجميع الطلبيات:</p>
+          <div className="grid grid-cols-2 gap-2">
+            {getNextWorkDays().map(({ date, label }) => (
+              <Button
+                key={date.toISOString()}
+                variant="outline"
+                className="h-12 text-sm font-bold hover:bg-amber-50 hover:border-amber-400 hover:text-amber-700"
+                onClick={() => handleBulkPostpone(date)}
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
