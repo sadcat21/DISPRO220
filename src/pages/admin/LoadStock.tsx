@@ -1032,13 +1032,12 @@ const LoadStock: React.FC = () => {
         return {
           id: ws.id, product_id: ws.product_id,
           product_name: (ws.product as any)?.name || ws.product_id,
-          quantity: ws.quantity, pendingNeeded: pending,
+          quantity: ws.quantity,
+          pendingNeeded: pending,
           returnQty: ws.quantity,
           piecesPerBox,
-          keepAllocations: [] as { reason: string; quantity: number }[], allocationMode: false,
-          surplusQty: 0,
-          actualQty: ws.quantity, // default: system balance
-          verificationStatus: 'unverified' as const,
+          keepAllocations: [] as { reason: string; quantity: number }[],
+          allocationMode: false,
         };
       });
     if (itemsToReturn.length === 0) { toast.error(t('stock.empty_truck_nothing')); return; }
