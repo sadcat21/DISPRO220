@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import CustomerLabel from '@/components/customers/CustomerLabel';
 import { getLocalizedName } from '@/utils/sectorName';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { MapPin, Truck, ShoppingCart, Landmark, User, Phone, Eye, EyeOff, CheckCircle, PackageX, PackageCheck, Navigation, Loader2, MapPinOff, Clock, Check, X, DoorClosed, UserX, ShoppingBag, Printer, XCircle, Search, BanknoteIcon, Pencil } from 'lucide-react';
 import { useWorkerGeoPosition } from '@/hooks/useWorkerGeoPosition';
+import { reverseGeocode } from '@/utils/geoUtils';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
@@ -64,6 +65,17 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
 
   // Real-time worker GPS position for distance sorting/badges
   const { position: workerPosition } = useWorkerGeoPosition(open && sortByDistance);
+  const [workerAddress, setWorkerAddress] = useState<string>('');
+
+  // Reverse geocode worker position to get current address
+  useEffect(() => {
+    if (!workerPosition) { setWorkerAddress(''); return; }
+    let cancelled = false;
+    reverseGeocode(workerPosition.lat, workerPosition.lng).then(addr => {
+      if (!cancelled) setWorkerAddress(addr);
+    });
+    return () => { cancelled = true; };
+  }, [workerPosition?.lat, workerPosition?.lng]);
 
   // Admin worker picker state
   const [selectedAdminWorkerId, setSelectedAdminWorkerId] = useState<string | null>(targetWorkerId || null);
@@ -1265,12 +1277,14 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                 dir="rtl"
               />
             </div>
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer">
-                <MapPin className="w-3 h-3" />
-                ترتيب حسب المسافة
-              </label>
-              <Switch checked={sortByDistance} onCheckedChange={setSortByDistance} />
+            <div className="flex items-center gap-2">
+              <Switch checked={sortByDistance} onCheckedChange={setSortByDistance} className="shrink-0" />
+              <div className="flex items-center gap-1 min-w-0 flex-1 overflow-hidden">
+                <MapPin className="w-3 h-3 shrink-0 text-muted-foreground" />
+                <span className="text-[10px] text-muted-foreground truncate" dir="rtl">
+                  {workerAddress || (sortByDistance ? 'جارٍ تحديد الموقع...' : 'فعّل الترتيب لعرض موقعك')}
+                </span>
+              </div>
             </div>
           </div>
 
