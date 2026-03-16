@@ -845,7 +845,7 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
                   type="button"
                   variant={paymentType === 'without_invoice' ? 'default' : 'outline'}
                   className={`h-10 text-sm font-bold ${paymentType === 'without_invoice' ? '' : 'opacity-60'}`}
-                  onClick={() => { setPaymentType('without_invoice'); setInvoicePaymentMethod(null); }}
+                  onClick={() => { setPaymentType('without_invoice'); setInvoicePaymentMethod(null); recalcItemPrices('without_invoice', priceSubType); }}
                 >
                   بدون فاتورة
                 </Button>
