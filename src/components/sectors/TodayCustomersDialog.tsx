@@ -595,6 +595,9 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   const todaySalesSectors = useMemo(() => sectors.filter(s => todaySalesSectorIds.has(s.id)), [sectors, todaySalesSectorIds]);
   const todayDeliverySectors = useMemo(() => sectors.filter(s => todayDeliverySectorIds.has(s.id)), [sectors, todayDeliverySectorIds]);
 
+  // Direct sold customer IDs (declared early for use in delivery filtering)
+  const directSoldCustomerIds = useMemo(() => new Set(todayDirectSales.map(s => s.customer_id).filter(Boolean)), [todayDirectSales]);
+
   const deliveryCustomerIdsWithOrders = useMemo(() => {
     const ids = new Set<string>();
     const deliverySectorIds = new Set(todayDeliverySectors.map(s => s.id));
@@ -606,9 +609,10 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
       const isExplicitlyAssigned = o.delivery_date && o.delivery_date.startsWith(todayDateStr) && o.assigned_worker_id === effectiveWorkerId;
       if (matchesSector || isExplicitlyAssigned) ids.add(o.customer_id);
     });
-    todayDeliveredOrders.forEach(o => { if (o.customer_id) ids.add(o.customer_id); });
+    // Exclude direct-sale customers from delivery tracking
+    todayDeliveredOrders.forEach(o => { if (o.customer_id && !directSoldCustomerIds.has(o.customer_id)) ids.add(o.customer_id); });
     return ids;
-  }, [assignedOrders, todayDeliveredOrders, todayDeliverySectors, customers, todayDateStr, effectiveWorkerId]);
+  }, [assignedOrders, todayDeliveredOrders, todayDeliverySectors, customers, todayDateStr, effectiveWorkerId, directSoldCustomerIds]);
 
   const deliveryCustomers = useMemo(() => customers.filter(c => deliveryCustomerIdsWithOrders.has(c.id)), [customers, deliveryCustomerIdsWithOrders]);
   const salesCustomers = useMemo(() => {
@@ -633,8 +637,6 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   const salesUnavailable = useMemo(() => salesVisitedNoOrder.filter(c => unavailableCustomerIds.has(c.id)), [salesVisitedNoOrder, unavailableCustomerIds]);
   const salesWithOrders = useMemo(() => salesCustomers.filter(c => orderedCustomerIds.has(c.id)), [salesCustomers, orderedCustomerIds]);
 
-  // Direct sold customer IDs (moved up for use in delivery filtering)
-  const directSoldCustomerIds = useMemo(() => new Set(todayDirectSales.map(s => s.customer_id).filter(Boolean)), [todayDirectSales]);
 
   const deliveredCustomerIds = useMemo(() => new Set(todayDeliveredOrders.map(o => o.customer_id).filter(Boolean)), [todayDeliveredOrders]);
   const customerDeliveryTimeMap = useMemo(() => {
