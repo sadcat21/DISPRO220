@@ -17,7 +17,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLogActivity } from '@/hooks/useActivityLogs';
 import { useQueryClient } from '@tanstack/react-query';
-import { OrderWithDetails, OrderItem, Product } from '@/types/database';
+import { OrderWithDetails, OrderItem, Product, PriceSubType } from '@/types/database';
 import DeliveryWorkerSelect from './DeliveryWorkerSelect';
 import PostDeliveryConfirmDialog from './PostDeliveryConfirmDialog';
 import InvoicePaymentMethodSelect from './InvoicePaymentMethodSelect';
