@@ -1762,10 +1762,9 @@ const CustomerList: React.FC<{
         const tB = timeMap.get(b.id) || '';
         return tB.localeCompare(tA);
       });
-      });
     }
     return list;
-  }, [customers, searchQuery, timeMap]);
+  }, [customers, searchQuery, timeMap, sortByDistance, workerPosition, liveDistanceMap]);
 
   // Group by zone
   const zoneGroups = useMemo(() => {
