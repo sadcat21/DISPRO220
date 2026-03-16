@@ -1,12 +1,15 @@
 import React, { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { ShoppingCart, Truck, MapPin, UserPlus, Edit2, Banknote, Eye, Package, Loader2, X, Clock, User, FileText } from 'lucide-react';
+import { ShoppingCart, Truck, MapPin, UserPlus, Edit2, Banknote, Eye, Package, Loader2, X, Clock, User, FileText, CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { getOperationLabel, type OperationType } from '@/hooks/useVisitTracking';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 
 interface WorkerAchievementsDialogProps {
   open: boolean;
@@ -47,7 +50,6 @@ const AchievementDetailContent: React.FC<{ visit: any; onClose: () => void }> = 
   const { data: orderData, isLoading: orderLoading } = useQuery({
     queryKey: ['achievement-order-detail', entityId],
     queryFn: async () => {
-      // Fetch order with items
       const { data: order, error: orderErr } = await supabase
         .from('orders')
         .select('id, total_amount, status, payment_status, invoice_payment_method, created_at, delivery_date')
@@ -125,7 +127,6 @@ const AchievementDetailContent: React.FC<{ visit: any; onClose: () => void }> = 
               </div>
             ) : orderData ? (
               <div className="space-y-2">
-                {/* Order meta */}
                 <div className="flex items-center justify-between text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
                   <span>الإجمالي: <strong className="text-foreground">{Number(orderData.order.total_amount).toLocaleString()} د.ج</strong></span>
                   {orderData.order.invoice_payment_method && (
@@ -137,7 +138,6 @@ const AchievementDetailContent: React.FC<{ visit: any; onClose: () => void }> = 
                     </Badge>
                   )}
                 </div>
-                {/* Product list */}
                 <div className="space-y-1.5">
                   {orderData.items.map((item: any) => (
                     <div key={item.id} className="flex items-center gap-2 bg-card border rounded-lg p-2">
@@ -176,12 +176,33 @@ const AchievementDetailContent: React.FC<{ visit: any; onClose: () => void }> = 
 const WorkerAchievementsDialog: React.FC<WorkerAchievementsDialogProps> = ({
   open, onOpenChange, workerId, workerName
 }) => {
+  const queryClient = useQueryClient();
   const today = format(new Date(), 'yyyy-MM-dd');
+  const [dateFrom, setDateFrom] = useState(today);
+  const [dateTo, setDateTo] = useState(today);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [selectedVisit, setSelectedVisit] = useState<any | null>(null);
 
+  // Reset dates when dialog opens
+  React.useEffect(() => {
+    if (open) {
+      const t = format(new Date(), 'yyyy-MM-dd');
+      setDateFrom(t);
+      setDateTo(t);
+      setActiveFilter(null);
+    }
+  }, [open]);
+
+  // Real-time subscription for visit_tracking
+  useRealtimeSubscription(
+    `achievements-realtime-${workerId}`,
+    [{ table: 'visit_tracking', filter: workerId ? `worker_id=eq.${workerId}` : undefined }],
+    [['worker-achievements', workerId, dateFrom, dateTo]],
+    open && !!workerId
+  );
+
   const { data, isLoading } = useQuery({
-    queryKey: ['worker-achievements', workerId, today],
+    queryKey: ['worker-achievements', workerId, dateFrom, dateTo],
     queryFn: async () => {
       if (!workerId) return { visits: [], counts: {} };
 
@@ -189,8 +210,8 @@ const WorkerAchievementsDialog: React.FC<WorkerAchievementsDialogProps> = ({
         .from('visit_tracking')
         .select('*')
         .eq('worker_id', workerId)
-        .gte('created_at', today + 'T00:00:00')
-        .lte('created_at', today + 'T23:59:59')
+        .gte('created_at', dateFrom + 'T00:00:00')
+        .lte('created_at', dateTo + 'T23:59:59')
         .order('created_at', { ascending: false });
 
       const customerIds = [...new Set((visits || []).filter(v => v.customer_id).map(v => v.customer_id!))];
@@ -218,6 +239,7 @@ const WorkerAchievementsDialog: React.FC<WorkerAchievementsDialogProps> = ({
       return { visits: enrichedVisits, counts };
     },
     enabled: open && !!workerId,
+    refetchInterval: 30000, // Real-time polling every 30s
   });
 
   const counts = data?.counts || {};
@@ -229,6 +251,8 @@ const WorkerAchievementsDialog: React.FC<WorkerAchievementsDialogProps> = ({
     return visits.filter((v: any) => v.operation_type === activeFilter);
   }, [visits, activeFilter]);
 
+  const isToday = dateFrom === today && dateTo === today;
+
   return (
     <>
       <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) setActiveFilter(null); }}>
@@ -236,9 +260,29 @@ const WorkerAchievementsDialog: React.FC<WorkerAchievementsDialogProps> = ({
           <DialogHeader className="shrink-0 p-4 pb-2">
             <DialogTitle className="flex items-center gap-2">
               <Package className="w-5 h-5 text-primary" />
-              منجزات اليوم - {workerName}
+              {isToday ? 'منجزات اليوم' : 'المنجزات'} - {workerName}
             </DialogTitle>
           </DialogHeader>
+
+          {/* Date range picker */}
+          <div className="px-4 pb-2 flex items-center gap-2">
+            <div className="flex-1 space-y-1">
+              <Label className="text-[10px] text-muted-foreground">من</Label>
+              <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-8 text-xs" />
+            </div>
+            <div className="flex-1 space-y-1">
+              <Label className="text-[10px] text-muted-foreground">إلى</Label>
+              <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-8 text-xs" />
+            </div>
+            <Button
+              variant={isToday ? 'default' : 'outline'}
+              size="sm"
+              className="h-8 text-[10px] mt-4 shrink-0"
+              onClick={() => { setDateFrom(today); setDateTo(today); }}
+            >
+              اليوم
+            </Button>
+          </div>
 
           {isLoading ? (
             <div className="py-8 flex justify-center">
@@ -247,7 +291,7 @@ const WorkerAchievementsDialog: React.FC<WorkerAchievementsDialogProps> = ({
           ) : totalOps === 0 ? (
             <div className="py-8 text-center text-muted-foreground">
               <MapPin className="w-10 h-10 mx-auto mb-2 opacity-40" />
-              <p>لا توجد عمليات مسجلة اليوم</p>
+              <p>لا توجد عمليات مسجلة</p>
             </div>
           ) : (
             <div className="flex flex-col min-h-0 flex-1">
@@ -298,7 +342,7 @@ const WorkerAchievementsDialog: React.FC<WorkerAchievementsDialogProps> = ({
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium">{getOperationLabel(v.operation_type as OperationType)}</span>
                           <span className="text-[10px] text-muted-foreground" dir="ltr">
-                            {format(new Date(v.created_at), 'HH:mm')}
+                            {format(new Date(v.created_at), dateFrom === dateTo ? 'HH:mm' : 'dd/MM HH:mm')}
                           </span>
                         </div>
                         {v.customer_name && (

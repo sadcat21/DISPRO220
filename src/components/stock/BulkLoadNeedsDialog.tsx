@@ -3,7 +3,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Package, Loader2, Minus, Plus, Truck } from 'lucide-react';
 import { WorkerLoadSuggestion } from '@/hooks/useStockAlerts';
 
@@ -77,8 +76,8 @@ const BulkLoadNeedsDialog: React.FC<BulkLoadNeedsDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0" dir="rtl">
-        <DialogHeader className="px-4 pt-4 pb-2">
+      <DialogContent className="w-[95vw] max-w-md max-h-[90dvh] flex flex-col p-0" dir="rtl">
+        <DialogHeader className="px-3 pt-3 pb-2 shrink-0">
           <DialogTitle className="flex items-center gap-2 text-base">
             <Truck className="w-5 h-5 text-destructive" />
             شحن الاحتياج
@@ -86,7 +85,10 @@ const BulkLoadNeedsDialog: React.FC<BulkLoadNeedsDialogProps> = ({
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-4 max-h-[60vh] overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div
+          className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 touch-pan-y"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
           <div className="space-y-2 pb-4">
             {deficitSuggestions.map(s => {
               const product = products.find(p => p.id === s.product_id);
@@ -95,20 +97,20 @@ const BulkLoadNeedsDialog: React.FC<BulkLoadNeedsDialogProps> = ({
               const qty = quantities[s.product_id] || 0;
 
               return (
-                <div key={s.product_id} className="flex items-center gap-3 p-3 rounded-xl ring-1 ring-border/40 bg-card">
+                <div key={s.product_id} className="flex items-center gap-2 p-2.5 rounded-xl ring-1 ring-border/40 bg-card">
                   {/* Product Image */}
-                  <div className="w-12 h-12 rounded-lg bg-muted/50 flex items-center justify-center shrink-0 overflow-hidden">
+                  <div className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center shrink-0 overflow-hidden">
                     {imageUrl ? (
                       <img src={imageUrl} alt={s.product_name} className="w-full h-full object-cover rounded-lg" />
                     ) : (
-                      <Package className="w-6 h-6 text-muted-foreground/40" />
+                      <Package className="w-5 h-5 text-muted-foreground/40" />
                     )}
                   </div>
 
                   {/* Product Info */}
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-[13px] truncate">{s.product_name}</div>
-                    <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
+                    <div className="font-semibold text-[12px] truncate">{s.product_name}</div>
+                    <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-muted-foreground">
                       <span>يحتاج: <strong className="text-destructive">{s.suggested_load}</strong></span>
                       <span className="text-border">|</span>
                       <span>المتاح: <strong>{available}</strong></span>
@@ -116,15 +118,15 @@ const BulkLoadNeedsDialog: React.FC<BulkLoadNeedsDialogProps> = ({
                   </div>
 
                   {/* Quantity Controls */}
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-0.5 shrink-0">
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-8 w-8 rounded-lg"
+                      className="h-7 w-7 rounded-lg"
                       onClick={() => updateQty(s.product_id, -1)}
                       disabled={qty <= 0}
                     >
-                      <Minus className="w-3.5 h-3.5" />
+                      <Minus className="w-3 h-3" />
                     </Button>
                     <Input
                       type="number"
@@ -132,29 +134,29 @@ const BulkLoadNeedsDialog: React.FC<BulkLoadNeedsDialogProps> = ({
                       step="any"
                       value={qty}
                       onChange={e => setQty(s.product_id, parseFloat(e.target.value) || 0)}
-                      className="w-16 h-8 text-center text-sm font-bold px-1"
+                      className="w-14 h-7 text-center text-sm font-bold px-1"
                     />
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-8 w-8 rounded-lg"
+                      className="h-7 w-7 rounded-lg"
                       onClick={() => updateQty(s.product_id, 1)}
                       disabled={qty >= available}
                     >
-                      <Plus className="w-3.5 h-3.5" />
+                      <Plus className="w-3 h-3" />
                     </Button>
                   </div>
                 </div>
               );
             })}
           </div>
-        </ScrollArea>
+        </div>
 
-        <DialogFooter className="px-4 pb-4 pt-2 border-t">
+        <DialogFooter className="px-3 pb-3 pt-2 border-t shrink-0">
           <Button
             onClick={handleConfirm}
             disabled={isSaving || totalItems === 0}
-            className="w-full h-11 rounded-xl text-[13px] shadow-sm"
+            className="w-full h-10 rounded-xl text-[13px] shadow-sm"
           >
             {isSaving && <Loader2 className="w-4 h-4 animate-spin me-2" />}
             <Truck className="w-4 h-4 me-1" />
