@@ -767,7 +767,7 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
       }
 
       // Update receipt if anything changed (so reprinted receipts reflect the change)
-      const shouldUpdateReceipt = paymentAmountChanged || paymentTypeChanged || invoiceMethodChanged || priceSubTypeChanged || productChanges.length > 0;
+      const shouldUpdateReceipt = paymentAmountChanged || paymentTypeChanged || invoiceMethodChanged || priceSubTypeChanged || hasItemSubtypeChanges || productChanges.length > 0;
       if (shouldUpdateReceipt) {
         // Re-fetch updated order items for receipt sync
         const { data: freshItems } = await supabase
