@@ -108,8 +108,10 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
       setDeliveryDate(order.delivery_date ? new Date(order.delivery_date) : undefined);
       setPaymentType(order.payment_type || 'with_invoice');
       setInvoicePaymentMethod((order.invoice_payment_method as InvoicePaymentMethod) || null);
+      setAdjustPaidAmount(Number(order.paid_amount || order.total_amount || 0));
+      setAdjustRemainingAmount(Number(order.remaining_amount || 0));
     }
-  }, [open, orderItems, order.assigned_worker_id, order.delivery_date, order.payment_type, order.invoice_payment_method]);
+  }, [open, orderItems, order.assigned_worker_id, order.delivery_date, order.payment_type, order.invoice_payment_method, order.paid_amount, order.remaining_amount, order.total_amount]);
 
   // Fetch available products for adding
   useEffect(() => {
