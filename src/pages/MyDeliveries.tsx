@@ -1367,6 +1367,31 @@ const MyDeliveries: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* Postpone Day Picker Dialog */}
+      <Dialog open={!!postponeOrderId} onOpenChange={(open) => { if (!open) setPostponeOrderId(null); }}>
+        <DialogContent className="max-w-xs" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarClock className="w-5 h-5 text-amber-600" />
+              تأجيل التوصيل
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">اختر يوم التوصيل الجديد:</p>
+          <div className="grid grid-cols-2 gap-2">
+            {getNextWorkDays().map(({ date, label }) => (
+              <Button
+                key={date.toISOString()}
+                variant="outline"
+                className="h-12 text-sm font-bold hover:bg-amber-50 hover:border-amber-400 hover:text-amber-700"
+                onClick={() => postponeOrderId && handlePostponeOrder(postponeOrderId, date)}
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Reprint Receipt Dialog */}
       {reprintReceiptData && (
         <ReceiptDialog
