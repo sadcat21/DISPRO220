@@ -5,19 +5,41 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useUnreviewedModifications, useReviewModification } from '@/hooks/useReceipts';
-import { Bell, Check, FileEdit, Eye } from 'lucide-react';
+import { useOrderItems } from '@/hooks/useOrders';
+import { Bell, Check, FileEdit, Eye, Pencil } from 'lucide-react';
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import ModifyOrderDialog from '@/components/orders/ModifyOrderDialog';
 
 const ReceiptModificationsNotification: React.FC = () => {
   const { data: modifications } = useUnreviewedModifications();
   const reviewMutation = useReviewModification();
   const [open, setOpen] = useState(false);
   const [selectedMod, setSelectedMod] = useState<string | null>(null);
+  const [editOrder, setEditOrder] = useState<any>(null);
 
   const count = modifications?.length || 0;
   if (count === 0) return null;
 
+  const handleEditOrder = async (mod: any) => {
+    const orderId = mod.receipt?.order_id;
+    if (!orderId) {
+      return;
+    }
+    try {
+      const { data } = await supabase
+        .from('orders')
+        .select('*, customer:customers(*), created_by_worker:workers!orders_created_by_fkey(id, full_name, username), assigned_worker:workers!orders_assigned_worker_id_fkey(id, full_name, username)')
+        .eq('id', orderId)
+        .single();
+      if (data) {
+        setEditOrder(data);
+      }
+    } catch {}
+  };
+
   return (
+    <>
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
@@ -72,6 +94,17 @@ const ReceiptModificationsNotification: React.FC = () => {
                     <Eye className="w-3 h-3 ml-1" />
                     {selectedMod === mod.id ? 'إخفاء' : 'مقارنة'}
                   </Button>
+                  {mod.receipt?.order_id && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-xs"
+                      onClick={() => handleEditOrder(mod)}
+                    >
+                      <Pencil className="w-3 h-3 ml-1" />
+                      تعديل
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="outline"
@@ -89,6 +122,25 @@ const ReceiptModificationsNotification: React.FC = () => {
         </ScrollArea>
       </PopoverContent>
     </Popover>
+
+    {editOrder && (
+      <ModifyOrderWrapper order={editOrder} onClose={() => setEditOrder(null)} />
+    )}
+    </>
+  );
+};
+
+// Wrapper to fetch order items for ModifyOrderDialog
+const ModifyOrderWrapper: React.FC<{ order: any; onClose: () => void }> = ({ order, onClose }) => {
+  const { data: items } = useOrderItems(order.id);
+  if (!items) return null;
+  return (
+    <ModifyOrderDialog
+      open={true}
+      onOpenChange={(open) => !open && onClose()}
+      order={order}
+      orderItems={items}
+    />
   );
 };
 
