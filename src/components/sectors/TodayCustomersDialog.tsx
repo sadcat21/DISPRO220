@@ -121,6 +121,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   const [selectedAdminWorkerId, setSelectedAdminWorkerId] = useState<string | null>(targetWorkerId || null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showBulkPostpone, setShowBulkPostpone] = useState(false);
+  const [postponeCustomer, setPostponeCustomer] = useState<any>(null);
 
   // Fetch workers list for admin picker
   const { data: workersList = [] } = useQuery({
@@ -1324,6 +1325,28 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     }
   };
 
+  const handleSinglePostpone = async (newDate: Date) => {
+    if (!postponeCustomer) return;
+    const customerOrders = assignedOrders
+      .filter(o => o.customer_id === postponeCustomer.id && ['pending', 'assigned', 'in_progress'].includes(o.status));
+    if (customerOrders.length === 0) { toast.info('لا توجد طلبيات لهذا العميل'); return; }
+    const dateStr = format(newDate, 'yyyy-MM-dd');
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ delivery_date: dateStr })
+        .in('id', customerOrders.map(o => o.id));
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['assigned-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['today-cust-assigned-orders-full'] });
+      toast.success(`تم تأجيل طلبية ${postponeCustomer.name} إلى ${format(newDate, 'dd/MM/yyyy')}`);
+      setPostponeCustomer(null);
+    } catch {
+      toast.error('فشل في تأجيل الطلبية');
+    }
+  };
+
   const handleDirectSaleDebtRefused = async (customer: any) => {
     const allowed = await checkLocationBeforeAction(customer);
     if (!allowed) return;
@@ -1546,7 +1569,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                       </Button>
                     </div>
                   )}
-                  <CustomerList customers={deliveryNotDone} emptyMessage="تم توصيل جميع العملاء ✓" onCustomerClick={handleDeliveryCustomerClick} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} onDebtRefused={handleDeliveryDebtRefused} showVisitButton visitButtonLabel="بدون تسليم" showActionButtons checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} />
+                  <CustomerList customers={deliveryNotDone} emptyMessage="تم توصيل جميع العملاء ✓" onCustomerClick={handleDeliveryCustomerClick} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} onDebtRefused={handleDeliveryDebtRefused} onPostpone={(c) => setPostponeCustomer(c)} showVisitButton visitButtonLabel="بدون تسليم" showActionButtons checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} />
                 </TabsContent>
                 <TabsContent value="not-received" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
                   <CustomerList customers={deliveryNotReceived} emptyMessage="لا توجد زيارات بدون تسليم" onCustomerClick={handleDeliveryCustomerClick} showActionButtons onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} onDebtRefused={handleDeliveryDebtRefused} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
@@ -1786,6 +1809,30 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
           </div>
         </DialogContent>
       </Dialog>
+      {/* Single Customer Postpone Dialog */}
+      <Dialog open={!!postponeCustomer} onOpenChange={(open) => { if (!open) setPostponeCustomer(null); }}>
+        <DialogContent className="max-w-xs" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarClock className="w-5 h-5 text-amber-600" />
+              تأجيل توصيل {postponeCustomer?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">اختر يوم التوصيل الجديد:</p>
+          <div className="grid grid-cols-2 gap-2">
+            {getNextWorkDays().map(({ date, label }) => (
+              <Button
+                key={date.toISOString()}
+                variant="outline"
+                className="h-12 text-sm font-bold hover:bg-amber-50 hover:border-amber-400 hover:text-amber-700"
+                onClick={() => handleSinglePostpone(date)}
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
@@ -1951,6 +1998,7 @@ const CustomerList: React.FC<{
   onDebtRefused?: (c: any) => void;
   onNoSale?: (c: any) => void;
   onPrint?: (c: any) => void;
+  onPostpone?: (c: any) => void;
   showVisitButton?: boolean;
   visitButtonLabel?: string;
   showActionButtons?: boolean;
@@ -1967,7 +2015,7 @@ const CustomerList: React.FC<{
   distanceMap?: Map<string, number>;
   workerPosition?: { lat: number; lng: number } | null;
   sortByDistance?: boolean;
-}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, onClosed, onUnavailable, onDebtRefused, onNoSale, onPrint, showVisitButton, visitButtonLabel, showActionButtons, showPrintButton, showNoSaleButton, checkingLocationFor, loadingFor, searchQuery, sectors, allZones, salesRepStatusMap, deliveryTimeMap, timeMap, distanceMap, workerPosition, sortByDistance }) => {
+}> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, onClosed, onUnavailable, onDebtRefused, onNoSale, onPrint, onPostpone, showVisitButton, visitButtonLabel, showActionButtons, showPrintButton, showNoSaleButton, checkingLocationFor, loadingFor, searchQuery, sectors, allZones, salesRepStatusMap, deliveryTimeMap, timeMap, distanceMap, workerPosition, sortByDistance }) => {
   const { language } = useLanguage();
 
   // Compute live distance from worker to each customer
@@ -2131,6 +2179,12 @@ const CustomerList: React.FC<{
             <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-purple-600" onClick={() => onDebtRefused(c)} disabled={checkingLocationFor === c.id}>
               <BanknoteIcon className="w-3 h-3" />
               رفض الدين
+            </Button>
+          )}
+          {onPostpone && (
+            <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-amber-600" onClick={() => onPostpone(c)}>
+              <CalendarClock className="w-3 h-3" />
+              تأجيل
             </Button>
           )}
         </div>
