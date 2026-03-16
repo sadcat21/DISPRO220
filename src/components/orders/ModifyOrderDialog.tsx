@@ -431,6 +431,95 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
         changes.push({ عملية: 'تغيير طريقة الدفع', نوع: paymentType, طريقة_فرعية: invoicePaymentMethod || 'بدون' });
       }
 
+      // Update paid/remaining amounts for delivered orders
+      if (paymentAmountChanged) {
+        orderUpdate.paid_amount = adjustPaidAmount;
+        orderUpdate.remaining_amount = adjustRemainingAmount;
+        changes.push({
+          عملية: 'تعديل المبلغ المدفوع',
+          مدفوع_سابق: originalPaidAmount,
+          مدفوع_جديد: adjustPaidAmount,
+          متبقي_سابق: originalRemainingAmount,
+          متبقي_جديد: adjustRemainingAmount,
+        });
+
+        // Handle debt changes from payment adjustment
+        const debtIncrease = adjustRemainingAmount - originalRemainingAmount;
+        if (debtIncrease > 0) {
+          // More remaining = new/increased debt
+          // Check if there's already a debt for this order
+          const { data: existingDebt } = await supabase
+            .from('customer_debts')
+            .select('id, total_amount, paid_amount, remaining_amount')
+            .eq('order_id', order.id)
+            .in('status', ['active', 'partially_paid'])
+            .maybeSingle();
+
+          if (existingDebt) {
+            const newDebtTotal = Number(existingDebt.total_amount) + debtIncrease;
+            const newDebtRemaining = (existingDebt.remaining_amount ?? (existingDebt.total_amount - existingDebt.paid_amount)) + debtIncrease;
+            await supabase.from('customer_debts').update({
+              total_amount: newDebtTotal,
+              remaining_amount: newDebtRemaining,
+              notes: `تعديل دفع بعد التوصيل - زيادة ${debtIncrease.toLocaleString()} دج`,
+            }).eq('id', existingDebt.id);
+          } else {
+            await supabase.from('customer_debts').insert({
+              customer_id: order.customer_id,
+              order_id: order.id,
+              worker_id: workerId,
+              branch_id: order.branch_id,
+              total_amount: debtIncrease,
+              paid_amount: 0,
+              remaining_amount: debtIncrease,
+              status: 'active',
+              notes: 'دين من تعديل الدفع بعد التوصيل',
+            });
+          }
+        } else if (debtIncrease < 0) {
+          // Less remaining = debt reduced/cleared
+          const debtReduction = Math.abs(debtIncrease);
+          let remaining = debtReduction;
+
+          const { data: debts } = await supabase
+            .from('customer_debts')
+            .select('id, total_amount, paid_amount, remaining_amount')
+            .eq('customer_id', order.customer_id)
+            .in('status', ['active', 'partially_paid'])
+            .order('created_at', { ascending: true });
+
+          for (const debt of (debts || [])) {
+            if (remaining <= 0) break;
+            const debtRemaining = (debt.remaining_amount ?? (debt.total_amount - debt.paid_amount));
+            const deduct = Math.min(debtRemaining, remaining);
+            const newPaid = debt.paid_amount + deduct;
+            const newRemaining = debt.total_amount - newPaid;
+            await supabase.from('customer_debts').update({
+              paid_amount: newPaid,
+              remaining_amount: newRemaining,
+              status: newRemaining <= 0 ? 'paid' : 'partially_paid',
+            }).eq('id', debt.id);
+            remaining -= deduct;
+          }
+
+          // If there's still surplus, create customer credit
+          if (remaining > 0) {
+            await supabase.from('customer_credits').insert({
+              customer_id: order.customer_id,
+              order_id: order.id,
+              worker_id: workerId!,
+              branch_id: order.branch_id,
+              amount: remaining,
+              credit_type: 'financial',
+              status: 'approved',
+              approved_by: workerId,
+              approved_at: new Date().toISOString(),
+              notes: 'فائض من تعديل الدفع بعد التوصيل',
+            });
+          }
+        }
+      }
+
       if (Object.keys(orderUpdate).length > 0) {
         await supabase.from('orders')
           .update(orderUpdate)
