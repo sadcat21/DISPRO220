@@ -6563,6 +6563,18 @@ export type Database = {
         Returns: boolean
       }
       get_customer_account_id: { Args: never; Returns: string }
+      get_customer_sales_rep_statuses: {
+        Args: {
+          p_customer_ids: string[]
+          p_end: string
+          p_start: string
+          p_worker_ids: string[]
+        }
+        Returns: {
+          customer_id: string
+          status: string
+        }[]
+      }
       get_user_role: {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
