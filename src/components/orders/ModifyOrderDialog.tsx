@@ -1075,6 +1075,30 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
                       <Badge className="bg-green-100 text-green-800 text-xs">{t('common.new')}</Badge>
                     )}
                   </div>
+                  {/* Per-item pricing subtype override */}
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {([
+                      { value: 'invoice', label: 'F1', color: 'bg-blue-600 text-white border-blue-600' },
+                      { value: 'super_gros', label: 'SG', color: 'bg-indigo-600 text-white border-indigo-600' },
+                      { value: 'gros', label: 'G', color: 'bg-cyan-600 text-white border-cyan-600' },
+                      { value: 'retail', label: 'D', color: 'bg-rose-600 text-white border-rose-600' },
+                    ]).map((opt) => {
+                      const currentSubtype = item.item_subtype || (paymentType === 'with_invoice' ? 'invoice' : priceSubType);
+                      const isActive = currentSubtype === opt.value;
+                      return (
+                        <Button
+                          key={opt.value}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className={`h-6 px-2 text-[10px] font-bold transition-all ${isActive ? `${opt.color} ring-1 ring-offset-1` : `${opt.color} opacity-30`}`}
+                          onClick={() => changeItemSubtype(index, opt.value)}
+                        >
+                          {opt.label}
+                        </Button>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })}
