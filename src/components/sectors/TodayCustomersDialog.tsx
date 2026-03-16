@@ -93,6 +93,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   open, onOpenChange, targetWorkerId, targetWorkerName,
 }) => {
   const { workerId: authWorkerId, activeBranch, role, user } = useAuth();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const isAdmin = role === 'admin' || role === 'branch_admin' || role === 'supervisor';
   const todayName = JS_DAY_TO_NAME[new Date().getDay()] || '';
