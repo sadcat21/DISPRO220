@@ -255,6 +255,25 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
     setItems(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Recalculate item prices when payment type or price subtype changes
+  const recalcItemPrices = useCallback((pt: string, pst: PriceSubType) => {
+    setItems(prev => prev.map(item => {
+      const product = products.find(p => p.id === item.product_id);
+      if (!product) return item;
+      let newUnitPrice: number;
+      if (pt === 'with_invoice') {
+        newUnitPrice = Number(product.price_invoice || 0);
+      } else {
+        switch (pst) {
+          case 'super_gros': newUnitPrice = Number(product.price_super_gros || product.price_no_invoice || 0); break;
+          case 'retail': newUnitPrice = Number(product.price_retail || 0); break;
+          default: newUnitPrice = Number(product.price_gros || product.price_no_invoice || 0); break;
+        }
+      }
+      return { ...item, unit_price: newUnitPrice };
+    }));
+  }, [products]);
+
   const workerChanged = assignedWorkerId !== (order.assigned_worker_id || '');
   const deliveryDateChanged = (() => {
     const origDate = order.delivery_date ? order.delivery_date.split('T')[0] : '';
