@@ -863,7 +863,7 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
                       variant={priceSubType === option.value ? 'default' : 'outline'}
                       size="sm"
                       className={`h-10 text-sm font-bold transition-opacity ${priceSubType === option.value ? option.colors.active : option.colors.inactive} ${priceSubType !== option.value ? 'opacity-50' : ''}`}
-                      onClick={() => setPriceSubType(option.value)}
+                      onClick={() => { setPriceSubType(option.value); recalcItemPrices('without_invoice', option.value); }}
                     >
                       {option.label}
                     </Button>
