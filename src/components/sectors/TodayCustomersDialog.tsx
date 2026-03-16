@@ -33,7 +33,6 @@ import DirectSaleDialog from '@/components/warehouse/DirectSaleDialog';
 import ReceiptDialog from '@/components/printing/ReceiptDialog';
 import ModifyOrderDialog from '@/components/orders/ModifyOrderDialog';
 import { useOrderItems } from '@/hooks/useOrders';
-import { ReceiptItem } from '@/types/receipt';
 
 const DAY_NAMES: Record<string, string> = {
   saturday: 'السبت', sunday: 'الأحد', monday: 'الإثنين',
@@ -42,6 +41,30 @@ const DAY_NAMES: Record<string, string> = {
 const JS_DAY_TO_NAME: Record<number, string> = {
   6: 'saturday', 0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday', 4: 'thursday',
 };
+
+const toSafeNumber = (value: unknown): number => {
+  const n = Number(value ?? 0);
+  return Number.isFinite(n) ? n : 0;
+};
+
+const toNullableNumber = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+};
+
+const normalizeSaleItem = (item: any) => ({
+  productId: item?.product_id || item?.productId || item?.product?.id || '',
+  productName: item?.product?.name || item?.product_name || item?.productName || '—',
+  quantity: toSafeNumber(item?.quantity),
+  unitPrice: toSafeNumber(item?.unit_price ?? item?.unitPrice),
+  totalPrice: toSafeNumber(item?.total_price ?? item?.totalPrice),
+  giftQuantity: toSafeNumber(item?.gift_quantity ?? item?.giftQuantity),
+  giftPieces: toSafeNumber(item?.gift_pieces ?? item?.giftPieces),
+  piecesPerBox: toSafeNumber(item?.pieces_per_box ?? item?.piecesPerBox ?? item?.product?.pieces_per_box),
+  pricingUnit: item?.pricing_unit ?? item?.pricingUnit ?? item?.product?.pricing_unit ?? undefined,
+  weightPerBox: toNullableNumber(item?.weight_per_box ?? item?.weightPerBox ?? item?.product?.weight_per_box),
+});
 
 interface TodayCustomersDialogProps {
   open: boolean;
@@ -1120,18 +1143,21 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
       workerName: user?.full_name || '',
       workerPhone: null,
       branchId: user?.branch_id || null,
-      items: items.map((item: any) => ({
-        productId: isDirectSale ? (item.product_id || '') : (item.product_id || item.product?.id || ''),
-        productName: isDirectSale ? (item.productName || '—') : (item.product?.name || '—'),
-        quantity: item.quantity || 0,
-        unitPrice: isDirectSale ? (item.unitPrice || 0) : (item.unit_price || 0),
-        totalPrice: isDirectSale ? (item.totalPrice || 0) : (item.total_price || 0),
-        giftQuantity: isDirectSale ? (item.giftQuantity || 0) : (item.gift_quantity || 0),
-        giftPieces: isDirectSale ? (item.giftPieces || 0) : (item.gift_pieces || 0),
-        piecesPerBox: isDirectSale ? (item.piecesPerBox || 0) : (item.pieces_per_box || item.product?.pieces_per_box || 0),
-        pricingUnit: isDirectSale ? (item.pricingUnit || undefined) : (item.pricing_unit || item.product?.pricing_unit || undefined),
-        weightPerBox: isDirectSale ? (item.weightPerBox || null) : (item.weight_per_box || item.product?.weight_per_box || null),
-      })),
+      items: items.map((item: any) => {
+        const normalizedItem = normalizeSaleItem(item);
+        return {
+          productId: normalizedItem.productId,
+          productName: normalizedItem.productName,
+          quantity: normalizedItem.quantity,
+          unitPrice: normalizedItem.unitPrice,
+          totalPrice: normalizedItem.totalPrice,
+          giftQuantity: normalizedItem.giftQuantity,
+          giftPieces: normalizedItem.giftPieces,
+          piecesPerBox: normalizedItem.piecesPerBox,
+          pricingUnit: normalizedItem.pricingUnit,
+          weightPerBox: normalizedItem.weightPerBox,
+        };
+      }),
       totalAmount,
       paidAmount,
       remainingAmount,
@@ -1699,15 +1725,6 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void }> = ({ ord
   const remainingAmount = Number(order.remaining_amount ?? order.remainingAmount ?? (isOrderRequest ? totalAmount : 0));
 
   const handlePrint = () => {
-    const receiptItems: ReceiptItem[] = items.map((item: any) => ({
-      productId: isDirectSale ? (item.product_id || '') : (item.product_id || item.product?.id || ''),
-      productName: isDirectSale ? (item.productName || '—') : (item.product?.name || '—'),
-      quantity: item.quantity || 0,
-      unitPrice: isDirectSale ? (item.unitPrice || 0) : (item.unit_price || 0),
-      totalPrice: isDirectSale ? (item.totalPrice || 0) : (item.total_price || 0),
-      giftQuantity: isDirectSale ? (item.giftQuantity || 0) : (item.gift_quantity || 0),
-    }));
-
     setShowReceiptDialog(true);
   };
 
@@ -1721,14 +1738,17 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void }> = ({ ord
     workerName: user?.full_name || '',
     workerPhone: null,
     branchId: user?.branch_id || null,
-    items: items.map((item: any) => ({
-      productId: isDirectSale ? (item.product_id || '') : (item.product_id || item.product?.id || ''),
-      productName: isDirectSale ? (item.productName || '—') : (item.product?.name || '—'),
-      quantity: item.quantity || 0,
-      unitPrice: isDirectSale ? (item.unitPrice || 0) : (item.unit_price || 0),
-      totalPrice: isDirectSale ? (item.totalPrice || 0) : (item.total_price || 0),
-      giftQuantity: isDirectSale ? (item.giftQuantity || 0) : (item.gift_quantity || 0),
-    })),
+    items: items.map((item: any) => {
+      const normalizedItem = normalizeSaleItem(item);
+      return {
+        productId: normalizedItem.productId,
+        productName: normalizedItem.productName,
+        quantity: normalizedItem.quantity,
+        unitPrice: normalizedItem.unitPrice,
+        totalPrice: normalizedItem.totalPrice,
+        giftQuantity: normalizedItem.giftQuantity,
+      };
+    }),
     totalAmount,
     paidAmount,
     remainingAmount,
@@ -1771,11 +1791,12 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void }> = ({ ord
             <div className="bg-muted/30 px-3 py-2 text-xs font-bold border-b">المنتجات</div>
             <div className="divide-y">
               {items.map((item: any, idx: number) => {
-                const productName = isDirectSale ? (item.productName || '—') : (item.product?.name || '—');
-                const quantity = isDirectSale ? item.quantity : item.quantity;
-                const unitPrice = isDirectSale ? item.unitPrice : item.unit_price;
-                const itemTotal = isDirectSale ? item.totalPrice : item.total_price;
-                const giftQty = isDirectSale ? (item.giftQuantity || 0) : (item.gift_quantity || 0);
+                const normalizedItem = normalizeSaleItem(item);
+                const productName = normalizedItem.productName;
+                const quantity = normalizedItem.quantity;
+                const unitPrice = normalizedItem.unitPrice;
+                const itemTotal = normalizedItem.totalPrice;
+                const giftQty = normalizedItem.giftQuantity;
 
                 return (
                   <div key={idx} className="px-3 py-2 space-y-0.5">
