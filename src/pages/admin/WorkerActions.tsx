@@ -501,7 +501,7 @@ const WorkerActions: React.FC = () => {
       </div>
 
 
-      {selectedWorker && !isSelfMode && (
+      {selectedWorker && !isSelfMode && !isSupervisorMode && (
         <div className="flex justify-end">
           <button
             type="button"
