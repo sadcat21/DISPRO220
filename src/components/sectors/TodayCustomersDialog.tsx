@@ -70,7 +70,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
       const { data } = await query.order('full_name');
       return data || [];
     },
-    enabled: isAdmin && open && !targetWorkerId,
+    enabled: (role === 'admin' || role === 'branch_admin' || role === 'supervisor') && open && !targetWorkerId,
   });
 
   // For admin: use selected worker or fallback to auth worker
