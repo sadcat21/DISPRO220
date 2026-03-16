@@ -1499,24 +1499,60 @@ const LoadStock: React.FC = () => {
                   )}
                 </>
               ) : (
-                <div className="flex gap-1">
-                  <Button
-                    className="flex-1 h-8 rounded-md text-[10px] shadow-sm"
-                    onClick={handleCompleteSession}
-                    disabled={sessionItems.length === 0 || completeSession.isPending}
-                  >
-                    {completeSession.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3 me-0.5" />}
-                    تأكيد
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="h-8 rounded-md text-[10px] text-destructive border-destructive/30 px-4"
-                    onClick={() => handleDeleteSession(activeSessionId!)}
-                    disabled={deleteSession.isPending}
-                  >
-                    <X className="w-3 h-3 me-0.5" />
-                    إلغاء
-                  </Button>
+                <div className="space-y-1">
+                  <div className="flex gap-1">
+                    <Button
+                      className="flex-1 h-8 rounded-md text-[10px] shadow-sm"
+                      onClick={handleCompleteSession}
+                      disabled={sessionItems.length === 0 || completeSession.isPending}
+                    >
+                      {completeSession.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3 me-0.5" />}
+                      تأكيد
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-8 rounded-md text-[10px] text-destructive border-destructive/30 px-4"
+                      onClick={() => handleDeleteSession(activeSessionId!)}
+                      disabled={deleteSession.isPending}
+                    >
+                      <X className="w-3 h-3 me-0.5" />
+                      إلغاء
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1">
+                    <Button variant="outline" onClick={() => setShowSessionHistory(true)} className="h-8 rounded-md text-[9px] px-1">
+                      <History className="w-3 h-3 me-0.5" />
+                      السجل
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-8 rounded-md text-[9px] px-1 text-destructive border-destructive/30"
+                      onClick={handleEmptyTruckPreview}
+                      disabled={isEmptying || !hasReviewToday}
+                    >
+                      <PackageX className="w-3 h-3 me-0.5" />
+                      تفريغ
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-8 rounded-md text-[9px] px-1 border-orange-400 text-orange-700"
+                      onClick={() => setShowExchangeDialog(true)}
+                    >
+                      <RefreshCw className="w-3 h-3 me-0.5" />
+                      تغيير
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className={`h-8 rounded-md text-[9px] px-1 ${hasReviewToday 
+                        ? "border-green-400 text-green-700 bg-green-50/50"
+                        : "border-blue-400 text-blue-700 bg-blue-50/50"
+                      }`}
+                      onClick={() => setShowVerificationDialog(true)}
+                    >
+                      {hasReviewToday ? <CheckCircle className="w-3 h-3 me-0.5" /> : <Search className="w-3 h-3 me-0.5" />}
+                      مراجعة
+                    </Button>
+                  </div>
                 </div>
               )
             )}
