@@ -707,85 +707,94 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   // Fetch sales worker visits for Prévente sectors to know which customers were visited
   const preventeDeliverySectors = useMemo(() => todayDeliverySectors.filter(s => (s as any).sector_type !== 'cash_van'), [todayDeliverySectors]);
   const salesWorkerIds = useMemo(() => {
-    const ids = new Set<string>();
-    // Get sales workers from sector_schedules for these sectors
-    preventeDeliverySectors.forEach(s => {
-      const salesSchedules = sectorSchedules.filter(sc => sc.sector_id === s.id && sc.schedule_type === 'sales');
-      salesSchedules.forEach(sc => { if (sc.worker_id) ids.add(sc.worker_id); });
-      // Fallback to legacy field
-      if (salesSchedules.length === 0 && s.sales_worker_id) ids.add(s.sales_worker_id);
+    const preventeSectorIds = new Set(preventeDeliverySectors.map(s => s.id));
+    const workersBySector = new Map<string, Set<string>>();
+
+    preventeDeliverySectors.forEach((sector) => {
+      workersBySector.set(sector.id, new Set<string>());
+
+      const todaySalesSchedules = sectorSchedules.filter(
+        (sc) => sc.sector_id === sector.id && sc.schedule_type === 'sales' && sc.day === selectedDay
+      );
+
+      if (todaySalesSchedules.length > 0) {
+        todaySalesSchedules.forEach((sc) => {
+          if (sc.worker_id) workersBySector.get(sector.id)?.add(sc.worker_id);
+        });
+      } else if (sector.visit_day_sales === selectedDay && sector.sales_worker_id) {
+        workersBySector.get(sector.id)?.add(sector.sales_worker_id);
+      }
     });
-    return Array.from(ids);
-  }, [preventeDeliverySectors, sectorSchedules]);
 
-  const { data: salesWorkerVisits = [] } = useQuery({
-    queryKey: ['sales-worker-visits-for-prevente', salesWorkerIds, todayStart],
+    // Apply selected-day coverage overrides for sales assignments
+    activeCoveragesForSelectedDay.forEach((coverage) => {
+      if (coverage.schedule_type !== 'sales' || !preventeSectorIds.has(coverage.sector_id)) return;
+      const assignedWorkers = workersBySector.get(coverage.sector_id);
+      if (!assignedWorkers) return;
+      if (coverage.absent_worker_id) assignedWorkers.delete(coverage.absent_worker_id);
+      if (coverage.substitute_worker_id) assignedWorkers.add(coverage.substitute_worker_id);
+    });
+
+    return Array.from(new Set(
+      Array.from(workersBySector.values()).flatMap((set) => Array.from(set))
+    ));
+  }, [preventeDeliverySectors, sectorSchedules, selectedDay, activeCoveragesForSelectedDay]);
+
+  const preventeCustomerIds = useMemo(() => {
+    const preventeSectorIds = new Set(preventeDeliverySectors.map(s => s.id));
+    return customers
+      .filter(c => c.sector_id && preventeSectorIds.has(c.sector_id))
+      .map(c => c.id);
+  }, [customers, preventeDeliverySectors]);
+
+  const { data: salesRepStatuses = [] } = useQuery({
+    queryKey: ['sales-rep-statuses-for-prevente', salesWorkerIds, preventeCustomerIds, selectedDayBounds.start, selectedDayBounds.end],
     queryFn: async () => {
-      if (salesWorkerIds.length === 0) return [];
-      // Get visits by sales workers in the last 7 days for these sectors (include notes for status badges)
-      const { data } = await supabase
-        .from('visit_tracking')
-        .select('customer_id, worker_id, operation_type, notes')
-        .in('worker_id', salesWorkerIds)
-        .gte('created_at', sevenDaysAgo);
+      if (salesWorkerIds.length === 0 || preventeCustomerIds.length === 0) return [];
+
+      const { data, error } = await (supabase as any).rpc('get_customer_sales_rep_statuses', {
+        p_worker_ids: salesWorkerIds,
+        p_customer_ids: preventeCustomerIds,
+        p_start: selectedDayBounds.start,
+        p_end: selectedDayBounds.end,
+      });
+
+      if (error) throw error;
       return data || [];
     },
-    enabled: !!effectiveWorkerId && open && salesWorkerIds.length > 0,
+    enabled: !!effectiveWorkerId && open && salesWorkerIds.length > 0 && preventeCustomerIds.length > 0,
+    refetchInterval: 10000,
   });
 
-  const { data: salesWorkerOrders = [] } = useQuery({
-    queryKey: ['sales-worker-orders-for-prevente', salesWorkerIds, todayStart],
-    queryFn: async () => {
-      if (salesWorkerIds.length === 0) return [];
-      const { data } = await supabase
-        .from('orders')
-        .select('customer_id')
-        .in('created_by', salesWorkerIds)
-        .gte('created_at', sevenDaysAgo)
-        .not('status', 'eq', 'cancelled');
-      return data || [];
-    },
-    enabled: !!effectiveWorkerId && open && salesWorkerIds.length > 0,
-  });
-
-  // Customers visited or ordered by sales worker (for reference)
+  // Customers ordered by sales reps in Prévente sectors for selected day
   const salesWorkerOrderedCustomerIds = useMemo(() => {
     const ids = new Set<string>();
-    salesWorkerOrders.forEach(o => { if (o.customer_id) ids.add(o.customer_id); });
+    (salesRepStatuses as any[]).forEach((row) => {
+      if (row?.status === 'ordered' && row?.customer_id) ids.add(row.customer_id);
+    });
     return ids;
-  }, [salesWorkerOrders]);
+  }, [salesRepStatuses]);
 
   // Sales rep visit status map for Prévente customers (used for badges)
   // Status: 'ordered' | 'visited' | 'closed' | 'unavailable' | 'not_visited'
   const salesRepStatusMap = useMemo(() => {
     const map = new Map<string, string>();
     const preventeSectorIds = new Set(preventeDeliverySectors.map(s => s.id));
-    // Mark all Prévente customers as not_visited by default
+
     customers.forEach(c => {
       if (c.sector_id && preventeSectorIds.has(c.sector_id)) {
         map.set(c.id, 'not_visited');
       }
     });
-    // Override with actual visit status
-    salesWorkerVisits.forEach(v => {
-      if (!v.customer_id) return;
-      if (!map.has(v.customer_id)) return;
-      if (v.notes && /مغلق/.test(v.notes)) {
-        map.set(v.customer_id, 'closed');
-      } else if (v.notes && /غير متاح/.test(v.notes)) {
-        map.set(v.customer_id, 'unavailable');
-      } else if (map.get(v.customer_id) === 'not_visited') {
-        map.set(v.customer_id, 'visited');
+
+    (salesRepStatuses as any[]).forEach((row) => {
+      if (row?.customer_id && row?.status && map.has(row.customer_id)) {
+        map.set(row.customer_id, row.status);
       }
     });
-    // Override with ordered status (highest priority)
-    salesWorkerOrders.forEach(o => {
-      if (o.customer_id && map.has(o.customer_id)) {
-        map.set(o.customer_id, 'ordered');
-      }
-    });
+
     return map;
-  }, [salesWorkerVisits, salesWorkerOrders, customers, preventeDeliverySectors]);
+  }, [salesRepStatuses, customers, preventeDeliverySectors]);
 
   // Direct sale customers:
   // 1. Cash Van sectors (today delivery) → ALL customers
