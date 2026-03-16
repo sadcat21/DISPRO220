@@ -1669,6 +1669,15 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void }> = ({ ord
       onOpenChange={setShowReceiptDialog}
       receiptData={receiptData}
     />
+
+    {showModifyDialog && modifyOrderItems && (
+      <ModifyOrderDialog
+        open={showModifyDialog}
+        onOpenChange={(o) => { setShowModifyDialog(o); if (!o) onClose(); }}
+        order={order}
+        orderItems={modifyOrderItems}
+      />
+    )}
     </>
   );
 };
