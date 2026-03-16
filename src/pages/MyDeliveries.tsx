@@ -812,6 +812,15 @@ const MyDeliveries: React.FC = () => {
                     )}
                     <Button
                       size="icon"
+                      variant="outline"
+                      className="h-8 w-8 text-amber-600 border-amber-300 hover:bg-amber-50"
+                      onClick={() => setPostponeOrderId(order.id)}
+                      title="تأجيل"
+                    >
+                      <CalendarClock className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="icon"
                       className="h-8 w-8 bg-primary"
                       onClick={() => handleUpdateStatus(order.id, 'in_progress')}
                       disabled={updateStatus.isPending}
