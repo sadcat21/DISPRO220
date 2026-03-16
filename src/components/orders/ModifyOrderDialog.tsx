@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Minus, Loader2, Package, Save, PlusCircle, Trash2, Truck, Gift, CalendarDays, CreditCard } from 'lucide-react';
+import { Plus, Minus, Loader2, Package, Save, PlusCircle, Trash2, Truck, Gift, CalendarDays, CreditCard, Banknote, AlertTriangle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
