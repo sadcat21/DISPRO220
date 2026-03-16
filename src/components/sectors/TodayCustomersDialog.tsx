@@ -753,14 +753,14 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   }, [customers, preventeDeliverySectors]);
 
   const { data: salesRepStatuses = [] } = useQuery({
-    queryKey: ['sales-rep-statuses-for-prevente', salesWorkerIds, preventeCustomerIds, selectedDayBounds.start, selectedDayBounds.end],
+    queryKey: ['sales-rep-statuses-for-prevente', salesWorkerIds, preventeCustomerIds, selectedDayBounds.weekStart, selectedDayBounds.end],
     queryFn: async () => {
       if (salesWorkerIds.length === 0 || preventeCustomerIds.length === 0) return [];
 
       const { data, error } = await (supabase as any).rpc('get_customer_sales_rep_statuses', {
         p_worker_ids: salesWorkerIds,
         p_customer_ids: preventeCustomerIds,
-        p_start: selectedDayBounds.start,
+        p_start: selectedDayBounds.weekStart,
         p_end: selectedDayBounds.end,
       });
 
