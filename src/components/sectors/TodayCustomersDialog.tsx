@@ -1277,12 +1277,14 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                 dir="rtl"
               />
             </div>
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer">
-                <MapPin className="w-3 h-3" />
-                ترتيب حسب المسافة
-              </label>
-              <Switch checked={sortByDistance} onCheckedChange={setSortByDistance} />
+            <div className="flex items-center gap-2">
+              <Switch checked={sortByDistance} onCheckedChange={setSortByDistance} className="shrink-0" />
+              <div className="flex items-center gap-1 min-w-0 flex-1 overflow-hidden">
+                <MapPin className="w-3 h-3 shrink-0 text-muted-foreground" />
+                <span className="text-[10px] text-muted-foreground truncate" dir="rtl">
+                  {workerAddress || (sortByDistance ? 'جارٍ تحديد الموقع...' : 'فعّل الترتيب لعرض موقعك')}
+                </span>
+              </div>
             </div>
           </div>
 
