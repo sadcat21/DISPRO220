@@ -394,7 +394,10 @@ const LoadStock: React.FC = () => {
         sessionStatus = sessionData?.status || undefined;
       }
 
-      if (sessionStatus === 'review') {
+      if (sessionStatus === 'unloaded') {
+        // Unloading sessions don't have discrepancies - skip detection
+        setViewReviewDiscrepancies([]);
+      } else if (sessionStatus === 'review') {
         const { data: discData, error: discError } = await supabase
           .from('stock_discrepancies')
           .select('*, product:products(name, pieces_per_box)')
@@ -448,11 +451,17 @@ const LoadStock: React.FC = () => {
       const productMap: Record<string, string[]> = {};
       const fallbackDiscrepancyMap: Record<string, { deficit: number; surplus: number }> = {};
 
+      // Build a set of unloaded session IDs to skip discrepancy detection
+      const unloadedSessionIds = new Set(sessions.filter(s => s.status === 'unloaded').map(s => s.id));
+
       (itemsData || []).forEach((item: any) => {
         if (!productMap[item.session_id]) productMap[item.session_id] = [];
         if (!productMap[item.session_id].includes(item.product_id)) {
           productMap[item.session_id].push(item.product_id);
         }
+
+        // Skip discrepancy detection for unloaded sessions
+        if (unloadedSessionIds.has(item.session_id)) return;
 
         const note = String(item.notes || '').trim();
         const diff = Number((Number(item.quantity || 0) - Number(item.previous_quantity || 0)).toFixed(2));
