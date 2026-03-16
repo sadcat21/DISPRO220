@@ -1533,6 +1533,19 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                 </TabsList>
 
                 <TabsContent value="not-delivered" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
+                  {deliveryNotDone.length > 0 && (
+                    <div className="p-2 border-b">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full gap-2 text-amber-700 border-amber-300 hover:bg-amber-50"
+                        onClick={() => setShowBulkPostpone(true)}
+                      >
+                        <CalendarClock className="w-4 h-4" />
+                        تأجيل جماعي ({deliveryNotDone.length} عميل)
+                      </Button>
+                    </div>
+                  )}
                   <CustomerList customers={deliveryNotDone} emptyMessage="تم توصيل جميع العملاء ✓" onCustomerClick={handleDeliveryCustomerClick} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} onDebtRefused={handleDeliveryDebtRefused} showVisitButton visitButtonLabel="بدون تسليم" showActionButtons checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} />
                 </TabsContent>
                 <TabsContent value="not-received" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
