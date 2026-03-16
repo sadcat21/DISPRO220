@@ -79,9 +79,11 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   const hasSpecificWorker = !!(targetWorkerId || selectedAdminWorkerId);
   const scopedBranchId = useMemo(() => {
     if (!activeBranch?.id) return null;
-    if (role === 'admin' && hasSpecificWorker) return null;
+    // Bypass branch filter when viewing a specific worker's data (admin tracking)
+    // or when the worker views their own data (already scoped by worker via sector_schedules & assigned_worker_id)
+    if (hasSpecificWorker || !isAdmin) return null;
     return activeBranch.id;
-  }, [activeBranch?.id, role, hasSpecificWorker]);
+  }, [activeBranch?.id, isAdmin, hasSpecificWorker]);
 
   const todayStart = useMemo(() => {
     const d = new Date();
