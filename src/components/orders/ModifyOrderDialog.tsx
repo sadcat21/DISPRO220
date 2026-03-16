@@ -459,21 +459,29 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
         changes.push({ عملية: 'تغيير تاريخ التوصيل', تاريخ_جديد: deliveryDate ? format(deliveryDate, 'yyyy-MM-dd') : 'بدون' });
       }
 
-      // Update payment type if changed
+      // Update payment type / pricing tier if changed
       if (paymentTypeChanged || invoiceMethodChanged || priceSubTypeChanged) {
         orderUpdate.payment_type = paymentType;
         orderUpdate.invoice_payment_method = paymentType === 'with_invoice' ? (invoicePaymentMethod || null) : null;
         changes.push({ عملية: 'تغيير طريقة الدفع', نوع: paymentType, طريقة_فرعية: invoicePaymentMethod || 'بدون', تسعير: priceSubType });
 
-        // Update price_subtype on all order items
+        // Update price_subtype AND recalculated prices on all order items
         const newSubtype = paymentType === 'with_invoice' ? 'invoice' : priceSubType;
-        await supabase.from('order_items')
-          .update({ 
-            price_subtype: newSubtype,
-            payment_type: paymentType,
-            invoice_payment_method: paymentType === 'with_invoice' ? (invoicePaymentMethod || null) : null,
-          })
-          .eq('order_id', order.id);
+        for (const item of items) {
+          if (!item.id) continue; // new items handled separately
+          const paidQty = Math.max(0, item.new_quantity - (item.gift_quantity || 0));
+          const multiplier = getBoxMultiplier(item.pricing_unit, item.weight_per_box, item.pieces_per_box);
+          const boxPrice = item.unit_price * multiplier;
+          await supabase.from('order_items')
+            .update({ 
+              price_subtype: newSubtype,
+              payment_type: paymentType,
+              invoice_payment_method: paymentType === 'with_invoice' ? (invoicePaymentMethod || null) : null,
+              unit_price: boxPrice,
+              total_price: paidQty * boxPrice,
+            })
+            .eq('id', item.id);
+        }
       }
 
       // Update paid/remaining amounts for delivered orders
@@ -723,8 +731,15 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
         }
       }
 
-      // Update receipt if payment amounts changed (so reprinted receipts reflect the change)
-      if (paymentAmountChanged || paymentTypeChanged || invoiceMethodChanged) {
+      // Update receipt if anything changed (so reprinted receipts reflect the change)
+      const shouldUpdateReceipt = paymentAmountChanged || paymentTypeChanged || invoiceMethodChanged || priceSubTypeChanged || productChanges.length > 0;
+      if (shouldUpdateReceipt) {
+        // Re-fetch updated order items for receipt sync
+        const { data: freshItems } = await supabase
+          .from('order_items')
+          .select('*, product:products(name)')
+          .eq('order_id', order.id);
+
         const receiptUpdate: Record<string, any> = {};
         if (paymentAmountChanged) {
           receiptUpdate.paid_amount = adjustPaidAmount;
@@ -732,6 +747,22 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
         }
         if (paymentTypeChanged || invoiceMethodChanged) {
           receiptUpdate.payment_method = paymentType === 'with_invoice' ? (invoicePaymentMethod || 'cash') : 'cash';
+        }
+        // Always update receipt items and total when items/prices change
+        if (freshItems && freshItems.length > 0) {
+          const receiptItems = freshItems.map((fi: any) => ({
+            product_id: fi.product_id,
+            product_name: fi.product?.name || '',
+            quantity: fi.quantity,
+            gift_quantity: fi.gift_quantity || 0,
+            unit_price: fi.unit_price,
+            total_price: fi.total_price,
+            pricing_unit: fi.pricing_unit || 'box',
+            weight_per_box: fi.weight_per_box || 1,
+            pieces_per_box: fi.pieces_per_box || 1,
+          }));
+          receiptUpdate.items = receiptItems;
+          receiptUpdate.total_amount = newTotal;
         }
         if (Object.keys(receiptUpdate).length > 0) {
           await supabase.from('receipts')
