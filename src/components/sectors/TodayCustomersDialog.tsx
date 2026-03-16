@@ -103,23 +103,28 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     const now = new Date();
     const currentJsDay = now.getDay();
     const targetJsDay = NAME_TO_JS_DAY[selectedDay] ?? currentJsDay;
-    
+
     // Calculate the Saturday-based week start
     const daysFromSaturday = currentJsDay === 6 ? 0 : currentJsDay + 1;
     const weekStart = new Date(now);
     weekStart.setDate(now.getDate() - daysFromSaturday);
     weekStart.setHours(0, 0, 0, 0);
-    
+
     // Calculate target day offset from Saturday
     const targetOffset = targetJsDay === 6 ? 0 : targetJsDay + 1;
     const targetDate = new Date(weekStart);
     targetDate.setDate(weekStart.getDate() + targetOffset);
-    
+
     const start = new Date(targetDate);
     start.setHours(0, 0, 0, 0);
     const end = new Date(targetDate);
     end.setHours(23, 59, 59, 999);
-    return { start: start.toISOString(), end: end.toISOString() };
+
+    return {
+      start: start.toISOString(),
+      end: end.toISOString(),
+      weekStart: weekStart.toISOString(),
+    };
   }, [selectedDay]);
 
   // Sub-dialog states
@@ -748,14 +753,14 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   }, [customers, preventeDeliverySectors]);
 
   const { data: salesRepStatuses = [] } = useQuery({
-    queryKey: ['sales-rep-statuses-for-prevente', salesWorkerIds, preventeCustomerIds, selectedDayBounds.start, selectedDayBounds.end],
+    queryKey: ['sales-rep-statuses-for-prevente', salesWorkerIds, preventeCustomerIds, selectedDayBounds.weekStart, selectedDayBounds.end],
     queryFn: async () => {
       if (salesWorkerIds.length === 0 || preventeCustomerIds.length === 0) return [];
 
       const { data, error } = await (supabase as any).rpc('get_customer_sales_rep_statuses', {
         p_worker_ids: salesWorkerIds,
         p_customer_ids: preventeCustomerIds,
-        p_start: selectedDayBounds.start,
+        p_start: selectedDayBounds.weekStart,
         p_end: selectedDayBounds.end,
       });
 
@@ -810,9 +815,9 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
       if (todaySalesSectorIds.has(c.sector_id)) return false;
       if (deliveryCustomerIdsWithOrders.has(c.id) || deliveredCustomerIds.has(c.id)) return false;
       if (salesWorkerOrderedCustomerIds.has(c.id)) return false;
-      // Only show customers NOT successfully visited by sales rep
+      // Show only customers that are truly not visited by sales rep
       const repStatus = salesRepStatusMap.get(c.id);
-      if (repStatus === 'visited') return false;
+      if (repStatus && repStatus !== 'not_visited') return false;
       return true;
     });
     
