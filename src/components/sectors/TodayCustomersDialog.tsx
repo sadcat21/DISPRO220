@@ -1815,6 +1815,13 @@ const CustomerList: React.FC<{
                 zone_name: zone ? getLocalizedName(zone, language) : undefined,
               }}
              />
+             {liveDistanceMap.has(c.id) && (
+               <Badge className="text-[9px] px-1.5 py-0 h-4 bg-yellow-400 text-black border-0 font-medium">
+                 📍 {liveDistanceMap.get(c.id)! >= 1000
+                   ? `${(liveDistanceMap.get(c.id)! / 1000).toFixed(1)} كم`
+                   : `${liveDistanceMap.get(c.id)!} م`}
+               </Badge>
+             )}
              {salesRepStatusMap && salesRepStatusMap.has(c.id) && (() => {
                const status = salesRepStatusMap.get(c.id);
                if (status === 'not_visited') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-amber-100 text-amber-700 border-0">بدون زيارة</Badge>;
