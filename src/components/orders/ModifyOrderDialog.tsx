@@ -74,9 +74,15 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
   const [invoicePaymentMethod, setInvoicePaymentMethod] = useState<InvoicePaymentMethod | null>((order.invoice_payment_method as InvoicePaymentMethod) || null);
   const [priceSubType, setPriceSubType] = useState<PriceSubType>('gros');
 
-  // Payment adjustment for delivered orders
-  const [adjustPaidAmount, setAdjustPaidAmount] = useState<number>(Number((order as any).paid_amount || order.total_amount || 0));
-  const [adjustRemainingAmount, setAdjustRemainingAmount] = useState<number>(Number((order as any).remaining_amount || 0));
+  // Payment adjustment for delivered orders — use partial_amount (actual DB column)
+  const initPaid = (() => {
+    const ps = String(order.payment_status || '').toLowerCase();
+    if (ps === 'partial' && order.partial_amount != null) return Number(order.partial_amount);
+    if (['pending', 'credit'].includes(ps)) return 0;
+    return Number(order.total_amount || 0);
+  })();
+  const [adjustPaidAmount, setAdjustPaidAmount] = useState<number>(initPaid);
+  const [adjustRemainingAmount, setAdjustRemainingAmount] = useState<number>(Math.max(0, Number(order.total_amount || 0) - initPaid));
 
   const canChangeWorker = role === 'admin' || role === 'branch_admin' || order.created_by === workerId;
 
