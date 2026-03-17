@@ -1477,7 +1477,7 @@ const MyDeliveries: React.FC = () => {
           </div>
           <div className="p-3 border-t flex gap-2 justify-end">
             <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>
-              إغلاق
+              {t('common.close')}
             </Button>
             <Button onClick={() => {
               setShowPreviewDialog(false);
