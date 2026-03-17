@@ -355,7 +355,7 @@ const WorkerHome: React.FC = () => {
           }
           // Worker Actions for regular workers (self-view)
           if (!isSupervisor && !isWorkerActionsHidden) {
-            quickActions.push({ key: 'worker-actions', icon: <HardHat className="w-6 h-6" />, label: 'إجراءاتي', onClick: () => navigate('/worker-actions') });
+            quickActions.push({ key: 'worker-actions', icon: <HardHat className="w-6 h-6" />, label: t('worker.my_actions'), onClick: () => navigate('/worker-actions') });
           }
 
           const colorSchemes: Record<string, { bg: string; iconBg: string; iconColor: string; text: string; border: string }> = {
