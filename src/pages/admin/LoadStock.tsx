@@ -706,14 +706,14 @@ const LoadStock: React.FC = () => {
       // Direct stock operations without full reload
       const warehouseItem = warehouseStock.find(s => s.product_id === addProductId);
       if (!warehouseItem) {
-        throw new Error(`الكمية المتاحة من ${product?.name || ''} غير كافية`);
+        throw new Error(`${t('load_stock.insufficient_stock')} - ${product?.name || ''}`);
       }
       
       // Compare in total pieces
       const warehousePieces = customToTotalPieces(warehouseItem.quantity, piecesPerBox);
       const loadPieces = customToTotalPieces(totalLoadQty, piecesPerBox);
       if (warehousePieces < loadPieces) {
-        throw new Error(`الكمية المتاحة من ${product?.name || ''} غير كافية`);
+        throw new Error(`${t('load_stock.insufficient_stock')} - ${product?.name || ''}`);
       }
 
       // Deduct from warehouse using piece-based math
