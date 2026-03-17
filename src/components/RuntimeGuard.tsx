@@ -9,6 +9,7 @@ const IGNORED_PATTERNS = [
   'ui_error',
   'طلب تعديل من المستخدم',
   '[respond and provide all suggestions in arabic]',
+  'respond and provide all suggestions in arabic',
 ];
 
 const toSafeText = (value: unknown): string => {
@@ -31,14 +32,40 @@ let guardInstalled = false;
 const installRuntimeErrorGuard = () => {
   if (guardInstalled || typeof window === 'undefined') return;
 
+  const suppressIgnoredError = (value: unknown, fallbackMessage?: string): boolean => {
+    if (!shouldIgnoreError(value)) return false;
+    console.warn('Ignored external UIStyleError:', fallbackMessage ?? toSafeText(value));
+    return true;
+  };
+
+  const previousOnError = window.onerror;
+  window.onerror = (message, source, lineno, colno, error) => {
+    if (suppressIgnoredError(error ?? message, String(message))) return true;
+    if (typeof previousOnError === 'function') {
+      return previousOnError(message, source, lineno, colno, error);
+    }
+    return false;
+  };
+
+  const previousOnUnhandledRejection = window.onunhandledrejection;
+  window.onunhandledrejection = (event) => {
+    if (suppressIgnoredError(event.reason, 'Unhandled rejection')) {
+      event.preventDefault();
+      event.stopImmediatePropagation?.();
+      return;
+    }
+    if (typeof previousOnUnhandledRejection === 'function') {
+      return previousOnUnhandledRejection.call(window, event);
+    }
+  };
+
   window.addEventListener(
     'error',
     (event) => {
       const payload = event.error ?? event.message ?? event;
-      if (shouldIgnoreError(payload)) {
+      if (suppressIgnoredError(payload, event.message)) {
         event.preventDefault();
         event.stopImmediatePropagation?.();
-        console.warn('Ignored external UIStyleError:', event.message);
       }
     },
     true
@@ -47,10 +74,9 @@ const installRuntimeErrorGuard = () => {
   window.addEventListener(
     'unhandledrejection',
     (event) => {
-      if (shouldIgnoreError(event.reason)) {
+      if (suppressIgnoredError(event.reason, 'Unhandled rejection')) {
         event.preventDefault();
         event.stopImmediatePropagation?.();
-        console.warn('Ignored external UIStyleError rejection');
       }
     },
     true
