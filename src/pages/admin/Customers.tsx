@@ -799,11 +799,11 @@ const Customers: React.FC = () => {
           {sectorZones.length > 0 && sectorFilter !== 'all' && sectorFilter !== 'none' && (
             <Select value={zoneFilter} onValueChange={setZoneFilter}>
               <SelectTrigger className="flex-1 h-8 text-xs">
-                <SelectValue placeholder="كل المناطق" />
+                <SelectValue placeholder={t('customers.all_areas')} />
               </SelectTrigger>
               <SelectContent className="bg-popover z-[100]">
-                <SelectItem value="all">كل المناطق</SelectItem>
-                <SelectItem value="none">بدون منطقة ({filteredByBranch.filter(c => c.sector_id === sectorFilter && !c.zone_id).length})</SelectItem>
+                <SelectItem value="all">{t('customers.all_areas')}</SelectItem>
+                <SelectItem value="none">{t('customers.no_sector')} ({filteredByBranch.filter(c => c.sector_id === sectorFilter && !c.zone_id).length})</SelectItem>
                 {sectorZones.map(z => {
                   const count = filteredByBranch.filter(c => c.zone_id === z.id).length;
                   return <SelectItem key={z.id} value={z.id}>{getLocalizedName(z, language)} ({count})</SelectItem>;
