@@ -128,11 +128,11 @@ const CustomerDebts: React.FC = () => {
           <TabsList className="w-full h-10 p-1 bg-muted/60">
             <TabsTrigger value="debts" className="flex-1 gap-1.5 data-[state=active]:shadow-sm">
               <Banknote className="w-4 h-4" />
-              <span className="text-xs font-bold">الديون</span>
+              <span className="text-xs font-bold">{t('debts.debts_tab')}</span>
             </TabsTrigger>
             <TabsTrigger value="documents" className="flex-1 gap-1.5 data-[state=active]:shadow-sm">
               <FileCheck className="w-4 h-4" />
-              <span className="text-xs font-bold">المستندات المعلقة</span>
+              <span className="text-xs font-bold">{t('debts.pending_documents')}</span>
             </TabsTrigger>
           </TabsList>
 
