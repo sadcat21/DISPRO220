@@ -375,7 +375,7 @@ const GeoOperations: React.FC = () => {
                     <div className="mt-3 mr-12 space-y-2">
                       <p className="text-[10px] font-bold text-muted-foreground flex items-center gap-1">
                         <User className="w-3 h-3" />
-                        عملاء قريبون (500م):
+                        {t('geo.nearby_customers')}
                       </p>
                       <div className="flex gap-1.5 flex-wrap">
                         {nearbyCustomers.map(customer => (
