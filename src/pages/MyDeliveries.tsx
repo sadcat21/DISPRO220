@@ -74,7 +74,7 @@ const MyDeliveries: React.FC = () => {
   const { data: workerPrintInfo } = useWorkerPrintInfo(workerId);
   const { activeOffers } = useProductOffers();
   
-  const [activeTab, setActiveTab] = useState<TabStatus>('assigned');
+  const [activeTab, setActiveTab] = useState<TabStatus>('all');
   const [deliveryType, setDeliveryType] = useState<DeliveryType>('orders');
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
