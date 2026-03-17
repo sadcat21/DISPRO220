@@ -251,10 +251,10 @@ const DailyReceipts: React.FC = () => {
           {isAdmin && (
             <Select value={filterWorkerId} onValueChange={setFilterWorkerId}>
               <SelectTrigger className="h-8 text-xs flex-1">
-                <SelectValue placeholder="كل العمال" />
+                <SelectValue placeholder={t('receipts.all_workers')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">كل العمال</SelectItem>
+                <SelectItem value="all">{t('receipts.all_workers')}</SelectItem>
                 {workers?.filter(w => w.id).map(w => (
                   <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>
                 ))}
