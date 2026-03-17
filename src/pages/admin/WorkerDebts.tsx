@@ -228,7 +228,7 @@ const WorkerDebtsPage: React.FC = () => {
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <Label>العامل</Label>
+              <Label>{t('worker_debts.worker')}</Label>
               {loadingWorkers ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
