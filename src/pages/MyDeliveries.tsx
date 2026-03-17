@@ -1041,7 +1041,7 @@ const MyDeliveries: React.FC = () => {
               return (
                 <div className="text-center py-12 text-muted-foreground">
                   <CalendarClock className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">لا توجد طلبيات مؤجلة</p>
+                  <p className="text-sm">{t('deliveries.no_postponed')}</p>
                 </div>
               );
             }
