@@ -874,7 +874,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
         customerSurplusAmount: paymentData.overpaymentAction && paymentData.overpaymentAction !== 'refund' && paymentData.overpaymentAmount ? paymentData.overpaymentAmount : undefined,
       });
       setShowReceiptDialog(true);
-      onOpenChange(false);
+      // Don't close main dialog here — wait for receipt to be dismissed
     } catch (error: any) {
       console.error('Delivery sale error:', error);
       toast.error(error.message || t('common.error'));
