@@ -272,7 +272,7 @@ const GeoOperations: React.FC = () => {
         <Card>
           <CardContent className="p-8 text-center text-muted-foreground">
             <MapPin className="w-10 h-10 mx-auto mb-2 opacity-30" />
-            <p>لا توجد عمليات مسجلة في هذه الفترة</p>
+            <p>{t('geo.no_operations')}</p>
           </CardContent>
         </Card>
       ) : (
