@@ -1249,23 +1249,23 @@ const LoadStock: React.FC = () => {
                         </div>
                         <div className={`grid ${hasGifts ? 'grid-cols-8' : 'grid-cols-7'} gap-0.5 text-[9px]`}>
                           <div className="bg-muted/50 rounded p-0.5 text-center">
-                            <div className="text-muted-foreground text-[7px]">المتبقي</div>
+                            <div className="text-muted-foreground text-[7px]">{t('load_stock.remaining')}</div>
                             <div className="font-bold">{fmtQty(oldStock)}</div>
                           </div>
                           <div className="bg-blue-50 dark:bg-blue-950/30 rounded p-0.5 text-center">
-                            <div className="text-muted-foreground text-[7px]">شحن</div>
+                            <div className="text-muted-foreground text-[7px]">{t('load_stock.loaded')}</div>
                             <div className="font-bold text-blue-600 dark:text-blue-400">{fmtQty((workerLoadedData || {})[s.product_id] || 0)}</div>
                           </div>
                           <div className="bg-orange-50 dark:bg-orange-950/30 rounded p-0.5 text-center">
-                            <div className="text-muted-foreground text-[7px]">بدون محاسبة</div>
+                            <div className="text-muted-foreground text-[7px]">{t('load_stock.without_accounting')}</div>
                             <div className="font-bold text-orange-600 dark:text-orange-400">{fmtQty((workerLoadedSinceAccounting || {})[s.product_id] || 0)}</div>
                           </div>
                           <div className="bg-primary/5 rounded p-0.5 text-center">
-                            <div className="text-muted-foreground text-[7px]">جديد</div>
+                            <div className="text-muted-foreground text-[7px]">{t('load_stock.new_load')}</div>
                             <div className="font-bold text-primary">{loadedBoxes > 0 ? `+${fmtQty(loadedBoxes)}` : '—'}</div>
                           </div>
                           <div className="bg-muted/50 rounded p-0.5 text-center">
-                            <div className="text-muted-foreground text-[7px]">الكلي</div>
+                            <div className="text-muted-foreground text-[7px]">{t('load_stock.total')}</div>
                             <div className="font-bold">{fmtQty(s.current_stock)}</div>
                           </div>
                           <div className="bg-muted/50 rounded p-0.5 text-center">
