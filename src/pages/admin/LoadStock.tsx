@@ -781,7 +781,7 @@ const LoadStock: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['my-worker-stock'] });
       queryClient.invalidateQueries({ queryKey: ['worker-truck-stock'] });
 
-      toast.success(`تم شحن ${product?.name || ''} بنجاح`);
+      toast.success(t('load_stock.loaded_success'));
       setShowAddProductDialog(false);
     } catch (err: any) {
       toast.error(err.message);
