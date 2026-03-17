@@ -115,7 +115,7 @@ const DailyReceipts: React.FC = () => {
         order_id: o.id,
         debt_id: null,
         customer_id: o.customer_id,
-        customer_name: (o as any).customer?.name || 'غير معروف',
+        customer_name: (o as any).customer?.name || t('receipts.unknown'),
         customer_phone: (o as any).customer?.phone || null,
         worker_id: o.assigned_worker_id || o.created_by,
         worker_name: (o as any).assigned_worker?.full_name || '',
