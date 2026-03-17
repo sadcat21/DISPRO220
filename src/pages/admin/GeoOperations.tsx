@@ -274,7 +274,7 @@ const GeoOperations: React.FC = () => {
         </Card>
       ) : (
         <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">{visits.length} عملية</p>
+          <p className="text-sm text-muted-foreground">{visits.length} {t('geo.operation_count')}</p>
           {visits.map(visit => {
             const Icon = OPERATION_ICONS[visit.operation_type] || MapPin;
             const colorClass = OPERATION_COLORS[visit.operation_type] || 'bg-muted text-muted-foreground';
