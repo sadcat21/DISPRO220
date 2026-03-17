@@ -351,7 +351,7 @@ const WorkerHome: React.FC = () => {
           }
           // Worker Actions for supervisor
           if (isSupervisor && !isWorkerActionsHidden) {
-            quickActions.push({ key: 'worker-actions', icon: <HardHat className="w-6 h-6" />, label: 'إجراءات العمال', onClick: () => navigate('/worker-actions') });
+            quickActions.push({ key: 'worker-actions', icon: <HardHat className="w-6 h-6" />, label: t('worker.worker_actions'), onClick: () => navigate('/worker-actions') });
           }
           // Worker Actions for regular workers (self-view)
           if (!isSupervisor && !isWorkerActionsHidden) {
