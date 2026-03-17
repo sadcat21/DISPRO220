@@ -619,7 +619,7 @@ const WorkerActions: React.FC = () => {
               {truckStock.length === 0 ? (
                 <div className="py-8 text-center text-muted-foreground">
                   <Package className="w-10 h-10 mx-auto mb-2 opacity-40" />
-                  <p>لا يوجد رصيد في الشاحنة</p>
+                  <p>{t('worker_actions.no_truck_stock')}</p>
                 </div>
               ) : (
                 <div className="grid gap-2">
