@@ -399,7 +399,8 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
         if (item.id && (item.new_quantity !== item.original_quantity || item.item_subtype !== undefined)) {
           if (item.new_quantity === 0) {
             // Delete the item
-            await supabase.from('order_items').delete().eq('id', item.id);
+            const { error: delErr } = await supabase.from('order_items').delete().eq('id', item.id);
+            if (delErr) throw new Error('فشل حذف المنتج: ' + delErr.message);
             changes.push({
               منتج: item.product_name,
               كمية_سابقة: item.original_quantity,
@@ -413,7 +414,7 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
             const paidQty = Math.max(0, item.new_quantity - (item.gift_quantity || 0));
             const multiplier = getBoxMultiplier(item.pricing_unit, item.weight_per_box, item.pieces_per_box);
             const boxPrice = item.unit_price * multiplier;
-            await supabase.from('order_items')
+            const { error: updErr } = await supabase.from('order_items')
               .update({
                 quantity: item.new_quantity,
                 gift_quantity: item.gift_quantity || 0,
@@ -424,6 +425,7 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
                 invoice_payment_method: itemInvMethod,
               })
               .eq('id', item.id);
+            if (updErr) throw new Error('فشل تحديث المنتج: ' + updErr.message);
             changes.push({
               منتج: item.product_name,
               كمية_سابقة: item.original_quantity,
