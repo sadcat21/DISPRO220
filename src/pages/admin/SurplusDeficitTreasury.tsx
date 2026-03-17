@@ -105,15 +105,15 @@ const SurplusDeficitTreasury: React.FC = () => {
         <TabsList className="w-full">
           <TabsTrigger value="cash" className="flex-1 gap-1.5">
             <Banknote className="w-4 h-4" />
-            الخزينة
+            {t('surplus.treasury_tab')}
           </TabsTrigger>
           <TabsTrigger value="customers" className="flex-1 gap-1.5">
             <Users className="w-4 h-4" />
-            فائض العملاء
+            {t('surplus.customer_surplus_tab')}
           </TabsTrigger>
           <TabsTrigger value="stock" className="flex-1 gap-1.5">
             <Package className="w-4 h-4" />
-            المخزون
+            {t('surplus.stock_tab')}
           </TabsTrigger>
         </TabsList>
 
