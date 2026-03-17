@@ -235,15 +235,15 @@ const StockReceipts: React.FC = () => {
       )}
 
       {branchId && (
-        <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl">
+        <Tabs value={activeTab} onValueChange={setActiveTab} dir={language === 'ar' ? 'rtl' : 'ltr'}>
           <TabsList className="w-full grid grid-cols-2">
             <TabsTrigger value="receiving" className="gap-1.5">
               <ArrowDownToLine className="w-4 h-4" />
-              استلام
+              {t('stock_receipts.receiving')}
             </TabsTrigger>
             <TabsTrigger value="sending" className="gap-1.5">
               <ArrowUpFromLine className="w-4 h-4" />
-              تسليم
+              {t('stock_receipts.sending')}
             </TabsTrigger>
           </TabsList>
 
