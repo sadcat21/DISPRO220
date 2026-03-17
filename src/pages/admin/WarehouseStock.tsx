@@ -267,22 +267,22 @@ const WarehouseStock: React.FC = () => {
         <div className="flex items-center gap-2 flex-wrap">
           <Button size="sm" variant="outline" onClick={() => setShowReviewDialog(true)}>
             <ClipboardCheck className="w-4 h-4 ml-1" />
-            مراجعة
+            {t('warehouse.review')}
           </Button>
           <Button size="sm" variant="outline" onClick={() => navigate('/stock-receipts')}>
             <ClipboardList className="w-4 h-4 ml-1" />
-            استلام وتسليم
+            {t('warehouse.receipt_delivery')}
           </Button>
           {!isFactoryDeliveryHidden && (
             <Button size="sm" variant="outline" onClick={() => setShowReceiptDialog(true)}>
               <ClipboardList className="w-4 h-4 ml-1" />
-              استلام
+              {t('warehouse.receipt')}
             </Button>
           )}
           {!isQuickLoadHidden && (
             <Button size="sm" variant="outline" onClick={() => setShowLoadWorkerDialog(true)}>
               <Truck className="w-4 h-4 ml-1" />
-              شحن عامل
+              {t('warehouse.load_worker')}
             </Button>
           )}
           {hasStock && !isDirectSaleHidden && (
@@ -299,11 +299,11 @@ const WarehouseStock: React.FC = () => {
         <TabsList className="w-full grid grid-cols-2">
           <TabsTrigger value="stock" className="text-xs gap-1">
             <Package className="w-3.5 h-3.5" />
-            المخزون
+            {t('warehouse.stock_tab')}
           </TabsTrigger>
           <TabsTrigger value="review" className="text-xs gap-1">
             <ClipboardCheck className="w-3.5 h-3.5" />
-            المراجعات
+            {t('warehouse.reviews_tab')}
           </TabsTrigger>
         </TabsList>
 
