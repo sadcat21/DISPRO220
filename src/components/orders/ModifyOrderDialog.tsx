@@ -634,9 +634,10 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
       }
 
       if (Object.keys(orderUpdate).length > 0) {
-        await supabase.from('orders')
+        const { error: orderErr } = await supabase.from('orders')
           .update(orderUpdate)
           .eq('id', order.id);
+        if (orderErr) throw new Error('فشل تحديث الطلبية: ' + orderErr.message);
       }
 
       // Update worker_stock for delivered orders when quantities change
