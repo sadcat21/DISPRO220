@@ -19,23 +19,13 @@ Deno.serve(async (req) => {
     const now = new Date();
     const algeriaOffset = 1; // UTC+1
     const algeriaTime = new Date(now.getTime() + algeriaOffset * 60 * 60 * 1000);
-    const algeriaHour = algeriaTime.getUTCHours();
-
-    // Only run after 11 PM Algeria time (23:00)
-    if (algeriaHour < 23) {
-      return new Response(
-        JSON.stringify({ message: "Not yet 11 PM Algeria time", algeriaHour }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Today's date in Algeria timezone (YYYY-MM-DD)
     const todayStr = algeriaTime.toISOString().split("T")[0];
 
-    // Find undelivered orders with delivery_date = today or earlier
+    // Find undelivered orders where delivery_date = today or earlier
+    // (orders manually postponed to a future date won't match since their delivery_date > today)
     const { data: overdueOrders, error: fetchError } = await supabase
       .from("orders")
-      .select("id, delivery_date")
+      .select("id, delivery_date, postpone_count")
       .in("status", ["pending", "assigned", "in_progress"])
       .lte("delivery_date", todayStr)
       .not("delivery_date", "is", null);
@@ -62,24 +52,31 @@ Deno.serve(async (req) => {
 
     const nextWorkDay = getNextWorkDay(todayStr);
 
-    // Update all overdue orders to next working day
-    const orderIds = overdueOrders.map((o) => o.id);
-    const { error: updateError } = await supabase
-      .from("orders")
-      .update({ delivery_date: nextWorkDay })
-      .in("id", orderIds);
+    // Update each order: set next work day + increment postpone_count
+    let updatedCount = 0;
+    for (const order of overdueOrders) {
+      const { error: updateError } = await supabase
+        .from("orders")
+        .update({
+          delivery_date: nextWorkDay,
+          postpone_count: (order.postpone_count || 0) + 1,
+        })
+        .eq("id", order.id);
 
-    if (updateError) throw updateError;
+      if (updateError) {
+        console.error(`Failed to update order ${order.id}:`, updateError);
+      } else {
+        updatedCount++;
+      }
+    }
 
-    // Log the auto-postpone action
-    console.log(`Auto-postponed ${orderIds.length} orders to ${nextWorkDay}`);
+    console.log(`Auto-postponed ${updatedCount} orders to ${nextWorkDay}`);
 
     return new Response(
       JSON.stringify({
-        message: `Auto-postponed ${orderIds.length} orders to ${nextWorkDay}`,
-        count: orderIds.length,
+        message: `Auto-postponed ${updatedCount} orders to ${nextWorkDay}`,
+        count: updatedCount,
         nextWorkDay,
-        orderIds,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

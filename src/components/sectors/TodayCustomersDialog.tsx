@@ -2165,6 +2165,7 @@ const CustomerList: React.FC<{
   workerPosition?: { lat: number; lng: number } | null;
   sortByDistance?: boolean;
   postponedBadgeIds?: Set<string>;
+  postponeCountMap?: Map<string, number>;
 }> = ({ customers, emptyMessage, onCustomerClick, onVisitWithoutOrder, onClosed, onUnavailable, onDebtRefused, onNoSale, onPrint, onPostpone, showVisitButton, visitButtonLabel, showActionButtons, showPrintButton, showNoSaleButton, checkingLocationFor, loadingFor, searchQuery, sectors, allZones, salesRepStatusMap, deliveryTimeMap, timeMap, distanceMap, workerPosition, sortByDistance, postponedBadgeIds }) => {
   const { language } = useLanguage();
 
