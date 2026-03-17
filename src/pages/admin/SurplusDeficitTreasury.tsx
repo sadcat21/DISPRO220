@@ -12,7 +12,7 @@ const fmt = (n: number) => n.toLocaleString();
 
 const SurplusDeficitTreasury: React.FC = () => {
   const { activeBranch } = useAuth();
-  const { dir } = useLanguage();
+  const { dir, t } = useLanguage();
 
   // Fetch cash surplus/deficit from manager_treasury
   const { data: cashEntries = [] } = useQuery({
