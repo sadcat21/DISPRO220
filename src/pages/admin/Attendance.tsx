@@ -225,7 +225,7 @@ const Attendance: React.FC = () => {
                           {clockOut.distance_meters != null && (
                             <div className="flex items-center gap-1">
                               <MapPin className="w-3 h-3 text-muted-foreground" />
-                              <span className="text-[11px] text-muted-foreground">{Math.round(clockOut.distance_meters)} م</span>
+                              <span className="text-[11px] text-muted-foreground">{Math.round(clockOut.distance_meters)} {t('attendance.meters')}</span>
                             </div>
                           )}
                         </>
