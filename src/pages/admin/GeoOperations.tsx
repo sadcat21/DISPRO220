@@ -44,6 +44,8 @@ const WAREHOUSE_LOCATION = { lat: 35.90775, lng: 0.10253 };
 
 const GeoOperations: React.FC = () => {
   const { activeBranch } = useAuth();
+  const { t, language, dir } = useLanguage();
+  const getDateLocale = () => language === 'fr' ? fr : language === 'en' ? enUS : ar;
   const today = new Date().toISOString().split('T')[0];
   const [dateFrom, setDateFrom] = useState(today);
   const [dateTo, setDateTo] = useState(today);
