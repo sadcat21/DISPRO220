@@ -173,7 +173,7 @@ const Attendance: React.FC = () => {
                     </div>
                   </div>
                   <Badge variant="secondary" className="text-[10px] rounded-lg px-2 py-0.5">
-                    {group.logs.length} سجل
+                    {group.logs.length} {t('attendance.record')}
                   </Badge>
                 </div>
 
