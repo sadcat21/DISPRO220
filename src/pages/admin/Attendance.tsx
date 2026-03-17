@@ -1,13 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { useAllAttendance } from '@/hooks/useAttendance';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { CalendarDays, Clock, MapPin, ChevronRight, ChevronLeft, LogIn, LogOut, Users, ListChecks, Timer, Settings2, UserCog } from 'lucide-react';
 import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { ar, fr, enUS } from 'date-fns/locale';
 import AttendanceSettingsDialog from '@/components/attendance/AttendanceSettingsDialog';
 import WorkerAttendanceLocationDialog from '@/components/attendance/WorkerAttendanceLocationDialog';
 
