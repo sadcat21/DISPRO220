@@ -104,10 +104,10 @@ const WorkerHome: React.FC = () => {
   });
 
   const todayCustomersLabel = useMemo(() => {
-    const parts = ['عملاء اليوم', todayDayAr];
+    const parts = [t('worker.today_customers'), todayDayLabel];
     if (todaySectorNames.length > 0) parts.push(todaySectorNames.join(' / '));
     return parts.join(' — ');
-  }, [todayDayAr, todaySectorNames]);
+  }, [todayDayLabel, todaySectorNames]);
 
   const { data: stockItems } = useQuery({
     queryKey: ['my-worker-stock', workerId],
