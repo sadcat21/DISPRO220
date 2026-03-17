@@ -826,7 +826,7 @@ const MyDeliveries: React.FC = () => {
                       variant="outline"
                       className="h-8 w-8 text-amber-600 border-amber-300 hover:bg-amber-50"
                       onClick={() => setPostponeOrderId(order.id)}
-                      title="تأجيل"
+                      title={t('deliveries.postpone')}
                     >
                       <CalendarClock className="w-4 h-4" />
                     </Button>
