@@ -1144,13 +1144,29 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     return [];
   };
 
+  const resolveOrderPayment = (order: any, isOrderRequest: boolean) => {
+    const totalAmount = Number(order.total_amount || 0);
+    const paymentStatus = order.payment_status;
+    const partialAmount = order.partial_amount != null ? Number(order.partial_amount) : null;
+
+    if (isOrderRequest) return { paidAmount: 0, remainingAmount: totalAmount };
+    if (paymentStatus === 'payment_pending' || paymentStatus === 'no_payment') return { paidAmount: 0, remainingAmount: totalAmount };
+    if (paymentStatus === 'payment_partial' && partialAmount != null) return { paidAmount: partialAmount, remainingAmount: Math.max(0, totalAmount - partialAmount) };
+    if (paymentStatus === 'payment_full' || paymentStatus === 'paid') return { paidAmount: totalAmount, remainingAmount: 0 };
+    // fallback: try remaining_amount if available (e.g. from receipt)
+    if (order.remaining_amount != null) {
+      const rem = Number(order.remaining_amount);
+      return { paidAmount: totalAmount - rem, remainingAmount: rem };
+    }
+    return { paidAmount: totalAmount, remainingAmount: 0 };
+  };
+
   const buildReceiptDataFromOrder = (order: any, isDirectSale: boolean) => {
     const customer = order.customer;
     const items = order.items || [];
     const totalAmount = Number(order.total_amount || 0);
     const isOrderRequest = !isDirectSale && !!order._isOrderRequest;
-    const paidAmount = Number(order.paid_amount ?? order.paidAmount ?? (isOrderRequest ? 0 : totalAmount));
-    const remainingAmount = Number(order.remaining_amount ?? order.remainingAmount ?? (isOrderRequest ? totalAmount : 0));
+    const { paidAmount, remainingAmount } = resolveOrderPayment(order, isOrderRequest);
 
     return {
       receiptType: (isDirectSale ? 'direct_sale' : 'delivery') as any,
