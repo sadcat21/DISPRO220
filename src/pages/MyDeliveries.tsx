@@ -1132,7 +1132,7 @@ const MyDeliveries: React.FC = () => {
                     </span>
                     {(item.unit_price || 0) > 0 && (
                       <p className="text-xs text-muted-foreground">
-                        {Number(item.unit_price).toLocaleString()} دج × {giftState.paidQuantity} = {Number(item.total_price || 0).toLocaleString()} دج
+                        {Number(item.unit_price).toLocaleString()} {t('common.currency')} × {giftState.paidQuantity} = {Number(item.total_price || 0).toLocaleString()} {t('common.currency')}
                       </p>
                     )}
                   </div>
