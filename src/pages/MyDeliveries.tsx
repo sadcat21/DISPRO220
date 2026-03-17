@@ -51,15 +51,15 @@ type TabStatus = 'all' | OrderStatus;
 type DeliveryType = 'orders' | 'direct_sales' | 'postponed';
 
 // Generate next work days (Sat-Thu, skip Friday) starting from tomorrow
-const getNextWorkDays = (): { date: Date; label: string }[] => {
+const getNextWorkDays = (lang: Language): { date: Date; label: string }[] => {
   const days: { date: Date; label: string }[] = [];
-  const dayNames = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  const locale = lang === 'fr' ? fr : lang === 'en' ? enUS : ar;
   let current = addDays(new Date(), 1);
   while (days.length < 6) {
     if (!isFriday(current)) {
       days.push({
         date: new Date(current),
-        label: `${dayNames[current.getDay()]} ${format(current, 'dd/MM')}`,
+        label: `${format(current, 'EEEE', { locale })} ${format(current, 'dd/MM')}`,
       });
     }
     current = addDays(current, 1);
