@@ -141,10 +141,10 @@ const WorkerTracking: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Route className="w-4 h-4 text-primary" />
-              <span className="font-bold text-sm">مسار العامل</span>
+              <span className="font-bold text-sm">{t('tracking.worker_route')}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">رسم المسار</span>
+              <span className="text-xs text-muted-foreground">{t('tracking.draw_route')}</span>
               <Switch checked={showStopsRoute} onCheckedChange={setShowStopsRoute} />
             </div>
           </div>
