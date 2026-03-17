@@ -152,19 +152,19 @@ const WorkerDebtsPage: React.FC = () => {
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2">
             <Banknote className="w-5 h-5 text-primary" />
-            ديون العمال
+            {t('worker_debts.title')}
           </h2>
           {contextWorkerName && <p className="text-sm text-muted-foreground">{contextWorkerName}</p>}
         </div>
         <div className="flex items-center gap-2">
           <Button size="sm" onClick={handleOpenAdd}>
             <Plus className="w-4 h-4 ml-1" />
-            إضافة
+            {t('worker_debts.add')}
           </Button>
           {totalRemaining > 0 && (
             <Button size="sm" variant="outline" onClick={() => { setPayAllMethod('deduction'); setPayAllNotes(''); setShowPayAll(true); }}>
               <CheckCheck className="w-4 h-4 ml-1" />
-              دفع الكل
+              {t('worker_debts.pay_all')}
             </Button>
           )}
         </div>
