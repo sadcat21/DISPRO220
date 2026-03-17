@@ -852,19 +852,19 @@ const Customers: React.FC = () => {
         <div className="flex gap-1 flex-wrap">
           <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 ml-1">
             <AlertTriangle className="w-3 h-3" />
-            ناقص:
+            {t('common.filter')}:
           </span>
           {[
-            { value: 'all', label: 'الكل' },
-            { value: 'incomplete', label: 'غير مكتمل' },
-            { value: 'phone', label: 'الهاتف' },
-            { value: 'location', label: 'الموقع' },
-            { value: 'type', label: 'النوع' },
-            { value: 'sector', label: 'القطاع' },
-            { value: 'store', label: 'المحل' },
-            { value: 'address', label: 'العنوان' },
-            { value: 'wilaya', label: 'الولاية' },
-            { value: 'zone', label: 'المنطقة' },
+            { value: 'all', label: t('customers.filter_all') },
+            { value: 'incomplete', label: t('customers.filter_incomplete') },
+            { value: 'phone', label: t('customers.filter_phone') },
+            { value: 'location', label: t('customers.filter_location') },
+            { value: 'type', label: t('customers.filter_type') },
+            { value: 'sector', label: t('customers.filter_sector_label') },
+            { value: 'store', label: t('customers.filter_store') },
+            { value: 'address', label: t('customers.filter_address') },
+            { value: 'wilaya', label: t('customers.filter_wilaya') },
+            { value: 'zone', label: t('customers.filter_zone') },
           ].map(opt => (
             <Button
               key={opt.value}
