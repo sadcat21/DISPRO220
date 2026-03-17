@@ -177,19 +177,19 @@ const Permissions: React.FC = () => {
         <TabsList className="w-full">
           <TabsTrigger value="roles" className="flex-1 gap-1.5">
             <Shield className="w-4 h-4" />
-            صلاحيات الأدوار
+            {t('permissions.role_permissions')}
           </TabsTrigger>
           <TabsTrigger value="individual" className="flex-1 gap-1.5">
             <User className="w-4 h-4" />
-            صلاحيات فردية
+            {t('permissions.individual_permissions')}
           </TabsTrigger>
           <TabsTrigger value="ui-overrides" className="flex-1 gap-1.5">
             <EyeOff className="w-4 h-4" />
-            إخفاء العناصر
+            {t('permissions.hide_elements')}
           </TabsTrigger>
           <TabsTrigger value="supervisor-workers" className="flex-1 gap-1.5">
             <Users className="w-4 h-4" />
-            تعيين المشرفين
+            {t('permissions.assign_supervisors')}
           </TabsTrigger>
         </TabsList>
 

@@ -105,10 +105,10 @@ const AccountingSessions: React.FC = () => {
     if (!deleteSession2) return;
     try {
       await deleteSession.mutateAsync(deleteSession2.id);
-      toast.success('تم حذف الجلسة بنجاح');
+      toast.success(t('accounting.session_deleted'));
       if (selectedSession?.id === deleteSession2.id) setSelectedSession(null);
     } catch (error: any) {
-      toast.error('فشل في حذف الجلسة: ' + error.message);
+      toast.error(t('accounting.session_delete_failed') + ': ' + error.message);
     }
     setDeleteSession2(null);
   };
@@ -117,10 +117,10 @@ const AccountingSessions: React.FC = () => {
     if (!cancelSession2) return;
     try {
       await cancelSession.mutateAsync(cancelSession2.id);
-      toast.success('تم إلغاء الجلسة واستعادة جميع الحسابات بنجاح');
+      toast.success(t('accounting.session_cancelled'));
       if (selectedSession?.id === cancelSession2.id) setSelectedSession(null);
     } catch (error: any) {
-      toast.error('فشل في إلغاء الجلسة: ' + error.message);
+      toast.error(t('accounting.session_cancel_failed') + ': ' + error.message);
     }
     setCancelSession2(null);
   };
@@ -249,14 +249,14 @@ const AccountingSessions: React.FC = () => {
                             <button
                               onClick={(e) => handleCancelSession(session, e)}
                               className="p-1 rounded-md text-muted-foreground hover:text-orange-600 hover:bg-orange-100 transition-colors"
-                              title="إلغاء الجلسة (استعادة الحسابات)"
+                              title={t('accounting.cancel_session_tooltip')}
                             >
                               <RotateCcw className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={(e) => handleDeleteSession(session, e)}
                               className="p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                              title="حذف الجلسة (بدون استعادة)"
+                              title={t('accounting.delete_session_tooltip')}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -337,14 +337,14 @@ const AccountingSessions: React.FC = () => {
       <AlertDialog open={!!cancelSession2} onOpenChange={() => setCancelSession2(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2"><RotateCcw className="w-5 h-5 text-orange-500" />إلغاء جلسة المحاسبة</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2"><RotateCcw className="w-5 h-5 text-orange-500" />{t('accounting.cancel_session_title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              سيتم إلغاء جلسة محاسبة "{cancelSession2?.worker?.full_name}" واستعادة جميع الحسابات والأرقام كما كانت قبل الجلسة (بما فيها سجلات الخزينة).
+              {t('accounting.cancel_session_desc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>تراجع</AlertDialogCancel>
-            <AlertDialogAction className="bg-orange-500 text-white hover:bg-orange-600" onClick={confirmCancelSession}>إلغاء الجلسة واستعادة</AlertDialogAction>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction className="bg-orange-500 text-white hover:bg-orange-600" onClick={confirmCancelSession}>{t('accounting.cancel_and_restore')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -353,12 +353,12 @@ const AccountingSessions: React.FC = () => {
       <AlertDialog open={!!deleteSession2} onOpenChange={() => setDeleteSession2(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2"><Trash2 className="w-5 h-5 text-destructive" />حذف جلسة المحاسبة</AlertDialogTitle>
-            <AlertDialogDescription>هل أنت متأكد من حذف جلسة محاسبة "{deleteSession2?.worker?.full_name}"؟ سيتم حذف السجل فقط بدون استعادة الحسابات.</AlertDialogDescription>
+            <AlertDialogTitle className="flex items-center gap-2"><Trash2 className="w-5 h-5 text-destructive" />{t('accounting.delete_session_title')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('accounting.delete_session_desc')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>تراجع</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={confirmDeleteSession}>حذف</AlertDialogAction>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={confirmDeleteSession}>{t('common.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

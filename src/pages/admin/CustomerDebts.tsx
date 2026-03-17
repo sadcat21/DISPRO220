@@ -128,11 +128,11 @@ const CustomerDebts: React.FC = () => {
           <TabsList className="w-full h-10 p-1 bg-muted/60">
             <TabsTrigger value="debts" className="flex-1 gap-1.5 data-[state=active]:shadow-sm">
               <Banknote className="w-4 h-4" />
-              <span className="text-xs font-bold">الديون</span>
+              <span className="text-xs font-bold">{t('debts.debts_tab')}</span>
             </TabsTrigger>
             <TabsTrigger value="documents" className="flex-1 gap-1.5 data-[state=active]:shadow-sm">
               <FileCheck className="w-4 h-4" />
-              <span className="text-xs font-bold">المستندات المعلقة</span>
+              <span className="text-xs font-bold">{t('debts.pending_documents')}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -191,7 +191,7 @@ const CustomerDebts: React.FC = () => {
                           <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                             {group.phone && <span>{group.phone}</span>}
                             {group.wilaya && <span>• {group.wilaya}</span>}
-                            <span>• {group.debts.length} {group.debts.length === 1 ? 'دين' : 'ديون'}</span>
+                            <span>• {group.debts.length} {group.debts.length === 1 ? t('debts.debt_count_singular') : t('debts.debt_count_plural')}</span>
                           </div>
                           {group.nextDueDate && (
                             <div className="flex items-center gap-1 text-xs mt-1">

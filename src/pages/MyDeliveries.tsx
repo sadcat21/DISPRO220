@@ -206,7 +206,7 @@ const MyDeliveries: React.FC = () => {
   const handlePrint = async (_filterWorkerId: string | null, _printPerWorker: boolean, filteredOrders: OrderWithDetails[], _groupCustomers: boolean = true, _groupProducts: boolean = true, columnConfig?: PrintColumnConfig[]) => {
     if (columnConfig) setPrintColumnConfig(columnConfig);
     if (!filteredOrders || filteredOrders.length === 0) {
-      toast.error('لا توجد طلبيات للطباعة');
+      toast.error(t('deliveries.no_orders_print'));
       return;
     }
     try {
@@ -234,14 +234,14 @@ const MyDeliveries: React.FC = () => {
         setPrintWorkerName(null);
       }, 500);
     } catch (error: any) {
-      toast.error('خطأ في الطباعة');
+      toast.error(t('deliveries.print_error'));
       console.error(error);
     }
   };
 
   const handleExportCSV = async (filteredOrders: OrderWithDetails[]) => {
     if (!filteredOrders || filteredOrders.length === 0) {
-      toast.error('لا توجد طلبيات للتصدير');
+      toast.error(t('deliveries.no_orders_export'));
       return;
     }
     try {
@@ -286,9 +286,9 @@ const MyDeliveries: React.FC = () => {
       link.download = `deliveries_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`;
       link.click();
       URL.revokeObjectURL(link.href);
-      toast.success('تم التصدير بنجاح');
+      toast.success(t('deliveries.export_success'));
     } catch (error: any) {
-      toast.error('خطأ في التصدير');
+      toast.error(t('deliveries.export_error'));
       console.error(error);
     }
   };
@@ -416,12 +416,12 @@ const MyDeliveries: React.FC = () => {
       const distanceKm = calculateDistance(position.coords.latitude, position.coords.longitude, lat, lng);
       const distanceMeters = distanceKm * 1000;
       if (distanceMeters > threshold) {
-        toast.error(`أنت بعيد عن موقع العميل (${Math.round(distanceMeters)} متر). يجب أن تكون على بُعد ${threshold} متر أو أقل.`);
+        toast.error(`${t('deliveries.location_too_far')} (${Math.round(distanceMeters)}m). ${t('deliveries.location_must_be_within').replace('{threshold}', String(threshold))}`);
         return false;
       }
       return true;
     } catch {
-      toast.error('تعذر تحديد موقعك. يرجى تفعيل خدمة الموقع.');
+      toast.error(t('deliveries.location_error'));
       return false;
     } finally {
       setCheckingLocation(false);
@@ -441,7 +441,7 @@ const MyDeliveries: React.FC = () => {
         .eq('order_id', order.id);
 
       if (!items || items.length === 0) {
-        toast.error('لا توجد بنود لهذه الطلبية');
+        toast.error(t('deliveries.no_items'));
         return;
       }
 

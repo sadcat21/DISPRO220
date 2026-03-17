@@ -1477,4 +1477,49 @@ export const translations: Translations = {
   'coin_exchange.received_success': { ar: 'تم استلام المبلغ الورقي', fr: 'Billets reçus avec succès', en: 'Bills received successfully' },
   'coin_exchange.available_in_treasury': { ar: 'المتوفر في الخزينة', fr: 'Disponible en caisse', en: 'Available in treasury' },
   'coin_exchange.after_assign': { ar: 'بعد التسليم', fr: 'Après attribution', en: 'After assignment' },
+
+  // ==================== Rewards ====================
+  'rewards.title': { ar: 'نظام المكافآت والعقوبات', fr: 'Système de récompenses et pénalités', en: 'Rewards & Penalties System' },
+  'rewards.dashboard': { ar: 'لوحة القيادة', fr: 'Tableau de bord', en: 'Dashboard' },
+  'rewards.tasks': { ar: 'المهام', fr: 'Tâches', en: 'Tasks' },
+  'rewards.penalties': { ar: 'العقوبات', fr: 'Pénalités', en: 'Penalties' },
+  'rewards.disputes': { ar: 'الاعتراضات', fr: 'Contestations', en: 'Disputes' },
+  'rewards.reports': { ar: 'التقارير', fr: 'Rapports', en: 'Reports' },
+  'rewards.notifications': { ar: 'الإشعارات', fr: 'Notifications', en: 'Notifications' },
+
+  // ==================== Permissions Page ====================
+  'permissions.role_permissions': { ar: 'صلاحيات الأدوار', fr: 'Permissions des rôles', en: 'Role Permissions' },
+  'permissions.individual_permissions': { ar: 'صلاحيات فردية', fr: 'Permissions individuelles', en: 'Individual Permissions' },
+  'permissions.hide_elements': { ar: 'إخفاء العناصر', fr: 'Masquer les éléments', en: 'Hide Elements' },
+  'permissions.assign_supervisors': { ar: 'تعيين المشرفين', fr: 'Assigner les superviseurs', en: 'Assign Supervisors' },
+
+  // ==================== Customer Debts Page ====================
+  'debts.debts_tab': { ar: 'الديون', fr: 'Dettes', en: 'Debts' },
+  'debts.pending_documents': { ar: 'المستندات المعلقة', fr: 'Documents en attente', en: 'Pending Documents' },
+  'debts.debt_count_singular': { ar: 'دين', fr: 'dette', en: 'debt' },
+  'debts.debt_count_plural': { ar: 'ديون', fr: 'dettes', en: 'debts' },
+
+  // ==================== Accounting Sessions ====================
+  'accounting.session_deleted': { ar: 'تم حذف الجلسة بنجاح', fr: 'Session supprimée avec succès', en: 'Session deleted successfully' },
+  'accounting.session_delete_failed': { ar: 'فشل في حذف الجلسة', fr: 'Échec de la suppression', en: 'Failed to delete session' },
+  'accounting.session_cancelled': { ar: 'تم إلغاء الجلسة واستعادة جميع الحسابات بنجاح', fr: 'Session annulée et comptes restaurés', en: 'Session cancelled and accounts restored' },
+  'accounting.session_cancel_failed': { ar: 'فشل في إلغاء الجلسة', fr: 'Échec de l\'annulation', en: 'Failed to cancel session' },
+  'accounting.cancel_session_title': { ar: 'إلغاء جلسة المحاسبة', fr: 'Annuler la session comptable', en: 'Cancel Accounting Session' },
+  'accounting.cancel_session_desc': { ar: 'سيتم إلغاء جلسة المحاسبة واستعادة جميع الحسابات والأرقام كما كانت قبل الجلسة (بما فيها سجلات الخزينة).', fr: 'La session sera annulée et tous les comptes seront restaurés à leur état précédent.', en: 'The session will be cancelled and all accounts will be restored to their previous state.' },
+  'accounting.cancel_and_restore': { ar: 'إلغاء الجلسة واستعادة', fr: 'Annuler et restaurer', en: 'Cancel and Restore' },
+  'accounting.delete_session_title': { ar: 'حذف جلسة المحاسبة', fr: 'Supprimer la session comptable', en: 'Delete Accounting Session' },
+  'accounting.delete_session_desc': { ar: 'هل أنت متأكد من حذف الجلسة؟ سيتم حذف السجل فقط بدون استعادة الحسابات.', fr: 'Confirmer la suppression ? Le registre sera supprimé sans restaurer les comptes.', en: 'Confirm deletion? The record will be deleted without restoring accounts.' },
+  'accounting.cancel_session_tooltip': { ar: 'إلغاء الجلسة (استعادة الحسابات)', fr: 'Annuler (restaurer les comptes)', en: 'Cancel (restore accounts)' },
+  'accounting.delete_session_tooltip': { ar: 'حذف الجلسة (بدون استعادة)', fr: 'Supprimer (sans restaurer)', en: 'Delete (no restore)' },
+
+  // ==================== MyDeliveries ====================
+  'deliveries.location_too_far': { ar: 'أنت بعيد عن موقع العميل', fr: 'Vous êtes loin du client', en: 'You are far from customer location' },
+  'deliveries.location_must_be_within': { ar: 'يجب أن تكون على بُعد {threshold} متر أو أقل', fr: 'Vous devez être à {threshold}m ou moins', en: 'Must be within {threshold}m' },
+  'deliveries.location_error': { ar: 'تعذر تحديد موقعك. يرجى تفعيل خدمة الموقع.', fr: 'Impossible de déterminer votre position.', en: 'Unable to determine your location.' },
+  'deliveries.no_items': { ar: 'لا توجد بنود لهذه الطلبية', fr: 'Aucun article pour cette commande', en: 'No items for this order' },
+  'deliveries.no_orders_print': { ar: 'لا توجد طلبيات للطباعة', fr: 'Aucune commande à imprimer', en: 'No orders to print' },
+  'deliveries.no_orders_export': { ar: 'لا توجد طلبيات للتصدير', fr: 'Aucune commande à exporter', en: 'No orders to export' },
+  'deliveries.print_error': { ar: 'خطأ في الطباعة', fr: 'Erreur d\'impression', en: 'Print error' },
+  'deliveries.export_success': { ar: 'تم التصدير بنجاح', fr: 'Exporté avec succès', en: 'Exported successfully' },
+  'deliveries.export_error': { ar: 'خطأ في التصدير', fr: 'Erreur d\'exportation', en: 'Export error' },
 };
