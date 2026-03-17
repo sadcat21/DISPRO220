@@ -416,7 +416,7 @@ const MyDeliveries: React.FC = () => {
       const distanceKm = calculateDistance(position.coords.latitude, position.coords.longitude, lat, lng);
       const distanceMeters = distanceKm * 1000;
       if (distanceMeters > threshold) {
-        toast.error(`أنت بعيد عن موقع العميل (${Math.round(distanceMeters)} متر). يجب أن تكون على بُعد ${threshold} متر أو أقل.`);
+        toast.error(`${t('deliveries.location_too_far')} (${Math.round(distanceMeters)}m). ${t('deliveries.location_must_be_within').replace('{threshold}', String(threshold))}`);
         return false;
       }
       return true;
