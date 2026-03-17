@@ -203,6 +203,7 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
     showLogo,
     replaceNameWithLogo,
     receiptTitleOverride: receiptData.receiptTitleOverride,
+    hidePaymentDetails: receiptData.hidePaymentDetails,
   };
 
   const previewHtml = formatReceiptForPreview(receiptDataForFormatter);
