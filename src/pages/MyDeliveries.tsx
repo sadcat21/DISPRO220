@@ -288,7 +288,7 @@ const MyDeliveries: React.FC = () => {
       URL.revokeObjectURL(link.href);
       toast.success(t('deliveries.export_success'));
     } catch (error: any) {
-      toast.error('خطأ في التصدير');
+      toast.error(t('deliveries.export_error'));
       console.error(error);
     }
   };
