@@ -20,25 +20,25 @@ const Rewards: React.FC = () => {
 
   return (
     <div className="p-4 space-y-4">
-      <h2 className="text-xl font-bold">نظام المكافآت والعقوبات</h2>
+      <h2 className="text-xl font-bold">{t('rewards.title')}</h2>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl">
+      <Tabs value={activeTab} onValueChange={setActiveTab} dir={language === 'ar' ? 'rtl' : 'ltr'}>
         <TabsList className="grid grid-cols-4 w-full">
           <TabsTrigger value="dashboard" className="text-xs gap-1">
             <Trophy className="w-3.5 h-3.5" />
-            لوحة القيادة
+            {t('rewards.dashboard')}
           </TabsTrigger>
           <TabsTrigger value="tasks" className="text-xs gap-1">
             <ListTodo className="w-3.5 h-3.5" />
-            المهام
+            {t('rewards.tasks')}
           </TabsTrigger>
           <TabsTrigger value="penalties" className="text-xs gap-1">
             <AlertTriangle className="w-3.5 h-3.5" />
-            العقوبات
+            {t('rewards.penalties')}
           </TabsTrigger>
           <TabsTrigger value="settings" className="text-xs gap-1">
             <Settings className="w-3.5 h-3.5" />
-            الإعدادات
+            {t('settings.title')}
           </TabsTrigger>
         </TabsList>
 
@@ -46,16 +46,16 @@ const Rewards: React.FC = () => {
         <TabsList className="grid grid-cols-3 w-full mt-1">
           <TabsTrigger value="disputes" className="text-xs gap-1 relative">
             <MessageSquare className="w-3.5 h-3.5" />
-            الاعتراضات
+            {t('rewards.disputes')}
             {pendingCount > 0 && <Badge variant="destructive" className="text-[9px] h-4 px-1 absolute -top-1 -left-1">{pendingCount}</Badge>}
           </TabsTrigger>
           <TabsTrigger value="reports" className="text-xs gap-1">
             <FileText className="w-3.5 h-3.5" />
-            التقارير
+            {t('rewards.reports')}
           </TabsTrigger>
           <TabsTrigger value="notifications" className="text-xs gap-1">
             <Bell className="w-3.5 h-3.5" />
-            الإشعارات
+            {t('rewards.notifications')}
           </TabsTrigger>
         </TabsList>
 
