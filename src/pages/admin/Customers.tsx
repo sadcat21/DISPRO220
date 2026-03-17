@@ -736,7 +736,7 @@ const Customers: React.FC = () => {
             </Button>
           )}
           {isManager && (
-            <Button size="icon" variant="outline" className="h-9 w-9" onClick={() => setShowFieldSettingsDialog(true)} title="إعدادات حقول العميل">
+            <Button size="icon" variant="outline" className="h-9 w-9" onClick={() => setShowFieldSettingsDialog(true)} title={t('customers.field_settings')}>
               <Settings2 className="w-4 h-4" />
             </Button>
           )}
