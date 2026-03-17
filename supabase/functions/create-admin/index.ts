@@ -35,7 +35,8 @@ serve(async (req) => {
     const validRoles = ['admin', 'worker', 'supervisor', 'branch_admin', 'project_manager', 'accountant', 'admin_assistant'];
     const validRole = validRoles.includes(role) ? role : 'admin';
 
-    const email = `${username.toLowerCase()}@aromaproma.local`;
+    // If username already contains @, use it as email directly
+    const email = username.includes('@') ? username.toLowerCase() : `${username.toLowerCase()}@aromaproma.local`;
 
     // Create auth user
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
