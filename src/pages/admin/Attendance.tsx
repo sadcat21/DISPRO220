@@ -120,7 +120,7 @@ const Attendance: React.FC = () => {
             </div>
             <div>
               <p className="text-2xl font-bold">{logs.length}</p>
-              <p className="text-[11px] opacity-80">إجمالي السجلات</p>
+              <p className="text-[11px] opacity-80">{t('attendance.total_records')}</p>
             </div>
           </CardContent>
         </Card>
