@@ -544,11 +544,11 @@ const Workers: React.FC = () => {
         <TabsList className="w-full">
           <TabsTrigger value="workers" className="flex-1 gap-1">
             <Users className="w-4 h-4" />
-            العمال
+            {t('workers.tab_workers')}
           </TabsTrigger>
           <TabsTrigger value="test" className="flex-1 gap-1">
             <FlaskConical className="w-4 h-4" />
-            تجريبي
+            {t('workers.tab_test')}
           </TabsTrigger>
         </TabsList>
 
