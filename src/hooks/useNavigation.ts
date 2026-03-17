@@ -27,8 +27,8 @@ export const useNavigation = () => {
   };
 
   const hasPermission = (code: string) => {
-    // Admin and branch_admin have all permissions
-    if (role === 'admin' || role === 'branch_admin') return true;
+    // Admin-level roles have all permissions
+    if (role === 'admin' || role === 'branch_admin' || role === 'project_manager') return true;
     return permissions?.some(p => p.permission_code === code) ?? false;
   };
 
