@@ -75,10 +75,10 @@ const WorkerDebtsPage: React.FC = () => {
         debt_type: addType,
         description: addDesc || undefined,
       });
-      toast.success('تم إضافة الدين بنجاح');
+      toast.success(t('worker_debts.added_success'));
       setShowAdd(false);
     } catch {
-      toast.error('خطأ في إضافة الدين');
+      toast.error(t('worker_debts.add_error'));
     }
   };
 
