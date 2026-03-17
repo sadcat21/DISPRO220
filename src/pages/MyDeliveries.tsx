@@ -912,7 +912,7 @@ const MyDeliveries: React.FC = () => {
                       variant="outline"
                       className="h-8 w-8"
                       onClick={() => handleReprintReceipt(order)}
-                      title="طباعة الوصل"
+                      title={t('deliveries.print_receipt')}
                     >
                       <Printer className="w-4 h-4" />
                     </Button>
