@@ -201,7 +201,7 @@ const SurplusDeficitTreasury: React.FC = () => {
                       {entry.monetary_value > 0 && <span className="font-medium">{fmt(Number(entry.monetary_value))} DA</span>}
                     </div>
                     <span className={`text-[10px] px-2 py-0.5 rounded-full mt-1 inline-block ${entry.status === 'resolved' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                      {entry.status === 'resolved' ? 'تمت المعالجة' : 'معلق'}
+                      {entry.status === 'resolved' ? t('surplus.resolved') : t('surplus.pending')}
                     </span>
                   </div>
                 );
