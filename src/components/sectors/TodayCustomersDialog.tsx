@@ -1472,11 +1472,16 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     if (customerOrders.length === 0) { toast.info('لا توجد طلبيات لهذا العميل'); return; }
     const dateStr = format(newDate, 'yyyy-MM-dd');
     try {
-      // Increment postpone_count for each order individually
+      // Increment postpone_count and optionally reassign worker
       for (const order of customerOrders) {
+        const updateData: any = { delivery_date: dateStr, postpone_count: ((order as any).postpone_count || 0) + 1 };
+        if (postponeWorkerId) {
+          updateData.assigned_worker_id = postponeWorkerId;
+          updateData.status = 'assigned';
+        }
         const { error } = await supabase
           .from('orders')
-          .update({ delivery_date: dateStr, postpone_count: ((order as any).postpone_count || 0) + 1 })
+          .update(updateData)
           .eq('id', order.id);
         if (error) throw error;
       }
