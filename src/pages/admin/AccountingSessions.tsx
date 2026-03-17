@@ -249,14 +249,14 @@ const AccountingSessions: React.FC = () => {
                             <button
                               onClick={(e) => handleCancelSession(session, e)}
                               className="p-1 rounded-md text-muted-foreground hover:text-orange-600 hover:bg-orange-100 transition-colors"
-                              title="إلغاء الجلسة (استعادة الحسابات)"
+                              title={t('accounting.cancel_session_tooltip')}
                             >
                               <RotateCcw className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={(e) => handleDeleteSession(session, e)}
                               className="p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                              title="حذف الجلسة (بدون استعادة)"
+                              title={t('accounting.delete_session_tooltip')}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
