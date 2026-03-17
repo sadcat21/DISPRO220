@@ -1192,12 +1192,12 @@ const LoadStock: React.FC = () => {
             <TabsList className="w-full h-7 p-0.5 bg-muted/60">
               <TabsTrigger value="session" className="flex-1 h-6 text-[10px] data-[state=active]:shadow-sm">
                 <Package className="w-3 h-3 me-1" />
-                الجلسة
+                {t('load_stock.session_tab')}
                 {activeSessionId && <Badge variant="secondary" className="text-[8px] px-1 py-0 rounded-full h-3.5 ms-1">{sessionItems.length}</Badge>}
               </TabsTrigger>
               <TabsTrigger value="stock" className="flex-1 h-6 text-[10px] data-[state=active]:shadow-sm">
                 {hasDeficit ? <AlertTriangle className="w-3 h-3 me-1 text-destructive" /> : <CheckCircle className="w-3 h-3 me-1 text-green-600" />}
-                المخزون
+                {t('load_stock.stock_tab')}
                 {hasDeficit && <Badge variant="destructive" className="text-[8px] px-1 py-0 rounded-full h-3.5 ms-1">{totalDeficit}</Badge>}
               </TabsTrigger>
             </TabsList>
@@ -1206,13 +1206,13 @@ const LoadStock: React.FC = () => {
               {activeSessionId ? (
                 <div className="flex items-center gap-1.5 bg-primary/5 ring-1 ring-primary/20 rounded-lg px-2.5 py-1.5">
                   <Package className="w-3.5 h-3.5 text-primary" />
-                  <span className="font-medium text-[11px]">جلسة نشطة</span>
-                  <Badge variant="secondary" className="text-[9px] rounded-full h-4">{sessionItems.length} منتج</Badge>
-                  {totalSessionQty > 0 && <Badge className="text-[9px] rounded-full h-4">{totalSessionQty} صندوق</Badge>}
+                  <span className="font-medium text-[11px]">{t('load_stock.active_session')}</span>
+                  <Badge variant="secondary" className="text-[9px] rounded-full h-4">{sessionItems.length} {t('load_stock.product_count')}</Badge>
+                  {totalSessionQty > 0 && <Badge className="text-[9px] rounded-full h-4">{totalSessionQty} {t('load_stock.box_count')}</Badge>}
                 </div>
               ) : (
                 <div className="text-center text-muted-foreground text-[11px] py-1.5">
-                  لا توجد جلسة نشطة
+                  {t('load_stock.no_active_session')}
                 </div>
               )}
             </TabsContent>
