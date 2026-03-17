@@ -816,7 +816,7 @@ const Products: React.FC = () => {
               <Input
                 value={editProductName}
                 onChange={(e) => setEditProductName(e.target.value)}
-                placeholder="أدخل اسم المنتج"
+                placeholder={t('products.enter_name')}
                 className="text-right"
                 autoFocus
               />
