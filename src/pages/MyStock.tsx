@@ -254,7 +254,7 @@ const MyStock: React.FC = () => {
             const sold = stats?.sold || 0;
             const gifts = giftStats[item.product_id];
             const giftQty = gifts?.totalGifts || 0;
-            const giftUnit = gifts?.unit === 'piece' ? 'قطعة' : gifts?.unit === 'box' ? 'صندوق' : gifts?.unit === 'kg' ? 'كغ' : 'قطعة';
+            const giftUnit = gifts?.unit === 'piece' ? t('stock.piece') : gifts?.unit === 'box' ? t('stock.box') : gifts?.unit === 'kg' ? 'kg' : t('stock.piece');
             return (
               <Card key={item.id} className={isZero ? 'bg-destructive/10 border-destructive/30' : ''}>
                 <CardContent className="p-3">
