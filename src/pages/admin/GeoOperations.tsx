@@ -16,9 +16,6 @@ import { ar, fr, enUS } from 'date-fns/locale';
 import { calculateDistance, formatDistance, reverseGeocode } from '@/utils/geoUtils';
 import CustomerLocationView from '@/components/map/CustomerLocationView';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { calculateDistance, formatDistance, reverseGeocode } from '@/utils/geoUtils';
-import CustomerLocationView from '@/components/map/CustomerLocationView';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const OPERATION_ICONS: Record<string, React.ElementType> = {
   order: ShoppingCart,
