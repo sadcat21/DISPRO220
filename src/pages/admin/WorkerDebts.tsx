@@ -185,7 +185,7 @@ const WorkerDebtsPage: React.FC = () => {
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
             <Banknote className="w-10 h-10 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">لا توجد ديون مسجلة</p>
+            <p className="text-sm">{t('worker_debts.no_debts')}</p>
           </CardContent>
         </Card>
       ) : (
