@@ -1350,7 +1350,7 @@ const MyDeliveries: React.FC = () => {
               .eq('id', checkVerifyOrder.id);
 
             await refetchOrders();
-            toast.success('تم تحديث التحقق من الشيك');
+            toast.success(t('deliveries.verification_updated'));
             setCheckVerifyOrder(null);
           }}
         />
