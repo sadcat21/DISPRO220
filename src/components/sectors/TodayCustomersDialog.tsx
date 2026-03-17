@@ -68,6 +68,7 @@ const normalizeSaleItem = (item: any) => ({
 
 // Resolve paid/remaining amounts from order fields (partial_amount + payment_status)
 const resolveOrderPayment = (order: any, isOrderRequest: boolean) => {
+  console.log('[resolveOrderPayment] input:', { payment_status: order.payment_status, partial_amount: order.partial_amount, total_amount: order.total_amount, isOrderRequest });
   const totalAmount = Number(order.total_amount || 0);
   const paymentStatus = String(order.payment_status || '').toLowerCase();
   const partialAmount = order.partial_amount != null ? Number(order.partial_amount) : null;
@@ -101,7 +102,9 @@ const resolveOrderPayment = (order: any, isOrderRequest: boolean) => {
     return { paidAmount: Math.max(0, totalAmount - rem), remainingAmount: Math.max(0, rem) };
   }
 
-  return { paidAmount: totalAmount, remainingAmount: 0 };
+  const result = { paidAmount: totalAmount, remainingAmount: 0 };
+  console.log('[resolveOrderPayment] fallback result:', result);
+  return result;
 };
 
 // Generate next work days (Sat-Thu, skip Friday) starting from tomorrow
