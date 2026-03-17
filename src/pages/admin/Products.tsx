@@ -756,7 +756,7 @@ const Products: React.FC = () => {
                       ? 'bg-primary/10 text-primary' 
                       : 'bg-destructive/10 text-destructive'
                   }`}>
-                    {product.is_active ? 'نشط' : 'معطل'}
+                    {product.is_active ? t('common.active') : t('common.inactive')}
                   </span>
                 </div>
                 
