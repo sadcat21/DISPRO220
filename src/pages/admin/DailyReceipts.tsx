@@ -339,7 +339,7 @@ const DailyReceipts: React.FC = () => {
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <span>{Number(receipt.total_amount).toLocaleString()} DA</span>
                       {Number(receipt.remaining_amount) > 0 && (
-                        <span className="text-destructive">متبقي: {Number(receipt.remaining_amount).toLocaleString()}</span>
+                        <span className="text-destructive">{t('receipts.remaining')} {Number(receipt.remaining_amount).toLocaleString()}</span>
                       )}
                       {receipt.worker_name && (
                         <span className="flex items-center gap-0.5">
