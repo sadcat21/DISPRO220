@@ -173,8 +173,8 @@ const SharedInvoices: React.FC = () => {
         <Card>
           <CardContent className="py-12 text-center">
             <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-            <p className="text-sm text-muted-foreground">لا توجد فواتير مشاركة بعد</p>
-            <p className="text-xs text-muted-foreground mt-1">شارك ملف PDF من واتساب ليظهر هنا</p>
+            <p className="text-sm text-muted-foreground">{t('shared_invoices.no_invoices')}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('shared_invoices.share_hint')}</p>
           </CardContent>
         </Card>
       ) : (
