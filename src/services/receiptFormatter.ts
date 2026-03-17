@@ -742,9 +742,11 @@ export function formatReceiptForPreview(data: ReceiptData): string {
         <div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-top:1px dashed #000;border-bottom:1px dashed #000;margin:3px 0;">
           <span>NET A PAYER</span><span>${formatAmount(data.totalAmount)} DA</span>
         </div>
+        ${!data.hidePaymentDetails ? `
         <div style="display:flex;justify-content:space-between;font-size:10px;padding:2px 0;"><span>MONTANT PAYÉ</span><span>${formatAmount(data.paidAmount)} DA</span></div>
         <div style="display:flex;justify-content:space-between;font-size:10px;font-weight:bold;padding:2px 0;${data.remainingAmount > 0 ? 'color:#dc2626;' : ''}"><span>RESTANT</span><span>${formatAmount(data.remainingAmount)} DA</span></div>
         ${data.customerSurplusAmount && data.customerSurplusAmount > 0 ? `<div style="display:flex;justify-content:space-between;font-size:10px;font-weight:bold;padding:2px 0;color:#16a34a;"><span>SURPLUS CLIENT</span><span>${formatAmount(data.customerSurplusAmount)} DA</span></div>` : ''}
+        ` : ''}
       </div>
 
       ${data.paymentMethod && !payLabel ? `<div style="text-align:center;font-size:10px;padding:2px 0;">Mode: ${{ cash: 'Espèces', check: 'Chèque', transfer: 'Virement', receipt: 'Versement' }[data.paymentMethod] || data.paymentMethod}</div>` : ''}
