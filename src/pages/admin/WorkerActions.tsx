@@ -664,7 +664,7 @@ const WorkerActions: React.FC = () => {
                                 {t('worker_actions.gifts')} {giftQty} {giftUnit}
                               </span>
                             )}
-                            <span className="font-bold bg-muted px-1.5 py-0.5 rounded">باقي: {item.quantity}</span>
+                            <span className="font-bold bg-muted px-1.5 py-0.5 rounded">{t('worker_actions.remaining')} {item.quantity}</span>
                           </div>
                         </div>
                       );
