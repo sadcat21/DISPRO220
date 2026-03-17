@@ -1058,10 +1058,10 @@ const Products: React.FC = () => {
               {isDeleting ? (
                 <>
                   <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                  جاري الحذف...
+                  {t('products.deleting')}
                 </>
               ) : (
-                'حذف'
+                t('common.delete')
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
