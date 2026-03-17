@@ -1471,11 +1471,14 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     if (customerOrders.length === 0) { toast.info('لا توجد طلبيات لهذا العميل'); return; }
     const dateStr = format(newDate, 'yyyy-MM-dd');
     try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ delivery_date: dateStr })
-        .in('id', customerOrders.map(o => o.id));
-      if (error) throw error;
+      // Increment postpone_count for each order individually
+      for (const order of customerOrders) {
+        const { error } = await supabase
+          .from('orders')
+          .update({ delivery_date: dateStr, postpone_count: ((order as any).postpone_count || 0) + 1 })
+          .eq('id', order.id);
+        if (error) throw error;
+      }
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['assigned-orders'] });
       queryClient.invalidateQueries({ queryKey: ['today-cust-assigned-orders-full'] });
