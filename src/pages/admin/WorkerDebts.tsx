@@ -277,7 +277,7 @@ const WorkerDebtsPage: React.FC = () => {
               <Input value={addDesc} onChange={e => setAddDesc(e.target.value)} placeholder={t('worker_debts.optional_desc')} />
             </div>
             <Button className="w-full" onClick={handleSaveDebt} disabled={createDebt.isPending}>
-              {createDebt.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'حفظ'}
+              {createDebt.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : t('common.save')}
             </Button>
           </div>
         </DialogContent>
