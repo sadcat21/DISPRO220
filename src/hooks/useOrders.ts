@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Order, OrderItem, OrderWithDetails, OrderStatus } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRealtimeSubscription } from './useRealtimeSubscription';
+import { isAdminRole } from '@/lib/utils';
 
 export const useOrders = () => {
   const { workerId, role, activeBranch } = useAuth();
@@ -27,7 +28,7 @@ export const useOrders = () => {
         `)
         .order('created_at', { ascending: false });
 
-      if (role === 'admin' && activeBranch) {
+      if (isAdminRole(role) && activeBranch) {
         query = query.eq('branch_id', activeBranch.id);
       }
 
@@ -77,7 +78,7 @@ export const useAssignedOrders = () => {
         `)
         .order('created_at', { ascending: false });
 
-      if (role === 'admin' || role === 'branch_admin') {
+      if (isAdminRole(role)) {
         if (activeBranch) {
           query = query.eq('branch_id', activeBranch.id);
         }

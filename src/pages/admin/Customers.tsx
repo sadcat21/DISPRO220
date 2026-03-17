@@ -43,6 +43,7 @@ import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import CustomerFieldSettingsDialog from '@/components/customers/CustomerFieldSettingsDialog';
 import { useCustomerFieldSettings } from '@/hooks/useCustomerFieldSettings';
 import { CUSTOMER_FIELD_LABELS, CustomerActionButtonKey } from '@/types/customerFieldSettings';
+import { isAdminRole } from '@/lib/utils';
 
 // Normalize Arabic text: treat all alef variants and hamza as the same
 const normalizeArabic = (text: string): string =>
@@ -106,7 +107,7 @@ const Customers: React.FC = () => {
   // Special prices dialog
   const [customerForPrices, setCustomerForPrices] = useState<Customer | null>(null);
 
-  const isManager = role === 'admin' || role === 'branch_admin';
+  const isManager = isAdminRole(role);
   const [activeTab, setActiveTab] = useState('list');
   const [requestsCount, setRequestsCount] = useState(0);
   const [showFieldSettingsDialog, setShowFieldSettingsDialog] = useState(false);
@@ -199,7 +200,7 @@ const Customers: React.FC = () => {
 
   // Filter customers by activeBranch
   const filteredByBranch = useMemo(() => {
-    if (role === 'admin' && activeBranch) {
+    if (isAdminRole(role) && activeBranch) {
       return customers.filter(c => c.branch_id === activeBranch.id || c.branch_id === null);
     }
     return customers;

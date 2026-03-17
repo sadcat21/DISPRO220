@@ -6,12 +6,13 @@ import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
 import { User, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { isAdminRole } from '@/lib/utils';
 
 const AdminWorkerBar: React.FC = () => {
   const { role, activeBranch } = useAuth();
   const { workerId: selectedWorkerId, workerName: selectedWorkerName, setSelectedWorker, clearSelectedWorker } = useSelectedWorker();
 
-  const isAdminOrBranchAdmin = role === 'admin' || role === 'branch_admin';
+  const isAdminOrBranchAdmin = isAdminRole(role);
 
   const { data: workers } = useQuery({
     queryKey: ['workers-bar', activeBranch?.id],

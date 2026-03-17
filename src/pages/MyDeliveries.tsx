@@ -45,6 +45,7 @@ import OrdersPrintView from '@/components/print/OrdersPrintView';
 import { PrintColumnConfig } from '@/components/print/PrintColumnsConfigDialog';
 import { Eye } from 'lucide-react';
 import CustomerLabel from '@/components/customers/CustomerLabel';
+import { isAdminRole } from '@/lib/utils';
 
 type TabStatus = 'all' | OrderStatus;
 type DeliveryType = 'orders' | 'direct_sales' | 'postponed';
@@ -69,7 +70,7 @@ const getNextWorkDays = (): { date: Date; label: string }[] => {
 const MyDeliveries: React.FC = () => {
   const { t, language, loadPrintSettingsFromDB } = useLanguage();
   const { workerId, user, role } = useAuth();
-  const isAdminOrBranchAdmin = role === 'admin' || role === 'branch_admin';
+  const isAdminOrBranchAdmin = isAdminRole(role);
   const { workerId: contextWorkerId, workerName: contextWorkerName } = useSelectedWorker();
   const { data: workerPrintInfo } = useWorkerPrintInfo(workerId);
   const { activeOffers } = useProductOffers();

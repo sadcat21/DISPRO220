@@ -21,6 +21,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { isAdminRole } from '@/lib/utils';
 
 // Fix for default marker icon
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -97,7 +98,7 @@ const NearbyStores: React.FC = () => {
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Use activeBranch automatically for admins
-  const effectiveBranchId = role === 'admin' && activeBranch ? activeBranch.id : null;
+  const effectiveBranchId = isAdminRole(role) && activeBranch ? activeBranch.id : null;
 
   // Get coordinates from URL params
   const urlLat = searchParams.get('lat');

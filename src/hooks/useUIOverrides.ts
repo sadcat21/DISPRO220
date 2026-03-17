@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { isAdminRole } from '@/lib/utils';
 
 export interface UIOverride {
   id: string;
@@ -56,7 +57,7 @@ export const useIsElementHidden = (elementType: string, elementKey: string): boo
   const { data: overrides } = useMyUIOverrides();
 
   // Admin always sees everything
-  if (role === 'admin') return false;
+  if (isAdminRole(role)) return false;
 
   return overrides?.some(o => o.element_type === elementType && o.element_key === elementKey && o.is_hidden) ?? false;
 };

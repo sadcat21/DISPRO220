@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { useIsElementHidden } from '@/hooks/useUIOverrides';
+import { isAdminRole } from '@/lib/utils';
 
 
 const fmt = (n: number) => n.toLocaleString();
@@ -39,7 +40,7 @@ const AccountingSessions: React.FC = () => {
   const [workers, setWorkers] = useState<{ id: string; full_name: string }[]>([]);
   const [loadingWorkers, setLoadingWorkers] = useState(true);
   const [previewWorker, setPreviewWorker] = useState<{ id: string; name: string } | null>(null);
-  const isAdminOrBranchAdmin = role === 'admin' || role === 'branch_admin';
+  const isAdminOrBranchAdmin = isAdminRole(role);
   const isCreateSessionHidden = useIsElementHidden('button', 'create_session');
 
   const { data: sessions, isLoading } = useAccountingSessions({ status: statusFilter });

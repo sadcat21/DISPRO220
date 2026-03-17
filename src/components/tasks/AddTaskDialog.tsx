@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { isAdminRole } from '@/lib/utils';
 
 interface AddTaskDialogProps {
   open: boolean;
@@ -49,7 +50,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ open, onOpenChange, taskT
   const [commandedBy, setCommandedBy] = useState<string>('');
 
   const prefix = taskType === 'task' ? 'tasks' : 'requests';
-  const canAssignOthers = role === 'admin' || role === 'branch_admin' || role === 'supervisor';
+  const canAssignOthers = isAdminRole(role) || role === 'supervisor';
   const currentLevel = ROLE_LEVELS[role || 'worker'] || 1;
 
   // For tasks: fetch workers with lower or equal rank (downward)

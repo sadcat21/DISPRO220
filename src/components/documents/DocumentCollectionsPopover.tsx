@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 import CheckVerificationDialog from '@/components/orders/CheckVerificationDialog';
 import DocVisitNoCollectionDialog from './DocVisitNoCollectionDialog';
 import { supabase } from '@/integrations/supabase/client';
+import { isAdminRole } from '@/lib/utils';
 
 const WORK_DAYS = [
   { num: 0, ar: 'سبت', jsDay: 6 },
@@ -87,7 +88,7 @@ const DocumentCollectionsPopover: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<PendingDocOrder | null>(null);
   const [dialogMode, setDialogMode] = useState<'collect' | 'visit' | null>(null);
 
-  const isAdmin = role === 'admin' || role === 'branch_admin';
+  const isAdmin = isAdminRole(role);
   const totalCount = todayOrders.length + (isAdmin ? pendingCollections.length : 0);
 
   const todayJsDay = new Date().getDay();

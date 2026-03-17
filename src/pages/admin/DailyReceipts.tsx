@@ -18,11 +18,12 @@ import {
   Printer, Loader2, FileText, Truck, CreditCard, RefreshCw,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { isAdminRole } from '@/lib/utils';
 
 const DailyReceipts: React.FC = () => {
   const { role, workerId, activeBranch } = useAuth();
   const { dir, t } = useLanguage();
-  const isAdmin = role === 'admin' || role === 'branch_admin' || role === 'supervisor';
+  const isAdmin = isAdminRole(role) || role === 'supervisor';
   const { isConnected, printReceipt } = useBluetoothPrinter();
   const updatePrintCount = useUpdateReceiptPrintCount();
 

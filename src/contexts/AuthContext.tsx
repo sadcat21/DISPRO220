@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthState, Worker, AppRole, Branch } from '@/types/database';
+import { isAdminRole } from '@/lib/utils';
 import { getDeviceFingerprint, getDeviceInfo } from '@/utils/deviceFingerprint';
 
 export interface WorkerRole {
@@ -254,7 +255,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Single role - check if admin needs branch selection
     const selectedRole: WorkerRole = roles.length === 1 ? roles[0] : { role: worker.role, branch_id: worker.branch_id, branch_name: null };
     
-    if (selectedRole.role === 'admin') {
+    if (isAdminRole(selectedRole.role)) {
       setPendingWorker(worker);
       setWorkerId(worker.id);
       setActiveRole(selectedRole);
@@ -282,7 +283,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setActiveRole(roleData);
 
     // If admin role selected, show branch selection
-    if (roleData.role === 'admin') {
+    if (isAdminRole(roleData.role)) {
       setAuthState({
         user: pendingWorker,
         role: 'admin',
@@ -362,7 +363,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const switchBranch = () => {
-    if (authState.role === 'admin') {
+    if (isAdminRole(authState.role)) {
       setShowBranchSelection(true);
     }
   };

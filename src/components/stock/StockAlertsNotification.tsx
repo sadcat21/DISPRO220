@@ -20,6 +20,7 @@ import QuickLoadDialog from './QuickLoadDialog';
 import ShortageDetailsDialog from './ShortageDetailsDialog';
 import WarehouseGapDetailsDialog from './WarehouseGapDetailsDialog';
 import { WarehouseGapItem } from '@/hooks/useWarehouseGap';
+import { isAdminRole } from '@/lib/utils';
 
 const StockAlertsNotification: React.FC = () => {
   const { t, dir } = useLanguage();
@@ -47,7 +48,7 @@ const StockAlertsNotification: React.FC = () => {
   const [markingProduct, setMarkingProduct] = useState<string | null>(null);
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
 
-  const isAdmin = role === 'admin' || role === 'branch_admin';
+  const isAdmin = isAdminRole(role);
   if (!isAdmin) return null;
 
   // Filter out dismissed alerts then group by worker

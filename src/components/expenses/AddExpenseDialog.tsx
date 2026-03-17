@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { getCategoryName } from '@/utils/categoryName';
+import { isAdminRole } from '@/lib/utils';
 
 interface AddExpenseDialogProps {
   open: boolean;
@@ -28,7 +29,7 @@ const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({ open, onOpenChange 
   const filteredCategories = useMemo(() => {
     if (!categories) return [];
     // Admin always sees all categories
-    if (role === 'admin') return categories;
+    if (isAdminRole(role)) return categories;
     
     const userRoleCode = activeRole?.custom_role_code;
     const userSystemRole = role; // 'branch_admin', 'supervisor', 'worker'

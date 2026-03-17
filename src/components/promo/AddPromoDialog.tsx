@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
 import AddCustomerDialog from './AddCustomerDialog';
-import { cn } from '@/lib/utils';
+import { cn, isAdminRole } from '@/lib/utils';
 interface AddPromoDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -42,7 +42,7 @@ const AddPromoDialog: React.FC<AddPromoDialogProps> = ({
   const [showAddCustomer, setShowAddCustomer] = useState(false);
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
 
-  const isAdmin = role === 'admin';
+  const isAdmin = isAdminRole(role);
   const isBranchAdmin = role === 'branch_admin';
   const canSetBonus = isAdmin || isBranchAdmin;
   

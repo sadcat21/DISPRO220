@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { isAdminRole } from '@/lib/utils';
 
 export interface WarehouseGapItem {
   product_id: string;
@@ -18,7 +19,7 @@ export const useWarehouseGap = () => {
   const { activeBranch, role } = useAuth();
   const queryClient = useQueryClient();
   const branchId = activeBranch?.id;
-  const isAdmin = role === 'admin' || role === 'branch_admin';
+  const isAdmin = isAdminRole(role);
 
   // Realtime subscription
   useEffect(() => {

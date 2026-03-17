@@ -20,6 +20,7 @@ import CompanyInfoCard from '@/components/settings/CompanyInfoCard';
 import VerificationChecklistCard from '@/components/settings/VerificationChecklistCard';
 import SmsSettingsCard from '@/components/settings/SmsSettingsCard';
 import AppUpdateSettingsCard from '@/components/settings/AppUpdateSettingsCard';
+import { isAdminRole } from '@/lib/utils';
 
 const Settings: React.FC = () => {
   const { user, logout, role, activeBranch, availableRoles, switchRole, switchBranch, showRoleSelection, showBranchSelection, selectRole, selectBranch } = useAuth();
@@ -65,7 +66,7 @@ const Settings: React.FC = () => {
             </span>
           </div>
           
-          {role === 'admin' && (
+          {isAdminRole(role) && (
             <div className="flex justify-between items-center">
               <span className="text-muted-foreground">{t('settings.branch')}</span>
               <span className="bg-secondary px-3 py-1 rounded-full text-sm font-medium">
@@ -87,7 +88,7 @@ const Settings: React.FC = () => {
               </Button>
             )}
             
-            {role === 'admin' && (
+            {isAdminRole(role) && (
               <Button
                 variant="outline"
                 size="sm"
@@ -198,31 +199,31 @@ const Settings: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-      {(role === 'admin' || role === 'branch_admin') && (
+      {isAdminRole(role) && (
         <PrintSettingsCard />
       )}
-      {(role === 'admin' || role === 'branch_admin') && (
+      {isAdminRole(role) && (
         <NavbarCustomization />
       )}
-      {(role === 'admin' || role === 'branch_admin') && (
+      {isAdminRole(role) && (
         <DataManagement />
       )}
-      {(role === 'admin' || role === 'branch_admin') && (
+      {isAdminRole(role) && (
         <LocationSettingsCard />
       )}
-      {(role === 'admin' || role === 'branch_admin') && (
+      {isAdminRole(role) && (
         <CustomerTypesCard />
       )}
-      {(role === 'admin' || role === 'branch_admin') && (
+      {isAdminRole(role) && (
         <CompanyInfoCard />
       )}
-      {(role === 'admin' || role === 'branch_admin') && (
+      {isAdminRole(role) && (
         <VerificationChecklistCard />
       )}
-      {(role === 'admin' || role === 'branch_admin') && (
+      {isAdminRole(role) && (
         <SmsSettingsCard />
       )}
-      {(role === 'admin' || role === 'branch_admin') && (
+      {isAdminRole(role) && (
         <AppUpdateSettingsCard />
       )}
 

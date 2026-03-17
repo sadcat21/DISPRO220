@@ -35,6 +35,7 @@ import DirectSaleDialog from '@/components/warehouse/DirectSaleDialog';
 import ReceiptDialog from '@/components/printing/ReceiptDialog';
 import ModifyOrderDialog from '@/components/orders/ModifyOrderDialog';
 import { useOrderItems } from '@/hooks/useOrders';
+import { isAdminRole } from '@/lib/utils';
 
 const DAY_NAMES: Record<string, string> = {
   saturday: 'السبت', sunday: 'الأحد', monday: 'الإثنين',
@@ -136,7 +137,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   const { workerId: authWorkerId, activeBranch, role, user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const isAdmin = role === 'admin' || role === 'branch_admin' || role === 'supervisor';
+  const isAdmin = isAdminRole(role) || role === 'supervisor';
   const todayName = JS_DAY_TO_NAME[new Date().getDay()] || '';
   const [selectedDay, setSelectedDay] = useState(todayName);
   const { trackVisit } = useTrackVisit();
@@ -174,7 +175,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
       const { data } = await query.order('full_name');
       return data || [];
     },
-    enabled: (role === 'admin' || role === 'branch_admin' || role === 'supervisor') && open && !targetWorkerId,
+    enabled: (isAdminRole(role) || role === 'supervisor') && open && !targetWorkerId,
   });
 
   // For admin: use selected worker or fallback to auth worker

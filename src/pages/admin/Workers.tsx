@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
+import { isAdminRole } from '@/lib/utils';
 
 interface WorkerRoleEntry {
   id?: string;
@@ -72,7 +73,7 @@ const Workers: React.FC = () => {
   const filteredWorkers = useMemo(() => {
     // Exclude test workers from main list
     let result = workers.filter(w => !(w as any).is_test);
-    if (role === 'admin' && activeBranch) {
+    if (isAdminRole(role) && activeBranch) {
       result = result.filter(w => 
         w.branch_id === activeBranch.id || 
         w.worker_roles.some(wr => wr.branch_id === activeBranch.id)
@@ -246,7 +247,7 @@ const Workers: React.FC = () => {
       
       // Use the first role's branch or activeBranch as the default
       const firstRole = workerRoles[0];
-      const finalBranchId = firstRole.branch_id || (role === 'admin' && activeBranch ? activeBranch.id : null);
+      const finalBranchId = firstRole.branch_id || (isAdminRole(role) && activeBranch ? activeBranch.id : null);
       
       const { data: newWorker, error: workerError } = await supabase
         .from('workers')
@@ -267,7 +268,7 @@ const Workers: React.FC = () => {
       const rolesToInsert: { worker_id: string; role: AppRole; branch_id: string | null; custom_role_id: string | null }[] = [];
       
       workerRoles.forEach(wr => {
-        const branchId = wr.branch_id || (role === 'admin' && activeBranch ? activeBranch.id : null);
+        const branchId = wr.branch_id || (isAdminRole(role) && activeBranch ? activeBranch.id : null);
         
         if (wr.custom_role_ids && wr.custom_role_ids.length > 0) {
           // Insert one row per custom role
@@ -496,7 +497,7 @@ const Workers: React.FC = () => {
               <Building2 className="w-3 h-3" />
               {t('workers.the_branch')}
             </Label>
-            {(showBranchDefault && role === 'admin' && activeBranch) ? (
+            {(showBranchDefault && isAdminRole(role) && activeBranch) ? (
               <div className="text-sm text-muted-foreground px-2 py-1.5 bg-background rounded border">
                 {activeBranch.name}
               </div>

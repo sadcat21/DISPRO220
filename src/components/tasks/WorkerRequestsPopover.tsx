@@ -11,6 +11,7 @@ import {
   Popover, PopoverContent, PopoverTrigger,
 } from '@/components/ui/popover';
 import { useNavigate } from 'react-router-dom';
+import { isAdminRole } from '@/lib/utils';
 
 interface WorkerRequestSummary {
   workerId: string;
@@ -28,7 +29,7 @@ const WorkerRequestsPopover: React.FC = () => {
   const [selectedWorker, setSelectedWorker] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
-  const isAdmin = role === 'admin' || role === 'branch_admin';
+  const isAdmin = isAdminRole(role);
 
   const { data: workerSummaries } = useQuery({
     queryKey: ['worker-request-summaries', activeBranch?.id],

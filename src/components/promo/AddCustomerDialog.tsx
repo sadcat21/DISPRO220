@@ -23,6 +23,7 @@ import { reverseGeocode } from '@/utils/geoUtils';
 import { useCustomerTypes, getCustomerTypeColor } from '@/hooks/useCustomerTypes';
 import { useCustomerFieldSettings } from '@/hooks/useCustomerFieldSettings';
 import { CUSTOMER_FIELD_LABELS, type CustomerFieldKey } from '@/types/customerFieldSettings';
+import { isAdminRole } from '@/lib/utils';
 
 interface AddCustomerDialogProps {
   open: boolean;
@@ -748,7 +749,7 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
               </Select>
             </div>
 
-            {role === 'admin' && activeBranch && (
+            {isAdminRole(role) && activeBranch && (
               <div className="p-3 bg-background/60 rounded-lg border">
                 <p className="text-sm text-muted-foreground">{t('nav.branches')}</p>
                 <p className="font-medium">{activeBranch.name}</p>

@@ -40,6 +40,7 @@ import ManualPromoEntryDialog from '@/components/offers/ManualPromoEntryDialog';
 import { Edit } from 'lucide-react';
 import { useSelectedWorker } from '@/contexts/SelectedWorkerContext';
 import AdminWorkerBar from '@/components/workers/AdminWorkerBar';
+import { isAdminRole } from '@/lib/utils';
 
 const getDateLocale = (lang: string) => {
   switch (lang) {
@@ -53,7 +54,7 @@ const OrdersContent: React.FC = () => {
   const location = useLocation();
   const { workerId, activeBranch, role } = useAuth();
   const { t, tp, language, loadPrintSettingsFromDB } = useLanguage();
-  const isAdminOrBranchAdmin = role === 'admin' || role === 'branch_admin';
+  const isAdminOrBranchAdmin = isAdminRole(role);
   const { workerId: contextWorkerId, workerName: contextWorkerName, clearSelectedWorker } = useSelectedWorker();
 
   const STATUS_CONFIG = {

@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { cn, isAdminRole } from '@/lib/utils';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -84,7 +84,7 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
   const [adjustPaidAmount, setAdjustPaidAmount] = useState<number>(initPaid);
   const [adjustRemainingAmount, setAdjustRemainingAmount] = useState<number>(Math.max(0, Number(order.total_amount || 0) - initPaid));
 
-  const canChangeWorker = role === 'admin' || role === 'branch_admin' || order.created_by === workerId;
+  const canChangeWorker = isAdminRole(role) || order.created_by === workerId;
 
   // Initialize items from orderItems
   useEffect(() => {

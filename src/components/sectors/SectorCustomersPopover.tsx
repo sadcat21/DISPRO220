@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import TodayCustomersDialog from './TodayCustomersDialog';
 import DebtCollectionsPopover from '@/components/debts/DebtCollectionsPopover';
+import { isAdminRole } from '@/lib/utils';
 
 const JS_DAY_TO_NAME: Record<number, string> = {
   6: 'saturday', 0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday', 4: 'thursday',
@@ -15,7 +16,7 @@ const SectorCustomersPopover: React.FC = () => {
   const { workerId, activeBranch, role } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
   const todayName = JS_DAY_TO_NAME[new Date().getDay()] || '';
-  const isAdmin = role === 'admin' || role === 'branch_admin';
+  const isAdmin = isAdminRole(role);
 
   // Check if there are scheduled sectors today for badge count
   const { data: todayCount = 0 } = useQuery({

@@ -19,11 +19,12 @@ import {
 } from '@/components/ui/select';
 import { useIsElementHidden } from '@/hooks/useUIOverrides';
 import ReceiptViewerDialog from '@/components/expenses/ReceiptViewerDialog';
+import { isAdminRole } from '@/lib/utils';
 
 const Expenses: React.FC = () => {
   const { workerId, role } = useAuth();
   const { language, t, dir } = useLanguage();
-  const isManager = role === 'admin' || role === 'branch_admin';
+  const isManager = isAdminRole(role);
 
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showAdd, setShowAdd] = useState(false);

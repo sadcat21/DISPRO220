@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { isAdminRole } from '@/lib/utils';
 
 export interface StockAlert {
   worker_id: string;
@@ -25,7 +26,7 @@ export const useStockAlerts = () => {
   const { activeBranch, role } = useAuth();
   const queryClient = useQueryClient();
   const branchId = activeBranch?.id;
-  const isAdmin = role === 'admin' || role === 'branch_admin';
+  const isAdmin = isAdminRole(role);
 
   // Realtime subscription for stock-related changes
   useEffect(() => {

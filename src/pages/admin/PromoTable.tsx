@@ -20,7 +20,7 @@ import { Users, Calendar as CalendarIcon, Loader2, FileSpreadsheet, Search, Prin
 import { format, startOfMonth, endOfMonth, subMonths, startOfDay, endOfDay, subDays } from 'date-fns';
 import { ar, fr, enUS } from 'date-fns/locale';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, isAdminRole } from '@/lib/utils';
 import PromoPrintView from '@/components/print/PromoPrintView';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage, Language } from '@/contexts/LanguageContext';
@@ -116,7 +116,7 @@ const PromoTable: React.FC = () => {
 
   // Filter workers by activeBranch
   const filteredWorkers = useMemo(() => {
-    if (role === 'admin' && activeBranch) {
+    if (isAdminRole(role) && activeBranch) {
       return workers.filter(w => w.branch_id === activeBranch.id);
     }
     return workers;

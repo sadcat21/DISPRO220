@@ -45,6 +45,7 @@ import EditWorkerProfileDialog from '@/components/workers/EditWorkerProfileDialo
 import WorkerAchievementsDialog from '@/components/workers/WorkerAchievementsDialog';
 import SectorScheduleDialog from '@/components/sectors/SectorScheduleDialog';
 import SectorCoverageDialog from '@/components/sectors/SectorCoverageDialog';
+import { isAdminRole } from '@/lib/utils';
 
 const workerActions = [
   { key: 'worker_profile', icon: Settings, path: '', labelKey: 'إعدادات البيانات', color: 'bg-gray-50 border-gray-200 text-gray-700', isDialog: true },
@@ -563,7 +564,7 @@ const WorkerActions: React.FC = () => {
             // Hide worker_profile for supervisors
             if (isSupervisorMode && action.key === 'worker_profile') return false;
             // Admin sees all, others check UI overrides
-            if (role === 'admin') return true;
+            if (isAdminRole(role)) return true;
             const overrideKey = `wa_${action.key}`;
             return !myOverrides?.some(o => o.element_type === 'button' && o.element_key === overrideKey && o.is_hidden);
           }).map((action) => (

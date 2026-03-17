@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { LogOut, MoreHorizontal, Bluetooth, BluetoothOff, Printer, Receipt, MessageCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage, Language } from '@/contexts/LanguageContext';
-import { cn } from '@/lib/utils';
+import { cn, isAdminRole } from '@/lib/utils';
 import icon from '@/assets/icon.png';
 import {
   DropdownMenu,
@@ -41,7 +41,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   const location = useLocation();
   const { isConnected, deviceName, scanAndConnect, disconnect, status: printerStatus } = useBluetoothPrinter();
   const [invoiceRequestOpen, setInvoiceRequestOpen] = useState(false);
-  const showInvoiceButton = role === 'admin' || role === 'branch_admin';
+  const showInvoiceButton = isAdminRole(role);
   const { totalUnread } = useChat();
   const { startTracking } = useLocationBroadcast();
 
@@ -107,10 +107,16 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
     // Add system role (صفة)
     if (role === 'admin') {
       parts.push(t('workers.role_admin'));
+    } else if (role === 'project_manager') {
+      parts.push('مدير المشروع');
     } else if (role === 'branch_admin') {
       parts.push(t('workers.role_branch_admin'));
     } else if (role === 'supervisor') {
       parts.push(t('workers.role_supervisor'));
+    } else if (role === 'accountant') {
+      parts.push('محاسب');
+    } else if (role === 'admin_assistant') {
+      parts.push('عون إداري');
     } else if (role === 'worker') {
       parts.push(t('workers.role_worker'));
     }
@@ -210,7 +216,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
-              {role === 'admin' && (
+              {isAdminRole(role) && (
                 <DropdownMenuItem
                   onClick={switchBranch}
                   className="flex items-center gap-2 cursor-pointer"

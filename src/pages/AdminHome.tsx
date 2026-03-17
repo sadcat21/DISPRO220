@@ -12,6 +12,7 @@ import InvoiceRequestDialog from '@/components/treasury/InvoiceRequestDialog';
 import CreateOrderDialog from '@/components/orders/CreateOrderDialog';
 import WorkerGiftsSummaryDialog from '@/components/accounting/WorkerGiftsSummaryDialog';
 import ManualPromoEntryDialog from '@/components/offers/ManualPromoEntryDialog';
+import { isAdminRole } from '@/lib/utils';
 
 // Color mapping by path for semantic meaning
 const pathColors: Record<string, { bg: string; icon: string; border: string }> = {
@@ -67,8 +68,8 @@ const AdminHome: React.FC = () => {
   const isDebtsHidden = useIsElementHidden('page', '/customer-debts');
   const isGeoHidden = useIsElementHidden('page', '/geo-operations');
   const isWorkerActionsHidden = useIsElementHidden('page', '/worker-actions');
-  const showInvoiceButton = role === 'admin' || role === 'branch_admin';
-  const showGiftsButton = role === 'admin' || role === 'branch_admin';
+  const showInvoiceButton = isAdminRole(role);
+  const showGiftsButton = isAdminRole(role);
 
   // Fetch active workers for gifts navigation
   const { data: activeWorkers = [] } = useQuery({
@@ -144,7 +145,7 @@ const AdminHome: React.FC = () => {
       </div>
 
       {/* Surplus/Deficit Treasury & Rewards */}
-      {(role === 'admin' || role === 'branch_admin') && (
+      {isAdminRole(role) && (
         <div className="grid grid-cols-4 gap-3">
           <div
             className="relative overflow-hidden rounded-xl border-2 border-violet-300 bg-gradient-to-br from-violet-50 to-violet-100 p-3 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg"

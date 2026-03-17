@@ -23,6 +23,7 @@ import { useCustomerFieldSettings } from '@/hooks/useCustomerFieldSettings';
 import { CUSTOMER_FIELD_LABELS, type CustomerFieldKey } from '@/types/customerFieldSettings';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getLocalizedName } from '@/utils/sectorName';
+import { isAdminRole } from '@/lib/utils';
 
 interface EditCustomerDialogProps {
   open: boolean;
@@ -325,7 +326,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customer) return;
-    const isManager = role === 'admin' || role === 'branch_admin';
+    const isManager = isAdminRole(role);
     if (!name.trim()) { toast.error('الرجاء إدخال اسم العميل'); return; }
 
     const firstMissingRequired = customerFieldSettings.requiredOnEdit.find((field) => !isFieldFilled(field));

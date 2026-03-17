@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FileText, Trash2, Download, Search, Loader2, FolderOpen, Eye } from 'lucide-react';
 import { toast } from 'sonner';
+import { isAdminRole } from '@/lib/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,7 +35,7 @@ const SharedInvoices: React.FC = () => {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  const isAdmin = role === 'admin' || role === 'branch_admin';
+  const isAdmin = isAdminRole(role);
 
   // List files from storage
   const { data: files, isLoading } = useQuery({

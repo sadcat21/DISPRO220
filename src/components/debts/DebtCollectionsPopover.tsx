@@ -18,6 +18,7 @@ import { format, addDays } from 'date-fns';
 import { toast } from 'sonner';
 import CollectDebtDialog from './CollectDebtDialog';
 import VisitNoPaymentDialog from './VisitNoPaymentDialog';
+import { isAdminRole } from '@/lib/utils';
 
 // Algerian work week: 0=Saturday, 1=Sunday, 2=Monday, 3=Tuesday, 4=Wednesday, 5=Thursday
 const WORK_DAYS = [
@@ -69,7 +70,7 @@ const DebtCollectionsPopover: React.FC = () => {
   const [showCollect, setShowCollect] = useState(false);
   const [showVisit, setShowVisit] = useState(false);
 
-  const isAdmin = role === 'admin' || role === 'branch_admin';
+  const isAdmin = isAdminRole(role);
   // Badge always shows TODAY's count, not the selected day
   const totalCount = todayDebts.length + (isAdmin ? pendingCollections.length : 0);
 

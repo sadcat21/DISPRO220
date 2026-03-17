@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import OfferTierCard from './OfferTierCard';
+import { isAdminRole } from '@/lib/utils';
 
 interface CreateOfferDialogProps {
   open: boolean;
@@ -52,7 +53,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
 }) => {
   const { t, dir } = useLanguage();
   const { workerId, role } = useAuth();
-  const isAdmin = role === 'admin';
+  const isAdmin = isAdminRole(role);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);

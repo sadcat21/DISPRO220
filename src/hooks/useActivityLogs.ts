@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ActivityLog, ActivityLogWithWorker } from '@/types/activityLog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRealtimeSubscription } from './useRealtimeSubscription';
+import { isAdminRole } from '@/lib/utils';
 
 interface LogActivityParams {
   actionType: string;
@@ -88,7 +89,7 @@ export const useActivityLogs = (filters?: ActivityLogsFilters) => {
       }
 
       // Filter by branch for admin
-      if (role === 'admin' && activeBranch) {
+      if (isAdminRole(role) && activeBranch) {
         query = query.eq('branch_id', activeBranch.id);
       }
 

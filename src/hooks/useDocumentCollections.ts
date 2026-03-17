@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRealtimeSubscription } from './useRealtimeSubscription';
+import { isAdminRole } from '@/lib/utils';
 
 export interface PendingDocOrder {
   id: string;
@@ -48,7 +49,7 @@ const DAY_KEY_TO_JS: Record<string, number> = {
 // Fetch pending document orders for collection
 export const usePendingDocOrders = (targetDate?: string) => {
   const { user, role } = useAuth();
-  const isAdmin = role === 'admin' || role === 'branch_admin';
+  const isAdmin = isAdminRole(role);
   const showAll = targetDate === '__all__';
 
   useRealtimeSubscription(
@@ -155,7 +156,7 @@ export const usePendingDocCollections = () => {
       if (error) throw error;
       return data as unknown as DocumentCollection[];
     },
-    enabled: role === 'admin' || role === 'branch_admin',
+    enabled: isAdminRole(role),
   });
 };
 
