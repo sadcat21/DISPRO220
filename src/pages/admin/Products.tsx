@@ -84,7 +84,7 @@ const Products: React.FC = () => {
 
   const handleImageSelect = (file: File | null, setFile: (f: File | null) => void, setPreview: (p: string | null) => void) => {
     if (!file) { setFile(null); setPreview(null); return; }
-    if (file.size > 5 * 1024 * 1024) { toast.error('حجم الصورة يجب أن يكون أقل من 5 ميجا'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error(t('products.image_too_large')); return; }
     setFile(file);
     const reader = new FileReader();
     reader.onload = (e) => setPreview(e.target?.result as string);
