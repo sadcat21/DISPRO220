@@ -314,7 +314,7 @@ const GeoOperations: React.FC = () => {
                           </div>
                           <div className="flex items-center gap-1 text-xs text-muted-foreground border-r pr-2 shadow-none">
                             <Clock className="w-3 h-3" />
-                            <span>{format(new Date(visit.created_at), 'dd/MM HH:mm', { locale: ar })}</span>
+                            <span>{format(new Date(visit.created_at), 'dd/MM HH:mm', { locale: getDateLocale() })}</span>
                           </div>
                           {userDistance !== null && (
                             <div className="flex items-center gap-1 text-xs font-bold text-teal-600 border-r pr-2">
