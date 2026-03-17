@@ -229,7 +229,7 @@ const ManagerTreasury = () => {
       const existingSessionIds = new Set((existing || []).map((e: any) => e.session_id));
 
       const unsynced = sessions.filter(s => !existingSessionIds.has(s.id));
-      if (!unsynced.length) { toast.info('جميع الجلسات مزامنة بالفعل'); setSyncing(false); return; }
+      if (!unsynced.length) { toast.info(t('treasury.all_synced')); setSyncing(false); return; }
 
       let totalInserted = 0;
       for (const sess of unsynced) {
