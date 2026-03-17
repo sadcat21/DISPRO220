@@ -419,13 +419,13 @@ const StockReceipts: React.FC = () => {
             <div className="space-y-4">
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">التاريخ</span>
+                  <span className="text-muted-foreground">{t('common.date')}</span>
                   <span>{formatDate(viewSendingOrder.created_at, 'dd/MM/yyyy HH:mm', language)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">الحالة</span>
+                  <span className="text-muted-foreground">{t('common.status')}</span>
                   <Badge variant={viewSendingOrder.status === 'confirmed' ? 'default' : 'secondary'}>
-                    {viewSendingOrder.status === 'confirmed' ? 'مؤكد' : 'معلق'}
+                    {viewSendingOrder.status === 'confirmed' ? t('stock_receipts.confirmed') : t('stock_receipts.pending')}
                   </Badge>
                 </div>
                 {viewSendingOrder.notes && (
