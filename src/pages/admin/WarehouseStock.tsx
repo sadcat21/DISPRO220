@@ -333,7 +333,7 @@ const WarehouseStock: React.FC = () => {
         {filteredSummaries.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center text-muted-foreground text-sm">
-              لا توجد بيانات مخزون
+              {t('warehouse.no_stock_data')}
             </CardContent>
           </Card>
         ) : (
