@@ -32,7 +32,8 @@ serve(async (req) => {
     }
 
     // Validate role
-    const validRole = role === "worker" ? "worker" : "admin";
+    const validRoles = ['admin', 'worker', 'supervisor', 'branch_admin', 'project_manager', 'accountant', 'admin_assistant'];
+    const validRole = validRoles.includes(role) ? role : 'admin';
 
     const email = `${username.toLowerCase()}@aromaproma.local`;
 

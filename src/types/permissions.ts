@@ -82,7 +82,7 @@ export const RESOURCE_NAMES: Record<string, string> = {
 };
 
 // System roles vs Functional roles
-export const SYSTEM_ROLE_CODES = ['admin', 'branch_admin', 'supervisor', 'worker'];
+export const SYSTEM_ROLE_CODES = ['admin', 'branch_admin', 'supervisor', 'worker', 'project_manager', 'accountant', 'admin_assistant'];
 export const FUNCTIONAL_ROLE_CODES = ['sales_rep', 'delivery_rep', 'warehouse_manager'];
 
 export const ROLE_TYPE_LABELS: Record<string, string> = {
