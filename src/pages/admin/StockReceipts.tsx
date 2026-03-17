@@ -298,13 +298,13 @@ const StockReceipts: React.FC = () => {
           <TabsContent value="sending" className="space-y-3 mt-3">
             <Button size="sm" onClick={() => setShowDeliveryDialog(true)} className="w-full" variant="destructive">
               <Truck className="w-4 h-4 ml-1" />
-              تسليم جديد للمصنع
+              {t('stock_receipts.new_delivery')}
             </Button>
 
             {sendingOrders.length === 0 ? (
               <Card>
                 <CardContent className="py-8 text-center text-muted-foreground">
-                  لا توجد عمليات تسليم للمصنع
+                  {t('stock_receipts.no_sending')}
                 </CardContent>
               </Card>
             ) : (
@@ -314,7 +314,7 @@ const StockReceipts: React.FC = () => {
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
                         <Truck className="w-4 h-4 text-destructive" />
-                        <span className="text-sm font-medium">تسليم للمصنع</span>
+                        <span className="text-sm font-medium">{t('stock_receipts.delivery_to_factory')}</span>
                       </div>
                       <span className="text-xs text-muted-foreground">
                         {formatDate(order.created_at, 'dd/MM/yyyy HH:mm', language)}
@@ -322,7 +322,7 @@ const StockReceipts: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2 text-xs">
                       <Badge variant={order.status === 'confirmed' ? 'default' : 'secondary'} className="text-[10px]">
-                        {order.status === 'confirmed' ? 'مؤكد' : 'معلق'}
+                        {order.status === 'confirmed' ? t('stock_receipts.confirmed') : t('stock_receipts.pending')}
                       </Badge>
                       {order.notes && <span className="text-muted-foreground truncate">{order.notes}</span>}
                     </div>
