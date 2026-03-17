@@ -852,17 +852,28 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     return Array.from(custMap.values());
   }, [postponedDeliveryOrders, customers, postponedCustomerIds]);
 
-  // IDs of customers whose orders were rescheduled to today (for "مؤجلة" badge)
+  // Map of customer_id -> max postpone_count for badge display
+  const postponeCountMap = useMemo(() => {
+    const map = new Map<string, number>();
+    assignedOrders.forEach(o => {
+      if (o.customer_id && (o as any).postpone_count > 0) {
+        const current = map.get(o.customer_id) || 0;
+        map.set(o.customer_id, Math.max(current, (o as any).postpone_count));
+      }
+    });
+    return map;
+  }, [assignedOrders]);
+
+  // IDs of customers whose orders were rescheduled to today (for badge)
   const rescheduledToTodayIds = useMemo(() => {
     const ids = new Set<string>();
     assignedOrders.forEach(o => {
-      if (o.customer_id && o.delivery_date && o.delivery_date.startsWith(todayDateStr)) {
-        const createdDate = o.created_at.split('T')[0];
-        if (createdDate < todayDateStr) ids.add(o.customer_id);
+      if (o.customer_id && (o as any).postpone_count > 0) {
+        ids.add(o.customer_id);
       }
     });
     return ids;
-  }, [assignedOrders, todayDateStr]);
+  }, [assignedOrders]);
 
   const collectedDebtIds = useMemo(() => new Set(todayCollections.filter(c => c.action !== 'no_payment').map(c => c.debt_id)), [todayCollections]);
   const noPaymentDebtIds = useMemo(() => new Set(todayCollections.filter(c => c.action === 'no_payment').map(c => c.debt_id)), [todayCollections]);
