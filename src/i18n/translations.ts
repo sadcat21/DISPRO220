@@ -1403,6 +1403,46 @@ export const translations: Translations = {
   'coin_exchange.receive_bills': { ar: 'استلام مبلغ ورقي', fr: 'Recevoir des billets', en: 'Receive Bills' },
   'coin_exchange.bill_amount': { ar: 'المبلغ الورقي', fr: 'Montant en billets', en: 'Bill Amount' },
   'coin_exchange.confirm_receive': { ar: 'تأكيد الاستلام', fr: 'Confirmer la réception', en: 'Confirm Receipt' },
+
+  // ==================== Admin Home ====================
+  'admin.surplus_treasury': { ar: 'خزينة الفائض', fr: 'Trésorerie excédentaire', en: 'Surplus Treasury' },
+  'admin.rewards': { ar: 'المكافآت', fr: 'Récompenses', en: 'Rewards' },
+  'admin.attendance': { ar: 'المداومة', fr: 'Présence', en: 'Attendance' },
+  'admin.promo_tracking': { ar: 'تتبع العروض', fr: 'Suivi des promos', en: 'Promo Tracking' },
+  'admin.manual_promo': { ar: 'تسجيل عروض يدوي', fr: 'Enregistrement promo manuel', en: 'Manual Promo Entry' },
+  'admin.manual_promo_desc': { ar: 'تسجيل الهدايا المسلّمة حسب شرائح العروض', fr: 'Enregistrer les cadeaux distribués selon les paliers promo', en: 'Record gifts distributed per promo tiers' },
+  'admin.invoice_request': { ar: 'طلب فاتورة', fr: 'Demande de facture', en: 'Invoice Request' },
+  'admin.invoice_request_desc': { ar: 'إرسال طلب فاتورة عبر واتساب', fr: 'Envoyer une demande de facture via WhatsApp', en: 'Send invoice request via WhatsApp' },
+
+  // ==================== Worker Home ====================
+  'worker.pallet_calculator': { ar: 'حاسبة الطبقات', fr: 'Calculateur de palettes', en: 'Pallet Calculator' },
+  'worker.chat': { ar: 'المحادثات', fr: 'Messages', en: 'Chat' },
+  'worker.handover_summary': { ar: 'ملخص التسليم', fr: 'Résumé de remise', en: 'Handover Summary' },
+  'worker.today_customers': { ar: 'عملاء اليوم', fr: 'Clients du jour', en: 'Today\'s Customers' },
+  'worker.today_schedule_desc': { ar: 'عرض جدول العملاء والتوصيلات المجدولة لليوم', fr: 'Voir le calendrier des clients et livraisons du jour', en: 'View today\'s customer schedule and deliveries' },
+  'worker.manual_promo': { ar: 'تسجيل عروض يدوية', fr: 'Enregistrement promo manuel', en: 'Manual Promo Entry' },
+  'worker.rewards': { ar: 'المكافآت', fr: 'Récompenses', en: 'Rewards' },
+  'worker.worker_actions': { ar: 'إجراءات العمال', fr: 'Actions employés', en: 'Worker Actions' },
+  'worker.my_actions': { ar: 'إجراءاتي', fr: 'Mes actions', en: 'My Actions' },
+
+  // ==================== Workers Page ====================
+  'workers.tab_workers': { ar: 'العمال', fr: 'Employés', en: 'Workers' },
+  'workers.tab_test': { ar: 'تجريبي', fr: 'Test', en: 'Test' },
+  'workers.delete_worker': { ar: 'حذف العامل', fr: 'Supprimer l\'employé', en: 'Delete Worker' },
+  'workers.delete_confirm': { ar: 'هل أنت متأكد من حذف العامل؟ سيتم حذف جميع بياناته ولا يمكن التراجع.', fr: 'Êtes-vous sûr de vouloir supprimer cet employé ? Toutes ses données seront supprimées définitivement.', en: 'Are you sure you want to delete this worker? All data will be permanently deleted.' },
+  'workers.delete_success': { ar: 'تم حذف العامل بنجاح', fr: 'Employé supprimé avec succès', en: 'Worker deleted successfully' },
+  'workers.delete_error': { ar: 'فشل في حذف العامل', fr: 'Échec de la suppression', en: 'Failed to delete worker' },
+  'workers.project_manager': { ar: 'مدير المشروع', fr: 'Chef de projet', en: 'Project Manager' },
+  'workers.accountant': { ar: 'المحاسب', fr: 'Comptable', en: 'Accountant' },
+  'workers.admin_assistant': { ar: 'عون إداري', fr: 'Assistant administratif', en: 'Admin Assistant' },
+
+  // ==================== Days ====================
+  'days.saturday': { ar: 'السبت', fr: 'Samedi', en: 'Saturday' },
+  'days.sunday': { ar: 'الأحد', fr: 'Dimanche', en: 'Sunday' },
+  'days.monday': { ar: 'الإثنين', fr: 'Lundi', en: 'Monday' },
+  'days.tuesday': { ar: 'الثلاثاء', fr: 'Mardi', en: 'Tuesday' },
+  'days.wednesday': { ar: 'الأربعاء', fr: 'Mercredi', en: 'Wednesday' },
+  'days.thursday': { ar: 'الخميس', fr: 'Jeudi', en: 'Thursday' },
   'coin_exchange.return_history': { ar: 'سجل الاسترجاع', fr: 'Historique des retours', en: 'Return History' },
   'coin_exchange.no_tasks': { ar: 'لا توجد تكليفات', fr: 'Aucune tâche', en: 'No tasks' },
   'coin_exchange.enter_valid_data': { ar: 'الرجاء إدخال بيانات صحيحة', fr: 'Veuillez entrer des données valides', en: 'Please enter valid data' },

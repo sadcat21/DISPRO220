@@ -209,8 +209,8 @@ const AdminHome: React.FC = () => {
         >
           <Receipt className="w-8 h-8 text-primary" />
           <div>
-            <p className="font-bold text-sm text-foreground">طلب فاتورة</p>
-            <p className="text-xs text-muted-foreground">إرسال طلب فاتورة عبر واتساب</p>
+            <p className="font-bold text-sm text-foreground">{t('admin.invoice_request')}</p>
+            <p className="text-xs text-muted-foreground">{t('admin.invoice_request_desc')}</p>
           </div>
         </div>
       )}
