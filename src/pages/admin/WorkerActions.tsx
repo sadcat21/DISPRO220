@@ -635,7 +635,7 @@ const WorkerActions: React.FC = () => {
                       const totalLoad = stats?.totalLoad || truckReviewQuantities[item.product_id] || item.quantity;
                       const sold = stats?.sold || 0;
                       const giftQty = stats?.giftQty || 0;
-                      const giftUnit = stats?.giftUnit === 'piece' ? 'قطعة' : stats?.giftUnit === 'box' ? 'صندوق' : stats?.giftUnit === 'kg' ? 'كغ' : 'قطعة';
+                      const giftUnit = stats?.giftUnit === 'piece' ? t('worker_actions.piece') : stats?.giftUnit === 'box' ? t('worker_actions.box') : stats?.giftUnit === 'kg' ? t('worker_actions.kg') : t('worker_actions.piece');
                       const isZero = item.quantity === 0;
                       return (
                         <div key={item.id} className={`p-3 rounded-lg border ${isZero ? 'bg-destructive/10 border-destructive/30' : 'bg-card'}`}>
