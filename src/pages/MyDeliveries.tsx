@@ -716,7 +716,7 @@ const MyDeliveries: React.FC = () => {
                   {isDocumentVerificationPending(order) && (
                     <Badge className="text-[10px] px-1.5 py-0.5 bg-accent/10 text-accent border border-accent/30 gap-0.5">
                       <FileCheck className="w-3 h-3" />
-                      تحقق معلق
+                      {t('deliveries.verification_pending')}
                     </Badge>
                   )}
 
