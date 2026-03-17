@@ -10,8 +10,9 @@ import { useVisitTrackingList, getOperationLabel, OperationType } from '@/hooks/
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { ar, fr, enUS } from 'date-fns/locale';
 import { calculateDistance, formatDistance, reverseGeocode } from '@/utils/geoUtils';
 import CustomerLocationView from '@/components/map/CustomerLocationView';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -40,6 +41,8 @@ const WAREHOUSE_LOCATION = { lat: 35.90775, lng: 0.10253 };
 
 const GeoOperations: React.FC = () => {
   const { activeBranch } = useAuth();
+  const { t, language, dir } = useLanguage();
+  const getDateLocale = () => language === 'fr' ? fr : language === 'en' ? enUS : ar;
   const today = new Date().toISOString().split('T')[0];
   const [dateFrom, setDateFrom] = useState(today);
   const [dateTo, setDateTo] = useState(today);
@@ -174,11 +177,11 @@ const GeoOperations: React.FC = () => {
   }, [visits, allCustomers]);
 
   return (
-    <div className="p-4 space-y-4" dir="rtl">
+    <div className="p-4 space-y-4" dir={dir}>
       {/* Header */}
       <div className="flex items-center gap-2">
         <MapPin className="w-6 h-6 text-primary" />
-        <h2 className="text-xl font-bold">العمليات الجغرافية</h2>
+        <h2 className="text-xl font-bold">{t('geo.title')}</h2>
       </div>
 
       {/* Stats Cards */}
@@ -186,25 +189,25 @@ const GeoOperations: React.FC = () => {
         <Card className="bg-blue-50 dark:bg-blue-950/20">
           <CardContent className="p-3 text-center">
             <p className="text-2xl font-bold text-blue-600">{stats.orders}</p>
-            <p className="text-xs text-muted-foreground">طلبيات</p>
+            <p className="text-xs text-muted-foreground">{t('geo.orders')}</p>
           </CardContent>
         </Card>
         <Card className="bg-green-50 dark:bg-green-950/20">
           <CardContent className="p-3 text-center">
             <p className="text-2xl font-bold text-green-600">{stats.sales}</p>
-            <p className="text-xs text-muted-foreground">بيع مباشر</p>
+            <p className="text-xs text-muted-foreground">{t('geo.direct_sale')}</p>
           </CardContent>
         </Card>
         <Card className="bg-purple-50 dark:bg-purple-950/20">
           <CardContent className="p-3 text-center">
             <p className="text-2xl font-bold text-purple-600">{stats.deliveries}</p>
-            <p className="text-xs text-muted-foreground">توصيلات</p>
+            <p className="text-xs text-muted-foreground">{t('geo.deliveries')}</p>
           </CardContent>
         </Card>
         <Card className="bg-orange-50 dark:bg-orange-950/20">
           <CardContent className="p-3 text-center">
             <p className="text-2xl font-bold text-orange-600">{stats.customers}</p>
-            <p className="text-xs text-muted-foreground">عملاء جدد</p>
+            <p className="text-xs text-muted-foreground">{t('geo.new_customers')}</p>
           </CardContent>
         </Card>
       </div>
@@ -214,25 +217,25 @@ const GeoOperations: React.FC = () => {
         <CardContent className="p-3 space-y-3">
           <div className="flex items-center gap-1 text-sm font-semibold text-muted-foreground">
             <Filter className="w-4 h-4" />
-            تصفية
+            {t('geo.filter')}
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="text-xs">من تاريخ</Label>
+              <Label className="text-xs">{t('geo.date_from')}</Label>
               <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="text-sm" />
             </div>
             <div>
-              <Label className="text-xs">إلى تاريخ</Label>
+              <Label className="text-xs">{t('geo.date_to')}</Label>
               <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="text-sm" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <Select value={selectedWorker} onValueChange={setSelectedWorker}>
               <SelectTrigger className="text-sm">
-                <SelectValue placeholder="العامل" />
+                <SelectValue placeholder={t('geo.worker')} />
               </SelectTrigger>
               <SelectContent className="bg-popover z-50">
-                <SelectItem value="all">كل العمال</SelectItem>
+                <SelectItem value="all">{t('geo.all_workers')}</SelectItem>
                 {workers?.map(w => (
                   <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>
                 ))}
@@ -240,17 +243,17 @@ const GeoOperations: React.FC = () => {
             </Select>
             <Select value={selectedType} onValueChange={setSelectedType}>
               <SelectTrigger className="text-sm">
-                <SelectValue placeholder="نوع العملية" />
+                <SelectValue placeholder={t('geo.operation_type')} />
               </SelectTrigger>
               <SelectContent className="bg-popover z-50">
-                <SelectItem value="all">كل العمليات</SelectItem>
-                <SelectItem value="order">طلبية</SelectItem>
-                <SelectItem value="direct_sale">بيع مباشر</SelectItem>
-                <SelectItem value="delivery">توصيل</SelectItem>
-                <SelectItem value="add_customer">إضافة عميل</SelectItem>
-                <SelectItem value="update_customer">تعديل زبون</SelectItem>
-                <SelectItem value="delete_customer">حذف زبون</SelectItem>
-                <SelectItem value="debt_collection">تحصيل دين</SelectItem>
+                <SelectItem value="all">{t('geo.all_operations')}</SelectItem>
+                <SelectItem value="order">{t('geo.order')}</SelectItem>
+                <SelectItem value="direct_sale">{t('geo.direct_sale')}</SelectItem>
+                <SelectItem value="delivery">{t('geo.delivery')}</SelectItem>
+                <SelectItem value="add_customer">{t('geo.add_customer')}</SelectItem>
+                <SelectItem value="update_customer">{t('geo.update_customer')}</SelectItem>
+                <SelectItem value="delete_customer">{t('geo.delete_customer')}</SelectItem>
+                <SelectItem value="debt_collection">{t('geo.debt_collection')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -266,12 +269,12 @@ const GeoOperations: React.FC = () => {
         <Card>
           <CardContent className="p-8 text-center text-muted-foreground">
             <MapPin className="w-10 h-10 mx-auto mb-2 opacity-30" />
-            <p>لا توجد عمليات مسجلة في هذه الفترة</p>
+            <p>{t('geo.no_operations')}</p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">{visits.length} عملية</p>
+          <p className="text-sm text-muted-foreground">{visits.length} {t('geo.operation_count')}</p>
           {visits.map(visit => {
             const Icon = OPERATION_ICONS[visit.operation_type] || MapPin;
             const colorClass = OPERATION_COLORS[visit.operation_type] || 'bg-muted text-muted-foreground';
@@ -311,18 +314,18 @@ const GeoOperations: React.FC = () => {
                           </div>
                           <div className="flex items-center gap-1 text-xs text-muted-foreground border-r pr-2 shadow-none">
                             <Clock className="w-3 h-3" />
-                            <span>{format(new Date(visit.created_at), 'dd/MM HH:mm', { locale: ar })}</span>
+                            <span>{format(new Date(visit.created_at), 'dd/MM HH:mm', { locale: getDateLocale() })}</span>
                           </div>
                           {userDistance !== null && (
                             <div className="flex items-center gap-1 text-xs font-bold text-teal-600 border-r pr-2">
                               <Navigation className="w-3 h-3" />
-                              <span>بعدك: {formatDistance(userDistance)}</span>
+                              <span>{t('geo.distance_from_you')} {formatDistance(userDistance)}</span>
                             </div>
                           )}
                           {warehouseDistance !== null && (
                             <div className="flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400 border-r pr-2">
                               <Warehouse className="w-3 h-3" />
-                              <span>المخزن: {formatDistance(warehouseDistance)}</span>
+                              <span>{t('geo.warehouse')} {formatDistance(warehouseDistance)}</span>
                             </div>
                           )}
                         </div>
@@ -372,7 +375,7 @@ const GeoOperations: React.FC = () => {
                     <div className="mt-3 mr-12 space-y-2">
                       <p className="text-[10px] font-bold text-muted-foreground flex items-center gap-1">
                         <User className="w-3 h-3" />
-                        عملاء قريبون (500م):
+                        {t('geo.nearby_customers')}
                       </p>
                       <div className="flex gap-1.5 flex-wrap">
                         {nearbyCustomers.map(customer => (

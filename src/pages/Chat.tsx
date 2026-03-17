@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useChat, Conversation } from '@/hooks/useChat';
+import { useLanguage } from '@/contexts/LanguageContext';
 import ConversationList from '@/components/chat/ConversationList';
 import ChatView from '@/components/chat/ChatView';
 import NewChatDialog from '@/components/chat/NewChatDialog';
@@ -9,6 +10,7 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Chat = () => {
+  const { t } = useLanguage();
   const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
   const [showNewChat, setShowNewChat] = useState(false);
   const [pendingConversation, setPendingConversation] = useState<Conversation | null>(null);
@@ -46,14 +48,13 @@ const Chat = () => {
       await queryClient.invalidateQueries({ queryKey: ['conversations'] });
       return true;
     } catch (error) {
-      console.error('فشل إنشاء المحادثة:', error);
-      toast.error('تعذر بدء المحادثة، حاول مرة أخرى');
+      console.error(t('chat.create_failed'), error);
+      toast.error(t('chat.create_error'));
       return false;
     }
   };
 
   if (isMobile) {
-    // When a conversation is open, go full screen (hide header + nav)
     if (selectedConv) {
       return (
         <div className="fixed inset-0 z-[100] bg-background flex flex-col">
@@ -101,7 +102,7 @@ const Chat = () => {
             onUpload={uploadMedia}
           />
         ) : (
-          <div className="h-full flex items-center justify-center text-muted-foreground">اختر محادثة أو ابدأ محادثة جديدة</div>
+          <div className="h-full flex items-center justify-center text-muted-foreground">{t('chat.select_or_start')}</div>
         )}
       </div>
       <NewChatDialog open={showNewChat} onClose={() => setShowNewChat(false)} onCreate={handleNewChat} />

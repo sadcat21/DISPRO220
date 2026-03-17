@@ -48,13 +48,13 @@ import SectorCoverageDialog from '@/components/sectors/SectorCoverageDialog';
 import { isAdminRole } from '@/lib/utils';
 
 const workerActions = [
-  { key: 'worker_profile', icon: Settings, path: '', labelKey: 'إعدادات البيانات', color: 'bg-gray-50 border-gray-200 text-gray-700', isDialog: true },
+  { key: 'worker_profile', icon: Settings, path: '', labelKey: 'worker_actions.worker_profile', color: 'bg-gray-50 border-gray-200 text-gray-700', isDialog: true },
   { key: 'accounting', icon: Calculator, path: '/accounting', labelKey: 'accounting.title', color: 'bg-amber-50 border-amber-200 text-amber-700' },
   { key: 'load_stock', icon: Truck, path: '/load-stock', labelKey: 'stock.load_to_worker', color: 'bg-green-50 border-green-200 text-green-700' },
-  { key: 'truck_stock', icon: Package, path: '', labelKey: 'رصيد الشاحنة', color: 'bg-lime-50 border-lime-200 text-lime-700', isDialog: true },
-  { key: 'unload_truck', icon: PackageOpen, path: '/load-stock', labelKey: 'تفريغ الشاحنة', color: 'bg-red-50 border-red-200 text-red-700' },
-  { key: 'stock_review', icon: ClipboardCheck, path: '', labelKey: 'جلسة مراجعة', color: 'bg-fuchsia-50 border-fuchsia-200 text-fuchsia-700', isDialog: true },
-  { key: 'session_history', icon: History, path: '/load-stock', labelKey: 'سجل الشحن والتفريغ', color: 'bg-stone-50 border-stone-200 text-stone-700' },
+  { key: 'truck_stock', icon: Package, path: '', labelKey: 'worker_actions.truck_stock', color: 'bg-lime-50 border-lime-200 text-lime-700', isDialog: true },
+  { key: 'unload_truck', icon: PackageOpen, path: '/load-stock', labelKey: 'worker_actions.unload_truck', color: 'bg-red-50 border-red-200 text-red-700' },
+  { key: 'stock_review', icon: ClipboardCheck, path: '', labelKey: 'worker_actions.stock_review', color: 'bg-fuchsia-50 border-fuchsia-200 text-fuchsia-700', isDialog: true },
+  { key: 'session_history', icon: History, path: '/load-stock', labelKey: 'worker_actions.session_history', color: 'bg-stone-50 border-stone-200 text-stone-700' },
   { key: 'worker_debts', icon: Banknote, path: '/worker-debts', labelKey: 'nav.worker_debts', color: 'bg-rose-50 border-rose-200 text-rose-700' },
   { key: 'liability', icon: HandCoins, path: '/worker-liability', labelKey: 'liability.title', color: 'bg-orange-50 border-orange-200 text-orange-700' },
   { key: 'coin_exchange', icon: ArrowLeftRight, path: '', labelKey: 'coin_exchange.title', color: 'bg-cyan-50 border-cyan-200 text-cyan-700', isDialog: true },
@@ -63,18 +63,18 @@ const workerActions = [
   { key: 'orders', icon: ShoppingCart, path: '/orders', labelKey: 'nav.orders', color: 'bg-blue-50 border-blue-200 text-blue-700' },
   { key: 'activity', icon: Activity, path: '/activity-logs', labelKey: 'nav.activity_logs', color: 'bg-violet-50 border-violet-200 text-violet-700' },
   { key: 'permissions', icon: Shield, path: '/permissions', labelKey: 'nav.permissions', color: 'bg-slate-50 border-slate-200 text-slate-700' },
-  { key: 'financial', icon: DollarSign, path: '', labelKey: 'البيانات المالية', color: 'bg-emerald-50 border-emerald-200 text-emerald-700', isDialog: true },
-  { key: 'points_log', icon: Trophy, path: '', labelKey: 'سجل النقاط', color: 'bg-purple-50 border-purple-200 text-purple-700', isDialog: true },
-  { key: 'rewards_page', icon: AlertTriangle, path: '/rewards', labelKey: 'المكافآت والعقوبات', color: 'bg-pink-50 border-pink-200 text-pink-700' },
-  { key: 'handover_summary', icon: ClipboardList, path: '', labelKey: 'ملخص التسليم', color: 'bg-indigo-50 border-indigo-200 text-indigo-700', isDialog: true },
-  { key: 'today_customers', icon: MapPin, path: '', labelKey: 'عملاء اليوم', color: 'bg-sky-50 border-sky-200 text-sky-700', isDialog: true },
-  { key: 'attendance_log', icon: CalendarDays, path: '', labelKey: 'سجل المداومة', color: 'bg-teal-50 border-teal-200 text-teal-700', isDialog: true },
-  { key: 'sales_summary', icon: ShoppingBag, path: '', labelKey: 'تجميع المبيعات', color: 'bg-amber-50 border-amber-200 text-amber-700', isDialog: true },
-  { key: 'gifts_summary', icon: Gift, path: '', labelKey: 'تجميع العروض', color: 'bg-purple-50 border-purple-200 text-purple-700', isDialog: true },
-  { key: 'achievements', icon: Trophy, path: '', labelKey: 'المنجزات', color: 'bg-emerald-50 border-emerald-200 text-emerald-700', isDialog: true },
-  { key: 'sector_schedule', icon: MapPin, path: '', labelKey: 'جدول السيكتور', color: 'bg-sky-50 border-sky-200 text-sky-700', isDialog: true },
-  { key: 'sector_coverage', icon: RefreshCw, path: '', labelKey: 'تعويض السيكتورات', color: 'bg-orange-50 border-orange-200 text-orange-700', isDialog: true },
-  { key: 'orders_summary', icon: ClipboardList, path: '', labelKey: 'تجميع الطلبيات', color: 'bg-blue-50 border-blue-200 text-blue-700', isDialog: true },
+  { key: 'financial', icon: DollarSign, path: '', labelKey: 'worker_actions.financial', color: 'bg-emerald-50 border-emerald-200 text-emerald-700', isDialog: true },
+  { key: 'points_log', icon: Trophy, path: '', labelKey: 'worker_actions.points_log', color: 'bg-purple-50 border-purple-200 text-purple-700', isDialog: true },
+  { key: 'rewards_page', icon: AlertTriangle, path: '/rewards', labelKey: 'worker_actions.rewards_page', color: 'bg-pink-50 border-pink-200 text-pink-700' },
+  { key: 'handover_summary', icon: ClipboardList, path: '', labelKey: 'worker_actions.handover_summary', color: 'bg-indigo-50 border-indigo-200 text-indigo-700', isDialog: true },
+  { key: 'today_customers', icon: MapPin, path: '', labelKey: 'worker_actions.today_customers', color: 'bg-sky-50 border-sky-200 text-sky-700', isDialog: true },
+  { key: 'attendance_log', icon: CalendarDays, path: '', labelKey: 'worker_actions.attendance_log', color: 'bg-teal-50 border-teal-200 text-teal-700', isDialog: true },
+  { key: 'sales_summary', icon: ShoppingBag, path: '', labelKey: 'worker_actions.sales_summary', color: 'bg-amber-50 border-amber-200 text-amber-700', isDialog: true },
+  { key: 'gifts_summary', icon: Gift, path: '', labelKey: 'worker_actions.gifts_summary', color: 'bg-purple-50 border-purple-200 text-purple-700', isDialog: true },
+  { key: 'achievements', icon: Trophy, path: '', labelKey: 'worker_actions.achievements', color: 'bg-emerald-50 border-emerald-200 text-emerald-700', isDialog: true },
+  { key: 'sector_schedule', icon: MapPin, path: '', labelKey: 'worker_actions.sector_schedule', color: 'bg-sky-50 border-sky-200 text-sky-700', isDialog: true },
+  { key: 'sector_coverage', icon: RefreshCw, path: '', labelKey: 'worker_actions.sector_coverage', color: 'bg-orange-50 border-orange-200 text-orange-700', isDialog: true },
+  { key: 'orders_summary', icon: ClipboardList, path: '', labelKey: 'worker_actions.orders_summary', color: 'bg-blue-50 border-blue-200 text-blue-700', isDialog: true },
 ];
 
 const WorkerActions: React.FC = () => {
@@ -492,7 +492,7 @@ const WorkerActions: React.FC = () => {
           </button>
         )}
         <h2 className="text-xl font-bold">
-          {isSelfMode ? 'إجراءاتي' : selectedWorker ? selectedWorker.full_name : t('worker_actions.title')}
+          {isSelfMode ? t('worker_actions.my_actions') : selectedWorker ? selectedWorker.full_name : t('worker_actions.title')}
         </h2>
         {selectedWorker && liability && (
           <Badge variant={liability.totalLiability > 0 ? 'destructive' : 'outline'} className="mr-auto text-xs">
@@ -510,7 +510,7 @@ const WorkerActions: React.FC = () => {
             className="inline-flex items-center gap-2 rounded-lg border border-border bg-secondary px-3 py-2 text-sm font-medium text-secondary-foreground transition-colors hover:bg-muted"
           >
             <Settings className="w-4 h-4" />
-            إعدادات بيانات العامل
+            {t('worker_actions.worker_settings')}
           </button>
         </div>
       )}
@@ -540,13 +540,13 @@ const WorkerActions: React.FC = () => {
                     {todaySectors.delivery.length > 0 && (
                       <div className="flex items-center gap-1 text-[9px] text-muted-foreground bg-background/60 rounded px-1.5 py-0.5">
                         <Truck className="w-3 h-3 shrink-0" />
-                        <span className="truncate">توصيل: {todaySectors.delivery.join('، ')}</span>
+                        <span className="truncate">{t('worker_actions.delivery_sectors')} {todaySectors.delivery.join('، ')}</span>
                       </div>
                     )}
                     {todaySectors.sales.length > 0 && (
                       <div className="flex items-center gap-1 text-[9px] text-muted-foreground bg-background/60 rounded px-1.5 py-0.5">
                         <ShoppingCart className="w-3 h-3 shrink-0" />
-                        <span className="truncate">طلبيات: {todaySectors.sales.join('، ')}</span>
+                        <span className="truncate">{t('worker_actions.sales_sectors')} {todaySectors.sales.join('، ')}</span>
                       </div>
                     )}
                   </div>
@@ -612,14 +612,14 @@ const WorkerActions: React.FC = () => {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Package className="w-5 h-5 text-primary" />
-                رصيد شاحنة {selectedWorker.full_name}
+                {t('worker_actions.truck_balance')} {selectedWorker.full_name}
               </DialogTitle>
             </DialogHeader>
             <ScrollArea className="max-h-[60vh]">
               {truckStock.length === 0 ? (
                 <div className="py-8 text-center text-muted-foreground">
                   <Package className="w-10 h-10 mx-auto mb-2 opacity-40" />
-                  <p>لا يوجد رصيد في الشاحنة</p>
+                  <p>{t('worker_actions.no_truck_stock')}</p>
                 </div>
               ) : (
                 <div className="grid gap-2">
@@ -635,7 +635,7 @@ const WorkerActions: React.FC = () => {
                       const totalLoad = stats?.totalLoad || truckReviewQuantities[item.product_id] || item.quantity;
                       const sold = stats?.sold || 0;
                       const giftQty = stats?.giftQty || 0;
-                      const giftUnit = stats?.giftUnit === 'piece' ? 'قطعة' : stats?.giftUnit === 'box' ? 'صندوق' : stats?.giftUnit === 'kg' ? 'كغ' : 'قطعة';
+                      const giftUnit = stats?.giftUnit === 'piece' ? t('worker_actions.piece') : stats?.giftUnit === 'box' ? t('worker_actions.box') : stats?.giftUnit === 'kg' ? t('worker_actions.kg') : t('worker_actions.piece');
                       const isZero = item.quantity === 0;
                       return (
                         <div key={item.id} className={`p-3 rounded-lg border ${isZero ? 'bg-destructive/10 border-destructive/30' : 'bg-card'}`}>
@@ -648,23 +648,23 @@ const WorkerActions: React.FC = () => {
                           <div className="flex items-center gap-2 text-xs border-t pt-1.5 mt-1 flex-wrap">
                             <span className="flex items-center gap-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded font-semibold">
                               <Package className="w-3 h-3" />
-                              رصيد: {totalLoad}
+                              {t('worker_actions.balance')} {totalLoad}
                             </span>
                             <span className="flex items-center gap-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded">
                               <TrendingUp className="w-3 h-3" />
-                              شحن: {loaded}
+                              {t('worker_actions.loaded')} {loaded}
                             </span>
                             <span className="flex items-center gap-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded">
                               <TrendingDown className="w-3 h-3" />
-                              مباع: {sold}
+                              {t('worker_actions.sold')} {sold}
                             </span>
                             {giftQty > 0 && (
                               <span className="flex items-center gap-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-1.5 py-0.5 rounded">
                                 <Gift className="w-3 h-3" />
-                                هدايا: {giftQty} {giftUnit}
+                                {t('worker_actions.gifts')} {giftQty} {giftUnit}
                               </span>
                             )}
-                            <span className="font-bold bg-muted px-1.5 py-0.5 rounded">باقي: {item.quantity}</span>
+                            <span className="font-bold bg-muted px-1.5 py-0.5 rounded">{t('worker_actions.remaining')} {item.quantity}</span>
                           </div>
                         </div>
                       );

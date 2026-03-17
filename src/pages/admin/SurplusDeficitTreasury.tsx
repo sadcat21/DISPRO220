@@ -12,7 +12,7 @@ const fmt = (n: number) => n.toLocaleString();
 
 const SurplusDeficitTreasury: React.FC = () => {
   const { activeBranch } = useAuth();
-  const { dir } = useLanguage();
+  const { dir, t } = useLanguage();
 
   // Fetch cash surplus/deficit from manager_treasury
   const { data: cashEntries = [] } = useQuery({
@@ -79,25 +79,25 @@ const SurplusDeficitTreasury: React.FC = () => {
 
   return (
     <div className="p-4 space-y-4" dir={dir}>
-      <h2 className="text-xl font-bold">خزينة الفائض والعجز</h2>
+      <h2 className="text-xl font-bold">{t('surplus.title')}</h2>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-xl border-2 border-green-300 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 p-3">
           <div className="flex items-center gap-2 mb-1">
             <TrendingUp className="w-5 h-5 text-green-600" />
-            <span className="text-xs font-bold text-green-800 dark:text-green-300">إجمالي الفائض</span>
+            <span className="text-xs font-bold text-green-800 dark:text-green-300">{t('surplus.total_surplus')}</span>
           </div>
           <p className="text-lg font-bold text-green-700 dark:text-green-400">{fmt(totalCashSurplus + totalStockSurplus + totalCustomerSurplus)} DA</p>
-          <p className="text-[10px] text-green-600 dark:text-green-500">خزينة: {fmt(totalCashSurplus)} • عملاء: {fmt(totalCustomerSurplus)} • مخزون: {fmt(totalStockSurplus)}</p>
+          <p className="text-[10px] text-green-600 dark:text-green-500">{t('surplus.treasury_label')} {fmt(totalCashSurplus)} • {t('surplus.customers_label')} {fmt(totalCustomerSurplus)} • {t('surplus.stock_label')} {fmt(totalStockSurplus)}</p>
         </div>
         <div className="rounded-xl border-2 border-red-300 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 p-3">
           <div className="flex items-center gap-2 mb-1">
             <TrendingDown className="w-5 h-5 text-destructive" />
-            <span className="text-xs font-bold text-red-800 dark:text-red-300">إجمالي العجز</span>
+            <span className="text-xs font-bold text-red-800 dark:text-red-300">{t('surplus.total_deficit')}</span>
           </div>
           <p className="text-lg font-bold text-destructive">{fmt(totalCashDeficit + totalStockDeficit)} DA</p>
-          <p className="text-[10px] text-red-600 dark:text-red-500">خزينة: {fmt(totalCashDeficit)} • مخزون: {fmt(totalStockDeficit)}</p>
+          <p className="text-[10px] text-red-600 dark:text-red-500">{t('surplus.treasury_label')} {fmt(totalCashDeficit)} • {t('surplus.stock_label')} {fmt(totalStockDeficit)}</p>
         </div>
       </div>
 
@@ -105,15 +105,15 @@ const SurplusDeficitTreasury: React.FC = () => {
         <TabsList className="w-full">
           <TabsTrigger value="cash" className="flex-1 gap-1.5">
             <Banknote className="w-4 h-4" />
-            الخزينة
+            {t('surplus.treasury_tab')}
           </TabsTrigger>
           <TabsTrigger value="customers" className="flex-1 gap-1.5">
             <Users className="w-4 h-4" />
-            فائض العملاء
+            {t('surplus.customer_surplus_tab')}
           </TabsTrigger>
           <TabsTrigger value="stock" className="flex-1 gap-1.5">
             <Package className="w-4 h-4" />
-            المخزون
+            {t('surplus.stock_tab')}
           </TabsTrigger>
         </TabsList>
 
@@ -121,7 +121,7 @@ const SurplusDeficitTreasury: React.FC = () => {
           <ScrollArea className="max-h-[60vh]">
             <div className="space-y-2 mt-2">
               {cashEntries.length === 0 && (
-                <p className="text-center text-muted-foreground text-sm py-8">لا توجد سجلات</p>
+                <p className="text-center text-muted-foreground text-sm py-8">{t('surplus.no_records')}</p>
               )}
               {cashEntries.map((entry: any) => {
                 const isSurplus = entry.source_type === 'accounting_surplus';
@@ -131,7 +131,7 @@ const SurplusDeficitTreasury: React.FC = () => {
                       <div className="flex items-center gap-2">
                         {isSurplus ? <ArrowUpCircle className="w-4 h-4 text-green-600" /> : <ArrowDownCircle className="w-4 h-4 text-destructive" />}
                         <span className={`text-sm font-bold ${isSurplus ? 'text-green-700 dark:text-green-400' : 'text-destructive'}`}>
-                          {isSurplus ? 'فائض' : 'عجز'} {fmt(Number(entry.amount))} DA
+                          {isSurplus ? t('surplus.surplus_word') : t('surplus.deficit_word')} {fmt(Number(entry.amount))} DA
                         </span>
                       </div>
                       <span className="text-[10px] text-muted-foreground">
@@ -150,7 +150,7 @@ const SurplusDeficitTreasury: React.FC = () => {
           <ScrollArea className="max-h-[60vh]">
             <div className="space-y-2 mt-2">
               {customerSurplusEntries.length === 0 && (
-                <p className="text-center text-muted-foreground text-sm py-8">لا توجد فوائض عملاء مسجلة</p>
+                <p className="text-center text-muted-foreground text-sm py-8">{t('surplus.no_customer_surplus')}</p>
               )}
               {customerSurplusEntries.map((entry: any) => (
                 <div key={entry.id} className="rounded-xl border border-blue-200 bg-blue-50/50 dark:bg-blue-900/10 p-3">
@@ -158,7 +158,7 @@ const SurplusDeficitTreasury: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <ArrowUpCircle className="w-4 h-4 text-blue-600" />
                       <span className="text-sm font-bold text-blue-700 dark:text-blue-400">
-                        فائض عميل {fmt(Number(entry.amount))} DA
+                        {t('surplus.customer_surplus')} {fmt(Number(entry.amount))} DA
                       </span>
                     </div>
                     <span className="text-[10px] text-muted-foreground">
@@ -179,7 +179,7 @@ const SurplusDeficitTreasury: React.FC = () => {
           <ScrollArea className="max-h-[60vh]">
             <div className="space-y-2 mt-2">
               {stockEntries.length === 0 && (
-                <p className="text-center text-muted-foreground text-sm py-8">لا توجد سجلات</p>
+                <p className="text-center text-muted-foreground text-sm py-8">{t('surplus.no_records')}</p>
               )}
               {stockEntries.map((entry: any) => {
                 const isSurplus = entry.discrepancy_type === 'surplus';
@@ -189,7 +189,7 @@ const SurplusDeficitTreasury: React.FC = () => {
                       <div className="flex items-center gap-2">
                         {isSurplus ? <ArrowUpCircle className="w-4 h-4 text-green-600" /> : <ArrowDownCircle className="w-4 h-4 text-destructive" />}
                         <span className={`text-sm font-bold ${isSurplus ? 'text-green-700 dark:text-green-400' : 'text-destructive'}`}>
-                          {isSurplus ? 'فائض' : 'عجز'} - {(entry.product as any)?.name || ''}
+                          {isSurplus ? t('surplus.surplus_word') : t('surplus.deficit_word')} - {(entry.product as any)?.name || ''}
                         </span>
                       </div>
                       <span className="text-[10px] text-muted-foreground">
@@ -197,11 +197,11 @@ const SurplusDeficitTreasury: React.FC = () => {
                       </span>
                     </div>
                     <div className="flex items-center justify-between mt-1 text-xs text-muted-foreground">
-                      <span>الكمية: {Number(entry.quantity)} • {(entry.worker as any)?.full_name || ''}</span>
+                      <span>{t('surplus.quantity')} {Number(entry.quantity)} • {(entry.worker as any)?.full_name || ''}</span>
                       {entry.monetary_value > 0 && <span className="font-medium">{fmt(Number(entry.monetary_value))} DA</span>}
                     </div>
                     <span className={`text-[10px] px-2 py-0.5 rounded-full mt-1 inline-block ${entry.status === 'resolved' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                      {entry.status === 'resolved' ? 'تمت المعالجة' : 'معلق'}
+                      {entry.status === 'resolved' ? t('surplus.resolved') : t('surplus.pending')}
                     </span>
                   </div>
                 );

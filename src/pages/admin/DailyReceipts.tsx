@@ -115,7 +115,7 @@ const DailyReceipts: React.FC = () => {
         order_id: o.id,
         debt_id: null,
         customer_id: o.customer_id,
-        customer_name: (o as any).customer?.name || 'غير معروف',
+        customer_name: (o as any).customer?.name || t('receipts.unknown'),
         customer_phone: (o as any).customer?.phone || null,
         worker_id: o.assigned_worker_id || o.created_by,
         worker_name: (o as any).assigned_worker?.full_name || '',
@@ -166,9 +166,9 @@ const DailyReceipts: React.FC = () => {
   }, [mergedReceipts, searchQuery, filterCustomer]);
 
   const typeLabels: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-    direct_sale: { label: 'بيع مباشر', icon: Receipt, color: 'bg-green-100 text-green-800' },
-    delivery: { label: 'توصيل', icon: Truck, color: 'bg-blue-100 text-blue-800' },
-    debt_payment: { label: 'تسديد دين', icon: CreditCard, color: 'bg-amber-100 text-amber-800' },
+    direct_sale: { label: t('receipts.direct_sale'), icon: Receipt, color: 'bg-green-100 text-green-800' },
+    delivery: { label: t('receipts.delivery'), icon: Truck, color: 'bg-blue-100 text-blue-800' },
+    debt_payment: { label: t('receipts.debt_payment'), icon: CreditCard, color: 'bg-amber-100 text-amber-800' },
   };
 
   const handleReprint = async (receipt: ReceiptWithDetails) => {
@@ -204,11 +204,11 @@ const DailyReceipts: React.FC = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold flex items-center gap-2">
           <FileText className="w-5 h-5" />
-          الفواتير اليومية
+          {t('receipts.title')}
         </h1>
         {isConnected && (
           <Badge variant="outline" className="bg-green-100 text-green-800 gap-1 text-xs">
-            <Printer className="w-3 h-3" /> متصل
+            <Printer className="w-3 h-3" /> {t('receipts.connected')}
           </Badge>
         )}
       </div>
@@ -241,20 +241,20 @@ const DailyReceipts: React.FC = () => {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">كل الأنواع</SelectItem>
-              <SelectItem value="direct_sale">بيع مباشر</SelectItem>
-              <SelectItem value="delivery">توصيل</SelectItem>
-              <SelectItem value="debt_payment">تسديد دين</SelectItem>
+              <SelectItem value="all">{t('receipts.all_types')}</SelectItem>
+              <SelectItem value="direct_sale">{t('receipts.direct_sale')}</SelectItem>
+              <SelectItem value="delivery">{t('receipts.delivery')}</SelectItem>
+              <SelectItem value="debt_payment">{t('receipts.debt_payment')}</SelectItem>
             </SelectContent>
           </Select>
 
           {isAdmin && (
             <Select value={filterWorkerId} onValueChange={setFilterWorkerId}>
               <SelectTrigger className="h-8 text-xs flex-1">
-                <SelectValue placeholder="كل العمال" />
+                <SelectValue placeholder={t('receipts.all_workers')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">كل العمال</SelectItem>
+                <SelectItem value="all">{t('receipts.all_workers')}</SelectItem>
                 {workers?.filter(w => w.id).map(w => (
                   <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>
                 ))}
@@ -266,10 +266,10 @@ const DailyReceipts: React.FC = () => {
         <div className="flex gap-2">
           <Select value={filterCustomer} onValueChange={setFilterCustomer}>
             <SelectTrigger className="h-8 text-xs flex-1">
-              <SelectValue placeholder="كل العملاء" />
+              <SelectValue placeholder={t('receipts.all_customers')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">كل العملاء</SelectItem>
+              <SelectItem value="all">{t('receipts.all_customers')}</SelectItem>
               {customers?.filter(c => c.id).map(c => (
                 <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
               ))}
@@ -282,7 +282,7 @@ const DailyReceipts: React.FC = () => {
           <Input
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="بحث: اسم عميل، عامل، رقم وصل، رقم طلبية..."
+            placeholder={t('receipts.search_placeholder')}
             className="h-8 text-xs pr-8"
           />
         </div>
@@ -291,15 +291,15 @@ const DailyReceipts: React.FC = () => {
       {/* Summary */}
       <div className="grid grid-cols-3 gap-2">
         <Card className="p-2 text-center">
-          <p className="text-[10px] text-muted-foreground">العدد</p>
+          <p className="text-[10px] text-muted-foreground">{t('receipts.count')}</p>
           <p className="text-base font-bold">{filteredReceipts.length}</p>
         </Card>
         <Card className="p-2 text-center">
-          <p className="text-[10px] text-muted-foreground">الإجمالي</p>
+          <p className="text-[10px] text-muted-foreground">{t('receipts.total')}</p>
           <p className="text-base font-bold">{totalAmount.toLocaleString()}</p>
         </Card>
         <Card className="p-2 text-center">
-          <p className="text-[10px] text-muted-foreground">المحصل</p>
+          <p className="text-[10px] text-muted-foreground">{t('receipts.collected')}</p>
           <p className="text-base font-bold text-green-600">{totalPaid.toLocaleString()}</p>
         </Card>
       </div>
@@ -312,7 +312,7 @@ const DailyReceipts: React.FC = () => {
       ) : filteredReceipts.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">لا توجد فواتير</p>
+          <p className="text-sm">{t('receipts.no_receipts')}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -325,21 +325,21 @@ const DailyReceipts: React.FC = () => {
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-sm">
-                        {receipt.receipt_number ? `#${receipt.receipt_number}` : (receipt as any)._isOrderOnly ? 'طلبية' : '#0'}
+                        {receipt.receipt_number ? `#${receipt.receipt_number}` : (receipt as any)._isOrderOnly ? t('receipts.order_label') : '#0'}
                       </span>
                       <Badge variant="outline" className={`text-[10px] ${typeInfo.color}`}>
                         <TIcon className="w-3 h-3 ml-0.5" />
                         {typeInfo.label}
                       </Badge>
                       {receipt.is_modified && (
-                        <Badge variant="outline" className="text-[10px] bg-orange-100 text-orange-800">معدل</Badge>
+                        <Badge variant="outline" className="text-[10px] bg-orange-100 text-orange-800">{t('receipts.modified')}</Badge>
                       )}
                     </div>
                     <p className="text-sm font-medium truncate">{receipt.customer_name}</p>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <span>{Number(receipt.total_amount).toLocaleString()} DA</span>
                       {Number(receipt.remaining_amount) > 0 && (
-                        <span className="text-destructive">متبقي: {Number(receipt.remaining_amount).toLocaleString()}</span>
+                        <span className="text-destructive">{t('receipts.remaining')} {Number(receipt.remaining_amount).toLocaleString()}</span>
                       )}
                       {receipt.worker_name && (
                         <span className="flex items-center gap-0.5">
@@ -352,7 +352,7 @@ const DailyReceipts: React.FC = () => {
                       {receipt.print_count > 0 && (
                         <span className="flex items-center gap-0.5">
                           <Printer className="w-2.5 h-2.5" />
-                          طُبع {receipt.print_count}×
+                           طُبع {receipt.print_count}×
                         </span>
                       )}
                     </div>
@@ -388,7 +388,7 @@ const DailyReceipts: React.FC = () => {
         <Dialog open={!!previewReceipt} onOpenChange={() => setPreviewReceipt(null)}>
           <DialogContent className="max-w-[95vw] sm:max-w-sm max-h-[85vh] p-0 gap-0" dir={dir}>
             <DialogHeader className="p-3 border-b">
-              <DialogTitle className="text-sm">وصل #{previewReceipt.receipt_number}</DialogTitle>
+              <DialogTitle className="text-sm">{t('receipts.receipt_preview')}{previewReceipt.receipt_number}</DialogTitle>
             </DialogHeader>
             <ScrollArea className="max-h-[60vh] p-3">
               <div
@@ -425,7 +425,7 @@ const DailyReceipts: React.FC = () => {
                 disabled={!isConnected}
               >
                 <Printer className="w-4 h-4 ml-1" />
-                إعادة طباعة
+                {t('receipts.reprint')}
               </Button>
             </div>
           </DialogContent>
