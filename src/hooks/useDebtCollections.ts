@@ -227,6 +227,9 @@ export const useCreateCollection = () => {
       queryClient.invalidateQueries({ queryKey: ['due-debts'] });
       queryClient.invalidateQueries({ queryKey: ['pending-collections'] });
       queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['customer-debt-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['customer-debts-summary-all'] });
+      queryClient.invalidateQueries({ queryKey: ['today-debt-collections-dialog'] });
     },
   });
 };
@@ -291,7 +294,9 @@ export const useApproveCollection = () => {
       queryClient.invalidateQueries({ queryKey: ['pending-collections'] });
       queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
       queryClient.invalidateQueries({ queryKey: ['customer-debt-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['customer-debts-summary-all'] });
       queryClient.invalidateQueries({ queryKey: ['debt-payments'] });
+      queryClient.invalidateQueries({ queryKey: ['today-debt-collections-dialog'] });
     },
   });
 };
