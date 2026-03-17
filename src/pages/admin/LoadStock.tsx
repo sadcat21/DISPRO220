@@ -643,14 +643,14 @@ const LoadStock: React.FC = () => {
   const handleStartSession = async () => {
     if (!selectedWorker) { toast.error(t('stock.select_worker')); return; }
     if (!hasReviewToday) {
-      toast.error('يجب إجراء جلسة مراجعة أولاً قبل بدء الشحن');
+      toast.error(t('load_stock.review_first'));
       setShowVerificationDialog(true);
       return;
     }
     try {
       const result = await createSession.mutateAsync({ workerId: selectedWorker });
       setActiveSessionId(result.id);
-      toast.success('تم بدء جلسة شحن جديدة');
+      toast.success(t('load_stock.session_started'));
     } catch (err: any) { toast.error(err.message); }
   };
 
