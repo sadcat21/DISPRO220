@@ -224,7 +224,7 @@ const WorkerDebtsPage: React.FC = () => {
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
         <DialogContent className="max-w-sm" dir={dir}>
           <DialogHeader>
-            <DialogTitle>إضافة دين عامل</DialogTitle>
+            <DialogTitle>{t('worker_debts.add_title')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div>
