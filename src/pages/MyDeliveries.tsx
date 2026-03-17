@@ -1389,7 +1389,7 @@ const MyDeliveries: React.FC = () => {
           </DialogHeader>
           <p className="text-sm text-muted-foreground">{t('deliveries.choose_new_date')}</p>
           <div className="grid grid-cols-2 gap-2">
-            {getNextWorkDays().map(({ date, label }) => (
+            {getNextWorkDays(language).map(({ date, label }) => (
               <Button
                 key={date.toISOString()}
                 variant="outline"
