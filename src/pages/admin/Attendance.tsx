@@ -211,7 +211,7 @@ const Attendance: React.FC = () => {
                   <Card className={`border-0 shadow-sm overflow-hidden ${clockOut ? 'bg-red-50 dark:bg-red-500/10' : 'bg-muted/30'}`}>
                     <CardContent className="p-3 space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-red-700 dark:text-red-400">نهاية العمل</span>
+                        <span className="text-xs font-semibold text-red-700 dark:text-red-400">{t('attendance.clock_out')}</span>
                         <div className="w-7 h-7 rounded-lg bg-red-500/15 flex items-center justify-center">
                           <LogOut className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
                         </div>
