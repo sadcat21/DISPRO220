@@ -2581,6 +2581,7 @@ export type Database = {
           partial_amount: number | null
           payment_status: string | null
           payment_type: string | null
+          postpone_count: number
           prepaid_amount: number | null
           status: string
           total_amount: number | null
@@ -2609,6 +2610,7 @@ export type Database = {
           partial_amount?: number | null
           payment_status?: string | null
           payment_type?: string | null
+          postpone_count?: number
           prepaid_amount?: number | null
           status?: string
           total_amount?: number | null
@@ -2637,6 +2639,7 @@ export type Database = {
           partial_amount?: number | null
           payment_status?: string | null
           payment_type?: string | null
+          postpone_count?: number
           prepaid_amount?: number | null
           status?: string
           total_amount?: number | null
