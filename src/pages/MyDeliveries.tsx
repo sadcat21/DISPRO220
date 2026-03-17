@@ -241,7 +241,7 @@ const MyDeliveries: React.FC = () => {
 
   const handleExportCSV = async (filteredOrders: OrderWithDetails[]) => {
     if (!filteredOrders || filteredOrders.length === 0) {
-      toast.error('لا توجد طلبيات للتصدير');
+      toast.error(t('deliveries.no_orders_export'));
       return;
     }
     try {
