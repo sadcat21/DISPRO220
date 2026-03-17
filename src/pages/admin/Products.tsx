@@ -808,7 +808,7 @@ const Products: React.FC = () => {
       <Dialog open={!!editingProduct} onOpenChange={(open) => !open && setEditingProduct(null)}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle>تعديل المنتج</DialogTitle>
+            <DialogTitle>{t('products.edit')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleUpdateProduct} className="space-y-4">
             <div className="space-y-2">
