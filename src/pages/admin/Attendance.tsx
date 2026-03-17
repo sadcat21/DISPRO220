@@ -183,7 +183,7 @@ const Attendance: React.FC = () => {
                   <Card className={`border-0 shadow-sm overflow-hidden ${clockIn ? 'bg-emerald-50 dark:bg-emerald-500/10' : 'bg-muted/30'}`}>
                     <CardContent className="p-3 space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">بداية العمل</span>
+                        <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">{t('attendance.clock_in')}</span>
                         <div className="w-7 h-7 rounded-lg bg-emerald-500/15 flex items-center justify-center">
                           <LogIn className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                         </div>
