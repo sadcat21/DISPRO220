@@ -385,7 +385,7 @@ const Products: React.FC = () => {
     }
 
     if (editPiecesPerBox < 1) {
-      toast.error('عدد القطع يجب أن يكون 1 على الأقل');
+      toast.error(t('products.min_pieces_error'));
       return;
     }
 
