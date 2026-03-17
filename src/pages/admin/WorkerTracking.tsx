@@ -56,7 +56,7 @@ const WorkerTracking: React.FC = () => {
           {highlightWorkerId && (
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">كل العمال</span>
+              <span className="text-sm text-muted-foreground">{t('tracking.all_workers')}</span>
               <Switch checked={showAll} onCheckedChange={setShowAll} />
             </div>
           )}
@@ -68,7 +68,7 @@ const WorkerTracking: React.FC = () => {
         <div className="flex items-center gap-2 flex-wrap" dir={dir}>
           <div className="flex items-center gap-2">
             <Store className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">عملاء قريبون</span>
+            <span className="text-sm text-muted-foreground">{t('tracking.nearby_customers')}</span>
             <Switch checked={showNearbyCustomers} onCheckedChange={setShowNearbyCustomers} />
           </div>
           {showNearbyCustomers && (
@@ -141,10 +141,10 @@ const WorkerTracking: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Route className="w-4 h-4 text-primary" />
-              <span className="font-bold text-sm">مسار العامل</span>
+              <span className="font-bold text-sm">{t('tracking.worker_route')}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">رسم المسار</span>
+              <span className="text-xs text-muted-foreground">{t('tracking.draw_route')}</span>
               <Switch checked={showStopsRoute} onCheckedChange={setShowStopsRoute} />
             </div>
           </div>
@@ -152,7 +152,7 @@ const WorkerTracking: React.FC = () => {
           {selectedWorkerStops.length === 0 ? (
             <div className="text-center py-4 text-muted-foreground text-sm bg-muted/50 rounded-lg">
               <Clock className="w-5 h-5 mx-auto mb-1 opacity-40" />
-              لا توجد توقفات مسجلة (أكثر من 15 دقيقة)
+              {t('tracking.no_stops')}
             </div>
           ) : (
             <div className="space-y-1.5">

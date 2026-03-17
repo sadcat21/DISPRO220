@@ -267,22 +267,22 @@ const WarehouseStock: React.FC = () => {
         <div className="flex items-center gap-2 flex-wrap">
           <Button size="sm" variant="outline" onClick={() => setShowReviewDialog(true)}>
             <ClipboardCheck className="w-4 h-4 ml-1" />
-            مراجعة
+            {t('warehouse.review')}
           </Button>
           <Button size="sm" variant="outline" onClick={() => navigate('/stock-receipts')}>
             <ClipboardList className="w-4 h-4 ml-1" />
-            استلام وتسليم
+            {t('warehouse.receipt_delivery')}
           </Button>
           {!isFactoryDeliveryHidden && (
             <Button size="sm" variant="outline" onClick={() => setShowReceiptDialog(true)}>
               <ClipboardList className="w-4 h-4 ml-1" />
-              استلام
+              {t('warehouse.receipt')}
             </Button>
           )}
           {!isQuickLoadHidden && (
             <Button size="sm" variant="outline" onClick={() => setShowLoadWorkerDialog(true)}>
               <Truck className="w-4 h-4 ml-1" />
-              شحن عامل
+              {t('warehouse.load_worker')}
             </Button>
           )}
           {hasStock && !isDirectSaleHidden && (
@@ -299,11 +299,11 @@ const WarehouseStock: React.FC = () => {
         <TabsList className="w-full grid grid-cols-2">
           <TabsTrigger value="stock" className="text-xs gap-1">
             <Package className="w-3.5 h-3.5" />
-            المخزون
+            {t('warehouse.stock_tab')}
           </TabsTrigger>
           <TabsTrigger value="review" className="text-xs gap-1">
             <ClipboardCheck className="w-3.5 h-3.5" />
-            المراجعات
+            {t('warehouse.reviews_tab')}
           </TabsTrigger>
         </TabsList>
 
@@ -315,7 +315,7 @@ const WarehouseStock: React.FC = () => {
       <div className="relative">
         <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
-          placeholder="بحث عن منتج..."
+          placeholder={t('warehouse.search_product')}
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="pr-9"
@@ -326,14 +326,14 @@ const WarehouseStock: React.FC = () => {
       <div className="space-y-2">
         <h3 className="text-sm font-semibold flex items-center gap-2 text-muted-foreground">
           <Package className="w-4 h-4" />
-          ملخص المخزون حسب المنتج
+          {t('warehouse.stock_summary')}
           <Badge variant="secondary" className="text-xs">{filteredSummaries.length}</Badge>
         </h3>
 
         {filteredSummaries.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center text-muted-foreground text-sm">
-              لا توجد بيانات مخزون
+              {t('warehouse.no_stock_data')}
             </CardContent>
           </Card>
         ) : (
@@ -349,16 +349,16 @@ const WarehouseStock: React.FC = () => {
                   : s.gifts > 0 ? `0.${String(giftPieces).padStart(2, '0')}` : '0';
 
                 const row1 = [
-                  { label: 'عند العمال', value: s.workerStock, display: String(s.workerStock), color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-950/30' },
-                  { label: 'المباع', value: s.sold, display: String(s.sold), color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-950/30' },
-                  { label: 'الفائض', value: s.surplus, display: String(s.surplus), color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30' },
-                  { label: 'العجز', value: s.deficit, display: String(s.deficit), color: 'text-destructive', bg: 'bg-red-50 dark:bg-red-950/30' },
+                  { label: t('warehouse.at_workers'), value: s.workerStock, display: String(s.workerStock), color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-950/30' },
+                  { label: t('warehouse.sold'), value: s.sold, display: String(s.sold), color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-950/30' },
+                  { label: t('warehouse.surplus'), value: s.surplus, display: String(s.surplus), color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30' },
+                  { label: t('warehouse.deficit'), value: s.deficit, display: String(s.deficit), color: 'text-destructive', bg: 'bg-red-50 dark:bg-red-950/30' },
                 ];
                 const row2 = [
-                  { label: 'الهدايا', value: s.gifts, display: giftFormatted, color: 'text-pink-500', bg: 'bg-pink-50 dark:bg-pink-950/30' },
-                  { label: 'التالف', value: s.damaged, display: String(s.damaged), color: 'text-destructive', bg: 'bg-red-50 dark:bg-red-950/30' },
-                  { label: 'المسترجع', value: s.factoryReturn, display: String(s.factoryReturn), color: 'text-violet-600', bg: 'bg-violet-50 dark:bg-violet-950/30' },
-                  { label: 'التعويض', value: s.compensation, display: String(s.compensation), color: 'text-teal-600', bg: 'bg-teal-50 dark:bg-teal-950/30' },
+                  { label: t('warehouse.gifts'), value: s.gifts, display: giftFormatted, color: 'text-pink-500', bg: 'bg-pink-50 dark:bg-pink-950/30' },
+                  { label: t('warehouse.damaged'), value: s.damaged, display: String(s.damaged), color: 'text-destructive', bg: 'bg-red-50 dark:bg-red-950/30' },
+                  { label: t('warehouse.returned'), value: s.factoryReturn, display: String(s.factoryReturn), color: 'text-violet-600', bg: 'bg-violet-50 dark:bg-violet-950/30' },
+                  { label: t('warehouse.compensation'), value: s.compensation, display: String(s.compensation), color: 'text-teal-600', bg: 'bg-teal-50 dark:bg-teal-950/30' },
                 ];
                 return (
                   <Card key={s.productId} className="overflow-hidden border-border/60 shadow-sm">
@@ -383,11 +383,11 @@ const WarehouseStock: React.FC = () => {
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
                         <div className="flex items-center gap-1">
-                          <span className="text-[11px] text-muted-foreground">المستلم</span>
+                         <span className="text-[11px] text-muted-foreground">{t('warehouse.received')}</span>
                           <span className="text-sm font-bold tabular-nums text-emerald-600">{s.received}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <span className="text-[11px] text-muted-foreground">المتبقي</span>
+                          <span className="text-[11px] text-muted-foreground">{t('warehouse.remaining')}</span>
                           <span className={`text-base font-extrabold tabular-nums ${s.remaining > 0 ? 'text-primary' : 'text-muted-foreground/50'}`}>{s.remaining}</span>
                         </div>
                       </div>

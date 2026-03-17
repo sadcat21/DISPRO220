@@ -254,7 +254,7 @@ const MyStock: React.FC = () => {
             const sold = stats?.sold || 0;
             const gifts = giftStats[item.product_id];
             const giftQty = gifts?.totalGifts || 0;
-            const giftUnit = gifts?.unit === 'piece' ? 'قطعة' : gifts?.unit === 'box' ? 'صندوق' : gifts?.unit === 'kg' ? 'كغ' : 'قطعة';
+            const giftUnit = gifts?.unit === 'piece' ? t('stock.piece') : gifts?.unit === 'box' ? t('stock.box') : gifts?.unit === 'kg' ? 'kg' : t('stock.piece');
             return (
               <Card key={item.id} className={isZero ? 'bg-destructive/10 border-destructive/30' : ''}>
                 <CardContent className="p-3">
@@ -269,23 +269,23 @@ const MyStock: React.FC = () => {
                   <div className="flex items-center gap-2 text-xs border-t pt-1.5 mt-1 flex-wrap">
                     <span className="flex items-center gap-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded font-semibold">
                       <Package className="w-3 h-3" />
-                      رصيد: {totalLoad}
+                      {t('stock.balance')}: {totalLoad}
                     </span>
                     <span className="flex items-center gap-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded">
                       <TrendingUp className="w-3 h-3" />
-                      شحن: {loaded}
+                      {t('stock.loaded')}: {loaded}
                     </span>
                     <span className="flex items-center gap-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded">
                       <TrendingDown className="w-3 h-3" />
-                      مباع: {sold}
+                      {t('stock.sold_label')}: {sold}
                     </span>
                     {giftQty > 0 && (
                       <span className="flex items-center gap-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-1.5 py-0.5 rounded">
                         <Gift className="w-3 h-3" />
-                        هدايا: {giftQty} {giftUnit}
+                        {t('stock.gifts_label')}: {giftQty} {giftUnit}
                       </span>
                     )}
-                    <span className="font-bold bg-muted px-1.5 py-0.5 rounded">باقي: {item.quantity}</span>
+                    <span className="font-bold bg-muted px-1.5 py-0.5 rounded">{t('stock.remaining_label')}: {item.quantity}</span>
                   </div>
                 </CardContent>
               </Card>

@@ -222,14 +222,14 @@ const ManagerTreasury = () => {
       let sessQ = supabase.from('accounting_sessions').select('id, branch_id, manager_id').eq('status', 'completed');
       if (activeBranch?.id) sessQ = sessQ.eq('branch_id', activeBranch.id);
       const { data: sessions } = await sessQ;
-      if (!sessions?.length) { toast.info('لا توجد جلسات للمزامنة'); setSyncing(false); return; }
+      if (!sessions?.length) { toast.info(t('treasury.no_sessions_sync')); setSyncing(false); return; }
 
       // Get existing treasury entries linked to sessions
       const { data: existing } = await supabase.from('manager_treasury').select('session_id').eq('source_type', 'accounting_session');
       const existingSessionIds = new Set((existing || []).map((e: any) => e.session_id));
 
       const unsynced = sessions.filter(s => !existingSessionIds.has(s.id));
-      if (!unsynced.length) { toast.info('جميع الجلسات مزامنة بالفعل'); setSyncing(false); return; }
+      if (!unsynced.length) { toast.info(t('treasury.all_synced')); setSyncing(false); return; }
 
       let totalInserted = 0;
       for (const sess of unsynced) {
@@ -254,11 +254,11 @@ const ManagerTreasury = () => {
         }
       }
 
-      toast.success(`تمت مزامنة ${unsynced.length} جلسة (${totalInserted} سجل)`);
+      toast.success(`${t('treasury.sync_success')} (${unsynced.length} / ${totalInserted})`);
       queryClient.invalidateQueries({ queryKey: ['manager-treasury'] });
       queryClient.invalidateQueries({ queryKey: ['treasury-summary'] });
     } catch (err: any) {
-      toast.error('خطأ في المزامنة: ' + (err.message || ''));
+      toast.error(t('treasury.sync_error') + ': ' + (err.message || ''));
     } finally {
       setSyncing(false);
     }
