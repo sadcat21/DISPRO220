@@ -336,7 +336,7 @@ const StockReceipts: React.FC = () => {
 
       {/* View Receipt Details Dialog */}
       <Dialog open={!!viewReceipt} onOpenChange={(open) => { if (!open) setViewReceipt(null); }}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" dir={language === 'ar' ? 'rtl' : 'ltr'}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ClipboardList className="w-5 h-5 text-primary" />
