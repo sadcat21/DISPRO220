@@ -1003,7 +1003,7 @@ const LoadStock: React.FC = () => {
   const handleEmptyTruckPreview = async () => {
     if (!selectedWorker || !branchId || !currentWorkerId) return;
     if (!hasReviewToday) {
-      toast.error('يجب إجراء جلسة مراجعة أولاً قبل التفريغ');
+      toast.error(t('load_stock.review_first_unload'));
       setShowVerificationDialog(true);
       return;
     }
