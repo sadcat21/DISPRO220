@@ -68,7 +68,6 @@ const normalizeSaleItem = (item: any) => ({
 
 // Resolve paid/remaining amounts from order fields (partial_amount + payment_status)
 const resolveOrderPayment = (order: any, isOrderRequest: boolean) => {
-  console.log('[resolveOrderPayment] input:', { payment_status: order.payment_status, partial_amount: order.partial_amount, total_amount: order.total_amount, isOrderRequest });
   const totalAmount = Number(order.total_amount || 0);
   const paymentStatus = String(order.payment_status || '').toLowerCase();
   const partialAmount = order.partial_amount != null ? Number(order.partial_amount) : null;
