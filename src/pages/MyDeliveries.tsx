@@ -957,7 +957,7 @@ const MyDeliveries: React.FC = () => {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" className="border-primary/30 text-primary" onClick={() => setShowLoadRequestDialog(true)}>
             <Truck className="w-4 h-4 me-1" />
-            طلب شحن
+            {t('deliveries.load_request')}
           </Button>
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setShowPrintDialog(true)} disabled={!orders || orders.length === 0}>
             <Printer className="w-4 h-4" />
