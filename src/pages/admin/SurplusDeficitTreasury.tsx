@@ -131,7 +131,7 @@ const SurplusDeficitTreasury: React.FC = () => {
                       <div className="flex items-center gap-2">
                         {isSurplus ? <ArrowUpCircle className="w-4 h-4 text-green-600" /> : <ArrowDownCircle className="w-4 h-4 text-destructive" />}
                         <span className={`text-sm font-bold ${isSurplus ? 'text-green-700 dark:text-green-400' : 'text-destructive'}`}>
-                          {isSurplus ? 'فائض' : 'عجز'} {fmt(Number(entry.amount))} DA
+                          {isSurplus ? t('surplus.surplus_word') : t('surplus.deficit_word')} {fmt(Number(entry.amount))} DA
                         </span>
                       </div>
                       <span className="text-[10px] text-muted-foreground">
