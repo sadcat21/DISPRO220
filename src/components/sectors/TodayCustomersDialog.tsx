@@ -1965,6 +1965,20 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void }> = ({ ord
             <span className="font-bold text-lg text-primary">{Number(totalAmount || 0).toLocaleString()} DA</span>
           </div>
 
+          {/* Paid / Remaining - show only when partial or no payment */}
+          {remainingAmount > 0 && (
+            <div className="bg-muted/30 rounded-lg p-3 space-y-1.5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">المبلغ المدفوع</span>
+                <span className="font-bold text-emerald-600">{paidAmount.toLocaleString()} DA</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">المتبقي (دين)</span>
+                <span className="font-bold text-destructive">{remainingAmount.toLocaleString()} DA</span>
+              </div>
+            </div>
+          )}
+
           {!isDirectSale && order.notes && (
             <div className="text-xs text-muted-foreground bg-muted/30 rounded p-2">
               ملاحظات: {order.notes}
