@@ -53,7 +53,7 @@ const Attendance: React.FC = () => {
   };
 
   return (
-    <div className="p-4 space-y-5" dir="rtl">
+    <div className="p-4 space-y-5" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -61,12 +61,12 @@ const Attendance: React.FC = () => {
             <CalendarDays className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-foreground">سجل المداومة</h1>
-            <p className="text-xs text-muted-foreground">متابعة حضور وانصراف العمال</p>
+            <h1 className="text-lg font-bold text-foreground">{t('attendance.title')}</h1>
+            <p className="text-xs text-muted-foreground">{t('attendance.subtitle')}</p>
           </div>
         </div>
         <div className="flex gap-1">
-          <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => setWorkerLocationOpen(true)} title="تخصيص موقع مداومة لعامل">
+          <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => setWorkerLocationOpen(true)} title={t('attendance.worker_location')}>
             <UserCog className="w-5 h-5 text-muted-foreground" />
           </Button>
           <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => setSettingsOpen(true)}>
