@@ -34,7 +34,7 @@ export const useNavigation = () => {
 
   const navItems = useMemo(() => {
     // Admin gets full navigation including worker capabilities
-    if (role === 'admin') {
+    if (role === 'admin' || role === 'project_manager') {
       return {
         main: [
           { path: '/', icon: Home, label: t('nav.home') },
