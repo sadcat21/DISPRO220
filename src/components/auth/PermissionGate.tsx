@@ -1,13 +1,14 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkerPermissions } from '@/hooks/usePermissions';
+import { isAdminRole } from '@/lib/utils';
 import { Navigate } from 'react-router-dom';
 import { Loader2, ShieldX } from 'lucide-react';
 
 interface PermissionGateProps {
   children: React.ReactNode;
   requiredPermissions: string[];
-  requireAll?: boolean; // If true, all permissions required. If false, any one is enough.
+  requireAll?: boolean;
   fallback?: React.ReactNode;
   redirectTo?: string;
 }
@@ -22,8 +23,8 @@ const PermissionGate: React.FC<PermissionGateProps> = ({
   const { role } = useAuth();
   const { data: permissions, isLoading } = useWorkerPermissions();
 
-  // Admin and branch_admin have all permissions
-  if (role === 'admin' || role === 'branch_admin') {
+  // Admin-level roles have all permissions
+  if (isAdminRole(role)) {
     return <>{children}</>;
   }
 

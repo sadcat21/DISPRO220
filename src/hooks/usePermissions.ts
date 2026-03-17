@@ -110,8 +110,8 @@ export const useHasPermission = (permissionCode: string) => {
   const { data: permissions } = useWorkerPermissions();
   const { role } = useAuth();
 
-  // Admin and branch_admin have all permissions
-  if (role === 'admin' || role === 'branch_admin') return true;
+  // Admin-level roles have all permissions
+  if (role === 'admin' || role === 'branch_admin' || role === 'project_manager') return true;
 
   return permissions?.some(p => p.permission_code === permissionCode) ?? false;
 };
