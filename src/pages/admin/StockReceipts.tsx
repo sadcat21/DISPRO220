@@ -407,11 +407,11 @@ const StockReceipts: React.FC = () => {
 
       {/* View Sending Order Details */}
       <Dialog open={!!viewSendingOrder} onOpenChange={(open) => { if (!open) setViewSendingOrder(null); }}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" dir={language === 'ar' ? 'rtl' : 'ltr'}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Truck className="w-5 h-5 text-destructive" />
-              تفاصيل التسليم للمصنع
+              {t('stock_receipts.delivery_details')}
             </DialogTitle>
           </DialogHeader>
 
