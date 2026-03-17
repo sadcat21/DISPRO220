@@ -437,13 +437,13 @@ const StockReceipts: React.FC = () => {
               </div>
 
               <div className="border-t pt-3">
-                <Label className="text-sm font-semibold mb-2 block">المنتجات والباليطات</Label>
+                <Label className="text-sm font-semibold mb-2 block">{t('stock_receipts.products_pallets')}</Label>
                 {isLoadingSending ? (
                   <div className="flex justify-center py-4">
                     <Loader2 className="w-5 h-5 animate-spin text-primary" />
                   </div>
                 ) : sendingItems.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">لا توجد بنود</p>
+                  <p className="text-sm text-muted-foreground text-center py-4">{t('stock_receipts.no_items')}</p>
                 ) : (
                   <div className="space-y-2">
                     {sendingItems.map((item) => (
