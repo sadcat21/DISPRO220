@@ -652,7 +652,7 @@ const WorkerActions: React.FC = () => {
                             </span>
                             <span className="flex items-center gap-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded">
                               <TrendingUp className="w-3 h-3" />
-                              شحن: {loaded}
+                              {t('worker_actions.loaded')} {loaded}
                             </span>
                             <span className="flex items-center gap-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded">
                               <TrendingDown className="w-3 h-3" />
