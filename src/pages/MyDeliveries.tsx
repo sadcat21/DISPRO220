@@ -259,7 +259,7 @@ const MyDeliveries: React.FC = () => {
       });
 
       const productNames = products.map(p => p.name);
-      const headers = ['رقم الطلبية', 'العميل', 'الهاتف', 'العنوان', 'تاريخ التوصيل', 'الحالة', ...productNames];
+      const headers = [t('deliveries.csv_order_id'), t('deliveries.csv_customer'), t('deliveries.csv_phone'), t('deliveries.csv_address'), t('deliveries.csv_date'), t('deliveries.csv_status'), ...productNames];
 
       const rows = filteredOrders.map(order => {
         const orderItemsData = itemsMap[order.id] || [];
