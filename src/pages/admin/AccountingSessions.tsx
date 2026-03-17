@@ -105,10 +105,10 @@ const AccountingSessions: React.FC = () => {
     if (!deleteSession2) return;
     try {
       await deleteSession.mutateAsync(deleteSession2.id);
-      toast.success('تم حذف الجلسة بنجاح');
+      toast.success(t('accounting.session_deleted'));
       if (selectedSession?.id === deleteSession2.id) setSelectedSession(null);
     } catch (error: any) {
-      toast.error('فشل في حذف الجلسة: ' + error.message);
+      toast.error(t('accounting.session_delete_failed') + ': ' + error.message);
     }
     setDeleteSession2(null);
   };
@@ -117,10 +117,10 @@ const AccountingSessions: React.FC = () => {
     if (!cancelSession2) return;
     try {
       await cancelSession.mutateAsync(cancelSession2.id);
-      toast.success('تم إلغاء الجلسة واستعادة جميع الحسابات بنجاح');
+      toast.success(t('accounting.session_cancelled'));
       if (selectedSession?.id === cancelSession2.id) setSelectedSession(null);
     } catch (error: any) {
-      toast.error('فشل في إلغاء الجلسة: ' + error.message);
+      toast.error(t('accounting.session_cancel_failed') + ': ' + error.message);
     }
     setCancelSession2(null);
   };
