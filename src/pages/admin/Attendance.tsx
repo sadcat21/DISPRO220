@@ -138,7 +138,7 @@ const Attendance: React.FC = () => {
             <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center">
               <CalendarDays className="w-8 h-8 text-muted-foreground/50" />
             </div>
-            <p className="text-sm text-muted-foreground font-medium">لا توجد سجلات مداومة لهذا اليوم</p>
+            <p className="text-sm text-muted-foreground font-medium">{t('attendance.no_records')}</p>
           </CardContent>
         </Card>
       ) : (
