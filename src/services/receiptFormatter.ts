@@ -448,14 +448,16 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
     const netLine = `NET A PAYER  ${netVal}`;
     addText(netLine);
 
-    addText(separator());
-    const paidVal = `${formatAmount(data.paidAmount)} DA`;
-    addText(padRight('PAYE', LINE_WIDTH - paidVal.length) + paidVal);
-    const restVal = `${formatAmount(data.remainingAmount)} DA`;
-    addText(padRight('RESTANT', LINE_WIDTH - restVal.length) + restVal);
-    if (data.customerSurplusAmount && data.customerSurplusAmount > 0) {
-      const surplusVal = `${formatAmount(data.customerSurplusAmount)} DA`;
-      addText(padRight('SURPLUS CLIENT', LINE_WIDTH - surplusVal.length) + surplusVal);
+    if (!data.hidePaymentDetails) {
+      addText(separator());
+      const paidVal = `${formatAmount(data.paidAmount)} DA`;
+      addText(padRight('PAYE', LINE_WIDTH - paidVal.length) + paidVal);
+      const restVal = `${formatAmount(data.remainingAmount)} DA`;
+      addText(padRight('RESTANT', LINE_WIDTH - restVal.length) + restVal);
+      if (data.customerSurplusAmount && data.customerSurplusAmount > 0) {
+        const surplusVal = `${formatAmount(data.customerSurplusAmount)} DA`;
+        addText(padRight('SURPLUS CLIENT', LINE_WIDTH - surplusVal.length) + surplusVal);
+      }
     }
   }
 
