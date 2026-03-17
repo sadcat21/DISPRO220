@@ -855,6 +855,12 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
       queryClient.invalidateQueries({ queryKey: ['worker-truck-stock'] });
       queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
       queryClient.invalidateQueries({ queryKey: ['customer-debt-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['customer-debts-summary-all'] });
+      queryClient.invalidateQueries({ queryKey: ['due-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['debt-payments'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-collections'] });
+      queryClient.invalidateQueries({ queryKey: ['today-debt-collections-dialog'] });
+      queryClient.invalidateQueries({ queryKey: ['order-debt-details'] });
       queryClient.invalidateQueries({ queryKey: ['customer-credits'] });
       queryClient.invalidateQueries({ queryKey: ['receipts'] });
 
