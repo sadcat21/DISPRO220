@@ -326,7 +326,7 @@ const WarehouseStock: React.FC = () => {
       <div className="space-y-2">
         <h3 className="text-sm font-semibold flex items-center gap-2 text-muted-foreground">
           <Package className="w-4 h-4" />
-          ملخص المخزون حسب المنتج
+          {t('warehouse.stock_summary')}
           <Badge variant="secondary" className="text-xs">{filteredSummaries.length}</Badge>
         </h3>
 
