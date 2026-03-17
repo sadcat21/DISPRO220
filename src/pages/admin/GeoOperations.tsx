@@ -319,7 +319,7 @@ const GeoOperations: React.FC = () => {
                           {userDistance !== null && (
                             <div className="flex items-center gap-1 text-xs font-bold text-teal-600 border-r pr-2">
                               <Navigation className="w-3 h-3" />
-                              <span>بعدك: {formatDistance(userDistance)}</span>
+                              <span>{t('geo.distance_from_you')} {formatDistance(userDistance)}</span>
                             </div>
                           )}
                           {warehouseDistance !== null && (
