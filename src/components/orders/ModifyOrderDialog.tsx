@@ -120,10 +120,17 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
       const firstItemSubtype = orderItems[0] && (orderItems[0] as any).price_subtype;
       const customerDefault = order.customer?.default_price_subtype;
       setPriceSubType((firstItemSubtype || customerDefault || 'gros') as PriceSubType);
-      setAdjustPaidAmount(Number((order as any).paid_amount || order.total_amount || 0));
-      setAdjustRemainingAmount(Number((order as any).remaining_amount || 0));
+      // Resolve paid amount from partial_amount + payment_status
+      const ps = String(order.payment_status || '').toLowerCase();
+      const resolvedPaid = (() => {
+        if (ps === 'partial' && order.partial_amount != null) return Number(order.partial_amount);
+        if (['pending', 'credit'].includes(ps)) return 0;
+        return Number(order.total_amount || 0);
+      })();
+      setAdjustPaidAmount(resolvedPaid);
+      setAdjustRemainingAmount(Math.max(0, Number(order.total_amount || 0) - resolvedPaid));
     }
-  }, [open, orderItems, order.assigned_worker_id, order.delivery_date, order.payment_type, order.invoice_payment_method, (order as any).paid_amount, (order as any).remaining_amount, order.total_amount]);
+  }, [open, orderItems, order.assigned_worker_id, order.delivery_date, order.payment_type, order.invoice_payment_method, order.partial_amount, order.payment_status, order.total_amount]);
 
   // Fetch available products for adding
   useEffect(() => {
