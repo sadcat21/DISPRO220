@@ -1052,7 +1052,7 @@ const LoadStock: React.FC = () => {
     try {
       const itemsToReturn = emptyTruckItems.filter(item => item.returnQty > 0);
       if (itemsToReturn.length === 0) {
-        toast.error('لم يتم تحديد أي كمية للإرجاع');
+        toast.error(t('load_stock.no_return_qty'));
         return;
       }
 
