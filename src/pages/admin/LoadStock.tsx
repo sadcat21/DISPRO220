@@ -802,7 +802,7 @@ const LoadStock: React.FC = () => {
       const { data } = await sessionItemsQuery(activeSessionId!);
       setSessionItems(data || []);
       await refresh();
-      toast.success('تم حذف المنتج واسترجاع الرصيد');
+      toast.success(t('load_stock.item_deleted'));
     } catch (err: any) { toast.error(err.message); }
   };
 
