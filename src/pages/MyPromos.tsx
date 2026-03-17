@@ -128,8 +128,8 @@ const MyPromosContent: React.FC = () => {
         entityType: 'promo',
         entityId: editingPromo.id,
         details: {
-          الكمية_المباعة: editVente,
-          الكمية_المجانية: editGratuite,
+          [t('common.sale_quantity')]: editVente,
+          [t('common.free_quantity')]: editGratuite,
         },
       });
 
