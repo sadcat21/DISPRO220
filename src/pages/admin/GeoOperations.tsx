@@ -10,8 +10,12 @@ import { useVisitTrackingList, getOperationLabel, OperationType } from '@/hooks/
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { ar, fr, enUS } from 'date-fns/locale';
+import { calculateDistance, formatDistance, reverseGeocode } from '@/utils/geoUtils';
+import CustomerLocationView from '@/components/map/CustomerLocationView';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { calculateDistance, formatDistance, reverseGeocode } from '@/utils/geoUtils';
 import CustomerLocationView from '@/components/map/CustomerLocationView';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
