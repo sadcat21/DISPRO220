@@ -208,7 +208,7 @@ const Workers: React.FC = () => {
       await supabase.from('user_roles').delete().eq('worker_id', worker.id);
       const { error } = await supabase.from('workers').delete().eq('id', worker.id);
       if (error) throw error;
-      toast.success(`تم حذف العامل "${worker.full_name}" بنجاح`);
+      toast.success(t('workers.delete_success'));
       fetchData();
     } catch (error: any) {
       console.error('Error deleting worker:', error);
