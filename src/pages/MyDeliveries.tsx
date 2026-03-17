@@ -1050,11 +1050,11 @@ const MyDeliveries: React.FC = () => {
             postponedOrders.forEach(order => {
               let key: string;
               if (postponeGroupBy === 'date') {
-                key = order.delivery_date || 'بدون تاريخ';
+                key = order.delivery_date || t('deliveries.no_date');
               } else {
                 const sectorName = (order.customer as any)?.sector
                   ? getLocalizedName((order.customer as any).sector, language)
-                  : 'بدون سيكتور';
+                  : t('deliveries.no_sector');
                 key = sectorName;
               }
               if (!groups[key]) groups[key] = [];
