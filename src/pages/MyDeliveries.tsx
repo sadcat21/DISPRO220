@@ -1015,7 +1015,7 @@ const MyDeliveries: React.FC = () => {
         <>
           {/* Group-by selector for postponed */}
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs text-muted-foreground">ترتيب حسب:</span>
+            <span className="text-xs text-muted-foreground">{t('deliveries.sort_by')}</span>
             <Button
               variant={postponeGroupBy === 'date' ? 'default' : 'outline'}
               size="sm"
@@ -1023,7 +1023,7 @@ const MyDeliveries: React.FC = () => {
               onClick={() => setPostponeGroupBy('date')}
             >
               <Calendar className="w-3 h-3 me-1" />
-              التاريخ
+              {t('deliveries.by_date')}
             </Button>
             <Button
               variant={postponeGroupBy === 'sector' ? 'default' : 'outline'}
@@ -1032,7 +1032,7 @@ const MyDeliveries: React.FC = () => {
               onClick={() => setPostponeGroupBy('sector')}
             >
               <Map className="w-3 h-3 me-1" />
-              السيكتور
+              {t('deliveries.by_sector')}
             </Button>
           </div>
           {(() => {
