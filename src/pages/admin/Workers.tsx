@@ -767,12 +767,12 @@ const Workers: React.FC = () => {
       <AlertDialog open={!!deleteWorker} onOpenChange={() => setDeleteWorker(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2"><Trash2 className="w-5 h-5 text-destructive" />حذف العامل</AlertDialogTitle>
-            <AlertDialogDescription>هل أنت متأكد من حذف العامل "{deleteWorker?.full_name}"؟ سيتم حذف جميع بياناته ولا يمكن التراجع.</AlertDialogDescription>
+            <AlertDialogTitle className="flex items-center gap-2"><Trash2 className="w-5 h-5 text-destructive" />{t('workers.delete_worker')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('workers.delete_confirm')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { if (deleteWorker) handleDeleteWorker(deleteWorker); setDeleteWorker(null); }}>حذف</AlertDialogAction>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { if (deleteWorker) handleDeleteWorker(deleteWorker); setDeleteWorker(null); }}>{t('common.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
