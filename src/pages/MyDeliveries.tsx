@@ -1074,7 +1074,7 @@ const MyDeliveries: React.FC = () => {
                         <Map className="w-4 h-4 text-amber-600" />
                       )}
                       <span className="font-bold text-sm">
-                        {postponeGroupBy === 'date' && key !== 'بدون تاريخ'
+                        {postponeGroupBy === 'date' && key !== t('deliveries.no_date')
                           ? format(new Date(key), 'EEEE dd MMMM', { locale: getDateLocale(language) })
                           : key}
                       </span>
