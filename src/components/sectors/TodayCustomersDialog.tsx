@@ -65,6 +65,24 @@ const normalizeSaleItem = (item: any) => ({
   pricingUnit: item?.pricing_unit ?? item?.pricingUnit ?? item?.product?.pricing_unit ?? undefined,
   weightPerBox: toNullableNumber(item?.weight_per_box ?? item?.weightPerBox ?? item?.product?.weight_per_box),
 });
+
+// Resolve paid/remaining amounts from order fields (partial_amount + payment_status)
+const resolveOrderPayment = (order: any, isOrderRequest: boolean) => {
+  const totalAmount = Number(order.total_amount || 0);
+  const paymentStatus = order.payment_status;
+  const partialAmount = order.partial_amount != null ? Number(order.partial_amount) : null;
+
+  if (isOrderRequest) return { paidAmount: 0, remainingAmount: totalAmount };
+  if (paymentStatus === 'payment_pending' || paymentStatus === 'no_payment') return { paidAmount: 0, remainingAmount: totalAmount };
+  if (paymentStatus === 'payment_partial' && partialAmount != null) return { paidAmount: partialAmount, remainingAmount: Math.max(0, totalAmount - partialAmount) };
+  if (paymentStatus === 'payment_full' || paymentStatus === 'paid') return { paidAmount: totalAmount, remainingAmount: 0 };
+  if (order.remaining_amount != null) {
+    const rem = Number(order.remaining_amount);
+    return { paidAmount: totalAmount - rem, remainingAmount: rem };
+  }
+  return { paidAmount: totalAmount, remainingAmount: 0 };
+};
+
 // Generate next work days (Sat-Thu, skip Friday) starting from tomorrow
 const getNextWorkDays = (): { date: Date; label: string }[] => {
   const days: { date: Date; label: string }[] = [];
