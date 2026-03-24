@@ -69,7 +69,9 @@ const WorkerHome: React.FC = () => {
   const isAvailableOffersHidden = useIsElementHidden('button', 'home_available_offers');
   const isAvailableOffersPageHidden = useIsElementHidden('page', '/available-offers');
   const isWorkerActionsHidden = useIsElementHidden('page', '/worker-actions');
+  const isWarehouseStockHidden = useIsElementHidden('page', '/warehouse');
   const isSupervisor = role === 'supervisor';
+  const isWarehouseManager = activeRole?.custom_role_code === 'warehouse_manager';
 
   const JS_DAY_TO_NAME: Record<number, string> = {
     6: 'saturday', 0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday', 4: 'thursday',
@@ -278,6 +280,22 @@ const WorkerHome: React.FC = () => {
         </div>
       )}
 
+      {/* Warehouse Manager: Today's Customers */}
+      {isWarehouseManager && !isSupervisor && (
+        <div className="px-4 mt-3">
+          <div
+            onClick={() => setShowTodayCustomers(true)}
+            className="relative overflow-hidden rounded-xl border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 to-teal-100 p-4 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg flex items-center gap-3"
+          >
+            <CalendarCheck className="w-8 h-8 text-emerald-600 shrink-0" />
+            <div>
+              <p className="font-bold text-sm text-emerald-900">{todayCustomersLabel}</p>
+              <p className="text-xs text-emerald-700">{t('worker.today_schedule_desc')}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {hasPromoAccess ? (
         <>
@@ -313,7 +331,7 @@ const WorkerHome: React.FC = () => {
             }}
           />
         </>
-      ) : (hasOrdersAccess || hasDeliveryAccess || hasDebtAccess) ? (
+      ) : (hasOrdersAccess || hasDeliveryAccess || hasDebtAccess || isWarehouseManager) ? (
         (() => {
           // Build visible actions dynamically
           const quickActions: { key: string; icon: React.ReactNode; label: string; onClick: () => void }[] = [];
@@ -321,8 +339,12 @@ const WorkerHome: React.FC = () => {
           if (hasDeliveryAccess && !isDeliveriesPageHidden && !isDeliveriesHidden) {
             quickActions.push({ key: 'deliveries', icon: <Truck className="w-6 h-6" />, label: t('deliveries.title'), onClick: () => navigate('/my-deliveries') });
           }
-          if (hasDeliveryAccess && !isDirectSaleHidden) {
-            quickActions.push({ key: 'direct-sale', icon: <ShoppingBag className="w-6 h-6" />, label: t('stock.direct_sale'), onClick: () => setShowActionDialog(true) });
+          if ((hasDeliveryAccess || isWarehouseManager) && !isDirectSaleHidden) {
+            quickActions.push({ key: 'direct-sale', icon: <ShoppingBag className="w-6 h-6" />, label: isWarehouseManager ? 'بيع مخزن - Vente Dépôt' : t('stock.direct_sale'), onClick: () => setShowActionDialog(true) });
+          }
+          // Warehouse stock for warehouse manager
+          if (isWarehouseManager && !isWarehouseStockHidden) {
+            quickActions.push({ key: 'warehouse-stock', icon: <Package className="w-6 h-6" />, label: 'مخزون الفرع', onClick: () => navigate('/warehouse') });
           }
           if (hasDeliveryAccess && !isMyStockPageHidden && !isMyStockHidden) {
             quickActions.push({ key: 'my-stock', icon: <Package className="w-6 h-6" />, label: t('stock.my_stock'), onClick: () => navigate('/my-stock') });
@@ -371,6 +393,7 @@ const WorkerHome: React.FC = () => {
             'today-customers': { bg: 'bg-gradient-to-br from-sky-400 to-blue-500', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
             'rewards': { bg: 'bg-gradient-to-br from-yellow-400 to-amber-500', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
             'worker-actions': { bg: 'bg-gradient-to-br from-indigo-500 to-indigo-700', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
+            'warehouse-stock': { bg: 'bg-gradient-to-br from-teal-500 to-emerald-700', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
           };
 
           const gridCols = quickActions.length === 1 ? 'grid-cols-1' : quickActions.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
