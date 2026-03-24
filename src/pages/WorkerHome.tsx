@@ -331,7 +331,7 @@ const WorkerHome: React.FC = () => {
             }}
           />
         </>
-      ) : (hasOrdersAccess || hasDeliveryAccess || hasDebtAccess) ? (
+      ) : (hasOrdersAccess || hasDeliveryAccess || hasDebtAccess || isWarehouseManager) ? (
         (() => {
           // Build visible actions dynamically
           const quickActions: { key: string; icon: React.ReactNode; label: string; onClick: () => void }[] = [];
@@ -393,6 +393,7 @@ const WorkerHome: React.FC = () => {
             'today-customers': { bg: 'bg-gradient-to-br from-sky-400 to-blue-500', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
             'rewards': { bg: 'bg-gradient-to-br from-yellow-400 to-amber-500', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
             'worker-actions': { bg: 'bg-gradient-to-br from-indigo-500 to-indigo-700', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
+            'warehouse-stock': { bg: 'bg-gradient-to-br from-teal-500 to-emerald-700', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
           };
 
           const gridCols = quickActions.length === 1 ? 'grid-cols-1' : quickActions.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
