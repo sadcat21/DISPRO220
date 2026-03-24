@@ -724,7 +724,7 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
           <DialogHeader className="p-4 pb-2 border-b">
             <DialogTitle className="flex items-center gap-2">
               <Truck className="w-5 h-5" />
-              {t('stock.direct_sale')}
+              {isWarehouseManager ? 'بيع مخزن - Vente Dépôt' : t('stock.direct_sale')}
             </DialogTitle>
           </DialogHeader>
 
