@@ -125,6 +125,21 @@ const WorkerHome: React.FC = () => {
     enabled: !!workerId,
   });
 
+  // Warehouse stock for warehouse manager direct sales
+  const { data: warehouseStockItems } = useQuery({
+    queryKey: ['warehouse-stock-for-sale', activeBranch?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('warehouse_stock')
+        .select('*, product:products(*)')
+        .eq('branch_id', activeBranch!.id)
+        .gt('quantity', 0);
+      if (error) throw error;
+      return data;
+    },
+    enabled: isWarehouseManager && !!activeBranch?.id,
+  });
+
   const { data: allCustomers = [], isLoading: customersLoading } = useQuery({
     queryKey: ['customers-for-order-picker'],
     queryFn: async () => {
