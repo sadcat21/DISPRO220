@@ -829,13 +829,44 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
                 )}
               </section>
 
-              {/* Payment Type - Direct sale is always without invoice */}
+              {/* Payment Type - warehouse_manager can choose, others always without invoice */}
               <section className="space-y-3">
                 <Label className="text-base font-semibold">{t('orders.purchase_method')}</Label>
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border">
-                  <ReceiptText className="w-5 h-5 text-primary" />
-                  <span className="text-sm font-medium">{t('orders.without_invoice')}</span>
-                </div>
+                {isWarehouseManager ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant={paymentType === 'with_invoice' ? 'default' : 'outline'}
+                      className={`h-12 text-sm font-bold ${paymentType === 'with_invoice' ? 'ring-2 ring-primary/40' : 'opacity-60'}`}
+                      onClick={() => setPaymentType('with_invoice')}
+                    >
+                      <Receipt className="w-4 h-4 ml-2" />
+                      {t('orders.with_invoice')}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={paymentType === 'without_invoice' ? 'default' : 'outline'}
+                      className={`h-12 text-sm font-bold ${paymentType === 'without_invoice' ? 'ring-2 ring-primary/40' : 'opacity-60'}`}
+                      onClick={() => setPaymentType('without_invoice')}
+                    >
+                      <ReceiptText className="w-4 h-4 ml-2" />
+                      {t('orders.without_invoice')}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border">
+                    <ReceiptText className="w-5 h-5 text-primary" />
+                    <span className="text-sm font-medium">{t('orders.without_invoice')}</span>
+                  </div>
+                )}
+
+                {/* Invoice Payment Method for warehouse_manager with_invoice */}
+                {isWarehouseManager && paymentType === 'with_invoice' && (
+                  <InvoicePaymentMethodSelect
+                    value={invoicePaymentMethod}
+                    onChange={setInvoicePaymentMethod}
+                  />
+                )}
 
                 {/* Price Sub-Type */}
                 <div className="space-y-2">
