@@ -16,7 +16,7 @@ const SectorCustomersPopover: React.FC = () => {
   const { workerId, activeBranch, role } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
   const todayName = JS_DAY_TO_NAME[new Date().getDay()] || '';
-  const isAdmin = isAdminRole(role);
+  const isAdmin = isAdminRole(role) || role === 'supervisor';
 
   // Check if there are scheduled sectors today for badge count
   const { data: todayCount = 0 } = useQuery({
