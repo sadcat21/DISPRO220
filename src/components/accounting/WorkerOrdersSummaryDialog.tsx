@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { ClipboardList, Package, User, Calendar, ChevronLeft, ChevronRight, Loader2, ShoppingCart, UserCheck, Printer, Settings2, Layers } from 'lucide-react';
+import { ClipboardList, Package, User, Calendar, ChevronLeft, ChevronRight, Loader2, ShoppingCart, UserCheck, Printer, Settings2, Layers, Gift } from 'lucide-react';
 import { format, addDays, subDays } from 'date-fns';
 import OrdersPrintView from '@/components/print/OrdersPrintView';
 import type { PrintColumnConfig } from '@/components/print/OrdersPrintView';
@@ -16,6 +16,7 @@ import { usePrintColumnsConfig } from '@/hooks/usePrintColumnsConfig';
 import PrintColumnsConfigDialog from '@/components/print/PrintColumnsConfigDialog';
 import { OrderWithDetails, Product } from '@/types/database';
 import { useWorkerPrintInfo } from '@/hooks/useWorkerPrintInfo';
+import GiftsPrintView from '@/components/accounting/GiftsPrintView';
 import { toast } from 'sonner';
 
 interface Props {
@@ -186,6 +187,7 @@ const WorkerOrdersSummaryDialog: React.FC<Props> = ({ open, onOpenChange, worker
   const [showColumnsConfig, setShowColumnsConfig] = useState(false);
   const [groupCustomers, setGroupCustomers] = useState(true);
   const [groupProducts, setGroupProducts] = useState(true);
+  const [includePromoRegistre, setIncludePromoRegistre] = useState(false);
 
   const { columns: columnConfig, saveColumns } = usePrintColumnsConfig();
   const { data: workerPrintInfo } = useWorkerPrintInfo(workerId);
@@ -371,6 +373,16 @@ const WorkerOrdersSummaryDialog: React.FC<Props> = ({ open, onOpenChange, worker
           columnConfig={columnConfig}
         />
       )}
+      {isPrintReady && includePromoRegistre && (
+        <GiftsPrintView
+          rows={[]}
+          workerName={workerPrintInfo?.printName || workerName || ''}
+          dateRange={format(new Date(selectedDate), 'dd/MM/yyyy')}
+          isVisible
+          isTemplate
+          templatePageCount={1}
+        />
+      )}
 
     <Dialog open={open} onOpenChange={(v) => { if (isPrintingRef.current) return; onOpenChange(v); }}>
       <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[92dvh] flex flex-col overflow-hidden p-0 gap-0 rounded-2xl" dir="rtl">
@@ -535,6 +547,16 @@ const WorkerOrdersSummaryDialog: React.FC<Props> = ({ open, onOpenChange, worker
                 </div>
               </Label>
               <Switch id="groupProductsOS" checked={groupProducts} onCheckedChange={setGroupProducts} />
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="includePromoOS" className="flex items-center gap-2 cursor-pointer flex-1">
+                <Gift className="w-3.5 h-3.5 text-primary shrink-0" />
+                <div>
+                  <div className="text-sm font-medium">Registre des promotions</div>
+                  <p className="text-xs text-muted-foreground">إضافة صفحة سجل العروض الترويجية</p>
+                </div>
+              </Label>
+              <Switch id="includePromoOS" checked={includePromoRegistre} onCheckedChange={setIncludePromoRegistre} />
             </div>
           </div>
 
