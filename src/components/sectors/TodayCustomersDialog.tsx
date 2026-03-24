@@ -249,6 +249,8 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   const [directSaleCustomerId, setDirectSaleCustomerId] = useState<string | null>(null);
   const [printReceiptData, setPrintReceiptData] = useState<any>(null);
   const [showPrintReceipt, setShowPrintReceipt] = useState(false);
+  const [showOrdersSummary, setShowOrdersSummary] = useState(false);
+  const [showSalesSummary, setShowSalesSummary] = useState(false);
 
   // Data queries
   const { data: sectors = [] } = useQuery({
