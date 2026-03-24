@@ -495,6 +495,74 @@ const WorkerOrdersSummaryDialog: React.FC<Props> = ({ open, onOpenChange, worker
         </Tabs>
       </DialogContent>
     </Dialog>
+
+    {/* Print Settings Dialog */}
+    <Dialog open={showPrintSettings} onOpenChange={setShowPrintSettings}>
+      <DialogContent className="max-w-[95vw] sm:max-w-sm p-4" dir="rtl">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <Printer className="w-4 h-4" />
+            إعدادات الطباعة
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          {/* Summary */}
+          <div className="bg-primary/10 p-3 rounded-lg text-center">
+            <p className="text-base font-bold">{currentData.reduce((s, p) => s + p.customerCount, 0)} عميل • {totalQuantity} صندوق</p>
+            <p className="text-xs text-muted-foreground">{activeTab === 'created' ? 'طلبياته' : 'معيّنة'} - {format(new Date(selectedDate), 'dd/MM/yyyy')}</p>
+          </div>
+
+          {/* Grouping Options */}
+          <div className="bg-muted/50 p-3 rounded-lg space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="groupCustomersOS" className="flex items-center gap-2 cursor-pointer flex-1">
+                <Layers className="w-3.5 h-3.5 text-primary shrink-0" />
+                <div>
+                  <div className="text-sm font-medium">تجميع طلبات نفس العميل</div>
+                  <p className="text-xs text-muted-foreground">دمج الطلبات المتعددة لنفس العميل</p>
+                </div>
+              </Label>
+              <Switch id="groupCustomersOS" checked={groupCustomers} onCheckedChange={setGroupCustomers} />
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="groupProductsOS" className="flex items-center gap-2 cursor-pointer flex-1">
+                <Package className="w-3.5 h-3.5 text-primary shrink-0" />
+                <div>
+                  <div className="text-sm font-medium">تجميع كميات المنتجات</div>
+                  <p className="text-xs text-muted-foreground">جمع كميات نفس المنتج من طلبات مختلفة</p>
+                </div>
+              </Label>
+              <Switch id="groupProductsOS" checked={groupProducts} onCheckedChange={setGroupProducts} />
+            </div>
+          </div>
+
+          {/* Column Config Button */}
+          <Button variant="outline" className="w-full gap-2" onClick={() => setShowColumnsConfig(true)}>
+            <Settings2 className="w-4 h-4" />
+            إعدادات الأعمدة
+          </Button>
+
+          {/* Action Buttons */}
+          <div className="grid grid-cols-2 gap-2">
+            <Button onClick={handlePrint} disabled={currentData.length === 0} className="gap-2">
+              <Printer className="w-4 h-4" />
+              طباعة
+            </Button>
+            <Button variant="outline" onClick={() => setShowPrintSettings(false)}>
+              إلغاء
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* Column Config Dialog */}
+    <PrintColumnsConfigDialog
+      open={showColumnsConfig}
+      onOpenChange={setShowColumnsConfig}
+      columns={columnConfig}
+      onColumnsChange={saveColumns}
+    />
     </>
   );
 };
