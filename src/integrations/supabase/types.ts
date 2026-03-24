@@ -6729,6 +6729,7 @@ export type Database = {
         | "project_manager"
         | "accountant"
         | "admin_assistant"
+        | "warehouse_manager"
       task_priority: "low" | "medium" | "high" | "urgent"
       task_status: "todo" | "doing" | "done"
       task_type: "task" | "request"
@@ -6867,6 +6868,7 @@ export const Constants = {
         "project_manager",
         "accountant",
         "admin_assistant",
+        "warehouse_manager",
       ],
       task_priority: ["low", "medium", "high", "urgent"],
       task_status: ["todo", "doing", "done"],
