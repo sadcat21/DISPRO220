@@ -282,6 +282,9 @@ export const UI_ELEMENTS = {
     { key: 'wa_gifts_summary', label: 'تجميع العروض', group: 'إجراءات العمال' },
     { key: 'wa_achievements', label: 'المنجزات', group: 'إجراءات العمال' },
     { key: 'wa_sector_schedule', label: 'جدول السيكتور', group: 'إجراءات العمال' },
+    { key: 'wa_sector_coverage', label: 'تعويض السيكتورات', group: 'إجراءات العمال' },
+    { key: 'wa_orders_summary', label: 'تجميع الطلبيات', group: 'إجراءات العمال' },
+    { key: 'wa_session_history', label: 'سجل الجلسات', group: 'إجراءات العمال' },
   ],
   actions: [
     { key: 'collect_debt', label: 'تحصيل دين', group: 'ديون العملاء' },
