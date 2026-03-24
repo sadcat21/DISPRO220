@@ -35,6 +35,8 @@ import DirectSaleDialog from '@/components/warehouse/DirectSaleDialog';
 import ReceiptDialog from '@/components/printing/ReceiptDialog';
 import ModifyOrderDialog from '@/components/orders/ModifyOrderDialog';
 import { useOrderItems } from '@/hooks/useOrders';
+import WorkerOrdersSummaryDialog from '@/components/accounting/WorkerOrdersSummaryDialog';
+import WorkerSalesSummaryDialog from '@/components/accounting/WorkerSalesSummaryDialog';
 import { isAdminRole } from '@/lib/utils';
 
 const DAY_NAMES: Record<string, string> = {
