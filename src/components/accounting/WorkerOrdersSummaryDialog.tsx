@@ -181,7 +181,13 @@ const WorkerOrdersSummaryDialog: React.FC<Props> = ({ open, onOpenChange, worker
   const isPrintingRef = useRef(false);
   const printRef = useRef<HTMLDivElement>(null);
 
-  const { columns: columnConfig } = usePrintColumnsConfig();
+  // Print settings dialog state
+  const [showPrintSettings, setShowPrintSettings] = useState(false);
+  const [showColumnsConfig, setShowColumnsConfig] = useState(false);
+  const [groupCustomers, setGroupCustomers] = useState(true);
+  const [groupProducts, setGroupProducts] = useState(true);
+
+  const { columns: columnConfig, saveColumns } = usePrintColumnsConfig();
   const { data: workerPrintInfo } = useWorkerPrintInfo(workerId);
 
   const { data, isLoading } = useQuery({
