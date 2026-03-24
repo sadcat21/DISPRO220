@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import TodayCustomersDialog from './TodayCustomersDialog';
 import DebtCollectionsPopover from '@/components/debts/DebtCollectionsPopover';
 import { isAdminRole } from '@/lib/utils';
+import { useSectorCoverage } from '@/hooks/useSectorCoverage';
 
 const JS_DAY_TO_NAME: Record<number, string> = {
   6: 'saturday', 0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday', 4: 'thursday',
@@ -18,34 +19,58 @@ const SectorCustomersPopover: React.FC = () => {
   const todayName = JS_DAY_TO_NAME[new Date().getDay()] || '';
   const isAdmin = isAdminRole(role) || role === 'supervisor';
 
+  // Sector coverage for substitute workers
+  const { getActiveCoveragesForDate } = useSectorCoverage();
+  const todayDateStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+
   // Check if there are scheduled sectors today for badge count
   const { data: todayCount = 0 } = useQuery({
-    queryKey: ['sector-customers-count', workerId, activeBranch?.id, todayName],
+    queryKey: ['sector-customers-count', workerId, activeBranch?.id, todayName, todayDateStr],
     queryFn: async () => {
       // Get sector schedules for today
       const { data: schedules } = await supabase
         .from('sector_schedules')
-        .select('sector_id, worker_id')
+        .select('sector_id, worker_id, schedule_type')
         .eq('day', todayName);
+
+      // Get active coverages for today
+      const activeCoverages = getActiveCoveragesForDate(todayDateStr);
 
       if (!schedules || schedules.length === 0) {
         // Fallback to legacy fields
-        let query = supabase.from('sectors').select('id');
+        let query = supabase.from('sectors').select('id, visit_day_delivery, visit_day_sales, sales_worker_id, delivery_worker_id');
         if (activeBranch && role === 'branch_admin') query = query.eq('branch_id', activeBranch.id);
-        
-        const conditions = [];
-        if (!isAdmin) {
-          const { data } = await query.or(`visit_day_delivery.eq.${todayName},visit_day_sales.eq.${todayName}`);
-          return (data || []).filter(s => true).length > 0 ? 1 : 0;
+
+        const { data: legacySectors } = await query.or(`visit_day_delivery.eq.${todayName},visit_day_sales.eq.${todayName}`);
+
+        if (isAdmin) {
+          return (legacySectors || []).length > 0 || activeCoverages.length > 0 ? 1 : 0;
         }
-        const { data } = await query.or(`visit_day_delivery.eq.${todayName},visit_day_sales.eq.${todayName}`);
-        return (data || []).length > 0 ? 1 : 0;
+
+        // For worker: check own sectors + coverages where worker is substitute
+        const hasOwnSectors = (legacySectors || []).some(
+          s => s.sales_worker_id === workerId || s.delivery_worker_id === workerId
+        );
+        const isCovering = activeCoverages.some(c => c.substitute_worker_id === workerId);
+        return (hasOwnSectors || isCovering) ? 1 : 0;
       }
 
-      if (isAdmin) return schedules.length > 0 ? 1 : 0;
-      
+      if (isAdmin) return schedules.length > 0 || activeCoverages.length > 0 ? 1 : 0;
+
+      // For worker: check own schedules + coverages where worker is substitute
       const workerSchedules = schedules.filter(s => s.worker_id === workerId);
-      return workerSchedules.length > 0 ? 1 : 0;
+
+      // Check if this worker is covering for someone today
+      const coveringForSomeone = activeCoverages.some(c => {
+        if (c.substitute_worker_id !== workerId) return false;
+        // Validate the coverage applies to today's schedule
+        const matchingSchedule = schedules.some(
+          sc => sc.sector_id === c.sector_id && sc.schedule_type === c.schedule_type && sc.worker_id === c.absent_worker_id
+        );
+        return matchingSchedule;
+      });
+
+      return (workerSchedules.length > 0 || coveringForSomeone) ? 1 : 0;
     },
     enabled: !!workerId,
   });
