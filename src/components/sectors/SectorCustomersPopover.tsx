@@ -57,20 +57,26 @@ const SectorCustomersPopover: React.FC = () => {
 
       if (isAdmin) return schedules.length > 0 || activeCoverages.length > 0 ? 1 : 0;
 
-      // For worker: check own schedules + coverages where worker is substitute
-      const workerSchedules = schedules.filter(s => s.worker_id === workerId);
+      // For worker: check own schedules (excluding sectors where worker is absent) + coverages
+      const absentSectorKeys = new Set(
+        activeCoverages
+          .filter(c => c.absent_worker_id === workerId)
+          .map(c => `${c.sector_id}:${c.schedule_type}`)
+      );
+      const activeOwnSchedules = schedules.filter(s => 
+        s.worker_id === workerId && !absentSectorKeys.has(`${s.sector_id}:${s.schedule_type}`)
+      );
 
       // Check if this worker is covering for someone today
       const coveringForSomeone = activeCoverages.some(c => {
         if (c.substitute_worker_id !== workerId) return false;
-        // Validate the coverage applies to today's schedule
-        const matchingSchedule = schedules.some(
-          sc => sc.sector_id === c.sector_id && sc.schedule_type === c.schedule_type && sc.worker_id === c.absent_worker_id
+        const daySchedules = schedules.filter(
+          sc => sc.sector_id === c.sector_id && sc.schedule_type === c.schedule_type
         );
-        return matchingSchedule;
+        return daySchedules.length > 0;
       });
 
-      return (workerSchedules.length > 0 || coveringForSomeone) ? 1 : 0;
+      return (activeOwnSchedules.length > 0 || coveringForSomeone) ? 1 : 0;
     },
     enabled: !!workerId,
   });
