@@ -69,7 +69,9 @@ const WorkerHome: React.FC = () => {
   const isAvailableOffersHidden = useIsElementHidden('button', 'home_available_offers');
   const isAvailableOffersPageHidden = useIsElementHidden('page', '/available-offers');
   const isWorkerActionsHidden = useIsElementHidden('page', '/worker-actions');
+  const isWarehouseStockHidden = useIsElementHidden('page', '/warehouse');
   const isSupervisor = role === 'supervisor';
+  const isWarehouseManager = activeRole?.custom_role_code === 'warehouse_manager';
 
   const JS_DAY_TO_NAME: Record<number, string> = {
     6: 'saturday', 0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday', 4: 'thursday',
