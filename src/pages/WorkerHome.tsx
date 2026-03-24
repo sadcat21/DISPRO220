@@ -349,12 +349,12 @@ const WorkerHome: React.FC = () => {
           if (!isRewardsHidden && !isRewardsPageHidden) {
             quickActions.push({ key: 'rewards', icon: <Trophy className="w-6 h-6" />, label: t('worker.rewards'), onClick: () => navigate('/my-rewards') });
           }
-          // Worker Actions for supervisor
-          if (isSupervisor && !isWorkerActionsHidden) {
+          // Worker Actions for supervisor or warehouse_manager
+          if ((isSupervisor || activeRole?.custom_role_code === 'warehouse_manager') && !isWorkerActionsHidden) {
             quickActions.push({ key: 'worker-actions', icon: <HardHat className="w-6 h-6" />, label: t('worker.worker_actions'), onClick: () => navigate('/worker-actions') });
           }
           // Worker Actions for regular workers (self-view)
-          if (!isSupervisor && !isWorkerActionsHidden) {
+          if (!isSupervisor && activeRole?.custom_role_code !== 'warehouse_manager' && !isWorkerActionsHidden) {
             quickActions.push({ key: 'worker-actions', icon: <HardHat className="w-6 h-6" />, label: t('worker.my_actions'), onClick: () => navigate('/worker-actions') });
           }
 
