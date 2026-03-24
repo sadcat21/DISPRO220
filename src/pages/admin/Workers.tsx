@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { UserPlus, Users, Loader2, Eye, EyeOff, Shield, Building2, Plus, X, Briefcase, Trash2, FlaskConical } from 'lucide-react';
+import { UserPlus, Users, Loader2, Eye, EyeOff, Shield, Building2, Plus, X, Briefcase, Trash2, FlaskConical, Warehouse } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TestWorkersTab from '@/components/workers/TestWorkersTab';
 import { toast } from 'sonner';
@@ -606,6 +606,56 @@ const Workers: React.FC = () => {
                 </div>
               </div>
               
+              {/* Quick role presets */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">إعداد سريع للأدوار</Label>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant={workerRoles.some(wr => wr.custom_role_ids.some(id => customRoles.find(cr => cr.id === id)?.code === 'warehouse_manager')) ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => {
+                      const warehouseRole = customRoles.find(cr => cr.code === 'warehouse_manager');
+                      if (warehouseRole) {
+                        const branchId = activeBranch?.id || null;
+                        setWorkerRoles([{ role: 'worker', branch_id: branchId, custom_role_ids: [warehouseRole.id] }]);
+                      }
+                    }}
+                  >
+                    <Warehouse className="w-4 h-4 ml-1" />
+                    مسؤول المخزن
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={workerRoles.some(wr => wr.custom_role_ids.some(id => customRoles.find(cr => cr.id === id)?.code === 'sales_rep')) ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => {
+                      const salesRole = customRoles.find(cr => cr.code === 'sales_rep');
+                      if (salesRole) {
+                        const branchId = activeBranch?.id || null;
+                        setWorkerRoles([{ role: 'worker', branch_id: branchId, custom_role_ids: [salesRole.id] }]);
+                      }
+                    }}
+                  >
+                    💼 مندوب مبيعات
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={workerRoles.some(wr => wr.custom_role_ids.some(id => customRoles.find(cr => cr.id === id)?.code === 'delivery_rep')) ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => {
+                      const deliveryRole = customRoles.find(cr => cr.code === 'delivery_rep');
+                      if (deliveryRole) {
+                        const branchId = activeBranch?.id || null;
+                        setWorkerRoles([{ role: 'worker', branch_id: branchId, custom_role_ids: [deliveryRole.id] }]);
+                      }
+                    }}
+                  >
+                    🚚 مندوب توصيل
+                  </Button>
+                </div>
+              </div>
+
               <RoleEntryForm
                 roles={workerRoles}
                 onAdd={addRoleEntry}
