@@ -6671,6 +6671,7 @@ export type Database = {
           role: Database["public"]["Enums"]["app_role"]
         }[]
       }
+      has_custom_role: { Args: { p_role_code: string }; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       is_admin_of_branch: { Args: { p_branch_id: string }; Returns: boolean }
       is_approved_customer: { Args: never; Returns: boolean }
