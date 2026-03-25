@@ -515,9 +515,18 @@ const OrderTracking: React.FC = () => {
               >
                 <div className="p-3">
                   <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm">{order.customerName}</span>
-                      <span className="text-[10px] text-muted-foreground">#{order.orderId.slice(0, 6)}</span>
+                    <div className="flex-1 min-w-0">
+                      {order.customerData ? (
+                        <div className="flex items-center gap-2">
+                          <CustomerLabel customer={order.customerData} compact />
+                          <span className="text-[10px] text-muted-foreground shrink-0">#{order.orderId.slice(0, 6)}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm">{order.customerName}</span>
+                          <span className="text-[10px] text-muted-foreground">#{order.orderId.slice(0, 6)}</span>
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-1">
                       <Badge variant="outline" className={`text-[10px] ${
