@@ -532,6 +532,36 @@ const WorkerHome: React.FC = () => {
         open={showFactoryDelivery}
         onOpenChange={setShowFactoryDelivery}
       />
+
+      {/* Stock Management Hub Dialog */}
+      {showStockManagement && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center" onClick={() => setShowStockManagement(false)}>
+          <div className="bg-background rounded-t-2xl w-full max-w-lg p-5 pb-8 space-y-3 animate-in slide-in-from-bottom" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-center mb-4">إدارة المخزن</h3>
+            <button
+              onClick={() => { setShowStockManagement(false); navigate('/warehouse'); }}
+              className="w-full flex items-center gap-3 p-4 rounded-xl border border-border hover:bg-accent transition-colors"
+            >
+              <Package className="w-6 h-6 text-primary" />
+              <span className="font-semibold">مخزون الفرع</span>
+            </button>
+            <button
+              onClick={() => { setShowStockManagement(false); setShowFactoryReceipt(true); }}
+              className="w-full flex items-center gap-3 p-4 rounded-xl border border-border hover:bg-accent transition-colors"
+            >
+              <ArrowDownToLine className="w-6 h-6 text-emerald-600" />
+              <span className="font-semibold">استلام من المصنع</span>
+            </button>
+            <button
+              onClick={() => { setShowStockManagement(false); setShowFactoryDelivery(true); }}
+              className="w-full flex items-center gap-3 p-4 rounded-xl border border-border hover:bg-accent transition-colors"
+            >
+              <Truck className="w-6 h-6 text-orange-600" />
+              <span className="font-semibold">تسليم للمصنع</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
