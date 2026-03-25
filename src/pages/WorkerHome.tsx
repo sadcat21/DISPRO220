@@ -382,7 +382,7 @@ const WorkerHome: React.FC = () => {
             quickActions.push({ key: 'orders', icon: <ShoppingCart className="w-6 h-6" />, label: t('orders.manage'), onClick: () => navigate('/orders') });
             quickActions.push({ key: 'create-order', icon: <ShoppingCart className="w-6 h-6" />, label: t('orders.create_new'), onClick: () => setShowCustomerPickerForOrder(true) });
           }
-          if (hasOrdersAccess && !hasDeliveryAccess && !isMyPromosPageHidden) {
+          if (hasOrdersAccess && !hasDeliveryAccess && !isWarehouseManager && !isMyPromosPageHidden) {
             quickActions.push({ key: 'promos', icon: <Gift className="w-6 h-6" />, label: t('promos.add_new'), onClick: () => navigate('/my-promos') });
           }
           if (hasDebtAccess && !isCollectDebtHidden && !isDebtsPageHidden) {
