@@ -673,57 +673,67 @@ const OrderDetailsContent: React.FC<{ order: GroupedOrder }> = ({ order }) => {
   const priceSubtype = orderItems?.[0]?.price_subtype as string | undefined;
 
   return (
-    <div className="flex-1 overflow-auto">
-      <StatusProgressBar order={order} />
+    <div className="space-y-4">
+      {/* Large Progress Bar */}
+      <StatusProgressBar order={order} large />
       
-      {/* Order Summary */}
-      <div className="flex flex-wrap items-center justify-center gap-2 mb-3">
+      {/* Order Summary Card */}
+      <div className="bg-muted/30 rounded-xl p-3 space-y-2.5">
+        {/* Amount row */}
         {order.totalAmount && (
-          <Badge className="bg-primary/10 text-primary border-primary/20">
-            {Number(order.totalAmount).toLocaleString()} د.ج
-          </Badge>
+          <div className="text-center">
+            <span className="text-2xl font-bold text-foreground">{Number(order.totalAmount).toLocaleString()}</span>
+            <span className="text-sm text-muted-foreground ms-1">د.ج</span>
+          </div>
         )}
-        {order.paymentType && (
-          <Badge variant="outline" className={`text-[10px] ${PAYMENT_TYPE_LABELS[order.paymentType]?.color || ''}`}>
-            <Receipt className="h-2.5 w-2.5 ml-1" />
-            {PAYMENT_TYPE_LABELS[order.paymentType]?.label || order.paymentType}
-          </Badge>
-        )}
-        {order.paymentType === 'without_invoice' && priceSubtype && (
-          <Badge variant="outline" className={`text-[10px] ${PRICE_SUBTYPE_LABELS[priceSubtype]?.color || ''}`}>
-            {PRICE_SUBTYPE_LABELS[priceSubtype]?.label || priceSubtype}
-          </Badge>
-        )}
-        {order.invoicePaymentMethod && (
-          <Badge variant="outline" className="text-[10px]">
-            <CreditCard className="h-2.5 w-2.5 ml-1" />
-            {INVOICE_METHOD_LABELS[order.invoicePaymentMethod] || order.invoicePaymentMethod}
-          </Badge>
-        )}
-      </div>
+        
+        {/* Payment badges */}
+        <div className="flex flex-wrap items-center justify-center gap-1.5">
+          {order.paymentType && (
+            <Badge variant="outline" className={`text-[10px] ${PAYMENT_TYPE_LABELS[order.paymentType]?.color || ''}`}>
+              <Receipt className="h-2.5 w-2.5 me-1" />
+              {PAYMENT_TYPE_LABELS[order.paymentType]?.label || order.paymentType}
+            </Badge>
+          )}
+          {order.paymentType === 'without_invoice' && priceSubtype && (
+            <Badge variant="outline" className={`text-[10px] ${PRICE_SUBTYPE_LABELS[priceSubtype]?.color || ''}`}>
+              {PRICE_SUBTYPE_LABELS[priceSubtype]?.label || priceSubtype}
+            </Badge>
+          )}
+          {order.invoicePaymentMethod && (
+            <Badge variant="outline" className="text-[10px]">
+              <CreditCard className="h-2.5 w-2.5 me-1" />
+              {INVOICE_METHOD_LABELS[order.invoicePaymentMethod] || order.invoicePaymentMethod}
+            </Badge>
+          )}
+        </div>
 
-      {/* Worker Info */}
-      <div className="flex gap-2 mb-3 justify-center">
-        {order.createdByName && (
-          <Badge variant="outline" className="text-[10px]">
-            <Plus className="h-2.5 w-2.5 ml-1" />
-            {order.createdByName}
-          </Badge>
-        )}
-        {order.assignedWorkerName && (
-          <Badge variant="outline" className="text-[10px]">
-            <Truck className="h-2.5 w-2.5 ml-1" />
-            {order.assignedWorkerName}
-          </Badge>
-        )}
+        {/* Workers row */}
+        <div className="flex items-center justify-center gap-2">
+          {order.createdByName && (
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <ShoppingCart className="h-3 w-3" />
+              <span>{order.createdByName}</span>
+            </div>
+          )}
+          {order.createdByName && order.assignedWorkerName && (
+            <span className="text-muted-foreground/40">|</span>
+          )}
+          {order.assignedWorkerName && (
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Truck className="h-3 w-3" />
+              <span>{order.assignedWorkerName}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Modify Button */}
-      <div className="flex justify-center mb-3">
+      <div className="flex justify-center">
         <Button
           variant="outline"
           size="sm"
-          className="text-xs gap-1.5"
+          className="text-xs gap-1.5 rounded-full px-4"
           onClick={() => setShowModify(true)}
         >
           <Pencil className="h-3 w-3" />
