@@ -20,7 +20,7 @@ import CompanyInfoCard from '@/components/settings/CompanyInfoCard';
 import VerificationChecklistCard from '@/components/settings/VerificationChecklistCard';
 import SmsSettingsCard from '@/components/settings/SmsSettingsCard';
 import AppUpdateSettingsCard from '@/components/settings/AppUpdateSettingsCard';
-import { isAdminRole } from '@/lib/utils';
+import { isAdminRole, isSuperAdminRole } from '@/lib/utils';
 
 const Settings: React.FC = () => {
   const { user, logout, role, activeBranch, availableRoles, switchRole, switchBranch, showRoleSelection, showBranchSelection, selectRole, selectBranch } = useAuth();
@@ -66,11 +66,19 @@ const Settings: React.FC = () => {
             </span>
           </div>
           
-          {isAdminRole(role) && (
+          {isSuperAdminRole(role) && (
             <div className="flex justify-between items-center">
               <span className="text-muted-foreground">{t('settings.branch')}</span>
               <span className="bg-secondary px-3 py-1 rounded-full text-sm font-medium">
                 {activeBranch ? activeBranch.name : t('settings.all_branches')}
+              </span>
+            </div>
+          )}
+          {role === 'branch_admin' && activeBranch && (
+            <div className="flex justify-between items-center">
+              <span className="text-muted-foreground">{t('settings.branch')}</span>
+              <span className="bg-secondary px-3 py-1 rounded-full text-sm font-medium">
+                {activeBranch.name}
               </span>
             </div>
           )}
@@ -88,7 +96,7 @@ const Settings: React.FC = () => {
               </Button>
             )}
             
-            {isAdminRole(role) && (
+            {isSuperAdminRole(role) && (
               <Button
                 variant="outline"
                 size="sm"
@@ -205,25 +213,25 @@ const Settings: React.FC = () => {
       {isAdminRole(role) && (
         <NavbarCustomization />
       )}
-      {isAdminRole(role) && (
+      {isSuperAdminRole(role) && (
         <DataManagement />
       )}
-      {isAdminRole(role) && (
+      {isSuperAdminRole(role) && (
         <LocationSettingsCard />
       )}
-      {isAdminRole(role) && (
+      {isSuperAdminRole(role) && (
         <CustomerTypesCard />
       )}
-      {isAdminRole(role) && (
+      {isSuperAdminRole(role) && (
         <CompanyInfoCard />
       )}
-      {isAdminRole(role) && (
+      {isSuperAdminRole(role) && (
         <VerificationChecklistCard />
       )}
-      {isAdminRole(role) && (
+      {isSuperAdminRole(role) && (
         <SmsSettingsCard />
       )}
-      {isAdminRole(role) && (
+      {isSuperAdminRole(role) && (
         <AppUpdateSettingsCard />
       )}
 

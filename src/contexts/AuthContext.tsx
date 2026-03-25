@@ -256,12 +256,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const selectedRole: WorkerRole = roles.length === 1 ? roles[0] : { role: worker.role, branch_id: worker.branch_id, branch_name: null };
     
     if (isAdminRole(selectedRole.role)) {
+      // branch_admin: auto-lock to their branch, skip branch selection
+      if (selectedRole.role === 'branch_admin' && worker.branch_id) {
+        const { data: branchData } = await supabase
+          .from('branches')
+          .select('*')
+          .eq('id', worker.branch_id)
+          .maybeSingle();
+        setActiveRole(selectedRole);
+        completeLogin(worker, selectedRole.role, branchData || null, selectedRole);
+        return { needsRoleSelection: false, needsBranchSelection: false, roles };
+      }
+
       setPendingWorker(worker);
       setWorkerId(worker.id);
       setActiveRole(selectedRole);
       setAuthState({
         user: worker,
-        role: 'admin',
+        role: selectedRole.role,
         isLoading: false,
         isAuthenticated: false, // Not fully authenticated until branch is selected
       });
@@ -282,11 +294,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set active role
     setActiveRole(roleData);
 
-    // If admin role selected, show branch selection
+    // If admin role selected, show branch selection (except branch_admin auto-locks)
     if (isAdminRole(roleData.role)) {
+      if (roleData.role === 'branch_admin' && pendingWorker.branch_id) {
+        // Auto-lock branch_admin to their branch
+        supabase.from('branches').select('*').eq('id', pendingWorker.branch_id).maybeSingle().then(({ data: branchData }) => {
+          completeLogin(pendingWorker!, roleData.role, branchData || null, roleData);
+        });
+        return;
+      }
       setAuthState({
         user: pendingWorker,
-        role: 'admin',
+        role: roleData.role,
         isLoading: false,
         isAuthenticated: false,
       });
@@ -363,7 +382,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const switchBranch = () => {
-    if (isAdminRole(authState.role)) {
+    // branch_admin cannot switch branches
+    if (isAdminRole(authState.role) && authState.role !== 'branch_admin') {
       setShowBranchSelection(true);
     }
   };

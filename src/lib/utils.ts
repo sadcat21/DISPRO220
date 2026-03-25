@@ -10,3 +10,8 @@ export function cn(...inputs: ClassValue[]) {
 export function isAdminRole(role: AppRole | null | undefined): boolean {
   return role === 'admin' || role === 'branch_admin' || role === 'project_manager';
 }
+
+/** Returns true only for super-admin roles (admin + project_manager) — NOT branch_admin */
+export function isSuperAdminRole(role: AppRole | null | undefined): boolean {
+  return role === 'admin' || role === 'project_manager';
+}

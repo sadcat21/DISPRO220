@@ -96,7 +96,7 @@ export const useNavigation = () => {
       };
     }
 
-    // Branch admin navigation - same as admin with worker capabilities
+    // Branch admin navigation - restricted to their branch, no global settings
     if (role === 'branch_admin') {
       return {
         main: [
@@ -131,13 +131,13 @@ export const useNavigation = () => {
           { path: '/geo-operations', icon: Navigation, label: t('nav.geo_operations') },
           { path: '/activity-logs', icon: Activity, label: t('nav.activity_logs') },
           { path: '/nearby-stores', icon: Store, label: t('nav.nearby_stores') },
-          { path: '/branches', icon: Building2, label: t('nav.branches') },
           { path: '/customers', icon: UserCheck, label: t('nav.customers') },
           { path: '/workers', icon: Users, label: t('nav.workers') },
           { path: '/worker-actions', icon: Users, label: t('nav.worker_actions') },
           { path: '/products', icon: Package, label: t('nav.products') },
           { path: '/settings', icon: Settings, label: t('nav.settings') },
           { path: '/guide', icon: BookOpen, label: t('nav.guide') },
+          // EXCLUDED for branch_admin: /branches, /permissions
         ],
       };
     }
