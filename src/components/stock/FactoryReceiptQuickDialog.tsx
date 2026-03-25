@@ -48,7 +48,7 @@ const FactoryReceiptQuickDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   const [pendingReceipts, setPendingReceipts] = useState<PendingReceipt[]>([]);
   const [isLoadingPending, setIsLoadingPending] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const [pendingItems, setPendingItems] = useState<{ product_name: string; quantity: number }[]>([]);
+  const [pendingItems, setPendingItems] = useState<{ product_name: string; quantity: number; image_url?: string | null }[]>([]);
   const [viewingReceiptId, setViewingReceiptId] = useState<string | null>(null);
   const [branchId, setBranchId] = useState<string | null>(null);
 
@@ -248,9 +248,10 @@ const FactoryReceiptQuickDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   };
 
   const viewReceiptItems = async (receiptId: string) => {
+    if (viewingReceiptId === receiptId) { setViewingReceiptId(null); return; }
     setViewingReceiptId(receiptId);
-    const { data } = await supabase.from('stock_receipt_items').select('quantity, product:products(name)').eq('receipt_id', receiptId);
-    setPendingItems((data || []).map((i: any) => ({ product_name: i.product?.name || '', quantity: i.quantity })));
+    const { data } = await supabase.from('stock_receipt_items').select('quantity, product:products(name, image_url)').eq('receipt_id', receiptId);
+    setPendingItems((data || []).map((i: any) => ({ product_name: i.product?.name || '', quantity: i.quantity, image_url: i.product?.image_url })));
   };
 
   const resetForm = () => {
@@ -391,11 +392,18 @@ const FactoryReceiptQuickDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                   </Button>
 
                   {viewingReceiptId === receipt.id && pendingItems.length > 0 && (
-                    <div className="bg-muted/50 rounded p-2 space-y-1">
+                    <div className="bg-muted/50 rounded-lg p-2 space-y-1.5">
                       {pendingItems.map((item, i) => (
-                        <div key={i} className="flex items-center justify-between text-xs">
-                          <span>{item.product_name}</span>
-                          <span className="font-bold">{item.quantity}</span>
+                        <div key={i} className="flex items-center gap-2 text-xs">
+                          {item.image_url ? (
+                            <img src={item.image_url} alt={item.product_name} className="w-8 h-8 rounded object-cover shrink-0 border" />
+                          ) : (
+                            <div className="w-8 h-8 rounded bg-muted flex items-center justify-center shrink-0 border">
+                              <Package className="w-4 h-4 text-muted-foreground" />
+                            </div>
+                          )}
+                          <span className="flex-1 truncate">{item.product_name}</span>
+                          <Badge variant="secondary" className="text-xs font-bold">{item.quantity}</Badge>
                         </div>
                       ))}
                     </div>
