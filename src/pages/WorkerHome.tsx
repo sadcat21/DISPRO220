@@ -17,7 +17,7 @@ import CustomerPickerDialog from '@/components/orders/CustomerPickerDialog';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
 import { Customer } from '@/types/database';
 import { toast } from 'sonner';
-import { ShoppingCart, Gift, Loader2, ShoppingBag, Truck, Package, Banknote, Users, Wallet, ClipboardList, MapPin, Trophy, MessageCircle, HardHat, CalendarCheck, ArrowDownToLine } from 'lucide-react';
+import { ShoppingCart, Gift, Loader2, ShoppingBag, Truck, Package, Banknote, Users, Wallet, ClipboardList, MapPin, Trophy, MessageCircle, HardHat, CalendarCheck, ArrowDownToLine, Warehouse } from 'lucide-react';
 
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -49,6 +49,7 @@ const WorkerHome: React.FC = () => {
   const [showManualPromoEntry, setShowManualPromoEntry] = useState(false);
   const [showFactoryReceipt, setShowFactoryReceipt] = useState(false);
   const [showFactoryDelivery, setShowFactoryDelivery] = useState(false);
+  const [showStockManagement, setShowStockManagement] = useState(false);
 
   const { trackVisit } = useTrackVisit();
   const isDirectSaleHidden = useIsElementHidden('button', 'home_direct_sale');
@@ -375,14 +376,9 @@ const WorkerHome: React.FC = () => {
           if ((hasDeliveryAccess || isWarehouseManager) && !isDirectSaleHidden) {
             quickActions.push({ key: 'direct-sale', icon: <ShoppingBag className="w-6 h-6" />, label: isWarehouseManager ? 'بيع مخزن - Vente Dépôt' : t('stock.direct_sale'), onClick: () => setShowActionDialog(true) });
           }
-          // Warehouse stock for warehouse manager
-          if (isWarehouseManager && !isWarehouseStockHidden && !isWarehouseStockButtonHidden) {
-            quickActions.push({ key: 'warehouse-stock', icon: <Package className="w-6 h-6" />, label: 'مخزون الفرع', onClick: () => navigate('/warehouse') });
-          }
-          // Factory receipt for warehouse manager
+          // Stock management hub for warehouse manager
           if (isWarehouseManager) {
-            quickActions.push({ key: 'factory-receipt', icon: <ArrowDownToLine className="w-6 h-6" />, label: 'استلام من المصنع', onClick: () => setShowFactoryReceipt(true) });
-            quickActions.push({ key: 'factory-delivery', icon: <Truck className="w-6 h-6" />, label: 'تسليم للمصنع', onClick: () => setShowFactoryDelivery(true) });
+            quickActions.push({ key: 'stock-management', icon: <Warehouse className="w-6 h-6" />, label: 'إدارة المخزن', onClick: () => setShowStockManagement(true) });
           }
           if (hasDeliveryAccess && !isMyStockPageHidden && !isMyStockHidden) {
             quickActions.push({ key: 'my-stock', icon: <Package className="w-6 h-6" />, label: t('stock.my_stock'), onClick: () => navigate('/my-stock') });
