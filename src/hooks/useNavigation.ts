@@ -43,6 +43,7 @@ export const useNavigation = () => {
         ],
         more: [
           { path: '/orders', icon: ShoppingCart, label: t('nav.orders') },
+          { path: '/order-tracking', icon: Radar, label: 'تتبع الطلبات' },
           { path: '/my-deliveries', icon: Truck, label: t('nav.my_deliveries') },
           { path: '/my-promos', icon: BarChart3, label: t('nav.my_promos') },
           { path: '/product-offers', icon: Gift, label: t('nav.product_offers') },
@@ -105,6 +106,7 @@ export const useNavigation = () => {
         ],
         more: [
           { path: '/orders', icon: ShoppingCart, label: t('nav.orders') },
+          { path: '/order-tracking', icon: Radar, label: 'تتبع الطلبات' },
           { path: '/my-deliveries', icon: Truck, label: t('nav.my_deliveries') },
           { path: '/my-promos', icon: BarChart3, label: t('nav.my_promos') },
           { path: '/product-offers', icon: Gift, label: t('nav.product_offers') },
