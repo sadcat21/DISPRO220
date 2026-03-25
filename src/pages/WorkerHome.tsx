@@ -128,19 +128,30 @@ const WorkerHome: React.FC = () => {
     enabled: !!workerId,
   });
 
+  // Resolve branch for warehouse manager (activeBranch may be null for non-admin roles)
+  const { data: workerBranchId } = useQuery({
+    queryKey: ['worker-branch-id', workerId],
+    queryFn: async () => {
+      const { data } = await supabase.from('workers').select('branch_id').eq('id', workerId!).maybeSingle();
+      return data?.branch_id || null;
+    },
+    enabled: isWarehouseManager && !activeBranch?.id && !!workerId,
+  });
+  const effectiveBranchId = activeBranch?.id || workerBranchId;
+
   // Warehouse stock for warehouse manager direct sales
   const { data: warehouseStockItems } = useQuery({
-    queryKey: ['warehouse-stock-for-sale', activeBranch?.id],
+    queryKey: ['warehouse-stock-for-sale', effectiveBranchId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('warehouse_stock')
         .select('*, product:products(*)')
-        .eq('branch_id', activeBranch!.id)
+        .eq('branch_id', effectiveBranchId!)
         .gt('quantity', 0);
       if (error) throw error;
       return data;
     },
-    enabled: isWarehouseManager && !!activeBranch?.id,
+    enabled: isWarehouseManager && !!effectiveBranchId,
   });
 
   const { data: allCustomers = [], isLoading: customersLoading } = useQuery({
