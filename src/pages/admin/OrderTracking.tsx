@@ -515,7 +515,7 @@ const OrderTracking: React.FC<{ workerMode?: boolean }> = ({ workerMode = false 
           لا توجد طلبات في الفترة المحددة
         </Card>
       ) : (
-        <ScrollArea className="h-[calc(100vh-480px)]">
+        <div className="pb-20">
           <div className="space-y-2">
             {filteredOrders.map(order => {
               const statusStyle = 
@@ -582,7 +582,7 @@ const OrderTracking: React.FC<{ workerMode?: boolean }> = ({ workerMode = false 
               );
             })}
           </div>
-        </ScrollArea>
+        </div>
       )}
 
       {/* Timeline Dialog */}
