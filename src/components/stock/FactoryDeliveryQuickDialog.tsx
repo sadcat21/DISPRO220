@@ -39,7 +39,7 @@ const FactoryDeliveryQuickDialog: React.FC<Props> = ({ open, onOpenChange }) => 
   const [notes, setNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [pickerIndex, setPickerIndex] = useState<number | null>(null);
-  const [products, setProducts] = useState<{ id: string; name: string; image_url?: string | null }[]>([]);
+  const [products, setProducts] = useState<{ id: string; name: string; image_url?: string | null; pieces_per_box?: number }[]>([]);
   const [tab, setTab] = useState<'create' | 'pending'>('create');
   const [pendingDeliveries, setPendingDeliveries] = useState<PendingDelivery[]>([]);
   const [isLoadingPending, setIsLoadingPending] = useState(false);
@@ -64,7 +64,7 @@ const FactoryDeliveryQuickDialog: React.FC<Props> = ({ open, onOpenChange }) => 
 
   useEffect(() => {
     if (!open || !branchId) return;
-    supabase.from('products').select('id, name, image_url').eq('is_active', true).order('name')
+    supabase.from('products').select('id, name, image_url, pieces_per_box').eq('is_active', true).order('name')
       .then(({ data }) => setProducts(data || []));
 
     // Fetch pallet balance
@@ -147,20 +147,29 @@ const FactoryDeliveryQuickDialog: React.FC<Props> = ({ open, onOpenChange }) => 
         .single();
       if (orderError) throw orderError;
 
-      // Insert items
+      // Insert items - convert pieces to box.piece format
       if (validItems.length > 0) {
-        const orderItems = validItems.map(i => ({
-          factory_order_id: order.id,
-          product_id: i.product_id,
-          product_quantity: i.quantity,
-          pallet_quantity: 0,
-        }));
+        const orderItems = validItems.map(i => {
+          const ppb = getPiecesPerBox(i.product_id);
+          const boxQty = piecesToBoxFormat(i.quantity, ppb);
+          return {
+            factory_order_id: order.id,
+            product_id: i.product_id,
+            product_quantity: boxQty,
+            pallet_quantity: 0,
+          };
+        });
         const { error: itemsError } = await supabase.from('factory_order_items').insert(orderItems);
         if (itemsError) throw itemsError;
       }
 
       if (status === 'confirmed') {
-        await applyDeliveryStock(order.id, validItems, palletCount, branchId);
+        // Convert items to box format for stock operations
+        const convertedItems = validItems.map(i => ({
+          product_id: i.product_id,
+          quantity: piecesToBoxFormat(i.quantity, getPiecesPerBox(i.product_id)),
+        }));
+        await applyDeliveryStock(order.id, convertedItems, palletCount, branchId);
         toast.success('تم تأكيد التسليم للمصنع');
       } else {
         toast.success('تم إرسال طلب التسليم للموافقة');
@@ -272,6 +281,15 @@ const FactoryDeliveryQuickDialog: React.FC<Props> = ({ open, onOpenChange }) => 
   };
 
   const getProductName = (id: string) => products.find(p => p.id === id)?.name || 'اختر منتج';
+  const getPiecesPerBox = (id: string) => products.find(p => p.id === id)?.pieces_per_box || 1;
+  
+  // Convert pieces to box.piece format
+  const piecesToBoxFormat = (pieces: number, piecesPerBox: number): number => {
+    if (piecesPerBox <= 0) return pieces;
+    const boxes = Math.floor(pieces / piecesPerBox);
+    const remainingPieces = pieces % piecesPerBox;
+    return parseFloat((boxes + remainingPieces / 100).toFixed(2));
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -339,10 +357,20 @@ const FactoryDeliveryQuickDialog: React.FC<Props> = ({ open, onOpenChange }) => 
                   )}
                 </div>
                 <div>
-                  <Label className="text-[10px] text-muted-foreground">الكمية (صندوق.قطعة)</Label>
-                  <Input type="number" min={0} step={0.01} value={item.quantity}
-                    onChange={e => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                    className="text-center text-sm h-8" placeholder="مثال: 3.07" />
+                  <Label className="text-[10px] text-muted-foreground">
+                    عدد القطع التالفة
+                    {item.product_id && (
+                      <span className="text-primary mr-1">({getPiecesPerBox(item.product_id)} قطعة/صندوق)</span>
+                    )}
+                  </Label>
+                  <Input type="number" min={0} step={1} value={item.quantity}
+                    onChange={e => updateItem(index, 'quantity', parseInt(e.target.value) || 0)}
+                    className="text-center text-sm h-8" placeholder="عدد القطع" />
+                  {item.product_id && item.quantity > 0 && (
+                    <p className="text-[10px] text-muted-foreground mt-0.5 text-center">
+                      = <span className="font-bold text-foreground">{piecesToBoxFormat(item.quantity, getPiecesPerBox(item.product_id)).toFixed(2)}</span> صندوق.قطعة
+                    </p>
+                  )}
                 </div>
               </div>
             ))}
