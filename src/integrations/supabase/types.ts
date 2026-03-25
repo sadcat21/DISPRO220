@@ -5096,6 +5096,8 @@ export type Database = {
       }
       stock_receipts: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           branch_id: string | null
           created_at: string
           created_by: string
@@ -5104,10 +5106,13 @@ export type Database = {
           invoice_photo_url: string | null
           notes: string | null
           receipt_date: string
+          status: string
           total_items: number | null
           updated_at: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           branch_id?: string | null
           created_at?: string
           created_by: string
@@ -5116,10 +5121,13 @@ export type Database = {
           invoice_photo_url?: string | null
           notes?: string | null
           receipt_date?: string
+          status?: string
           total_items?: number | null
           updated_at?: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           branch_id?: string | null
           created_at?: string
           created_by?: string
@@ -5128,10 +5136,25 @@ export type Database = {
           invoice_photo_url?: string | null
           notes?: string | null
           receipt_date?: string
+          status?: string
           total_items?: number | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "stock_receipts_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_receipts_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "workers_safe"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "stock_receipts_branch_id_fkey"
             columns: ["branch_id"]
