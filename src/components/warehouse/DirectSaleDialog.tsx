@@ -1110,6 +1110,7 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
                 />
               </section>
             </div>
+            </div>
           </ScrollArea>
 
           {/* Footer */}

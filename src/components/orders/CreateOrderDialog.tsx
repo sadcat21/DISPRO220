@@ -1167,6 +1167,7 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                 />
               </section>
             </div>
+            </div>
           </ScrollArea>
 
           {/* Footer */}

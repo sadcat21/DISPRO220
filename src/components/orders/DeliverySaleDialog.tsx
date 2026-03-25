@@ -1276,6 +1276,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
                 />
               </section>
             </div>
+            </div>
           </ScrollArea>
 
           {/* Footer */}
