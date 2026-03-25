@@ -691,6 +691,16 @@ const OrderDetailsContent: React.FC<{ order: GroupedOrder }> = ({ order }) => {
         <h3 className="text-xs font-medium text-muted-foreground mb-3">سجل الأحداث</h3>
         <OrderTimeline order={order} />
       </div>
+
+      {/* Modify Order Dialog */}
+      {showModify && fullOrder && orderItems && (
+        <ModifyOrderDialog
+          open={showModify}
+          onOpenChange={(open) => setShowModify(open)}
+          order={fullOrder as any}
+          orderItems={orderItems as any}
+        />
+      )}
     </div>
   );
 };
