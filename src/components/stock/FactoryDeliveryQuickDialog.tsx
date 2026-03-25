@@ -339,10 +339,10 @@ const FactoryDeliveryQuickDialog: React.FC<Props> = ({ open, onOpenChange }) => 
                   )}
                 </div>
                 <div>
-                  <Label className="text-[10px] text-muted-foreground">كمية التالف (صندوق)</Label>
-                  <Input type="number" min={0} value={item.quantity}
+                  <Label className="text-[10px] text-muted-foreground">الكمية (صندوق.قطعة)</Label>
+                  <Input type="number" min={0} step={0.01} value={item.quantity}
                     onChange={e => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                    className="text-center text-sm h-8" />
+                    className="text-center text-sm h-8" placeholder="مثال: 3.07" />
                 </div>
               </div>
             ))}
