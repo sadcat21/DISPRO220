@@ -1145,8 +1145,7 @@ const LoadStock: React.FC = () => {
     }
   };
 
-  // Bottom tab state for action buttons
-  const [bottomTab, setBottomTab] = useState<'actions' | 'tools'>('actions');
+  // Bottom buttons (no tabs)
 
 
   if (isLoading) {
