@@ -69,7 +69,10 @@ const WorkerHome: React.FC = () => {
   const isAvailableOffersHidden = useIsElementHidden('button', 'home_available_offers');
   const isAvailableOffersPageHidden = useIsElementHidden('page', '/available-offers');
   const isWorkerActionsHidden = useIsElementHidden('page', '/worker-actions');
+  const isWorkerActionsButtonHidden = useIsElementHidden('button', 'home_worker_actions');
   const isWarehouseStockHidden = useIsElementHidden('page', '/warehouse');
+  const isWarehouseStockButtonHidden = useIsElementHidden('button', 'home_warehouse_stock');
+  const isTodayCustomersHidden = useIsElementHidden('button', 'home_today_customers');
   const isSupervisor = role === 'supervisor';
   const isWarehouseManager = activeRole?.custom_role_code === 'warehouse_manager';
 
