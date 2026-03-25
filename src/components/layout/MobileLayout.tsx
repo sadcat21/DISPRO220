@@ -135,6 +135,9 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
 
   const isMoreActive = moreNavItems.some(item => location.pathname === item.path);
 
+  // Close more sheet on route change
+  useEffect(() => { setMoreOpen(false); }, [location.pathname]);
+
   // Start worker GPS broadcast globally (not only in deliveries page)
   useEffect(() => {
     const isFieldWorker = role === 'worker' || role === 'supervisor';
