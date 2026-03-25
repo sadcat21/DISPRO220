@@ -10,8 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
-import { Search, Filter, ArrowRightLeft, UserCheck, CreditCard, Package, Printer, Plus, DollarSign, Clock, Users, ChevronLeft, Truck, ShoppingCart, CheckCircle2, XCircle, Loader2, MapPin, Ban, Lock, UserX, HandCoins, Receipt } from 'lucide-react';
+import { Search, Filter, ArrowRightLeft, UserCheck, CreditCard, Package, Printer, Plus, DollarSign, Clock, Users, ChevronLeft, Truck, ShoppingCart, CheckCircle2, XCircle, Loader2, MapPin, Ban, Lock, UserX, HandCoins, Receipt, Pencil } from 'lucide-react';
+import ModifyOrderDialog from '@/components/orders/ModifyOrderDialog';
 
 const EVENT_TYPE_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   created: { label: 'إنشاء طلبية', icon: Plus, color: 'bg-green-100 text-green-700 border-green-200' },
@@ -503,6 +505,22 @@ const OrderTracking: React.FC = () => {
 // Separate component so useOrderItems hook is called at top level
 const OrderDetailsContent: React.FC<{ order: GroupedOrder }> = ({ order }) => {
   const { data: orderItems, isLoading: itemsLoading } = useOrderItems(order.orderId);
+  const [showModify, setShowModify] = useState(false);
+
+  // Fetch full order for ModifyOrderDialog
+  const { data: fullOrder } = useQuery({
+    queryKey: ['order-full', order.orderId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*, customer:customers(*), assigned_worker:workers!orders_assigned_worker_id_fkey(id, full_name, username)')
+        .eq('id', order.orderId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: showModify,
+  });
   
   const PAYMENT_TYPE_LABELS: Record<string, { label: string; color: string }> = {
     with_invoice: { label: 'فاتورة 1 (Facture 1)', color: 'bg-blue-100 text-blue-700 border-blue-200' },
@@ -568,6 +586,19 @@ const OrderDetailsContent: React.FC<{ order: GroupedOrder }> = ({ order }) => {
             {order.assignedWorkerName}
           </Badge>
         )}
+      </div>
+
+      {/* Modify Button */}
+      <div className="flex justify-center mb-3">
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-xs gap-1.5"
+          onClick={() => setShowModify(true)}
+        >
+          <Pencil className="h-3 w-3" />
+          تعديل الطلبية
+        </Button>
       </div>
 
       {/* Order Items */}
@@ -660,6 +691,16 @@ const OrderDetailsContent: React.FC<{ order: GroupedOrder }> = ({ order }) => {
         <h3 className="text-xs font-medium text-muted-foreground mb-3">سجل الأحداث</h3>
         <OrderTimeline order={order} />
       </div>
+
+      {/* Modify Order Dialog */}
+      {showModify && fullOrder && orderItems && (
+        <ModifyOrderDialog
+          open={showModify}
+          onOpenChange={(open) => setShowModify(open)}
+          order={fullOrder as any}
+          orderItems={orderItems as any}
+        />
+      )}
     </div>
   );
 };
