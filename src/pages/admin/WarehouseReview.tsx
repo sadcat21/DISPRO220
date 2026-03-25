@@ -482,17 +482,19 @@ const WarehouseReview: React.FC = () => {
           </div>
 
           {/* Save button */}
-          <div className="sticky bottom-0 bg-background pt-2 pb-4 border-t mt-4">
+          <div className="fixed bottom-0 left-0 right-0 bg-background pt-2 pb-3 px-4 border-t z-50">
             {!canSave && items.length > 0 && (
-              <p className="text-xs text-muted-foreground text-center mb-2">
+              <p className="text-xs text-muted-foreground text-center mb-1">
                 يرجى إدخال الكمية الفعلية لجميع المنتجات ({stats.unverified} متبقي)
               </p>
             )}
-            <Button onClick={handleSave} disabled={isSaving || !canSave} className="w-full gap-2" size="lg">
-              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            <Button onClick={handleSave} disabled={isSaving || !canSave} className="w-full gap-2" size="default">
+              {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
               حفظ المراجعة
             </Button>
           </div>
+          {/* Spacer for fixed bottom bar */}
+          <div className="h-20" />
         </TabsContent>
 
         <TabsContent value="history" className="mt-3">
