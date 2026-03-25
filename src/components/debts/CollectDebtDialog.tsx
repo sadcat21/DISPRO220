@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import ReceiptDialog from '@/components/printing/ReceiptDialog';
 import { ReceiptType } from '@/types/receipt';
