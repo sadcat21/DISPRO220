@@ -146,12 +146,12 @@ const OrderTracking: React.FC = () => {
               />
             </div>
             <Select value={eventTypeFilter} onValueChange={setEventTypeFilter}>
-              <SelectTrigger className="w-36 h-8 text-sm">
+              <SelectTrigger className="w-32 h-8 text-sm">
                 <Filter className="h-3 w-3 ml-1" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">الكل</SelectItem>
+                <SelectItem value="all">كل الأحداث</SelectItem>
                 <SelectItem value="created">إنشاء</SelectItem>
                 <SelectItem value="status_change">تغيير حالة</SelectItem>
                 <SelectItem value="worker_changed">تغيير عامل</SelectItem>
@@ -161,6 +161,18 @@ const OrderTracking: React.FC = () => {
               </SelectContent>
             </Select>
           </div>
+          <Select value={workerFilter} onValueChange={setWorkerFilter}>
+            <SelectTrigger className="h-8 text-sm">
+              <Users className="h-3 w-3 ml-1" />
+              <SelectValue placeholder="كل العمال" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">كل العمال</SelectItem>
+              {workers?.map(w => (
+                <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </CardContent>
       </Card>
 
