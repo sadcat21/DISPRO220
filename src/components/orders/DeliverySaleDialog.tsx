@@ -626,13 +626,19 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
         throw new Error('فشل تحديث حالة الطلبية: ' + statusError.message);
       }
 
-      // Deduct from worker stock
+      // Deduct from stock (warehouse_stock for warehouse manager, worker_stock for regular workers)
       for (const item of activeItems) {
         const ws = stockItems?.find(s => s.product_id === item.productId);
         if (ws) {
-          await supabase.from('worker_stock')
-            .update({ quantity: ws.quantity - item.quantity })
-            .eq('id', ws.id);
+          if (isWarehouseManager) {
+            await supabase.from('warehouse_stock')
+              .update({ quantity: Math.max(0, ws.quantity - item.quantity) })
+              .eq('id', ws.id);
+          } else {
+            await supabase.from('worker_stock')
+              .update({ quantity: ws.quantity - item.quantity })
+              .eq('id', ws.id);
+          }
         }
         // Record stock movement
         await supabase.from('stock_movements').insert({
