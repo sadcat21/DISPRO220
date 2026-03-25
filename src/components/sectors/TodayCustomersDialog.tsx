@@ -2090,6 +2090,21 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         <OrderDetailsDialog
           order={orderDetailsDialog}
           onClose={() => setOrderDetailsDialog(null)}
+          onCancelOrder={async (orderId: string) => {
+            try {
+              const { error } = await supabase
+                .from('orders')
+                .update({ status: 'cancelled' })
+                .eq('id', orderId);
+              if (error) throw error;
+              toast.success('تم إلغاء الطلبية بنجاح');
+              queryClient.invalidateQueries({ queryKey: ['today-orders-dialog'] });
+              queryClient.invalidateQueries({ queryKey: ['today-cust-assigned-orders-full'] });
+              setOrderDetailsDialog(null);
+            } catch {
+              toast.error('فشل في إلغاء الطلبية');
+            }
+          }}
         />
       )}
 
@@ -2241,10 +2256,11 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
 };
 
 // Order Details Dialog - shows order/sale details similar to receipt content
-const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void }> = ({ order, onClose }) => {
+const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void; onCancelOrder?: (orderId: string) => void }> = ({ order, onClose, onCancelOrder }) => {
   const { user } = useAuth();
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [showModifyDialog, setShowModifyDialog] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const { data: modifyOrderItems } = useOrderItems(showModifyDialog ? order.id : null);
   const isDirectSale = order._isDirectSale;
   const items = isDirectSale ? (order.items || []) : (order.items || []);
@@ -2393,7 +2409,7 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void }> = ({ ord
             </div>
           )}
 
-          {/* Edit & Print Buttons */}
+          {/* Edit & Print & Cancel Buttons */}
           {order.id && (
             <Button className="w-full gap-2" variant="default" onClick={() => setShowModifyDialog(true)}>
               <Pencil className="w-4 h-4" />
@@ -2404,6 +2420,25 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void }> = ({ ord
             <Printer className="w-4 h-4" />
             طباعة الوصل
           </Button>
+          {order.id && onCancelOrder && order._isOrderRequest && (
+            <Button
+              className="w-full gap-2"
+              variant="destructive"
+              disabled={cancelling}
+              onClick={async () => {
+                setCancelling(true);
+                try {
+                  await onCancelOrder(order.id);
+                  onClose();
+                } finally {
+                  setCancelling(false);
+                }
+              }}
+            >
+              {cancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+              إلغاء الطلبية
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
