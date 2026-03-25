@@ -251,12 +251,11 @@ const OrderTimeline: React.FC<{ order: GroupedOrder }> = ({ order }) => {
   );
 };
 
-const StatusProgressBar: React.FC<{ order: GroupedOrder }> = ({ order }) => {
+const StatusProgressBar: React.FC<{ order: GroupedOrder; large?: boolean }> = ({ order, large = false }) => {
   const { currentStatus } = order;
   const isCancelled = currentStatus === 'cancelled';
   const isDelivered = currentStatus === 'delivered';
   
-  // Determine how far the order progressed
   const hasAssigned = order.events.some((e: any) => 
     (e.event_type === 'status_change' && e.new_value === 'assigned') || e.event_type === 'worker_changed'
   );
@@ -276,46 +275,58 @@ const StatusProgressBar: React.FC<{ order: GroupedOrder }> = ({ order }) => {
     }
   };
 
+  const iconSize = large ? 'h-3.5 w-3.5' : 'h-2.5 w-2.5';
+  const dotSize = large ? 'w-7 h-7' : 'w-5 h-5';
+  const fontSize = large ? 'text-[9px]' : 'text-[7px]';
+  const workerFont = large ? 'text-[8px] max-w-[56px]' : 'text-[7px] max-w-[42px]';
+
   return (
     <div className="my-2 w-full">
-      <div className="grid grid-cols-5 gap-1 w-full">
-        {STATUS_STEPS.map((step) => {
-          const config = STATUS_STEP_CONFIG[step];
-          const StepIcon = config.icon;
-          const isActive = getStepActive(step);
-          const isCurrent = step === currentStatus || (step === 'arrived' && isCancelled);
+      {/* Connection line behind dots */}
+      <div className="relative">
+        <div className="grid grid-cols-5 gap-1 w-full">
+          {STATUS_STEPS.map((step, idx) => {
+            const config = STATUS_STEP_CONFIG[step];
+            const StepIcon = config.icon;
+            const isActive = getStepActive(step);
+            const isCurrent = step === currentStatus || (step === 'arrived' && isCancelled);
 
-          return (
-            <div key={step} className="flex flex-col items-center gap-0.5 min-w-0">
-              <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                isActive ? config.activeColor + ' text-white' : 'bg-muted text-muted-foreground'
-              } ${isCurrent ? 'ring-2 ring-offset-1 ring-primary' : ''}`}>
-                <StepIcon className="h-2.5 w-2.5" />
+            return (
+              <div key={step} className="flex flex-col items-center gap-0.5 min-w-0">
+                <div className={`${dotSize} rounded-full flex items-center justify-center transition-all ${
+                  isActive ? config.activeColor + ' text-white shadow-sm' : 'bg-muted text-muted-foreground'
+                } ${isCurrent ? 'ring-2 ring-offset-1 ring-primary/60' : ''} ${isCancelled && step === 'arrived' ? 'bg-destructive text-white ring-destructive/40' : ''}`}>
+                  {isCancelled && step === 'arrived' ? (
+                    <XCircle className={iconSize} />
+                  ) : (
+                    <StepIcon className={iconSize} />
+                  )}
+                </div>
+                <span className={`${fontSize} leading-tight text-center truncate max-w-full ${isActive ? 'font-semibold' : 'text-muted-foreground'}`}>
+                  {config.label}
+                </span>
+                {step === 'pending' && order.createdByName && (
+                  <span className={`${workerFont} text-muted-foreground truncate`}>{order.createdByName}</span>
+                )}
+                {step === 'assigned' && order.assignedWorkerName && (
+                  <span className={`${workerFont} text-muted-foreground truncate`}>{order.assignedWorkerName}</span>
+                )}
               </div>
-              <span className={`text-[7px] leading-tight text-center truncate max-w-full ${isActive ? 'font-medium' : 'text-muted-foreground'}`}>
-                {config.label}
-              </span>
-              {step === 'pending' && order.createdByName && (
-                <span className="text-[7px] text-muted-foreground truncate max-w-[42px]">{order.createdByName}</span>
-              )}
-              {step === 'assigned' && order.assignedWorkerName && (
-                <span className="text-[7px] text-muted-foreground truncate max-w-[42px]">{order.assignedWorkerName}</span>
-              )}
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
       {isCancelled && (
-        <div className="flex items-center justify-center gap-1 mt-1">
+        <div className="flex items-center justify-center gap-1.5 mt-1.5">
           {(() => {
             const outcome = getDeliveryOutcome(order);
             const reason = outcome?.reason || 'unknown';
             const reasonConfig = NON_DELIVERY_REASONS[reason];
             return (
-              <>
-                {React.createElement(reasonConfig.icon, { className: `h-3 w-3 ${reasonConfig.color}` })}
-                <span className={`text-[10px] font-medium ${reasonConfig.color}`}>{reasonConfig.label}</span>
-              </>
+              <Badge variant="outline" className={`text-[10px] px-2 py-0.5 border-destructive/30 ${reasonConfig.color}`}>
+                {React.createElement(reasonConfig.icon, { className: 'h-3 w-3 me-1 inline' })}
+                {reasonConfig.label}
+              </Badge>
             );
           })()}
         </div>
