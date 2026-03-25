@@ -504,9 +504,27 @@ const OrderTracking: React.FC = () => {
         <DialogContent className="max-w-md max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-right">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-1">
                 <span className="text-[10px] text-muted-foreground">#{selectedOrder?.orderId.slice(0, 8)}</span>
                 <span>{selectedOrder?.customerName}</span>
+              </div>
+              {selectedOrder?.customerData && (
+                <CustomerLabel customer={selectedOrder.customerData} />
+              )}
+              {/* Order dates */}
+              <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground font-normal">
+                {selectedOrder?.createdAt && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    الإنشاء: {format(new Date(selectedOrder.createdAt), 'yyyy/MM/dd HH:mm')}
+                  </span>
+                )}
+                {selectedOrder?.currentStatus === 'delivered' && selectedOrder?.updatedAt && (
+                  <span className="flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3 text-green-600" />
+                    التسليم: {format(new Date(selectedOrder.updatedAt), 'yyyy/MM/dd HH:mm')}
+                  </span>
+                )}
               </div>
             </DialogTitle>
           </DialogHeader>
