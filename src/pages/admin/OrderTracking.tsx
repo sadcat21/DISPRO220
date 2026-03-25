@@ -326,6 +326,15 @@ const OrderTracking: React.FC = () => {
           orderNotes: e.order?.notes || null,
           paymentType: e.order?.payment_type || null,
           invoicePaymentMethod: e.order?.invoice_payment_method || null,
+          createdAt: e.order?.created_at || null,
+          updatedAt: e.order?.updated_at || null,
+          customerData: e.order?.customer ? {
+            name: e.order.customer.name,
+            store_name: e.order.customer.store_name,
+            customer_type: e.order.customer.customer_type,
+            sector_name: e.order.customer.sector?.name || null,
+            zone_name: e.order.customer.zone?.name || null,
+          } : null,
         });
       }
       map.get(e.order_id)!.events.push(e);
