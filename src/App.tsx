@@ -180,13 +180,13 @@ const AppRoutes = () => {
       } />
 
       <Route path="/branches" element={
-        <ProtectedRoute adminOnly>
+        <ProtectedRoute allowedRoles={['admin', 'project_manager']}>
           <Branches />
         </ProtectedRoute>
       } />
 
       <Route path="/permissions" element={
-        <ProtectedRoute adminOnly>
+        <ProtectedRoute allowedRoles={['admin', 'project_manager']}>
           <Permissions />
         </ProtectedRoute>
       } />
