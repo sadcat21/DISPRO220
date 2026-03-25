@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useAllOrderEvents } from '@/hooks/useOrderEvents';
 import { useOrderItems } from '@/hooks/useOrders';
 import { useQuery } from '@tanstack/react-query';
