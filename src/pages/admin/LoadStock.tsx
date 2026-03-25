@@ -1865,8 +1865,13 @@ const LoadStock: React.FC = () => {
                           </Button>
                         </div>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        المدير: {(session.manager as any)?.full_name || '—'}
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span>المدير: {(session.manager as any)?.full_name || '—'}</span>
+                        {(session.manager as any)?.role === 'worker' ? (
+                          <Badge className="bg-orange-500 text-white text-[9px] px-1 py-0">مسؤول المخزن</Badge>
+                        ) : (
+                          <Badge className="bg-primary text-primary-foreground text-[9px] px-1 py-0">مدير النظام</Badge>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -1908,7 +1913,14 @@ const LoadStock: React.FC = () => {
                   <div className="text-muted-foreground">التاريخ:</div>
                   <div className="text-sm">{new Date(session.created_at).toLocaleString('ar-DZ')}</div>
                   <div className="text-muted-foreground">المدير:</div>
-                  <div className="text-sm">{(session.manager as any)?.full_name || '—'}</div>
+                  <div className="flex items-center gap-1.5 text-sm">
+                    {(session.manager as any)?.full_name || '—'}
+                    {(session.manager as any)?.role === 'worker' ? (
+                      <Badge className="bg-orange-500 text-white text-[9px] px-1 py-0">مسؤول المخزن</Badge>
+                    ) : (
+                      <Badge className="bg-primary text-primary-foreground text-[9px] px-1 py-0">مدير النظام</Badge>
+                    )}
+                  </div>
                   {session.completed_at && (
                     <>
                       <div className="text-muted-foreground">تم الإكمال:</div>
