@@ -427,6 +427,8 @@ export const useWarehouseStock = () => {
     workers,
     isLoading,
     createReceipt,
+    approveReceipt,
+    rejectReceipt,
     loadToWorker,
     refresh: loadAll,
     branchId,
