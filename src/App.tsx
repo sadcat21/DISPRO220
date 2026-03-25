@@ -63,8 +63,9 @@ const ProtectedRoute: React.FC<{
   children: React.ReactNode;
   adminOnly?: boolean;
   allowedRoles?: string[];
-}> = ({ children, adminOnly = false, allowedRoles }) => {
-  const { isAuthenticated, isLoading, role } = useAuth();
+  allowedCustomRoles?: string[];
+}> = ({ children, adminOnly = false, allowedRoles, allowedCustomRoles }) => {
+  const { isAuthenticated, isLoading, role, activeRole } = useAuth();
 
   if (isLoading) {
     return (
@@ -78,9 +79,14 @@ const ProtectedRoute: React.FC<{
     return <Navigate to="/login" replace />;
   }
 
-  // Check for specific allowed roles
+  // Check for specific allowed roles (includes custom role codes)
   if (allowedRoles && role && !allowedRoles.includes(role)) {
-    return <Navigate to="/" replace />;
+    // Also check custom role codes
+    const customCode = activeRole?.custom_role_code;
+    const hasCustomAccess = allowedCustomRoles && customCode && allowedCustomRoles.includes(customCode);
+    if (!hasCustomAccess) {
+      return <Navigate to="/" replace />;
+    }
   }
 
   // Legacy adminOnly check
@@ -249,7 +255,7 @@ const AppRoutes = () => {
       } />
 
       <Route path="/warehouse" element={
-        <ProtectedRoute allowedRoles={['admin', 'branch_admin']}>
+        <ProtectedRoute allowedRoles={['admin', 'branch_admin']} allowedCustomRoles={['warehouse_manager']}>
           <WarehouseStock />
         </ProtectedRoute>
       } />
@@ -261,7 +267,7 @@ const AppRoutes = () => {
       } />
 
       <Route path="/load-stock" element={
-        <ProtectedRoute allowedRoles={['admin', 'branch_admin', 'supervisor']}>
+        <ProtectedRoute allowedRoles={['admin', 'branch_admin', 'supervisor']} allowedCustomRoles={['warehouse_manager']}>
           <LoadStock />
         </ProtectedRoute>
       } />
