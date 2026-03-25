@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useNavigation } from '@/hooks/useNavigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useFontSize } from '@/contexts/FontSizeContext';
-import { Calculator, Banknote, ArrowLeft, Navigation, Users, Receipt, ShoppingCart, Scale, Trophy, CalendarDays, Gift, ArrowDownToLine, Truck } from 'lucide-react';
+import { Calculator, Banknote, ArrowLeft, Navigation, Users, Receipt, ShoppingCart, Scale, Trophy, CalendarDays, Gift, ArrowDownToLine, Truck, ClipboardCheck } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
