@@ -277,35 +277,30 @@ const StatusProgressBar: React.FC<{ order: GroupedOrder }> = ({ order }) => {
 
   return (
     <div className="my-2 w-full">
-      <div className="flex items-start w-full min-w-0">
-        {STATUS_STEPS.map((step, idx) => {
+      <div className="grid grid-cols-5 gap-1 w-full">
+        {STATUS_STEPS.map((step) => {
           const config = STATUS_STEP_CONFIG[step];
           const StepIcon = config.icon;
           const isActive = getStepActive(step);
           const isCurrent = step === currentStatus || (step === 'arrived' && isCancelled);
 
           return (
-            <React.Fragment key={step}>
-              <div className="flex flex-col items-center gap-0.5 basis-0 grow min-w-0">
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                  isActive ? config.activeColor + ' text-white' : 'bg-muted text-muted-foreground'
-                } ${isCurrent ? 'ring-2 ring-offset-1 ring-primary' : ''}`}>
-                  <StepIcon className="h-2.5 w-2.5" />
-                </div>
-                <span className={`text-[7px] leading-tight text-center truncate max-w-full ${isActive ? 'font-medium' : 'text-muted-foreground'}`}>
-                  {config.label}
-                </span>
-                {step === 'pending' && order.createdByName && (
-                  <span className="text-[7px] text-muted-foreground truncate max-w-[42px]">{order.createdByName}</span>
-                )}
-                {step === 'assigned' && order.assignedWorkerName && (
-                  <span className="text-[7px] text-muted-foreground truncate max-w-[42px]">{order.assignedWorkerName}</span>
-                )}
+            <div key={step} className="flex flex-col items-center gap-0.5 min-w-0">
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                isActive ? config.activeColor + ' text-white' : 'bg-muted text-muted-foreground'
+              } ${isCurrent ? 'ring-2 ring-offset-1 ring-primary' : ''}`}>
+                <StepIcon className="h-2.5 w-2.5" />
               </div>
-              {idx < STATUS_STEPS.length - 1 && (
-                <div className={`h-0.5 w-2 shrink-0 mt-2.5 ${isActive && getStepActive(STATUS_STEPS[idx + 1]) ? 'bg-primary' : 'bg-muted'}`} />
+              <span className={`text-[7px] leading-tight text-center truncate max-w-full ${isActive ? 'font-medium' : 'text-muted-foreground'}`}>
+                {config.label}
+              </span>
+              {step === 'pending' && order.createdByName && (
+                <span className="text-[7px] text-muted-foreground truncate max-w-[42px]">{order.createdByName}</span>
               )}
-            </React.Fragment>
+              {step === 'assigned' && order.assignedWorkerName && (
+                <span className="text-[7px] text-muted-foreground truncate max-w-[42px]">{order.assignedWorkerName}</span>
+              )}
+            </div>
           );
         })}
       </div>
