@@ -588,6 +588,19 @@ const OrderDetailsContent: React.FC<{ order: GroupedOrder }> = ({ order }) => {
         )}
       </div>
 
+      {/* Modify Button */}
+      <div className="flex justify-center mb-3">
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-xs gap-1.5"
+          onClick={() => setShowModify(true)}
+        >
+          <Pencil className="h-3 w-3" />
+          تعديل الطلبية
+        </Button>
+      </div>
+
       {/* Order Items */}
       <div className="border-t pt-3 mb-3">
         <h3 className="text-xs font-medium text-muted-foreground mb-2">
