@@ -742,11 +742,11 @@ const OrderDetailsContent: React.FC<{ order: GroupedOrder }> = ({ order }) => {
       </div>
 
       {/* Order Items */}
-      <div className="border-t pt-3 mb-3">
-        <h3 className="text-xs font-medium text-muted-foreground mb-2">
-          <Package className="h-3 w-3 inline ml-1" />
-          منتجات الطلبية
-        </h3>
+      <div className="rounded-xl border bg-card overflow-hidden">
+        <div className="bg-muted/40 px-3 py-2 border-b flex items-center gap-1.5">
+          <Package className="h-3.5 w-3.5 text-muted-foreground" />
+          <h3 className="text-xs font-semibold text-foreground">منتجات الطلبية</h3>
+        </div>
         {itemsLoading ? (
           <div className="flex justify-center py-3">
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
