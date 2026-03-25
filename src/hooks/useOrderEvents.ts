@@ -1,0 +1,86 @@
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useRealtimeSubscription } from './useRealtimeSubscription';
+
+export interface OrderEvent {
+  id: string;
+  order_id: string;
+  event_type: string;
+  old_value: string | null;
+  new_value: string | null;
+  details: Record<string, any> | null;
+  performed_by: string | null;
+  created_at: string;
+  performer?: { id: string; full_name: string } | null;
+}
+
+export const useOrderEvents = (orderId: string | null) => {
+  useRealtimeSubscription(
+    'order-events-realtime',
+    [{ table: 'order_events' }],
+    [['order-events', orderId]],
+    !!orderId
+  );
+
+  return useQuery({
+    queryKey: ['order-events', orderId],
+    queryFn: async () => {
+      if (!orderId) return [];
+      const { data, error } = await supabase
+        .from('order_events')
+        .select('*, performer:workers!order_events_performed_by_fkey(id, full_name)')
+        .eq('order_id', orderId)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return data as OrderEvent[];
+    },
+    enabled: !!orderId,
+  });
+};
+
+export const useAllOrderEvents = (filters?: { dateFrom?: string; dateTo?: string; eventType?: string }) => {
+  return useQuery({
+    queryKey: ['all-order-events', filters],
+    queryFn: async () => {
+      let query = supabase
+        .from('order_events')
+        .select(`
+          *,
+          performer:workers!order_events_performed_by_fkey(id, full_name),
+          order:orders!order_events_order_id_fkey(id, status, total_amount, customer_id, customer:customers(name))
+        `)
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      if (filters?.dateFrom) {
+        query = query.gte('created_at', filters.dateFrom);
+      }
+      if (filters?.dateTo) {
+        query = query.lte('created_at', `${filters.dateTo}T23:59:59`);
+      }
+      if (filters?.eventType && filters.eventType !== 'all') {
+        query = query.eq('event_type', filters.eventType);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data;
+    },
+  });
+};
+
+export const logOrderEvent = async (
+  orderId: string,
+  eventType: string,
+  performedBy: string,
+  opts?: { oldValue?: string; newValue?: string; details?: Record<string, any> }
+) => {
+  await supabase.from('order_events').insert({
+    order_id: orderId,
+    event_type: eventType,
+    old_value: opts?.oldValue || null,
+    new_value: opts?.newValue || null,
+    details: opts?.details || null,
+    performed_by: performedBy,
+  });
+};
