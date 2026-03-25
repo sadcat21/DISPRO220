@@ -400,11 +400,15 @@ const WarehouseReview: React.FC = () => {
                       <Button
                         type="button"
                         size="sm"
-                        variant={item.status === 'matched' ? 'default' : 'outline'}
+                        variant="ghost"
                         onClick={() => updateActual(item.productId, String(item.expected))}
-                        className="w-14 h-8 text-[11px] px-1"
+                        className={`w-14 h-8 text-[11px] px-1 font-bold ${
+                          item.status === 'matched'
+                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                            : 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
+                        }`}
                       >
-                        مطابق
+                        {item.status === 'matched' ? '✓ مطابق' : 'مطابق'}
                       </Button>
                       <Input
                         type="number"
