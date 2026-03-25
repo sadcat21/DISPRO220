@@ -29,7 +29,7 @@ export const useOrders = () => {
         .order('created_at', { ascending: false });
 
       if (isAdminRole(role) && activeBranch) {
-        query = query.eq('branch_id', activeBranch.id);
+        query = query.or(`branch_id.eq.${activeBranch.id},branch_id.is.null`);
       }
 
       const { data, error } = await query;
