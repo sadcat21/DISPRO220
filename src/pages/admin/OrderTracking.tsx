@@ -39,7 +39,11 @@ const STATUS_LABELS: Record<string, string> = {
 const OrderTracking: React.FC = () => {
   const { language } = useLanguage();
   const isRTL = language === 'ar';
-  const [dateFrom, setDateFrom] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [dateFrom, setDateFrom] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return format(d, 'yyyy-MM-dd');
+  });
   const [dateTo, setDateTo] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [eventTypeFilter, setEventTypeFilter] = useState('all');
   const [workerFilter, setWorkerFilter] = useState('all');
