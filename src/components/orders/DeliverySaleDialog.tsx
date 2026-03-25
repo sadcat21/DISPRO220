@@ -62,7 +62,7 @@ interface SaleItem {
 }
 
 const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenChange, order }) => {
-  const { workerId, activeBranch } = useAuth();
+  const { workerId, activeBranch, activeRole } = useAuth();
   const { t, dir } = useLanguage();
   const queryClient = useQueryClient();
   const { data: stampTiers } = useActiveStampTiers();
@@ -76,20 +76,44 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
   const { data: customerCredits } = useCustomerCredits(order.customer_id);
   const [useCreditBalance, setUseCreditBalance] = useState(false);
 
+  const isWarehouseManager = activeRole?.custom_role_code === 'warehouse_manager';
+
   const { data: orderItems, isLoading: isLoadingItems } = useOrderItems(open ? order.id : null);
 
-  // Worker stock
-  const { data: stockItems } = useQuery({
-    queryKey: ['my-worker-stock', workerId],
+  // Resolve branch for warehouse manager
+  const { data: workerBranchId } = useQuery({
+    queryKey: ['worker-branch-id-delivery', workerId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('worker_stock')
-        .select('*, product:products(*)')
-        .eq('worker_id', workerId!);
-      if (error) throw error;
-      return data as { id: string; product_id: string; quantity: number; product?: Product }[];
+      const { data } = await supabase.from('workers').select('branch_id').eq('id', workerId!).maybeSingle();
+      return data?.branch_id || null;
     },
-    enabled: !!workerId && open,
+    enabled: isWarehouseManager && !activeBranch?.id && !!workerId && open,
+  });
+  const effectiveBranchId = activeBranch?.id || workerBranchId || order.branch_id;
+
+  // Worker stock (for regular workers)
+  const { data: stockItems } = useQuery({
+    queryKey: isWarehouseManager ? ['warehouse-stock-for-delivery', effectiveBranchId] : ['my-worker-stock', workerId],
+    queryFn: async () => {
+      if (isWarehouseManager && effectiveBranchId) {
+        // Warehouse manager: use warehouse_stock
+        const { data, error } = await supabase
+          .from('warehouse_stock')
+          .select('id, product_id, quantity, product:products(*)')
+          .eq('branch_id', effectiveBranchId);
+        if (error) throw error;
+        return (data || []) as { id: string; product_id: string; quantity: number; product?: Product }[];
+      } else {
+        // Regular worker: use worker_stock
+        const { data, error } = await supabase
+          .from('worker_stock')
+          .select('*, product:products(*)')
+          .eq('worker_id', workerId!);
+        if (error) throw error;
+        return data as { id: string; product_id: string; quantity: number; product?: Product }[];
+      }
+    },
+    enabled: !!workerId && open && (isWarehouseManager ? !!effectiveBranchId : true),
   });
 
   // Shortage tracking - products marked as unavailable for this order
@@ -602,13 +626,19 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
         throw new Error('فشل تحديث حالة الطلبية: ' + statusError.message);
       }
 
-      // Deduct from worker stock
+      // Deduct from stock (warehouse_stock for warehouse manager, worker_stock for regular workers)
       for (const item of activeItems) {
         const ws = stockItems?.find(s => s.product_id === item.productId);
         if (ws) {
-          await supabase.from('worker_stock')
-            .update({ quantity: ws.quantity - item.quantity })
-            .eq('id', ws.id);
+          if (isWarehouseManager) {
+            await supabase.from('warehouse_stock')
+              .update({ quantity: Math.max(0, ws.quantity - item.quantity) })
+              .eq('id', ws.id);
+          } else {
+            await supabase.from('worker_stock')
+              .update({ quantity: ws.quantity - item.quantity })
+              .eq('id', ws.id);
+          }
         }
         // Record stock movement
         await supabase.from('stock_movements').insert({
@@ -831,6 +861,9 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
       queryClient.invalidateQueries({ queryKey: ['assigned-orders'] });
       queryClient.invalidateQueries({ queryKey: ['order-items'] });
       queryClient.invalidateQueries({ queryKey: ['my-worker-stock'] });
+      queryClient.invalidateQueries({ queryKey: ['warehouse-stock-for-delivery'] });
+      queryClient.invalidateQueries({ queryKey: ['warehouse-stock'] });
+      queryClient.invalidateQueries({ queryKey: ['warehouse-product-summary'] });
 
       setShowPaymentDialog(false);
 
