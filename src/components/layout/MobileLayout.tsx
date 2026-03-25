@@ -141,6 +141,21 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
             <img src={icon} alt="Laser Food" className="w-full h-full object-contain" />
           </div>
 
+          {/* Global back button */}
+          {!isHomePage && (
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center justify-center w-8 h-8 shrink-0 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors"
+              aria-label="رجوع"
+            >
+              {dir === 'rtl' ? (
+                <ArrowRight className="w-4 h-4 text-primary" />
+              ) : (
+                <ArrowLeft className="w-4 h-4 text-primary" />
+              )}
+            </button>
+          )}
+
           {/* Action icons */}
           {(role === 'worker' || role === 'supervisor') && <AttendanceButton />}
           <WorkerRequestsPopover />
