@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Home, Users, Package, BarChart3, Settings, FileSpreadsheet, UserCheck, Building2, Shield, ShoppingCart, Truck, Activity, Store, BookOpen, UserCog, Gift, Wallet, Warehouse, ClipboardList, Banknote, Calculator, MapPin, Navigation, FileText, Vault, FolderOpen, Scale, Trophy, CalendarDays, Split, ClipboardCheck } from 'lucide-react';
+import { Home, Users, Package, BarChart3, Settings, FileSpreadsheet, UserCheck, Building2, Shield, ShoppingCart, Truck, Activity, Store, BookOpen, UserCog, Gift, Wallet, Warehouse, ClipboardList, Banknote, Calculator, MapPin, Navigation, FileText, Vault, FolderOpen, Scale, Trophy, CalendarDays, Split, ClipboardCheck, Radar } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkerPermissions } from '@/hooks/usePermissions';
 import { useMyUIOverrides } from '@/hooks/useUIOverrides';
@@ -43,6 +43,7 @@ export const useNavigation = () => {
         ],
         more: [
           { path: '/orders', icon: ShoppingCart, label: t('nav.orders') },
+          { path: '/order-tracking', icon: Radar, label: 'تتبع الطلبات' },
           { path: '/my-deliveries', icon: Truck, label: t('nav.my_deliveries') },
           { path: '/my-promos', icon: BarChart3, label: t('nav.my_promos') },
           { path: '/product-offers', icon: Gift, label: t('nav.product_offers') },
@@ -105,6 +106,7 @@ export const useNavigation = () => {
         ],
         more: [
           { path: '/orders', icon: ShoppingCart, label: t('nav.orders') },
+          { path: '/order-tracking', icon: Radar, label: 'تتبع الطلبات' },
           { path: '/my-deliveries', icon: Truck, label: t('nav.my_deliveries') },
           { path: '/my-promos', icon: BarChart3, label: t('nav.my_promos') },
           { path: '/product-offers', icon: Gift, label: t('nav.product_offers') },
