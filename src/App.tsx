@@ -380,6 +380,13 @@ const AppRoutes = () => {
         </ProtectedRoute>
       } />
 
+      {/* Worker Order Tracking */}
+      <Route path="/my-order-tracking" element={
+        <ProtectedRoute allowedRoles={['worker']}>
+          <OrderTracking workerMode />
+        </ProtectedRoute>
+      } />
+
 
       <Route path="/chat" element={
         <ProtectedRoute>
