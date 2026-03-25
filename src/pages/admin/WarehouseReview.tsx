@@ -16,28 +16,46 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import WarehouseReviewHistory from '@/components/warehouse/WarehouseReviewHistory';
 
+/** Convert custom format (boxes.pieces) to total pieces */
+const customToTotalPieces = (customQty: number, piecesPerBox: number): number => {
+  const boxes = Math.floor(Math.round(customQty * 100) / 100);
+  const decimalPart = Math.round((Math.round(customQty * 100) / 100 - boxes) * 100);
+  return boxes * piecesPerBox + decimalPart;
+};
+
+/** Convert total pieces to custom format (boxes.pieces) */
+const totalPiecesToCustom = (totalPieces: number, piecesPerBox: number): number => {
+  if (totalPieces <= 0) return 0;
+  const boxes = Math.floor(totalPieces / piecesPerBox);
+  const remainingPieces = Math.round(totalPieces % piecesPerBox);
+  return boxes + remainingPieces / 100;
+};
+
 interface ReviewItem {
   productId: string;
   productName: string;
   imageUrl?: string | null;
+  piecesPerBox: number;
   expected: number;
   actual: string;
   status: 'matched' | 'surplus' | 'deficit' | 'unverified';
 }
 
-const fmtQty = (n: number) => {
+const fmtQty = (n: number): string => {
   const rounded = Math.round(n * 100) / 100;
-  return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+  return rounded.toFixed(2);
 };
 
 const getActualNum = (actual: string): number => parseFloat(actual) || 0;
 
-const computeStatus = (expected: number, actual: string): ReviewItem['status'] => {
+const computeStatus = (expected: number, actual: string, piecesPerBox: number): ReviewItem['status'] => {
   if (actual === '') return 'unverified';
   const num = parseFloat(actual) || 0;
-  const diff = num - expected;
-  if (Math.abs(diff) < 0.001) return 'matched';
-  return diff > 0 ? 'surplus' : 'deficit';
+  const expectedPieces = customToTotalPieces(expected, piecesPerBox);
+  const actualPieces = customToTotalPieces(num, piecesPerBox);
+  const diffPieces = actualPieces - expectedPieces;
+  if (diffPieces === 0) return 'matched';
+  return diffPieces > 0 ? 'surplus' : 'deficit';
 };
 
 const WarehouseReview: React.FC = () => {
@@ -75,18 +93,29 @@ const WarehouseReview: React.FC = () => {
     return map;
   }, [warehouseStock]);
 
+  // Build a product pieces_per_box lookup
+  const piecesPerBoxMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const p of products) {
+      map.set(p.id, p.pieces_per_box || 20);
+    }
+    return map;
+  }, [products]);
+
   // Compute items reactively from products + stock (expected is always fresh)
   const items: ReviewItem[] = useMemo(() => {
     return products.map(product => {
       const expected = stockMap.get(product.id) ?? 0;
       const actual = actuals[product.id] ?? '';
+      const ppb = product.pieces_per_box || 20;
       return {
         productId: product.id,
         productName: product.name,
         imageUrl: product.image_url,
+        piecesPerBox: ppb,
         expected,
         actual,
-        status: computeStatus(expected, actual),
+        status: computeStatus(expected, actual, ppb),
       };
     });
   }, [products, stockMap, actuals]);
@@ -175,21 +204,24 @@ const WarehouseReview: React.FC = () => {
         product_id: item.productId,
         expected_quantity: item.expected,
         actual_quantity: getActualNum(item.actual),
-        status: item.status,
+        status: item.status as string,
       }));
 
       if (includeDamaged) {
         for (const d of damagedItems) {
           const actualStr = damagedActuals[d.productId] ?? '';
           const actual = parseFloat(actualStr) || 0;
-          const diff = actual - d.expected;
+          const ppb = piecesPerBoxMap.get(d.productId) || 20;
+          const expectedPieces = customToTotalPieces(d.expected, ppb);
+          const actualPieces = customToTotalPieces(actual, ppb);
+          const diffPieces = actualPieces - expectedPieces;
           reviewItems.push({
             session_id: session.id,
             item_type: 'damaged',
             product_id: d.productId,
             expected_quantity: d.expected,
             actual_quantity: actual,
-            status: Math.abs(diff) < 0.001 ? 'matched' : diff > 0 ? 'surplus' : 'deficit',
+            status: diffPieces === 0 ? 'matched' : diffPieces > 0 ? 'surplus' : 'deficit',
           });
         }
       }
@@ -338,7 +370,10 @@ const WarehouseReview: React.FC = () => {
           <div className="space-y-1.5">
             {filteredItems.map(item => {
               const actualNum = getActualNum(item.actual);
-              const diff = item.actual !== '' ? actualNum - item.expected : 0;
+              const expectedPieces = customToTotalPieces(item.expected, item.piecesPerBox);
+              const actualPieces = item.actual !== '' ? customToTotalPieces(actualNum, item.piecesPerBox) : 0;
+              const diffPieces = item.actual !== '' ? actualPieces - expectedPieces : 0;
+              const diffInBoxPiece = diffPieces !== 0 ? totalPiecesToCustom(Math.abs(diffPieces), item.piecesPerBox) : 0;
               return (
                 <div key={item.productId} className={`rounded-lg px-3 py-2.5 border ${
                   item.status === 'deficit' ? 'border-destructive/30 bg-destructive/5' :
@@ -378,8 +413,8 @@ const WarehouseReview: React.FC = () => {
                   </div>
                   {item.actual !== '' && item.status !== 'matched' && item.status !== 'unverified' && (
                     <div className="mt-1 flex justify-end">
-                      {item.status === 'surplus' && <Badge className="bg-amber-500 text-white text-[9px]">فائض: +{fmtQty(diff)}</Badge>}
-                      {item.status === 'deficit' && <Badge variant="destructive" className="text-[9px]">عجز: -{fmtQty(Math.abs(diff))}</Badge>}
+                      {item.status === 'surplus' && <Badge className="bg-amber-500 text-white text-[9px]">فائض: +{fmtQty(diffInBoxPiece)}</Badge>}
+                      {item.status === 'deficit' && <Badge variant="destructive" className="text-[9px]">عجز: -{fmtQty(diffInBoxPiece)}</Badge>}
                     </div>
                   )}
                 </div>
