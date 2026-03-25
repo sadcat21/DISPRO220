@@ -101,8 +101,8 @@ const OrderTimeline: React.FC<{ order: GroupedOrder }> = ({ order }) => {
   const outcome = getDeliveryOutcome(order);
 
   return (
-    <div className="relative pr-4">
-      <div className="absolute right-[7px] top-2 bottom-2 w-0.5 bg-border" />
+    <div className="relative pe-4">
+      <div className="absolute end-[7px] top-2 bottom-2 w-0.5 bg-border" />
       
       {events.map((event: any, idx: number) => {
         const config = EVENT_TYPE_CONFIG[event.event_type] || { label: event.event_type, icon: Clock, color: 'bg-muted text-muted-foreground' };
@@ -462,8 +462,8 @@ const OrderTracking: React.FC = () => {
           </div>
           <div className="flex gap-2">
             <div className="flex-1 relative">
-              <Search className="absolute right-2 top-2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="بحث..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="h-8 text-sm pr-8" />
+              <Search className="absolute end-2 top-2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="بحث..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="h-8 text-sm pe-8" />
             </div>
             <Select value={eventTypeFilter} onValueChange={setEventTypeFilter}>
               <SelectTrigger className="w-28 h-8 text-sm">
@@ -558,7 +558,7 @@ const OrderTracking: React.FC = () => {
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
         <DialogContent className="max-w-md max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle className="text-right">
+            <DialogTitle className="text-start">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[10px] text-muted-foreground">#{selectedOrder?.orderId.slice(0, 8)}</span>
                 <Badge variant="outline" className={`text-[10px] ${
@@ -769,7 +769,7 @@ const OrderDetailsContent: React.FC<{ order: GroupedOrder }> = ({ order }) => {
                   )}
                 </div>
                 
-                <div className="text-left shrink-0">
+                <div className="text-end shrink-0">
                   <div className="text-xs font-medium">{Number(item.total_price || 0).toLocaleString()}</div>
                   <div className="text-[9px] text-muted-foreground">
                     {Number(item.unit_price || 0).toLocaleString()} / و
