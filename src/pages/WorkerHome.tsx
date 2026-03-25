@@ -9,13 +9,14 @@ import { useIsElementHidden } from '@/hooks/useUIOverrides';
 import ProductGrid from '@/components/promo/ProductGrid';
 import AddPromoDialog from '@/components/promo/AddPromoDialog';
 import DirectSaleDialog from '@/components/warehouse/DirectSaleDialog';
+import FactoryReceiptQuickDialog from '@/components/stock/FactoryReceiptQuickDialog';
 import CustomerActionDialog from '@/components/orders/CustomerActionDialog';
 import CreateOrderDialog from '@/components/orders/CreateOrderDialog';
 import CustomerPickerDialog from '@/components/orders/CustomerPickerDialog';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
 import { Customer } from '@/types/database';
 import { toast } from 'sonner';
-import { ShoppingCart, Gift, Loader2, ShoppingBag, Truck, Package, Banknote, Users, Wallet, ClipboardList, MapPin, Trophy, MessageCircle, HardHat, CalendarCheck } from 'lucide-react';
+import { ShoppingCart, Gift, Loader2, ShoppingBag, Truck, Package, Banknote, Users, Wallet, ClipboardList, MapPin, Trophy, MessageCircle, HardHat, CalendarCheck, ArrowDownToLine } from 'lucide-react';
 
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
