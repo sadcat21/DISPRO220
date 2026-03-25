@@ -263,43 +263,8 @@ const AdminHome: React.FC = () => {
         <h2 className="text-xl font-bold">{t('nav.home')}</h2>
       )}
 
-      {/* Quick Stats Bar */}
-      <div className="grid grid-cols-2 gap-3">
-        {!isAccountingHidden && (
-          <div
-            className={`relative overflow-hidden rounded-xl border-2 p-3 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg ${
-              isBranchAdmin
-                ? 'border-teal-300 bg-gradient-to-br from-teal-50 to-cyan-100'
-                : 'border-amber-300 bg-gradient-to-br from-amber-50 to-amber-100'
-            }`}
-            onClick={() => navigate('/accounting')}
-          >
-            <Calculator className={`w-7 h-7 mb-1 ${isBranchAdmin ? 'text-teal-600' : 'text-amber-600'}`} />
-            <p className={`font-bold text-xs ${isBranchAdmin ? 'text-teal-900' : 'text-amber-900'}`}>{t('accounting.title')}</p>
-            {openSessions !== undefined && openSessions > 0 && (
-              <p className={`text-[10px] mt-0.5 ${isBranchAdmin ? 'text-teal-700' : 'text-amber-700'}`}>{openSessions} {t('accounting.status_open')}</p>
-            )}
-            <ArrowLeft className={`absolute top-2 left-2 w-3.5 h-3.5 ${isBranchAdmin ? 'text-teal-400' : 'text-amber-400'}`} />
-          </div>
-        )}
-        {!isDebtsHidden && (
-          <div
-            className={`relative overflow-hidden rounded-xl border-2 p-3 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg ${
-              isBranchAdmin
-                ? 'border-cyan-300 bg-gradient-to-br from-cyan-50 to-sky-100'
-                : 'border-rose-300 bg-gradient-to-br from-rose-50 to-rose-100'
-            }`}
-            onClick={() => navigate('/customer-debts')}
-          >
-            <Banknote className={`w-7 h-7 mb-1 ${isBranchAdmin ? 'text-cyan-600' : 'text-rose-600'}`} />
-            <p className={`font-bold text-xs ${isBranchAdmin ? 'text-cyan-900' : 'text-rose-900'}`}>{t('debts.title')}</p>
-            {activeDebts && activeDebts.count > 0 && (
-              <p className={`text-[10px] mt-0.5 ${isBranchAdmin ? 'text-cyan-700' : 'text-rose-700'}`}>{activeDebts.count} • {activeDebts.total.toLocaleString()} DA</p>
-            )}
-            <ArrowLeft className={`absolute top-2 left-2 w-3.5 h-3.5 ${isBranchAdmin ? 'text-cyan-400' : 'text-rose-400'}`} />
-          </div>
-        )}
-      </div>
+
+
 
       {/* Functional Groups */}
       {groups.map((group) => {
