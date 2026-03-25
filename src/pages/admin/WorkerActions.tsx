@@ -758,6 +758,15 @@ const WorkerActions: React.FC = () => {
         open={sectorCoverageOpen}
         onOpenChange={setSectorCoverageOpen}
       />
+      {selectedWorker && activeBranch?.id && (
+        <ExchangeSessionDialog
+          open={exchangeDamagedOpen}
+          onOpenChange={setExchangeDamagedOpen}
+          workerId={selectedWorker.id}
+          workerName={selectedWorker.full_name}
+          branchId={activeBranch.id}
+        />
+      )}
     </div>
   );
 };
