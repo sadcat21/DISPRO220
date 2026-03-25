@@ -394,7 +394,14 @@ const WarehouseReview: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <div className="w-16 text-center">
-                        <span className="text-sm font-bold text-muted-foreground">{fmtQty(item.expected)}</span>
+                        <button
+                          type="button"
+                          onClick={() => updateActual(item.productId, String(item.expected))}
+                          className="text-sm font-bold text-muted-foreground hover:text-primary hover:underline transition-colors"
+                          title="تطابق"
+                        >
+                          {fmtQty(item.expected)}
+                        </button>
                       </div>
                       <Input
                         type="number"
