@@ -42,12 +42,28 @@ const OrderTracking: React.FC = () => {
   const [dateFrom, setDateFrom] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [dateTo, setDateTo] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [eventTypeFilter, setEventTypeFilter] = useState('all');
+  const [workerFilter, setWorkerFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Fetch workers list for filter
+  const { data: workers } = useQuery({
+    queryKey: ['workers-list-for-tracking'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('workers')
+        .select('id, full_name, role')
+        .eq('is_active', true)
+        .order('full_name');
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const { data: events, isLoading } = useAllOrderEvents({
     dateFrom,
     dateTo,
     eventType: eventTypeFilter,
+    workerId: workerFilter,
   });
 
   const filteredEvents = useMemo(() => {
