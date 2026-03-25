@@ -397,22 +397,56 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     refetchInterval: 10000,
   });
 
-  const sevenDaysAgo = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 7);
-    d.setHours(0, 0, 0, 0);
-    return d.toISOString();
-  }, []);
-
-  const { data: recentNegativeVisits = [] } = useQuery({
-    queryKey: ['recent-negative-visits-dialog', effectiveWorkerId, sevenDaysAgo],
+  // Compute consecutive no-order visit streaks per customer
+  // Fetches all visits (type 'visit') and orders to calculate how many consecutive
+  // visits happened without an order being placed. Resets to 0 when an order is created.
+  const { data: noOrderStreakMap = new Map<string, number>() } = useQuery({
+    queryKey: ['no-order-streak-map', effectiveWorkerId, scopedBranchId],
     queryFn: async () => {
-      const { data } = await supabase
-        .from('visit_tracking')
-        .select('customer_id, notes, created_at')
-        .gte('created_at', sevenDaysAgo)
-        .or('notes.ilike.%مغلق%,notes.ilike.%غير متاح%,notes.ilike.%بدون طلبية%');
-      return data || [];
+      // Fetch recent visits (last 90 days to cover multiple weeks)
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      ninetyDaysAgo.setHours(0, 0, 0, 0);
+      const since = ninetyDaysAgo.toISOString();
+
+      const [visitsRes, ordersRes] = await Promise.all([
+        supabase
+          .from('visit_tracking')
+          .select('customer_id, created_at')
+          .eq('operation_type', 'visit')
+          .gte('created_at', since)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('orders')
+          .select('customer_id, created_at')
+          .gte('created_at', since)
+          .not('status', 'eq', 'cancelled')
+          .order('created_at', { ascending: false }),
+      ]);
+
+      const visits = visitsRes.data || [];
+      const orders = ordersRes.data || [];
+
+      // For each customer, find the latest order date, then count visits after that date
+      const latestOrderMap = new Map<string, string>();
+      orders.forEach(o => {
+        if (!o.customer_id) return;
+        if (!latestOrderMap.has(o.customer_id) || o.created_at > latestOrderMap.get(o.customer_id)!) {
+          latestOrderMap.set(o.customer_id, o.created_at);
+        }
+      });
+
+      const streakMap = new Map<string, number>();
+      visits.forEach(v => {
+        if (!v.customer_id) return;
+        const latestOrder = latestOrderMap.get(v.customer_id);
+        // Count this visit only if it's after the latest order (or no order exists)
+        if (!latestOrder || v.created_at > latestOrder) {
+          streakMap.set(v.customer_id, (streakMap.get(v.customer_id) || 0) + 1);
+        }
+      });
+
+      return streakMap;
     },
     enabled: !!effectiveWorkerId && open,
   });
