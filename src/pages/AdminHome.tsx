@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useNavigation } from '@/hooks/useNavigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useFontSize } from '@/contexts/FontSizeContext';
-import { Calculator, Banknote, ArrowLeft, Navigation, Users, Receipt, ShoppingCart, Scale, Trophy, CalendarDays, Gift, ArrowDownToLine } from 'lucide-react';
+import { Calculator, Banknote, ArrowLeft, Navigation, Users, Receipt, ShoppingCart, Scale, Trophy, CalendarDays, Gift, ArrowDownToLine, Truck } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,6 +13,7 @@ import CreateOrderDialog from '@/components/orders/CreateOrderDialog';
 import WorkerGiftsSummaryDialog from '@/components/accounting/WorkerGiftsSummaryDialog';
 import ManualPromoEntryDialog from '@/components/offers/ManualPromoEntryDialog';
 import FactoryReceiptQuickDialog from '@/components/stock/FactoryReceiptQuickDialog';
+import FactoryDeliveryQuickDialog from '@/components/stock/FactoryDeliveryQuickDialog';
 import { isAdminRole } from '@/lib/utils';
 
 // Color mapping by path for semantic meaning
@@ -65,6 +66,7 @@ const AdminHome: React.FC = () => {
   const [giftsWorkerIdx, setGiftsWorkerIdx] = useState(0);
   const [manualPromoOpen, setManualPromoOpen] = useState(false);
   const [factoryReceiptOpen, setFactoryReceiptOpen] = useState(false);
+  const [factoryDeliveryOpen, setFactoryDeliveryOpen] = useState(false);
 
   const isAccountingHidden = useIsElementHidden('page', '/accounting');
   const isDebtsHidden = useIsElementHidden('page', '/customer-debts');
