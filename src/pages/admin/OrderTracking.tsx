@@ -505,6 +505,22 @@ const OrderTracking: React.FC = () => {
 // Separate component so useOrderItems hook is called at top level
 const OrderDetailsContent: React.FC<{ order: GroupedOrder }> = ({ order }) => {
   const { data: orderItems, isLoading: itemsLoading } = useOrderItems(order.orderId);
+  const [showModify, setShowModify] = useState(false);
+
+  // Fetch full order for ModifyOrderDialog
+  const { data: fullOrder } = useQuery({
+    queryKey: ['order-full', order.orderId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*, customer:customers(*), assigned_worker:workers!orders_assigned_worker_id_fkey(id, full_name, username)')
+        .eq('id', order.orderId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: showModify,
+  });
   
   const PAYMENT_TYPE_LABELS: Record<string, { label: string; color: string }> = {
     with_invoice: { label: 'فاتورة 1 (Facture 1)', color: 'bg-blue-100 text-blue-700 border-blue-200' },
