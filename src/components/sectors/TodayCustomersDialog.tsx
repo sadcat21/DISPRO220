@@ -2562,6 +2562,11 @@ const CustomerList: React.FC<{
                   <CalendarClock className="w-3 h-3" />
                   {postponeCountMap?.get(c.id) || 1}
                 </Badge>
+               )}
+             {noOrderStreakMap && (noOrderStreakMap.get(c.id) || 0) >= 2 && (
+                <Badge className="text-[9px] px-1.5 py-0 h-4 bg-red-100 text-red-700 border-0 font-bold gap-0.5">
+                  🔄 {noOrderStreakMap.get(c.id)} بدون طلبية
+                </Badge>
               )}
              {salesRepStatusMap && salesRepStatusMap.has(c.id) && (() => {
                const status = salesRepStatusMap.get(c.id);
