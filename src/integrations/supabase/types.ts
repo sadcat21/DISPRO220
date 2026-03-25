@@ -1840,6 +1840,7 @@ export type Database = {
           id: string
           notes: string | null
           order_type: string
+          pallet_count: number | null
           status: string
           updated_at: string
         }
@@ -1851,6 +1852,7 @@ export type Database = {
           id?: string
           notes?: string | null
           order_type?: string
+          pallet_count?: number | null
           status?: string
           updated_at?: string
         }
@@ -1862,6 +1864,7 @@ export type Database = {
           id?: string
           notes?: string | null
           order_type?: string
+          pallet_count?: number | null
           status?: string
           updated_at?: string
         }

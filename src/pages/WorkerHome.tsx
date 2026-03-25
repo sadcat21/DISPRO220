@@ -10,6 +10,7 @@ import ProductGrid from '@/components/promo/ProductGrid';
 import AddPromoDialog from '@/components/promo/AddPromoDialog';
 import DirectSaleDialog from '@/components/warehouse/DirectSaleDialog';
 import FactoryReceiptQuickDialog from '@/components/stock/FactoryReceiptQuickDialog';
+import FactoryDeliveryQuickDialog from '@/components/stock/FactoryDeliveryQuickDialog';
 import CustomerActionDialog from '@/components/orders/CustomerActionDialog';
 import CreateOrderDialog from '@/components/orders/CreateOrderDialog';
 import CustomerPickerDialog from '@/components/orders/CustomerPickerDialog';
@@ -47,6 +48,7 @@ const WorkerHome: React.FC = () => {
   const [showPalletCalculator, setShowPalletCalculator] = useState(false);
   const [showManualPromoEntry, setShowManualPromoEntry] = useState(false);
   const [showFactoryReceipt, setShowFactoryReceipt] = useState(false);
+  const [showFactoryDelivery, setShowFactoryDelivery] = useState(false);
 
   const { trackVisit } = useTrackVisit();
   const isDirectSaleHidden = useIsElementHidden('button', 'home_direct_sale');
@@ -380,6 +382,7 @@ const WorkerHome: React.FC = () => {
           // Factory receipt for warehouse manager
           if (isWarehouseManager) {
             quickActions.push({ key: 'factory-receipt', icon: <ArrowDownToLine className="w-6 h-6" />, label: 'استلام من المصنع', onClick: () => setShowFactoryReceipt(true) });
+            quickActions.push({ key: 'factory-delivery', icon: <Truck className="w-6 h-6" />, label: 'تسليم للمصنع', onClick: () => setShowFactoryDelivery(true) });
           }
           if (hasDeliveryAccess && !isMyStockPageHidden && !isMyStockHidden) {
             quickActions.push({ key: 'my-stock', icon: <Package className="w-6 h-6" />, label: t('stock.my_stock'), onClick: () => navigate('/my-stock') });
@@ -528,6 +531,10 @@ const WorkerHome: React.FC = () => {
       <FactoryReceiptQuickDialog
         open={showFactoryReceipt}
         onOpenChange={setShowFactoryReceipt}
+      />
+      <FactoryDeliveryQuickDialog
+        open={showFactoryDelivery}
+        onOpenChange={setShowFactoryDelivery}
       />
     </div>
   );
