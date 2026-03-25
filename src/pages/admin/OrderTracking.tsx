@@ -341,7 +341,6 @@ const OrderTracking: React.FC<{ workerMode?: boolean }> = ({ workerMode = false 
   const isRTL = language === 'ar';
   const [dateFrom, setDateFrom] = useState(() => {
     const d = new Date();
-    d.setDate(d.getDate() - 7);
     return format(d, 'yyyy-MM-dd');
   });
   const [dateTo, setDateTo] = useState(format(new Date(), 'yyyy-MM-dd'));
