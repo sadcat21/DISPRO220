@@ -145,8 +145,32 @@ const OrderTimeline: React.FC<{ order: GroupedOrder }> = ({ order }) => {
               )}
               
               {event.event_type === 'amount_changed' && (
-                <div className="mt-0.5 text-[11px] text-muted-foreground">
-                  {Number(event.old_value).toLocaleString()} → {Number(event.new_value).toLocaleString()} د.ج
+                <div className="mt-0.5 text-[11px]">
+                  <span className="text-muted-foreground">
+                    {Number(event.old_value).toLocaleString()} → {Number(event.new_value).toLocaleString()} د.ج
+                  </span>
+                  {event.details?.old_subtype && event.details?.new_subtype && event.details.old_subtype !== event.details.new_subtype && (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <Badge variant="outline" className="text-[8px] py-0 px-1">
+                        {event.details.old_subtype === 'super_gros' ? 'SG' : event.details.old_subtype === 'gros' ? 'G' : event.details.old_subtype === 'retail' ? 'D' : 'F1'}
+                      </Badge>
+                      <span className="text-[10px]">←</span>
+                      <Badge variant="outline" className="text-[8px] py-0 px-1 bg-primary/10 text-primary border-primary/20">
+                        {event.details.new_subtype === 'super_gros' ? 'SG' : event.details.new_subtype === 'gros' ? 'G' : event.details.new_subtype === 'retail' ? 'D' : 'F1'}
+                      </Badge>
+                    </div>
+                  )}
+                  {event.details?.payment_type_change && (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <Badge variant="outline" className="text-[8px] py-0 px-1">
+                        {event.details.old_payment_type === 'with_invoice' ? 'F1' : 'F2'}
+                      </Badge>
+                      <span className="text-[10px]">←</span>
+                      <Badge variant="outline" className="text-[8px] py-0 px-1 bg-primary/10 text-primary border-primary/20">
+                        {event.details.new_payment_type === 'with_invoice' ? 'F1' : 'F2'}
+                      </Badge>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -507,13 +531,19 @@ const OrderTracking: React.FC = () => {
             <DialogTitle className="text-right">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[10px] text-muted-foreground">#{selectedOrder?.orderId.slice(0, 8)}</span>
-                <span>{selectedOrder?.customerName}</span>
+                <Badge variant="outline" className={`text-[10px] ${
+                  selectedOrder?.currentStatus === 'delivered' ? 'bg-green-100 text-green-700' :
+                  selectedOrder?.currentStatus === 'cancelled' ? 'bg-red-100 text-red-700' :
+                  'bg-blue-100 text-blue-700'
+                }`}>
+                  {STATUS_LABELS[selectedOrder?.currentStatus || ''] || selectedOrder?.currentStatus}
+                </Badge>
               </div>
               {selectedOrder?.customerData && (
                 <CustomerLabel customer={selectedOrder.customerData} />
               )}
               {/* Order dates */}
-              <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground font-normal">
+              <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground font-normal flex-wrap">
                 {selectedOrder?.createdAt && (
                   <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
