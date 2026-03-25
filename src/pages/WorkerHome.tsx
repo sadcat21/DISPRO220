@@ -17,7 +17,7 @@ import CustomerPickerDialog from '@/components/orders/CustomerPickerDialog';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
 import { Customer } from '@/types/database';
 import { toast } from 'sonner';
-import { ShoppingCart, Gift, Loader2, ShoppingBag, Truck, Package, Banknote, Users, Wallet, ClipboardList, MapPin, Trophy, MessageCircle, HardHat, CalendarCheck, ArrowDownToLine } from 'lucide-react';
+import { ShoppingCart, Gift, Loader2, ShoppingBag, Truck, Package, Banknote, Users, Wallet, ClipboardList, MapPin, Trophy, MessageCircle, HardHat, CalendarCheck, ArrowDownToLine, Warehouse } from 'lucide-react';
 
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -49,6 +49,7 @@ const WorkerHome: React.FC = () => {
   const [showManualPromoEntry, setShowManualPromoEntry] = useState(false);
   const [showFactoryReceipt, setShowFactoryReceipt] = useState(false);
   const [showFactoryDelivery, setShowFactoryDelivery] = useState(false);
+  const [showStockManagement, setShowStockManagement] = useState(false);
 
   const { trackVisit } = useTrackVisit();
   const isDirectSaleHidden = useIsElementHidden('button', 'home_direct_sale');
@@ -375,14 +376,9 @@ const WorkerHome: React.FC = () => {
           if ((hasDeliveryAccess || isWarehouseManager) && !isDirectSaleHidden) {
             quickActions.push({ key: 'direct-sale', icon: <ShoppingBag className="w-6 h-6" />, label: isWarehouseManager ? 'بيع مخزن - Vente Dépôt' : t('stock.direct_sale'), onClick: () => setShowActionDialog(true) });
           }
-          // Warehouse stock for warehouse manager
-          if (isWarehouseManager && !isWarehouseStockHidden && !isWarehouseStockButtonHidden) {
-            quickActions.push({ key: 'warehouse-stock', icon: <Package className="w-6 h-6" />, label: 'مخزون الفرع', onClick: () => navigate('/warehouse') });
-          }
-          // Factory receipt for warehouse manager
+          // Stock management hub for warehouse manager
           if (isWarehouseManager) {
-            quickActions.push({ key: 'factory-receipt', icon: <ArrowDownToLine className="w-6 h-6" />, label: 'استلام من المصنع', onClick: () => setShowFactoryReceipt(true) });
-            quickActions.push({ key: 'factory-delivery', icon: <Truck className="w-6 h-6" />, label: 'تسليم للمصنع', onClick: () => setShowFactoryDelivery(true) });
+            quickActions.push({ key: 'stock-management', icon: <Warehouse className="w-6 h-6" />, label: 'إدارة المخزن', onClick: () => setShowStockManagement(true) });
           }
           if (hasDeliveryAccess && !isMyStockPageHidden && !isMyStockHidden) {
             quickActions.push({ key: 'my-stock', icon: <Package className="w-6 h-6" />, label: t('stock.my_stock'), onClick: () => navigate('/my-stock') });
@@ -536,6 +532,36 @@ const WorkerHome: React.FC = () => {
         open={showFactoryDelivery}
         onOpenChange={setShowFactoryDelivery}
       />
+
+      {/* Stock Management Hub Dialog */}
+      {showStockManagement && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center" onClick={() => setShowStockManagement(false)}>
+          <div className="bg-background rounded-t-2xl w-full max-w-lg p-5 pb-8 space-y-3 animate-in slide-in-from-bottom" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-center mb-4">إدارة المخزن</h3>
+            <button
+              onClick={() => { setShowStockManagement(false); navigate('/warehouse'); }}
+              className="w-full flex items-center gap-3 p-4 rounded-xl border border-border hover:bg-accent transition-colors"
+            >
+              <Package className="w-6 h-6 text-primary" />
+              <span className="font-semibold">مخزون الفرع</span>
+            </button>
+            <button
+              onClick={() => { setShowStockManagement(false); setShowFactoryReceipt(true); }}
+              className="w-full flex items-center gap-3 p-4 rounded-xl border border-border hover:bg-accent transition-colors"
+            >
+              <ArrowDownToLine className="w-6 h-6 text-emerald-600" />
+              <span className="font-semibold">استلام من المصنع</span>
+            </button>
+            <button
+              onClick={() => { setShowStockManagement(false); setShowFactoryDelivery(true); }}
+              className="w-full flex items-center gap-3 p-4 rounded-xl border border-border hover:bg-accent transition-colors"
+            >
+              <Truck className="w-6 h-6 text-orange-600" />
+              <span className="font-semibold">تسليم للمصنع</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
