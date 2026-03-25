@@ -47,7 +47,12 @@ export const useAllOrderEvents = (filters?: { dateFrom?: string; dateTo?: string
         .select(`
           *,
           performer:workers!order_events_performed_by_fkey(id, full_name),
-          order:orders!order_events_order_id_fkey(id, status, total_amount, customer_id, assigned_worker_id, created_by, customer:customers(name))
+          order:orders!order_events_order_id_fkey(
+            id, status, total_amount, customer_id, assigned_worker_id, created_by, notes,
+            customer:customers(name),
+            assigned_worker:workers!orders_assigned_worker_id_fkey(id, full_name),
+            created_by_worker:workers!orders_created_by_fkey(id, full_name)
+          )
         `)
         .order('created_at', { ascending: false })
         .limit(200);

@@ -10,13 +10,12 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
-import { Search, Filter, ArrowRightLeft, UserCheck, CreditCard, Package, Printer, Plus, DollarSign, Clock, Users, ChevronLeft, Truck, ShoppingCart, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { Search, Filter, ArrowRightLeft, UserCheck, CreditCard, Package, Printer, Plus, DollarSign, Clock, Users, ChevronLeft, Truck, ShoppingCart, CheckCircle2, XCircle, Loader2, MapPin, Ban, Lock, UserX, HandCoins } from 'lucide-react';
 
 const EVENT_TYPE_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   created: { label: 'إنشاء طلبية', icon: Plus, color: 'bg-green-100 text-green-700 border-green-200' },
   status_change: { label: 'تغيير الحالة', icon: ArrowRightLeft, color: 'bg-blue-100 text-blue-700 border-blue-200' },
-  worker_changed: { label: 'تغيير العامل', icon: UserCheck, color: 'bg-purple-100 text-purple-700 border-purple-200' },
+  worker_changed: { label: 'تعيين عامل', icon: UserCheck, color: 'bg-purple-100 text-purple-700 border-purple-200' },
   payment_updated: { label: 'تحديث الدفع', icon: CreditCard, color: 'bg-amber-100 text-amber-700 border-amber-200' },
   item_modified: { label: 'تعديل المنتجات', icon: Package, color: 'bg-orange-100 text-orange-700 border-orange-200' },
   amount_changed: { label: 'تغيير المبلغ', icon: DollarSign, color: 'bg-rose-100 text-rose-700 border-rose-200' },
@@ -35,13 +34,23 @@ const STATUS_LABELS: Record<string, string> = {
   completed: 'مكتملة',
 };
 
-const STATUS_STEPS = ['pending', 'assigned', 'in_transit', 'delivered'];
+const STATUS_STEPS = ['pending', 'assigned', 'in_transit', 'arrived', 'delivered'];
 
 const STATUS_STEP_CONFIG: Record<string, { label: string; icon: React.ElementType; activeColor: string }> = {
   pending: { label: 'إنشاء', icon: ShoppingCart, activeColor: 'bg-blue-500' },
   assigned: { label: 'تعيين', icon: UserCheck, activeColor: 'bg-purple-500' },
-  in_transit: { label: 'شحن', icon: Truck, activeColor: 'bg-amber-500' },
+  in_transit: { label: 'نقل', icon: Truck, activeColor: 'bg-amber-500' },
+  arrived: { label: 'وصول', icon: MapPin, activeColor: 'bg-cyan-500' },
   delivered: { label: 'تسليم', icon: CheckCircle2, activeColor: 'bg-green-500' },
+};
+
+// Non-delivery reasons
+const NON_DELIVERY_REASONS: Record<string, { label: string; icon: React.ElementType; color: string }> = {
+  closed: { label: 'مغلق', icon: Lock, color: 'text-orange-600' },
+  unavailable: { label: 'غير متاح', icon: UserX, color: 'text-amber-600' },
+  debt_refused: { label: 'رفض دين', icon: HandCoins, color: 'text-red-600' },
+  customer_cancelled: { label: 'إلغاء العميل', icon: Ban, color: 'text-gray-600' },
+  unknown: { label: 'بدون تسليم', icon: XCircle, color: 'text-muted-foreground' },
 };
 
 interface GroupedOrder {
@@ -51,22 +60,52 @@ interface GroupedOrder {
   totalAmount: number | null;
   events: any[];
   latestEvent: string;
+  createdByName: string | null;
+  assignedWorkerName: string | null;
+  orderNotes: string | null;
 }
 
-const OrderTimeline: React.FC<{ events: any[] }> = ({ events }) => {
+const getDeliveryOutcome = (order: GroupedOrder) => {
+  const notes = order.orderNotes?.toLowerCase() || '';
+  const events = order.events;
+  const lastStatusEvent = [...events].reverse().find((e: any) => e.event_type === 'status_change');
+  
+  if (order.currentStatus === 'delivered') return { type: 'delivered' as const };
+  if (order.currentStatus === 'cancelled') {
+    if (notes.includes('مغلق')) return { type: 'not_delivered' as const, reason: 'closed' };
+    if (notes.includes('غير متاح')) return { type: 'not_delivered' as const, reason: 'unavailable' };
+    if (notes.includes('دين') || notes.includes('رفض')) return { type: 'not_delivered' as const, reason: 'debt_refused' };
+    if (notes.includes('إلغاء') || notes.includes('الغ')) return { type: 'not_delivered' as const, reason: 'customer_cancelled' };
+    return { type: 'not_delivered' as const, reason: 'unknown' };
+  }
+  return null;
+};
+
+const OrderTimeline: React.FC<{ order: GroupedOrder }> = ({ order }) => {
+  const { events } = order;
+  const outcome = getDeliveryOutcome(order);
+
   return (
     <div className="relative pr-4">
-      {/* Vertical line */}
       <div className="absolute right-[7px] top-2 bottom-2 w-0.5 bg-border" />
       
       {events.map((event: any, idx: number) => {
         const config = EVENT_TYPE_CONFIG[event.event_type] || { label: event.event_type, icon: Clock, color: 'bg-muted text-muted-foreground' };
         const Icon = config.icon;
         const isLast = idx === events.length - 1;
+
+        // Determine contextual worker name
+        let workerInfo: string | null = null;
+        if (event.event_type === 'created') {
+          workerInfo = event.performer?.full_name || order.createdByName;
+        } else if (event.event_type === 'worker_changed' || (event.event_type === 'status_change' && event.new_value === 'assigned')) {
+          workerInfo = order.assignedWorkerName || event.performer?.full_name;
+        } else if (event.performer?.full_name) {
+          workerInfo = event.performer.full_name;
+        }
         
         return (
           <div key={event.id} className="relative flex items-start gap-3 pb-4">
-            {/* Dot on timeline */}
             <div className={`relative z-10 w-3.5 h-3.5 rounded-full border-2 shrink-0 mt-1 ${
               isLast ? 'bg-primary border-primary' : 'bg-background border-muted-foreground/40'
             }`} />
@@ -82,7 +121,6 @@ const OrderTimeline: React.FC<{ events: any[] }> = ({ events }) => {
                 </span>
               </div>
               
-              {/* Status change details */}
               {event.event_type === 'status_change' && (
                 <div className="mt-0.5 flex items-center gap-1 text-[11px]">
                   <span className="text-muted-foreground">{STATUS_LABELS[event.old_value] || event.old_value}</span>
@@ -103,56 +141,119 @@ const OrderTimeline: React.FC<{ events: any[] }> = ({ events }) => {
                 </div>
               )}
               
-              {event.performer?.full_name && (
-                <div className="text-[10px] text-muted-foreground mt-0.5">
-                  بواسطة: {event.performer.full_name}
+              {workerInfo && (
+                <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                  <Users className="h-2.5 w-2.5" />
+                  {workerInfo}
                 </div>
               )}
             </div>
           </div>
         );
       })}
+
+      {/* Delivery outcome */}
+      {outcome && (
+        <div className="relative flex items-start gap-3 pb-2">
+          <div className={`relative z-10 w-3.5 h-3.5 rounded-full border-2 shrink-0 mt-1 ${
+            outcome.type === 'delivered' ? 'bg-green-500 border-green-500' : 'bg-destructive border-destructive'
+          }`} />
+          <div className="flex-1">
+            {outcome.type === 'delivered' ? (
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="h-3 w-3 text-green-600" />
+                <span className="text-xs font-medium text-green-700">تم التسليم بنجاح</span>
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-center gap-1.5">
+                  {React.createElement(NON_DELIVERY_REASONS[outcome.reason || 'unknown'].icon, { className: `h-3 w-3 ${NON_DELIVERY_REASONS[outcome.reason || 'unknown'].color}` })}
+                  <span className={`text-xs font-medium ${NON_DELIVERY_REASONS[outcome.reason || 'unknown'].color}`}>
+                    {NON_DELIVERY_REASONS[outcome.reason || 'unknown'].label}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-const StatusProgressBar: React.FC<{ currentStatus: string }> = ({ currentStatus }) => {
+const StatusProgressBar: React.FC<{ order: GroupedOrder }> = ({ order }) => {
+  const { currentStatus } = order;
   const isCancelled = currentStatus === 'cancelled';
-  const currentIdx = STATUS_STEPS.indexOf(currentStatus);
-  const activeIdx = currentIdx >= 0 ? currentIdx : (isCancelled ? -1 : 0);
+  const isDelivered = currentStatus === 'delivered';
+  
+  // Determine how far the order progressed
+  const hasAssigned = order.events.some((e: any) => 
+    (e.event_type === 'status_change' && e.new_value === 'assigned') || e.event_type === 'worker_changed'
+  );
+  const hasInTransit = order.events.some((e: any) => 
+    e.event_type === 'status_change' && e.new_value === 'in_transit'
+  );
+
+  const getStepActive = (step: string) => {
+    if (isCancelled) return false;
+    switch (step) {
+      case 'pending': return true;
+      case 'assigned': return hasAssigned || ['assigned', 'in_transit', 'delivered'].includes(currentStatus);
+      case 'in_transit': return hasInTransit || ['in_transit', 'delivered'].includes(currentStatus);
+      case 'arrived': return isDelivered || isCancelled;
+      case 'delivered': return isDelivered;
+      default: return false;
+    }
+  };
 
   return (
-    <div className="flex items-center justify-between gap-1 my-2">
-      {STATUS_STEPS.map((step, idx) => {
-        const config = STATUS_STEP_CONFIG[step];
-        const Icon = config.icon;
-        const isActive = idx <= activeIdx && !isCancelled;
-        const isCurrent = step === currentStatus;
+    <div className="my-2">
+      <div className="flex items-center justify-between gap-0.5">
+        {STATUS_STEPS.map((step, idx) => {
+          const config = STATUS_STEP_CONFIG[step];
+          const StepIcon = config.icon;
+          const isActive = getStepActive(step);
+          const isCurrent = step === currentStatus || (step === 'arrived' && isCancelled);
 
-        return (
-          <React.Fragment key={step}>
-            <div className="flex flex-col items-center gap-0.5 flex-1">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center ${
-                isActive ? config.activeColor + ' text-white' : 'bg-muted text-muted-foreground'
-              } ${isCurrent ? 'ring-2 ring-offset-1 ring-primary' : ''}`}>
-                <Icon className="h-3.5 w-3.5" />
+          return (
+            <React.Fragment key={step}>
+              <div className="flex flex-col items-center gap-0.5 flex-1">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] ${
+                  isActive ? config.activeColor + ' text-white' : 'bg-muted text-muted-foreground'
+                } ${isCurrent ? 'ring-2 ring-offset-1 ring-primary' : ''}`}>
+                  <StepIcon className="h-3 w-3" />
+                </div>
+                <span className={`text-[8px] leading-tight text-center ${isActive ? 'font-medium' : 'text-muted-foreground'}`}>
+                  {config.label}
+                </span>
+                {/* Show worker name under relevant steps */}
+                {step === 'pending' && order.createdByName && (
+                  <span className="text-[7px] text-muted-foreground truncate max-w-[50px]">{order.createdByName}</span>
+                )}
+                {step === 'assigned' && order.assignedWorkerName && (
+                  <span className="text-[7px] text-muted-foreground truncate max-w-[50px]">{order.assignedWorkerName}</span>
+                )}
               </div>
-              <span className={`text-[9px] ${isActive ? 'font-medium' : 'text-muted-foreground'}`}>
-                {config.label}
-              </span>
-            </div>
-            {idx < STATUS_STEPS.length - 1 && (
-              <div className={`h-0.5 flex-1 -mt-4 ${idx < activeIdx && !isCancelled ? 'bg-primary' : 'bg-muted'}`} />
-            )}
-          </React.Fragment>
-        );
-      })}
+              {idx < STATUS_STEPS.length - 1 && (
+                <div className={`h-0.5 flex-1 -mt-5 ${isActive && getStepActive(STATUS_STEPS[idx + 1]) ? 'bg-primary' : 'bg-muted'}`} />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
       {isCancelled && (
-        <div className="flex flex-col items-center gap-0.5 flex-1">
-          <div className="w-7 h-7 rounded-full flex items-center justify-center bg-destructive text-white ring-2 ring-offset-1 ring-destructive">
-            <XCircle className="h-3.5 w-3.5" />
-          </div>
-          <span className="text-[9px] font-medium text-destructive">ملغاة</span>
+        <div className="flex items-center justify-center gap-1 mt-1">
+          {(() => {
+            const outcome = getDeliveryOutcome(order);
+            const reason = outcome?.reason || 'unknown';
+            const reasonConfig = NON_DELIVERY_REASONS[reason];
+            return (
+              <>
+                {React.createElement(reasonConfig.icon, { className: `h-3 w-3 ${reasonConfig.color}` })}
+                <span className={`text-[10px] font-medium ${reasonConfig.color}`}>{reasonConfig.label}</span>
+              </>
+            );
+          })()}
         </div>
       )}
     </div>
@@ -193,7 +294,6 @@ const OrderTracking: React.FC = () => {
     workerId: workerFilter,
   });
 
-  // Group events by order
   const groupedOrders = useMemo<GroupedOrder[]>(() => {
     if (!events) return [];
     const map = new Map<string, GroupedOrder>();
@@ -207,12 +307,14 @@ const OrderTracking: React.FC = () => {
           totalAmount: e.order?.total_amount,
           events: [],
           latestEvent: e.created_at,
+          createdByName: e.order?.created_by_worker?.full_name || null,
+          assignedWorkerName: e.order?.assigned_worker?.full_name || null,
+          orderNotes: e.order?.notes || null,
         });
       }
       map.get(e.order_id)!.events.push(e);
     }
 
-    // Sort events within each order by time ascending
     for (const group of map.values()) {
       group.events.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     }
@@ -232,16 +334,17 @@ const OrderTracking: React.FC = () => {
 
   const stats = useMemo(() => {
     if (!events) return { total: 0, statusChanges: 0, modifications: 0, newOrders: 0 };
+    const evts = events as any[];
     return {
-      total: (events as any[]).length,
-      statusChanges: (events as any[]).filter(e => e.event_type === 'status_change').length,
-      modifications: (events as any[]).filter(e => ['item_modified', 'amount_changed', 'price_changed', 'payment_updated'].includes(e.event_type)).length,
-      newOrders: (events as any[]).filter(e => e.event_type === 'created').length,
+      total: evts.length,
+      statusChanges: evts.filter(e => e.event_type === 'status_change').length,
+      modifications: evts.filter(e => ['item_modified', 'amount_changed', 'price_changed', 'payment_updated'].includes(e.event_type)).length,
+      newOrders: evts.filter(e => e.event_type === 'created').length,
     };
   }, [events]);
 
   return (
-    <div className="space-y-4 pb-4" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="space-y-3 pb-4" dir={isRTL ? 'rtl' : 'ltr'}>
       <h1 className="text-xl font-bold">لوحة تتبع الطلبات</h1>
 
       {/* Stats */}
@@ -349,8 +452,7 @@ const OrderTracking: React.FC = () => {
                     </div>
                   </div>
                   
-                  {/* Mini progress bar */}
-                  <StatusProgressBar currentStatus={order.currentStatus} />
+                  <StatusProgressBar order={order} />
                   
                   <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                     <span>{order.events.length} حدث</span>
@@ -377,19 +479,34 @@ const OrderTracking: React.FC = () => {
           
           {selectedOrder && (
             <div className="flex-1 overflow-auto">
-              {/* Status Progress */}
-              <StatusProgressBar currentStatus={selectedOrder.currentStatus} />
+              <StatusProgressBar order={selectedOrder} />
               
               {selectedOrder.totalAmount && (
                 <div className="text-center text-sm font-medium mb-3">
                   المبلغ: {Number(selectedOrder.totalAmount).toLocaleString()} د.ج
                 </div>
               )}
+
+              {/* Worker Info */}
+              <div className="flex gap-2 mb-3">
+                {selectedOrder.createdByName && (
+                  <Badge variant="outline" className="text-[10px]">
+                    <Plus className="h-2.5 w-2.5 ml-1" />
+                    {selectedOrder.createdByName}
+                  </Badge>
+                )}
+                {selectedOrder.assignedWorkerName && (
+                  <Badge variant="outline" className="text-[10px]">
+                    <Truck className="h-2.5 w-2.5 ml-1" />
+                    {selectedOrder.assignedWorkerName}
+                  </Badge>
+                )}
+              </div>
               
               {/* Full Timeline */}
               <div className="border-t pt-3">
                 <h3 className="text-xs font-medium text-muted-foreground mb-3">سجل الأحداث</h3>
-                <OrderTimeline events={selectedOrder.events} />
+                <OrderTimeline order={selectedOrder} />
               </div>
             </div>
           )}
