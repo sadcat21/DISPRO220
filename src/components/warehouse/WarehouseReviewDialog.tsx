@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Loader2, CheckCircle, AlertTriangle, Package, Search, Save } from 'lucide-react';
+import { Loader2, CheckCircle, AlertTriangle, Package, Search, Save, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
@@ -27,13 +27,23 @@ interface ReviewItem {
   imageUrl?: string | null;
   itemType: 'product' | 'damaged' | 'pallet';
   expected: number;
-  actual: number;
+  actual: string; // empty string = not yet verified
   status: 'matched' | 'surplus' | 'deficit' | 'unverified';
 }
 
 const fmtQty = (n: number) => {
   const rounded = Math.round(n * 100) / 100;
   return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+};
+
+const getActualNum = (actual: string): number => parseFloat(actual) || 0;
+
+const computeStatus = (expected: number, actual: string): ReviewItem['status'] => {
+  if (actual === '') return 'unverified';
+  const num = parseFloat(actual) || 0;
+  const diff = num - expected;
+  if (Math.abs(diff) < 0.001) return 'matched';
+  return diff > 0 ? 'surplus' : 'deficit';
 };
 
 const WarehouseReviewDialog: React.FC<WarehouseReviewDialogProps> = ({
@@ -47,12 +57,11 @@ const WarehouseReviewDialog: React.FC<WarehouseReviewDialogProps> = ({
   const [items, setItems] = useState<ReviewItem[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Initialize items from warehouse stock
+  // Initialize items from warehouse stock - actual starts EMPTY (unverified)
   useEffect(() => {
     if (!open) return;
     const reviewItems: ReviewItem[] = [];
 
-    // Products
     for (const ws of warehouseStock) {
       const product = products.find(p => p.id === ws.product_id);
       if (!product || ws.quantity <= 0) continue;
@@ -62,8 +71,8 @@ const WarehouseReviewDialog: React.FC<WarehouseReviewDialogProps> = ({
         imageUrl: (product as any).image_url,
         itemType: 'product',
         expected: ws.quantity,
-        actual: ws.quantity, // default to matched
-        status: 'matched',
+        actual: '', // empty = unverified
+        status: 'unverified',
       });
     }
 
@@ -85,34 +94,34 @@ const WarehouseReviewDialog: React.FC<WarehouseReviewDialogProps> = ({
       });
   }, [includeDamaged, warehouseStock, products]);
 
-  const [damagedActuals, setDamagedActuals] = useState<Record<string, number>>({});
-  const [palletActual, setPalletActual] = useState(palletQuantity);
+  const [damagedActuals, setDamagedActuals] = useState<Record<string, string>>({});
+  const [palletActual, setPalletActual] = useState('');
 
   useEffect(() => {
     if (includeDamaged) {
-      const actuals: Record<string, number> = {};
-      damagedItems.forEach(d => { actuals[d.productId] = d.expected; });
+      const actuals: Record<string, string> = {};
+      damagedItems.forEach(d => { actuals[d.productId] = ''; });
       setDamagedActuals(actuals);
     }
   }, [includeDamaged, damagedItems.length]);
 
   useEffect(() => {
-    if (includePallets) setPalletActual(palletQuantity);
-  }, [includePallets, palletQuantity]);
+    if (includePallets) setPalletActual('');
+  }, [includePallets]);
 
   const updateActual = (productId: string, value: string) => {
-    const num = parseFloat(value) || 0;
     setItems(prev => prev.map(item => {
       if (item.productId !== productId || item.itemType !== 'product') return item;
-      const diff = num - item.expected;
-      let status: ReviewItem['status'] = 'matched';
-      if (Math.abs(diff) > 0.001) status = diff > 0 ? 'surplus' : 'deficit';
-      return { ...item, actual: num, status };
+      return { ...item, actual: value, status: computeStatus(item.expected, value) };
     }));
   };
 
   const markAllMatched = () => {
-    setItems(prev => prev.map(item => ({ ...item, actual: item.expected, status: 'matched' as const })));
+    setItems(prev => prev.map(item => ({
+      ...item,
+      actual: String(item.expected),
+      status: 'matched' as const,
+    })));
   };
 
   const filteredItems = useMemo(() => {
@@ -121,20 +130,22 @@ const WarehouseReviewDialog: React.FC<WarehouseReviewDialogProps> = ({
   }, [items, search]);
 
   const stats = useMemo(() => {
-    let matched = 0, surplus = 0, deficit = 0;
+    let matched = 0, surplus = 0, deficit = 0, unverified = 0;
     for (const item of items) {
       if (item.status === 'matched') matched++;
       else if (item.status === 'surplus') surplus++;
       else if (item.status === 'deficit') deficit++;
+      else unverified++;
     }
-    return { matched, surplus, deficit, total: items.length };
+    return { matched, surplus, deficit, unverified, total: items.length };
   }, [items]);
 
+  const canSave = stats.unverified === 0;
+
   const handleSave = async () => {
-    if (!workerId) return;
+    if (!workerId || !canSave) return;
     setIsSaving(true);
     try {
-      // Create session
       const { data: session, error: sessionError } = await supabase
         .from('warehouse_review_sessions')
         .insert({
@@ -152,20 +163,19 @@ const WarehouseReviewDialog: React.FC<WarehouseReviewDialogProps> = ({
 
       if (sessionError) throw sessionError;
 
-      // Insert product items
       const reviewItems = items.map(item => ({
         session_id: session.id,
         item_type: 'product',
         product_id: item.productId,
         expected_quantity: item.expected,
-        actual_quantity: item.actual,
+        actual_quantity: getActualNum(item.actual),
         status: item.status,
       }));
 
-      // Add damaged items
       if (includeDamaged) {
         for (const d of damagedItems) {
-          const actual = damagedActuals[d.productId] ?? d.expected;
+          const actualStr = damagedActuals[d.productId] ?? '';
+          const actual = parseFloat(actualStr) || 0;
           const diff = actual - d.expected;
           reviewItems.push({
             session_id: session.id,
@@ -178,15 +188,15 @@ const WarehouseReviewDialog: React.FC<WarehouseReviewDialogProps> = ({
         }
       }
 
-      // Add pallet item
       if (includePallets) {
-        const diff = palletActual - palletQuantity;
+        const palletNum = parseFloat(palletActual) || 0;
+        const diff = palletNum - palletQuantity;
         reviewItems.push({
           session_id: session.id,
           item_type: 'pallet',
           product_id: null as any,
           expected_quantity: palletQuantity,
-          actual_quantity: palletActual,
+          actual_quantity: palletNum,
           status: Math.abs(diff) < 0.001 ? 'matched' : diff > 0 ? 'surplus' : 'deficit',
         });
       }
@@ -203,7 +213,7 @@ const WarehouseReviewDialog: React.FC<WarehouseReviewDialogProps> = ({
         if (item.status !== 'matched') {
           await supabase
             .from('warehouse_stock')
-            .update({ quantity: item.actual })
+            .update({ quantity: getActualNum(item.actual) })
             .eq('branch_id', branchId)
             .eq('product_id', item.productId);
         }
@@ -218,6 +228,15 @@ const WarehouseReviewDialog: React.FC<WarehouseReviewDialogProps> = ({
       toast.error(err.message || 'خطأ في حفظ المراجعة');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const getStatusIcon = (status: ReviewItem['status']) => {
+    switch (status) {
+      case 'matched': return <CheckCircle className="w-4 h-4 text-primary shrink-0" />;
+      case 'surplus': return <TrendingUp className="w-4 h-4 text-amber-500 shrink-0" />;
+      case 'deficit': return <TrendingDown className="w-4 h-4 text-destructive shrink-0" />;
+      default: return <Minus className="w-4 h-4 text-muted-foreground shrink-0" />;
     }
   };
 
@@ -248,8 +267,9 @@ const WarehouseReviewDialog: React.FC<WarehouseReviewDialogProps> = ({
         </div>
 
         {/* Stats */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Badge variant="secondary" className="text-[10px]">{stats.total} منتج</Badge>
+          {stats.unverified > 0 && <Badge variant="outline" className="text-[10px] border-muted-foreground/30">{stats.unverified} لم يُراجع</Badge>}
           <Badge className="bg-primary/80 text-primary-foreground text-[10px]">{stats.matched} مطابق</Badge>
           {stats.surplus > 0 && <Badge className="bg-amber-500 text-white text-[10px]">{stats.surplus} فائض</Badge>}
           {stats.deficit > 0 && <Badge variant="destructive" className="text-[10px]">{stats.deficit} عجز</Badge>}
@@ -261,44 +281,81 @@ const WarehouseReviewDialog: React.FC<WarehouseReviewDialogProps> = ({
           <Input placeholder="بحث عن منتج..." value={search} onChange={e => setSearch(e.target.value)} className="pr-9 h-9 text-sm" />
         </div>
 
-        {/* Products */}
+        {/* Products - Expected vs Actual layout */}
         <ScrollArea className="max-h-[40vh]">
           <div className="space-y-1.5">
-            {filteredItems.map(item => (
-              <div key={item.productId} className={`rounded-lg px-3 py-2.5 border ${
-                item.status === 'deficit' ? 'border-destructive/30 bg-destructive/5' :
-                item.status === 'surplus' ? 'border-amber-300 bg-amber-50/50 dark:bg-amber-950/10' :
-                'border-border bg-card'
-              }`}>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    {item.imageUrl ? (
-                      <img src={item.imageUrl} alt="" className="w-7 h-7 rounded object-cover shrink-0" />
-                    ) : (
-                      <div className="w-7 h-7 rounded bg-muted flex items-center justify-center shrink-0">
-                        <Package className="w-3.5 h-3.5 text-muted-foreground" />
+            {/* Column headers */}
+            <div className="flex items-center justify-between px-3 py-1 text-[10px] font-semibold text-muted-foreground">
+              <span>المنتج</span>
+              <div className="flex items-center gap-4">
+                <span className="w-16 text-center">المتوقع</span>
+                <span className="w-20 text-center">الفعلي</span>
+                <span className="w-8"></span>
+              </div>
+            </div>
+
+            {filteredItems.map(item => {
+              const actualNum = getActualNum(item.actual);
+              const diff = item.actual !== '' ? actualNum - item.expected : 0;
+              return (
+                <div key={item.productId} className={`rounded-lg px-3 py-2.5 border ${
+                  item.status === 'deficit' ? 'border-destructive/30 bg-destructive/5' :
+                  item.status === 'surplus' ? 'border-amber-300 bg-amber-50/50 dark:bg-amber-950/10' :
+                  item.status === 'unverified' ? 'border-muted-foreground/20 bg-muted/30' :
+                  'border-primary/30 bg-primary/5'
+                }`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt="" className="w-7 h-7 rounded object-cover shrink-0" />
+                      ) : (
+                        <div className="w-7 h-7 rounded bg-muted flex items-center justify-center shrink-0">
+                          <Package className="w-3.5 h-3.5 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium truncate">{item.productName}</div>
                       </div>
-                    )}
-                    <div className="min-w-0">
-                      <div className="text-sm font-medium truncate">{item.productName}</div>
-                      <div className="text-[10px] text-muted-foreground">المتوقع: {fmtQty(item.expected)}</div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {/* Expected - read only */}
+                      <div className="w-16 text-center">
+                        <span className="text-sm font-bold text-muted-foreground">{fmtQty(item.expected)}</span>
+                      </div>
+                      {/* Actual - editable */}
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="—"
+                        value={item.actual}
+                        onChange={e => updateActual(item.productId, e.target.value)}
+                        className={`w-20 h-8 text-center text-sm font-bold ${
+                          item.status === 'matched' ? 'border-primary/50 bg-primary/5' :
+                          item.status === 'deficit' ? 'border-destructive/50 bg-destructive/5' :
+                          item.status === 'surplus' ? 'border-amber-400/50 bg-amber-50 dark:bg-amber-950/20' :
+                          ''
+                        }`}
+                      />
+                      {/* Status indicator */}
+                      <div className="w-8 flex justify-center">
+                        {getStatusIcon(item.status)}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={item.actual}
-                      onChange={e => updateActual(item.productId, e.target.value)}
-                      className="w-20 h-8 text-center text-sm font-bold"
-                    />
-                    {item.status === 'matched' && <CheckCircle className="w-4 h-4 text-primary shrink-0" />}
-                    {item.status === 'surplus' && <Badge className="bg-amber-500 text-white text-[9px] shrink-0">+{fmtQty(item.actual - item.expected)}</Badge>}
-                    {item.status === 'deficit' && <Badge variant="destructive" className="text-[9px] shrink-0">-{fmtQty(item.expected - item.actual)}</Badge>}
-                  </div>
+                  {/* Difference badge */}
+                  {item.actual !== '' && item.status !== 'matched' && item.status !== 'unverified' && (
+                    <div className="mt-1 flex justify-end">
+                      {item.status === 'surplus' && (
+                        <Badge className="bg-amber-500 text-white text-[9px]">فائض: +{fmtQty(diff)}</Badge>
+                      )}
+                      {item.status === 'deficit' && (
+                        <Badge variant="destructive" className="text-[9px]">عجز: -{fmtQty(Math.abs(diff))}</Badge>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {/* Damaged section */}
             {includeDamaged && damagedItems.length > 0 && (
@@ -307,8 +364,7 @@ const WarehouseReviewDialog: React.FC<WarehouseReviewDialogProps> = ({
                   <AlertTriangle className="w-3 h-3" /> التالف ({damagedItems.length})
                 </p>
                 {damagedItems.map(d => {
-                  const actual = damagedActuals[d.productId] ?? d.expected;
-                  const diff = actual - d.expected;
+                  const actualStr = damagedActuals[d.productId] ?? '';
                   return (
                     <div key={`damaged-${d.productId}`} className="rounded-lg px-3 py-2 border border-border bg-card flex items-center justify-between mb-1.5">
                       <div>
@@ -318,8 +374,9 @@ const WarehouseReviewDialog: React.FC<WarehouseReviewDialogProps> = ({
                       <Input
                         type="number"
                         step="0.01"
-                        value={actual}
-                        onChange={e => setDamagedActuals(prev => ({ ...prev, [d.productId]: parseFloat(e.target.value) || 0 }))}
+                        placeholder="—"
+                        value={actualStr}
+                        onChange={e => setDamagedActuals(prev => ({ ...prev, [d.productId]: e.target.value }))}
                         className="w-20 h-8 text-center text-sm font-bold"
                       />
                     </div>
@@ -339,8 +396,9 @@ const WarehouseReviewDialog: React.FC<WarehouseReviewDialogProps> = ({
                   </div>
                   <Input
                     type="number"
+                    placeholder="—"
                     value={palletActual}
-                    onChange={e => setPalletActual(parseInt(e.target.value) || 0)}
+                    onChange={e => setPalletActual(e.target.value)}
                     className="w-20 h-8 text-center text-sm font-bold"
                   />
                 </div>
@@ -349,8 +407,13 @@ const WarehouseReviewDialog: React.FC<WarehouseReviewDialogProps> = ({
           </div>
         </ScrollArea>
 
-        <DialogFooter>
-          <Button onClick={handleSave} disabled={isSaving} className="w-full gap-2">
+        <DialogFooter className="flex-col gap-2">
+          {!canSave && (
+            <p className="text-xs text-muted-foreground text-center">
+              يرجى إدخال الكمية الفعلية لجميع المنتجات ({stats.unverified} متبقي)
+            </p>
+          )}
+          <Button onClick={handleSave} disabled={isSaving || !canSave} className="w-full gap-2">
             {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             حفظ المراجعة
           </Button>
