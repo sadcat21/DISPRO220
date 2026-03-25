@@ -265,7 +265,7 @@ const WarehouseStock: React.FC = () => {
           {t('stock.warehouse_stock')}
         </h2>
         <div className="flex items-center gap-2 flex-wrap">
-          <Button size="sm" variant="outline" onClick={() => setShowReviewDialog(true)}>
+          <Button size="sm" variant="outline" onClick={() => navigate('/warehouse-review')}>
             <ClipboardCheck className="w-4 h-4 ml-1" />
             {t('warehouse.review')}
           </Button>

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Home, Users, Package, BarChart3, Settings, FileSpreadsheet, UserCheck, Building2, Shield, ShoppingCart, Truck, Activity, Store, BookOpen, UserCog, Gift, Wallet, Warehouse, ClipboardList, Banknote, Calculator, MapPin, Navigation, FileText, Vault, FolderOpen, Scale, Trophy, CalendarDays, Split } from 'lucide-react';
+import { Home, Users, Package, BarChart3, Settings, FileSpreadsheet, UserCheck, Building2, Shield, ShoppingCart, Truck, Activity, Store, BookOpen, UserCog, Gift, Wallet, Warehouse, ClipboardList, Banknote, Calculator, MapPin, Navigation, FileText, Vault, FolderOpen, Scale, Trophy, CalendarDays, Split, ClipboardCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkerPermissions } from '@/hooks/usePermissions';
 import { useMyUIOverrides } from '@/hooks/useUIOverrides';
@@ -49,6 +49,7 @@ export const useNavigation = () => {
           { path: '/promo-splits', icon: Split, label: 'تجزئة العروض' },
           { path: '/customer-accounts', icon: UserCog, label: t('nav.customer_accounts') },
           { path: '/warehouse', icon: Warehouse, label: t('stock.warehouse_stock') },
+          { path: '/warehouse-review', icon: ClipboardCheck, label: 'مراجعة مخزون الفرع' },
           { path: '/stock-receipts', icon: ClipboardList, label: t('stock.receipts') },
           { path: '/load-stock', icon: Truck, label: t('stock.load_to_worker') },
           { path: '/expenses', icon: Wallet, label: t('expenses.my_expenses') },
@@ -110,6 +111,7 @@ export const useNavigation = () => {
           { path: '/promo-splits', icon: Split, label: 'تجزئة العروض' },
           { path: '/customer-accounts', icon: UserCog, label: t('nav.customer_accounts') },
           { path: '/warehouse', icon: Warehouse, label: t('stock.warehouse_stock') },
+          { path: '/warehouse-review', icon: ClipboardCheck, label: 'مراجعة مخزون الفرع' },
           { path: '/stock-receipts', icon: ClipboardList, label: t('stock.receipts') },
           { path: '/load-stock', icon: Truck, label: t('stock.load_to_worker') },
           { path: '/expenses', icon: Wallet, label: t('expenses.my_expenses') },

@@ -26,6 +26,7 @@ const pathColors: Record<string, { bg: string; icon: string; border: string }> =
   '/product-offers': { bg: 'bg-rose-50', icon: 'text-rose-600', border: 'border-rose-200' },
   '/customer-accounts': { bg: 'bg-cyan-50', icon: 'text-cyan-600', border: 'border-cyan-200' },
   '/warehouse': { bg: 'bg-emerald-50', icon: 'text-emerald-600', border: 'border-emerald-200' },
+  '/warehouse-review': { bg: 'bg-teal-50', icon: 'text-teal-600', border: 'border-teal-200' },
   '/stock-receipts': { bg: 'bg-lime-50', icon: 'text-lime-600', border: 'border-lime-200' },
   '/load-stock': { bg: 'bg-green-50', icon: 'text-green-600', border: 'border-green-200' },
   '/expenses': { bg: 'bg-yellow-50', icon: 'text-yellow-600', border: 'border-yellow-200' },
