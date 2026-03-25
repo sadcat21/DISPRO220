@@ -68,6 +68,15 @@ interface GroupedOrder {
   orderNotes: string | null;
   paymentType: string | null;
   invoicePaymentMethod: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  customerData: {
+    name?: string | null;
+    store_name?: string | null;
+    customer_type?: string | null;
+    sector_name?: string | null;
+    zone_name?: string | null;
+  } | null;
 }
 
 const getDeliveryOutcome = (order: GroupedOrder) => {
