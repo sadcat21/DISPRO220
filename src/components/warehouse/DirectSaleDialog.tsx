@@ -729,7 +729,8 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
             </DialogTitle>
           </DialogHeader>
 
-          <ScrollArea className="max-h-[calc(90vh-8rem)] px-4">
+          <ScrollArea className="max-h-[calc(90vh-8rem)]">
+            <div className="px-4">
             <div className="py-4 space-y-5">
               {/* Customer Section */}
               <section className="space-y-3">
