@@ -605,6 +605,22 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
 
     // Apply substitution transfers for this selected day
     if (effectiveWorkerId) {
+      // In 'replace' mode: substitute loses their OWN original sectors for this schedule_type
+      const hasReplaceCoverage = activeCoveragesForSelectedDay.some(
+        c => c.schedule_type === 'sales' && c.substitute_worker_id === effectiveWorkerId && c.coverage_mode === 'replace'
+      );
+      if (hasReplaceCoverage) {
+        // Collect covered sector IDs so we don't accidentally remove them
+        const coveredSectorIds = new Set(
+          activeCoveragesForSelectedDay
+            .filter(c => c.schedule_type === 'sales' && c.substitute_worker_id === effectiveWorkerId)
+            .map(c => c.sector_id)
+        );
+        // Remove substitute's own original sectors (keep only the covered ones)
+        const ownOriginalIds = [...ids].filter(id => !coveredSectorIds.has(id));
+        ownOriginalIds.forEach(id => ids.delete(id));
+      }
+
       activeCoveragesForSelectedDay.forEach(c => {
         if (c.schedule_type !== 'sales') return;
         // Remove sector from absent worker
@@ -612,8 +628,6 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         // Add covered sector to substitute worker
         if (c.substitute_worker_id === effectiveWorkerId) {
           ids.add(c.sector_id);
-          // In replace mode: only remove the substitute's OWN original sector
-          // that was assigned by the absent worker's schedule, not unrelated sectors
         }
       });
     }
@@ -646,6 +660,20 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
 
     // Apply substitution transfers for this selected day
     if (effectiveWorkerId) {
+      // In 'replace' mode: substitute loses their OWN original sectors for this schedule_type
+      const hasReplaceCoverage = activeCoveragesForSelectedDay.some(
+        c => c.schedule_type === 'delivery' && c.substitute_worker_id === effectiveWorkerId && c.coverage_mode === 'replace'
+      );
+      if (hasReplaceCoverage) {
+        const coveredSectorIds = new Set(
+          activeCoveragesForSelectedDay
+            .filter(c => c.schedule_type === 'delivery' && c.substitute_worker_id === effectiveWorkerId)
+            .map(c => c.sector_id)
+        );
+        const ownOriginalIds = [...ids].filter(id => !coveredSectorIds.has(id));
+        ownOriginalIds.forEach(id => ids.delete(id));
+      }
+
       activeCoveragesForSelectedDay.forEach(c => {
         if (c.schedule_type !== 'delivery') return;
         // Remove sector from absent worker
