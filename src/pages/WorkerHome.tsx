@@ -417,46 +417,47 @@ const WorkerHome: React.FC = () => {
             quickActions.push({ key: 'worker-actions', icon: <HardHat className="w-6 h-6" />, label: t('worker.my_actions'), onClick: () => navigate('/worker-actions') });
           }
 
-          const colorSchemes: Record<string, { bg: string; iconBg: string; iconColor: string; text: string; border: string }> = {
-            deliveries: { bg: 'bg-gradient-to-br from-blue-500 to-blue-600', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
-            'direct-sale': { bg: 'bg-gradient-to-br from-emerald-500 to-teal-600', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
-            'my-stock': { bg: 'bg-gradient-to-br from-violet-500 to-purple-600', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
-            orders: { bg: 'bg-gradient-to-br from-primary to-primary/80', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-primary-foreground', border: '' },
-            'create-order': { bg: 'bg-gradient-to-br from-indigo-500 to-blue-700', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
-            promos: { bg: 'bg-gradient-to-br from-amber-400 to-orange-500', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
-            debts: { bg: 'bg-gradient-to-br from-rose-500 to-red-600', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
-            customers: { bg: 'bg-gradient-to-br from-cyan-500 to-sky-600', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
-            expenses: { bg: 'bg-gradient-to-br from-fuchsia-500 to-pink-600', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
-            'today-customers': { bg: 'bg-gradient-to-br from-sky-400 to-blue-500', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
-            'rewards': { bg: 'bg-gradient-to-br from-yellow-400 to-amber-500', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
-            'worker-actions': { bg: 'bg-gradient-to-br from-indigo-500 to-indigo-700', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
-            'warehouse-stock': { bg: 'bg-gradient-to-br from-teal-500 to-emerald-700', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
-            'factory-receipt': { bg: 'bg-gradient-to-br from-lime-500 to-green-700', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
-            'order-tracking': { bg: 'bg-gradient-to-br from-slate-500 to-slate-700', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
+          const itemColors: Record<string, { bg: string; icon: string; border: string }> = {
+            deliveries: { bg: 'bg-blue-50', icon: 'text-blue-600', border: 'border-blue-200' },
+            'direct-sale': { bg: 'bg-emerald-50', icon: 'text-emerald-600', border: 'border-emerald-200' },
+            'my-stock': { bg: 'bg-violet-50', icon: 'text-violet-600', border: 'border-violet-200' },
+            orders: { bg: 'bg-indigo-50', icon: 'text-indigo-600', border: 'border-indigo-200' },
+            'create-order': { bg: 'bg-blue-50', icon: 'text-blue-700', border: 'border-blue-200' },
+            'order-tracking': { bg: 'bg-slate-50', icon: 'text-slate-600', border: 'border-slate-200' },
+            promos: { bg: 'bg-amber-50', icon: 'text-amber-600', border: 'border-amber-200' },
+            debts: { bg: 'bg-rose-50', icon: 'text-rose-600', border: 'border-rose-200' },
+            customers: { bg: 'bg-cyan-50', icon: 'text-cyan-600', border: 'border-cyan-200' },
+            expenses: { bg: 'bg-yellow-50', icon: 'text-yellow-600', border: 'border-yellow-200' },
+            'today-customers': { bg: 'bg-sky-50', icon: 'text-sky-600', border: 'border-sky-200' },
+            rewards: { bg: 'bg-amber-50', icon: 'text-amber-600', border: 'border-amber-200' },
+            'worker-actions': { bg: 'bg-indigo-50', icon: 'text-indigo-600', border: 'border-indigo-200' },
+            'stock-management': { bg: 'bg-teal-50', icon: 'text-teal-600', border: 'border-teal-200' },
+            'warehouse-stock': { bg: 'bg-emerald-50', icon: 'text-emerald-600', border: 'border-emerald-200' },
+            'factory-receipt': { bg: 'bg-lime-50', icon: 'text-lime-600', border: 'border-lime-200' },
+            'daily-receipts': { bg: 'bg-teal-50', icon: 'text-teal-600', border: 'border-teal-200' },
+            'available-offers': { bg: 'bg-rose-50', icon: 'text-rose-600', border: 'border-rose-200' },
           };
-
-          const gridCols = quickActions.length === 1 ? 'grid-cols-1' : quickActions.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
+          const defaultColor = { bg: 'bg-muted/30', icon: 'text-primary', border: 'border-border' };
 
           return quickActions.length > 0 ? (
-            <div className="p-4 space-y-4">
-              <h3 className="text-base font-bold">{t('common.quick_actions')}</h3>
-              <div className={`grid ${gridCols} gap-3`}>
-                {quickActions.map((action, index) => {
-                  const scheme = colorSchemes[action.key] || colorSchemes['orders'];
-                  return (
-                    <button
-                      key={action.key}
-                      onClick={action.onClick}
-                      className={`${scheme.bg} ${scheme.border} rounded-2xl p-4 flex flex-col items-center justify-center gap-2.5 shadow-lg hover:shadow-xl active:scale-[0.96] transition-all duration-300 group animate-in fade-in slide-in-from-bottom-2`}
-                      style={{ animationDelay: `${index * 60}ms` }}
-                    >
-                      <div className={`${scheme.iconBg} rounded-xl p-2.5 group-hover:scale-110 transition-transform duration-300`}>
-                        {React.cloneElement(action.icon as React.ReactElement, { className: `w-6 h-6 ${scheme.iconColor}` })}
-                      </div>
-                      <span className={`text-xs font-bold ${scheme.text} text-center leading-tight`}>{action.label}</span>
-                    </button>
-                  );
-                })}
+            <div className="p-4 space-y-3">
+              <div className="rounded-xl border border-border bg-muted/20 p-3 space-y-2">
+                <h3 className="text-xs font-bold text-muted-foreground px-1">{t('common.quick_actions')}</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {quickActions.map((action) => {
+                    const ic = itemColors[action.key] || defaultColor;
+                    return (
+                      <button
+                        key={action.key}
+                        onClick={action.onClick}
+                        className={`flex flex-col items-center justify-center p-2.5 gap-1.5 rounded-xl border cursor-pointer active:scale-95 transition-all bg-white/80 ${ic.border} hover:shadow-md`}
+                      >
+                        {React.cloneElement(action.icon as React.ReactElement, { className: `w-5 h-5 ${ic.icon}` })}
+                        <span className="text-[10px] font-medium text-center leading-tight text-foreground">{action.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           ) : null;
