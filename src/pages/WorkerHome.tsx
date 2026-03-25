@@ -17,7 +17,7 @@ import CustomerPickerDialog from '@/components/orders/CustomerPickerDialog';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
 import { Customer } from '@/types/database';
 import { toast } from 'sonner';
-import { ShoppingCart, Gift, Loader2, ShoppingBag, Truck, Package, Banknote, Users, Wallet, ClipboardList, MapPin, Trophy, MessageCircle, HardHat, CalendarCheck, ArrowDownToLine, Warehouse } from 'lucide-react';
+import { ShoppingCart, Gift, Loader2, ShoppingBag, Truck, Package, Banknote, Users, Wallet, ClipboardList, MapPin, Trophy, MessageCircle, HardHat, CalendarCheck, ArrowDownToLine, Warehouse, ClipboardCheck } from 'lucide-react';
 
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -559,6 +559,26 @@ const WorkerHome: React.FC = () => {
               <Truck className="w-6 h-6 text-orange-600" />
               <span className="font-semibold">تسليم للمصنع</span>
             </button>
+            {/* Stock Review - available Sunday, Tuesday, Thursday */}
+            {(() => {
+              const today = new Date().getDay();
+              const isReviewDay = [0, 2, 4].includes(today); // Sun, Tue, Thu
+              return (
+                <button
+                  onClick={() => { setShowStockManagement(false); navigate('/warehouse?tab=review'); }}
+                  className={`w-full flex items-center gap-3 p-4 rounded-xl border transition-colors ${isReviewDay ? 'border-blue-300 bg-blue-50/50 hover:bg-blue-100/50 dark:border-blue-800 dark:bg-blue-950/20' : 'border-border opacity-50 cursor-not-allowed'}`}
+                  disabled={!isReviewDay}
+                >
+                  <ClipboardCheck className={`w-6 h-6 ${isReviewDay ? 'text-blue-600' : 'text-muted-foreground'}`} />
+                  <div className="text-right">
+                    <span className="font-semibold block">مراجعة المخزون</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {isReviewDay ? 'متاح اليوم' : 'متاح: الأحد، الثلاثاء، الخميس'}
+                    </span>
+                  </div>
+                </button>
+              );
+            })()}
           </div>
         </div>
       )}
