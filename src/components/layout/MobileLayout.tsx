@@ -39,6 +39,8 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   const { role, user, logout, activeBranch, switchBranch, showBranchSelection, selectBranch, activeRole } = useAuth();
   const { t, dir, language, setLanguage } = useLanguage();
   const location = useLocation();
+  const navigate = useNavigate();
+  const isHomePage = location.pathname === '/';
   const { isConnected, deviceName, scanAndConnect, disconnect, status: printerStatus } = useBluetoothPrinter();
   const [invoiceRequestOpen, setInvoiceRequestOpen] = useState(false);
   const showInvoiceButton = isAdminRole(role);
