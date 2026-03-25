@@ -3,7 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useNavigation } from '@/hooks/useNavigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useFontSize } from '@/contexts/FontSizeContext';
-import { Calculator, Banknote, ArrowLeft, Navigation, Users, Receipt, ShoppingCart, Scale, Trophy, CalendarDays, Gift, ArrowDownToLine, Truck, ClipboardCheck, Building2 } from 'lucide-react';
+import {
+  Calculator, Banknote, ArrowLeft, Navigation, Users, Receipt, ShoppingCart, Scale, Trophy,
+  CalendarDays, Gift, ArrowDownToLine, Truck, ClipboardCheck, Building2, Warehouse, Package,
+  Wallet, FileText, Vault, FolderOpen, MapPin, Activity, Store, UserCheck, UserCog, Settings,
+  BookOpen, Shield, BarChart3, FileSpreadsheet, Split, Radar, ClipboardList, LucideIcon
+} from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,57 +21,65 @@ import FactoryReceiptQuickDialog from '@/components/stock/FactoryReceiptQuickDia
 import FactoryDeliveryQuickDialog from '@/components/stock/FactoryDeliveryQuickDialog';
 import { isAdminRole, isSuperAdminRole } from '@/lib/utils';
 
-// Color mapping by path for semantic meaning
-const pathColors: Record<string, { bg: string; icon: string; border: string }> = {
-  '/promo-table': { bg: 'bg-orange-50', icon: 'text-orange-600', border: 'border-orange-200' },
-  '/stats': { bg: 'bg-indigo-50', icon: 'text-indigo-600', border: 'border-indigo-200' },
+// ─── Functional Group Definitions ───
+
+interface GroupItem {
+  path: string;
+  icon: LucideIcon;
+  label: string;
+  action?: () => void; // for dialog-opening buttons
+}
+
+interface FunctionalGroup {
+  title: string;
+  color: { bg: string; border: string; title: string; iconDefault: string };
+  branchColor?: { bg: string; border: string; title: string; iconDefault: string };
+  items: GroupItem[];
+}
+
+const itemColors: Record<string, { bg: string; icon: string; border: string }> = {
+  '/accounting': { bg: 'bg-amber-50', icon: 'text-amber-600', border: 'border-amber-200' },
+  '/customer-debts': { bg: 'bg-rose-50', icon: 'text-rose-600', border: 'border-rose-200' },
+  '/surplus-deficit': { bg: 'bg-violet-50', icon: 'text-violet-600', border: 'border-violet-200' },
+  '/expenses': { bg: 'bg-yellow-50', icon: 'text-yellow-600', border: 'border-yellow-200' },
+  '/expenses-management': { bg: 'bg-red-50', icon: 'text-red-600', border: 'border-red-200' },
+  '/manager-treasury': { bg: 'bg-emerald-50', icon: 'text-emerald-600', border: 'border-emerald-200' },
+  '/shared-invoices': { bg: 'bg-orange-50', icon: 'text-orange-600', border: 'border-orange-200' },
+  '/daily-receipts': { bg: 'bg-teal-50', icon: 'text-teal-600', border: 'border-teal-200' },
+  '/worker-debts': { bg: 'bg-pink-50', icon: 'text-pink-600', border: 'border-pink-200' },
   '/orders': { bg: 'bg-blue-50', icon: 'text-blue-600', border: 'border-blue-200' },
+  '/order-tracking': { bg: 'bg-indigo-50', icon: 'text-indigo-600', border: 'border-indigo-200' },
   '/my-deliveries': { bg: 'bg-teal-50', icon: 'text-teal-600', border: 'border-teal-200' },
-  '/my-promos': { bg: 'bg-amber-50', icon: 'text-amber-600', border: 'border-amber-200' },
-  '/product-offers': { bg: 'bg-rose-50', icon: 'text-rose-600', border: 'border-rose-200' },
-  '/customer-accounts': { bg: 'bg-cyan-50', icon: 'text-cyan-600', border: 'border-cyan-200' },
   '/warehouse': { bg: 'bg-emerald-50', icon: 'text-emerald-600', border: 'border-emerald-200' },
   '/warehouse-review': { bg: 'bg-teal-50', icon: 'text-teal-600', border: 'border-teal-200' },
   '/stock-receipts': { bg: 'bg-lime-50', icon: 'text-lime-600', border: 'border-lime-200' },
   '/load-stock': { bg: 'bg-green-50', icon: 'text-green-600', border: 'border-green-200' },
-  '/expenses': { bg: 'bg-yellow-50', icon: 'text-yellow-600', border: 'border-yellow-200' },
-  '/expenses-management': { bg: 'bg-red-50', icon: 'text-red-600', border: 'border-red-200' },
-  '/customer-debts': { bg: 'bg-rose-50', icon: 'text-rose-700', border: 'border-rose-200' },
-  '/accounting': { bg: 'bg-amber-50', icon: 'text-amber-700', border: 'border-amber-200' },
-  '/activity-logs': { bg: 'bg-violet-50', icon: 'text-violet-600', border: 'border-violet-200' },
-  '/nearby-stores': { bg: 'bg-sky-50', icon: 'text-sky-600', border: 'border-sky-200' },
-  '/branches': { bg: 'bg-purple-50', icon: 'text-purple-600', border: 'border-purple-200' },
   '/customers': { bg: 'bg-blue-50', icon: 'text-blue-700', border: 'border-blue-200' },
+  '/customer-accounts': { bg: 'bg-cyan-50', icon: 'text-cyan-600', border: 'border-cyan-200' },
+  '/nearby-stores': { bg: 'bg-sky-50', icon: 'text-sky-600', border: 'border-sky-200' },
+  '/promo-table': { bg: 'bg-orange-50', icon: 'text-orange-600', border: 'border-orange-200' },
+  '/product-offers': { bg: 'bg-rose-50', icon: 'text-rose-600', border: 'border-rose-200' },
+  '/my-promos': { bg: 'bg-amber-50', icon: 'text-amber-600', border: 'border-amber-200' },
+  '/promo-splits': { bg: 'bg-cyan-50', icon: 'text-cyan-600', border: 'border-cyan-200' },
   '/workers': { bg: 'bg-fuchsia-50', icon: 'text-fuchsia-600', border: 'border-fuchsia-200' },
+  '/worker-actions': { bg: 'bg-indigo-50', icon: 'text-indigo-600', border: 'border-indigo-200' },
+  '/worker-tracking': { bg: 'bg-sky-50', icon: 'text-sky-600', border: 'border-sky-200' },
+  '/attendance': { bg: 'bg-emerald-50', icon: 'text-emerald-600', border: 'border-emerald-200' },
+  '/rewards': { bg: 'bg-yellow-50', icon: 'text-yellow-600', border: 'border-yellow-200' },
   '/products': { bg: 'bg-pink-50', icon: 'text-pink-600', border: 'border-pink-200' },
+  '/stats': { bg: 'bg-indigo-50', icon: 'text-indigo-600', border: 'border-indigo-200' },
+  '/geo-operations': { bg: 'bg-teal-50', icon: 'text-teal-600', border: 'border-teal-200' },
+  '/activity-logs': { bg: 'bg-violet-50', icon: 'text-violet-600', border: 'border-violet-200' },
+  '/branches': { bg: 'bg-purple-50', icon: 'text-purple-600', border: 'border-purple-200' },
   '/permissions': { bg: 'bg-slate-50', icon: 'text-slate-600', border: 'border-slate-200' },
   '/settings': { bg: 'bg-gray-50', icon: 'text-gray-600', border: 'border-gray-200' },
   '/guide': { bg: 'bg-stone-50', icon: 'text-stone-600', border: 'border-stone-200' },
-  '/shared-invoices': { bg: 'bg-orange-50', icon: 'text-orange-700', border: 'border-orange-200' },
-  '/surplus-deficit': { bg: 'bg-violet-50', icon: 'text-violet-600', border: 'border-violet-200' },
-  '/rewards': { bg: 'bg-yellow-50', icon: 'text-yellow-600', border: 'border-yellow-200' },
-  '/promo-splits': { bg: 'bg-cyan-50', icon: 'text-cyan-600', border: 'border-cyan-200' },
 };
 
-// Branch admin uses a teal/cyan color scheme
-const branchAdminPathColors: Record<string, { bg: string; icon: string; border: string }> = {
-  ...pathColors,
-  '/orders': { bg: 'bg-teal-50', icon: 'text-teal-700', border: 'border-teal-200' },
-  '/customers': { bg: 'bg-cyan-50', icon: 'text-cyan-700', border: 'border-cyan-200' },
-  '/workers': { bg: 'bg-sky-50', icon: 'text-sky-700', border: 'border-sky-200' },
-  '/products': { bg: 'bg-emerald-50', icon: 'text-emerald-600', border: 'border-emerald-200' },
-};
-
-const defaultColor = { bg: 'bg-muted/30', icon: 'text-primary', border: 'border-border' };
-
-const gridColsClass: Record<number, string> = {
-  3: 'grid-cols-3',
-  4: 'grid-cols-4',
-};
+const defaultItemColor = { bg: 'bg-muted/30', icon: 'text-primary', border: 'border-border' };
 
 const AdminHome: React.FC = () => {
   const navigate = useNavigate();
-  const { main, more } = useNavigation();
   const { t } = useLanguage();
   const { gridCols } = useFontSize();
   const { activeBranch, role } = useAuth();
@@ -87,7 +100,6 @@ const AdminHome: React.FC = () => {
   const showInvoiceButton = isAdminRole(role);
   const showGiftsButton = isAdminRole(role);
 
-  // Fetch active workers for gifts navigation
   const { data: activeWorkers = [] } = useQuery({
     queryKey: ['admin-home-workers', activeBranch?.id],
     queryFn: async () => {
@@ -101,9 +113,6 @@ const AdminHome: React.FC = () => {
 
   const currentGiftsWorker = activeWorkers[giftsWorkerIdx] || null;
 
-  const allItems = [...main, ...more].filter(item => item.path !== '/' && item.path !== '/accounting' && item.path !== '/customer-debts' && item.path !== '/geo-operations' && item.path !== '/worker-actions');
-
-  // Quick stats
   const { data: activeDebts } = useQuery({
     queryKey: ['active-debts-count', activeBranch?.id],
     queryFn: async () => {
@@ -125,11 +134,115 @@ const AdminHome: React.FC = () => {
     },
   });
 
-  const colorMap = isBranchAdmin ? branchAdminPathColors : pathColors;
+  // ─── Build Functional Groups ───
+
+  const groups: FunctionalGroup[] = [
+    // 1. المحاسبة والمالية
+    {
+      title: 'المحاسبة والمالية',
+      color: { bg: 'bg-amber-500/10', border: 'border-amber-300', title: 'text-amber-800', iconDefault: 'text-amber-600' },
+      branchColor: { bg: 'bg-teal-500/10', border: 'border-teal-300', title: 'text-teal-800', iconDefault: 'text-teal-600' },
+      items: [
+        ...(!isAccountingHidden ? [{ path: '/accounting', icon: Calculator, label: t('accounting.title') }] : []),
+        ...(!isDebtsHidden ? [{ path: '/customer-debts', icon: Banknote, label: t('debts.title') }] : []),
+        { path: '/surplus-deficit', icon: Scale, label: 'الفائض والعجز' },
+        { path: '/expenses', icon: Wallet, label: t('expenses.my_expenses') },
+        { path: '/expenses-management', icon: Wallet, label: t('expenses.title') },
+        { path: '/manager-treasury', icon: Vault, label: t('nav.manager_treasury') },
+        { path: '/daily-receipts', icon: FileText, label: t('nav.daily_receipts') },
+        { path: '/shared-invoices', icon: FolderOpen, label: 'الفواتير المشاركة' },
+        { path: '/worker-debts', icon: Banknote, label: t('nav.worker_debts') },
+      ],
+    },
+    // 2. الطلبات والتوصيل
+    {
+      title: 'الطلبات والتوصيل',
+      color: { bg: 'bg-blue-500/10', border: 'border-blue-300', title: 'text-blue-800', iconDefault: 'text-blue-600' },
+      branchColor: { bg: 'bg-cyan-500/10', border: 'border-cyan-300', title: 'text-cyan-800', iconDefault: 'text-cyan-600' },
+      items: [
+        { path: '/create-order', icon: ShoppingCart, label: t('orders.create_order'), action: () => setShowCreateOrder(true) },
+        { path: '/orders', icon: ShoppingCart, label: t('nav.orders') },
+        { path: '/order-tracking', icon: Radar, label: 'تتبع الطلبات' },
+        { path: '/my-deliveries', icon: Truck, label: t('nav.my_deliveries') },
+        ...(showInvoiceButton ? [{ path: '/invoice-request', icon: Receipt, label: t('admin.invoice_request'), action: () => setInvoiceRequestOpen(true) }] : []),
+      ],
+    },
+    // 3. المخزون والمستودع
+    {
+      title: 'المخزون والمستودع',
+      color: { bg: 'bg-emerald-500/10', border: 'border-emerald-300', title: 'text-emerald-800', iconDefault: 'text-emerald-600' },
+      branchColor: { bg: 'bg-green-500/10', border: 'border-green-300', title: 'text-green-800', iconDefault: 'text-green-600' },
+      items: [
+        { path: '/warehouse', icon: Warehouse, label: t('stock.warehouse_stock') },
+        { path: '/warehouse-review', icon: ClipboardCheck, label: 'مراجعة المخزون' },
+        { path: '/stock-receipts', icon: ClipboardList, label: t('stock.receipts') },
+        { path: '/load-stock', icon: Truck, label: t('stock.load_to_worker') },
+        { path: '/factory-receipt', icon: ArrowDownToLine, label: 'استلام من المصنع', action: () => setFactoryReceiptOpen(true) },
+        { path: '/factory-delivery', icon: Truck, label: 'تسليم للمصنع', action: () => setFactoryDeliveryOpen(true) },
+      ],
+    },
+    // 4. العملاء
+    {
+      title: 'العملاء',
+      color: { bg: 'bg-sky-500/10', border: 'border-sky-300', title: 'text-sky-800', iconDefault: 'text-sky-600' },
+      items: [
+        { path: '/customers', icon: UserCheck, label: t('nav.customers') },
+        { path: '/customer-accounts', icon: UserCog, label: t('nav.customer_accounts') },
+        { path: '/nearby-stores', icon: Store, label: t('nav.nearby_stores') },
+      ],
+    },
+    // 5. العروض والترويج
+    {
+      title: 'العروض والترويج',
+      color: { bg: 'bg-orange-500/10', border: 'border-orange-300', title: 'text-orange-800', iconDefault: 'text-orange-600' },
+      branchColor: { bg: 'bg-amber-500/10', border: 'border-amber-300', title: 'text-amber-800', iconDefault: 'text-amber-600' },
+      items: [
+        { path: '/promo-table', icon: FileSpreadsheet, label: t('nav.table') },
+        { path: '/product-offers', icon: Gift, label: t('nav.product_offers') },
+        { path: '/my-promos', icon: BarChart3, label: t('nav.my_promos') },
+        { path: '/promo-splits', icon: Split, label: 'تجزئة العروض' },
+        { path: '/manual-promo', icon: Gift, label: t('admin.manual_promo'), action: () => setManualPromoOpen(true) },
+        ...(isSuperAdminRole(role) ? [{ path: '/gifts-tracking', icon: Gift, label: t('admin.promo_tracking'), action: () => { setGiftsWorkerIdx(0); setGiftsOpen(true); } }] : []),
+      ],
+    },
+    // 6. الموارد البشرية
+    {
+      title: 'الموارد البشرية',
+      color: { bg: 'bg-fuchsia-500/10', border: 'border-fuchsia-300', title: 'text-fuchsia-800', iconDefault: 'text-fuchsia-600' },
+      branchColor: { bg: 'bg-purple-500/10', border: 'border-purple-300', title: 'text-purple-800', iconDefault: 'text-purple-600' },
+      items: [
+        { path: '/workers', icon: Users, label: t('nav.workers') },
+        ...(!isWorkerActionsHidden ? [{ path: '/worker-actions', icon: Users, label: t('nav.worker_actions') }] : []),
+        { path: '/worker-tracking', icon: MapPin, label: t('navigation.worker_tracking') },
+        { path: '/attendance', icon: CalendarDays, label: 'المداومة' },
+        { path: '/rewards', icon: Trophy, label: 'المكافآت والعقوبات' },
+      ],
+    },
+    // 7. الإدارة والتقارير
+    {
+      title: 'الإدارة والتقارير',
+      color: { bg: 'bg-slate-500/10', border: 'border-slate-300', title: 'text-slate-800', iconDefault: 'text-slate-600' },
+      items: [
+        { path: '/products', icon: Package, label: t('nav.products') },
+        { path: '/stats', icon: BarChart3, label: t('nav.stats') },
+        ...(!isGeoHidden ? [{ path: '/geo-operations', icon: Navigation, label: t('nav.geo_operations') }] : []),
+        { path: '/activity-logs', icon: Activity, label: t('nav.activity_logs') },
+        ...(isSuperAdminRole(role) ? [
+          { path: '/branches', icon: Building2, label: t('nav.branches') },
+          { path: '/permissions', icon: Shield, label: t('nav.permissions') },
+        ] : []),
+        { path: '/settings', icon: Settings, label: t('nav.settings') },
+        { path: '/guide', icon: BookOpen, label: t('nav.guide') },
+      ],
+    },
+  ];
+
+  const gridColsClass: Record<number, string> = { 3: 'grid-cols-3', 4: 'grid-cols-4' };
+  const cols = gridColsClass[gridCols] || 'grid-cols-4';
 
   return (
     <div className="p-4 space-y-4">
-      {/* Branch Admin Header - distinct teal/cyan design */}
+      {/* Header */}
       {isBranchAdmin ? (
         <div className="relative overflow-hidden rounded-2xl border-2 border-teal-300 bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 p-5 text-white shadow-lg">
           <div className="absolute top-0 left-0 w-full h-full opacity-10">
@@ -150,218 +263,77 @@ const AdminHome: React.FC = () => {
         <h2 className="text-xl font-bold">{t('nav.home')}</h2>
       )}
 
-      {/* Quick Access Buttons */}
+      {/* Quick Stats Bar */}
       <div className="grid grid-cols-2 gap-3">
         {!isAccountingHidden && (
           <div
-            className={`relative overflow-hidden rounded-xl border-2 p-4 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg ${
+            className={`relative overflow-hidden rounded-xl border-2 p-3 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg ${
               isBranchAdmin
                 ? 'border-teal-300 bg-gradient-to-br from-teal-50 to-cyan-100'
                 : 'border-amber-300 bg-gradient-to-br from-amber-50 to-amber-100'
             }`}
             onClick={() => navigate('/accounting')}
           >
-            <Calculator className={`w-8 h-8 mb-2 ${isBranchAdmin ? 'text-teal-600' : 'text-amber-600'}`} />
-            <p className={`font-bold text-sm ${isBranchAdmin ? 'text-teal-900' : 'text-amber-900'}`}>{t('accounting.title')}</p>
+            <Calculator className={`w-7 h-7 mb-1 ${isBranchAdmin ? 'text-teal-600' : 'text-amber-600'}`} />
+            <p className={`font-bold text-xs ${isBranchAdmin ? 'text-teal-900' : 'text-amber-900'}`}>{t('accounting.title')}</p>
             {openSessions !== undefined && openSessions > 0 && (
-              <p className={`text-xs mt-1 ${isBranchAdmin ? 'text-teal-700' : 'text-amber-700'}`}>{openSessions} {t('accounting.status_open')}</p>
+              <p className={`text-[10px] mt-0.5 ${isBranchAdmin ? 'text-teal-700' : 'text-amber-700'}`}>{openSessions} {t('accounting.status_open')}</p>
             )}
-            <ArrowLeft className={`absolute top-3 left-3 w-4 h-4 ${isBranchAdmin ? 'text-teal-400' : 'text-amber-400'}`} />
+            <ArrowLeft className={`absolute top-2 left-2 w-3.5 h-3.5 ${isBranchAdmin ? 'text-teal-400' : 'text-amber-400'}`} />
           </div>
         )}
-
         {!isDebtsHidden && (
           <div
-            className={`relative overflow-hidden rounded-xl border-2 p-4 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg ${
+            className={`relative overflow-hidden rounded-xl border-2 p-3 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg ${
               isBranchAdmin
                 ? 'border-cyan-300 bg-gradient-to-br from-cyan-50 to-sky-100'
                 : 'border-rose-300 bg-gradient-to-br from-rose-50 to-rose-100'
             }`}
             onClick={() => navigate('/customer-debts')}
           >
-            <Banknote className={`w-8 h-8 mb-2 ${isBranchAdmin ? 'text-cyan-600' : 'text-rose-600'}`} />
-            <p className={`font-bold text-sm ${isBranchAdmin ? 'text-cyan-900' : 'text-rose-900'}`}>{t('debts.title')}</p>
+            <Banknote className={`w-7 h-7 mb-1 ${isBranchAdmin ? 'text-cyan-600' : 'text-rose-600'}`} />
+            <p className={`font-bold text-xs ${isBranchAdmin ? 'text-cyan-900' : 'text-rose-900'}`}>{t('debts.title')}</p>
             {activeDebts && activeDebts.count > 0 && (
-              <p className={`text-xs mt-1 ${isBranchAdmin ? 'text-cyan-700' : 'text-rose-700'}`}>{activeDebts.count} • {activeDebts.total.toLocaleString()} DA</p>
+              <p className={`text-[10px] mt-0.5 ${isBranchAdmin ? 'text-cyan-700' : 'text-rose-700'}`}>{activeDebts.count} • {activeDebts.total.toLocaleString()} DA</p>
             )}
-            <ArrowLeft className={`absolute top-3 left-3 w-4 h-4 ${isBranchAdmin ? 'text-cyan-400' : 'text-rose-400'}`} />
+            <ArrowLeft className={`absolute top-2 left-2 w-3.5 h-3.5 ${isBranchAdmin ? 'text-cyan-400' : 'text-rose-400'}`} />
           </div>
         )}
       </div>
 
-      {/* Surplus/Deficit Treasury & Rewards - admin only grid */}
-      {isAdminRole(role) && (
-        <div className={`grid ${isBranchAdmin ? 'grid-cols-3' : 'grid-cols-4'} gap-3`}>
-          <div
-            className={`relative overflow-hidden rounded-xl border-2 p-3 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg ${
-              isBranchAdmin
-                ? 'border-teal-200 bg-gradient-to-br from-teal-50 to-teal-100'
-                : 'border-violet-300 bg-gradient-to-br from-violet-50 to-violet-100'
-            }`}
-            onClick={() => navigate('/surplus-deficit')}
-          >
-            <Scale className={`w-6 h-6 mb-1 ${isBranchAdmin ? 'text-teal-600' : 'text-violet-600'}`} />
-            <p className={`font-bold text-[10px] ${isBranchAdmin ? 'text-teal-900' : 'text-violet-900'}`}>{t('admin.surplus_treasury')}</p>
-          </div>
-          <div
-            className={`relative overflow-hidden rounded-xl border-2 p-3 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg ${
-              isBranchAdmin
-                ? 'border-sky-200 bg-gradient-to-br from-sky-50 to-sky-100'
-                : 'border-yellow-300 bg-gradient-to-br from-yellow-50 to-yellow-100'
-            }`}
-            onClick={() => navigate('/rewards')}
-          >
-            <Trophy className={`w-6 h-6 mb-1 ${isBranchAdmin ? 'text-sky-600' : 'text-yellow-600'}`} />
-            <p className={`font-bold text-[10px] ${isBranchAdmin ? 'text-sky-900' : 'text-yellow-900'}`}>{t('admin.rewards')}</p>
-          </div>
-          <div
-            className={`relative overflow-hidden rounded-xl border-2 p-3 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg ${
-              isBranchAdmin
-                ? 'border-cyan-200 bg-gradient-to-br from-cyan-50 to-cyan-100'
-                : 'border-emerald-300 bg-gradient-to-br from-emerald-50 to-emerald-100'
-            }`}
-            onClick={() => navigate('/attendance')}
-          >
-            <CalendarDays className={`w-6 h-6 mb-1 ${isBranchAdmin ? 'text-cyan-600' : 'text-emerald-600'}`} />
-            <p className={`font-bold text-[10px] ${isBranchAdmin ? 'text-cyan-900' : 'text-emerald-900'}`}>{t('admin.attendance')}</p>
-          </div>
-          {/* Promo tracking - super admin only */}
-          {isSuperAdminRole(role) && (
-            <div
-              className="relative overflow-hidden rounded-xl border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-purple-100 p-3 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg"
-              onClick={() => { setGiftsWorkerIdx(0); setGiftsOpen(true); }}
-            >
-              <Gift className="w-6 h-6 text-purple-600 mb-1" />
-              <p className="font-bold text-[10px] text-purple-900">{t('admin.promo_tracking')}</p>
+      {/* Functional Groups */}
+      {groups.map((group) => {
+        if (group.items.length === 0) return null;
+        const gColor = isBranchAdmin && group.branchColor ? group.branchColor : group.color;
+        return (
+          <div key={group.title} className={`rounded-xl border ${gColor.border} ${gColor.bg} p-3 space-y-2`}>
+            <h3 className={`text-xs font-bold ${gColor.title} px-1`}>{group.title}</h3>
+            <div className={`grid ${cols} gap-2`}>
+              {group.items.map((item) => {
+                const ic = itemColors[item.path] || defaultItemColor;
+                return (
+                  <div
+                    key={item.path}
+                    className={`flex flex-col items-center justify-center p-2.5 gap-1.5 rounded-xl border cursor-pointer active:scale-95 transition-all bg-white/80 ${ic.border} hover:shadow-md`}
+                    onClick={() => item.action ? item.action() : navigate(item.path)}
+                  >
+                    <item.icon className={`w-5 h-5 ${ic.icon}`} />
+                    <span className="text-[10px] font-medium text-center leading-tight text-foreground">{item.label}</span>
+                  </div>
+                );
+              })}
             </div>
-          )}
-        </div>
-      )}
-
-      {/* Quick Create Order Button */}
-      <div
-        className={`relative overflow-hidden rounded-xl border-2 p-4 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg flex items-center gap-3 ${
-          isBranchAdmin
-            ? 'border-teal-300 bg-gradient-to-br from-teal-50 to-cyan-100'
-            : 'border-blue-300 bg-gradient-to-br from-blue-50 to-blue-100'
-        }`}
-        onClick={() => setShowCreateOrder(true)}
-      >
-        <ShoppingCart className={`w-8 h-8 ${isBranchAdmin ? 'text-teal-600' : 'text-blue-600'}`} />
-        <div>
-          <p className={`font-bold text-sm ${isBranchAdmin ? 'text-teal-900' : 'text-blue-900'}`}>{t('orders.create_order')}</p>
-          <p className={`text-xs ${isBranchAdmin ? 'text-teal-700' : 'text-blue-700'}`}>{t('orders.create_order_desc')}</p>
-        </div>
-      </div>
-
-      <div
-        className="relative overflow-hidden rounded-xl border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-purple-100 p-4 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg flex items-center gap-3"
-        onClick={() => setManualPromoOpen(true)}
-      >
-        <Gift className="w-8 h-8 text-purple-600" />
-        <div>
-          <p className="font-bold text-sm text-purple-900">{t('admin.manual_promo')}</p>
-          <p className="text-xs text-purple-700">{t('admin.manual_promo_desc')}</p>
-        </div>
-      </div>
-
-      {/* Factory Receipt Quick Button */}
-      <div
-        className="relative overflow-hidden rounded-xl border-2 border-lime-300 bg-gradient-to-br from-lime-50 to-green-100 p-4 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg flex items-center gap-3"
-        onClick={() => setFactoryReceiptOpen(true)}
-      >
-        <ArrowDownToLine className="w-8 h-8 text-lime-600" />
-        <div>
-          <p className="font-bold text-sm text-lime-900">استلام من المصنع</p>
-          <p className="text-xs text-lime-700">تسجيل وصل استلام منتجات</p>
-        </div>
-      </div>
-
-      {/* Factory Delivery Quick Button */}
-      <div
-        className="relative overflow-hidden rounded-xl border-2 border-red-300 bg-gradient-to-br from-red-50 to-orange-100 p-4 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg flex items-center gap-3"
-        onClick={() => setFactoryDeliveryOpen(true)}
-      >
-        <Truck className="w-8 h-8 text-red-600" />
-        <div>
-          <p className="font-bold text-sm text-red-900">تسليم للمصنع</p>
-          <p className="text-xs text-red-700">تسليم تالف وباليطات</p>
-        </div>
-      </div>
-
-      {/* Invoice Request Quick Button */}
-      {showInvoiceButton && (
-        <div
-          className="relative overflow-hidden rounded-xl border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 p-4 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg flex items-center gap-3"
-          onClick={() => setInvoiceRequestOpen(true)}
-        >
-          <Receipt className="w-8 h-8 text-primary" />
-          <div>
-            <p className="font-bold text-sm text-foreground">{t('admin.invoice_request')}</p>
-            <p className="text-xs text-muted-foreground">{t('admin.invoice_request_desc')}</p>
           </div>
-        </div>
-      )}
+        );
+      })}
 
-      {/* مراجعة مخزون الفرع */}
-      {isAdminRole(role) && (
-        <div
-          className="relative overflow-hidden rounded-xl border-2 border-teal-300 bg-gradient-to-br from-teal-50 to-emerald-100 p-4 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg flex items-center gap-3"
-          onClick={() => navigate('/warehouse-review')}
-        >
-          <ClipboardCheck className="w-8 h-8 text-teal-600" />
-          <div>
-            <p className="font-bold text-sm text-teal-900">مراجعة مخزون الفرع</p>
-            <p className="text-xs text-teal-700">جرد ومقارنة المخزون الفعلي بالنظام</p>
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-2 gap-3">
-        {!isGeoHidden && (
-          <div
-            className="relative overflow-hidden rounded-xl border-2 border-teal-300 bg-gradient-to-br from-teal-50 to-emerald-100 p-4 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg"
-            onClick={() => navigate('/geo-operations')}
-          >
-            <Navigation className="w-8 h-8 text-teal-600 mb-2" />
-            <p className="font-bold text-sm text-teal-900">{t('nav.geo_operations')}</p>
-          </div>
-        )}
-
-        {!isWorkerActionsHidden && (
-          <div
-            className="relative overflow-hidden rounded-xl border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 to-indigo-100 p-4 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg"
-            onClick={() => navigate('/worker-actions')}
-          >
-            <Users className="w-8 h-8 text-indigo-600 mb-2" />
-            <p className="font-bold text-sm text-indigo-900">{t('nav.worker_actions')}</p>
-          </div>
-        )}
-      </div>
-
-      {/* Regular Navigation Grid */}
-      <div className={`grid ${gridColsClass[gridCols] || 'grid-cols-4'} gap-2`}>
-        {allItems.map((item) => {
-          const colors = colorMap[item.path] || defaultColor;
-          return (
-            <div
-              key={item.path}
-              className={`flex flex-col items-center justify-center p-2.5 gap-1.5 rounded-xl border cursor-pointer active:scale-95 transition-all ${colors.bg} ${colors.border} hover:shadow-md`}
-              onClick={() => navigate(item.path)}
-            >
-              <item.icon className={`w-5 h-5 ${colors.icon}`} />
-              <span className="text-[10px] font-medium text-center leading-tight text-foreground">{item.label}</span>
-            </div>
-          );
-        })}
-      </div>
-
+      {/* Dialogs */}
       <InvoiceRequestDialog open={invoiceRequestOpen} onOpenChange={setInvoiceRequestOpen} />
       <CreateOrderDialog open={showCreateOrder} onOpenChange={setShowCreateOrder} />
       <ManualPromoEntryDialog open={manualPromoOpen} onOpenChange={setManualPromoOpen} />
       <FactoryReceiptQuickDialog open={factoryReceiptOpen} onOpenChange={setFactoryReceiptOpen} />
       <FactoryDeliveryQuickDialog open={factoryDeliveryOpen} onOpenChange={setFactoryDeliveryOpen} />
-      
+
       {giftsOpen && (
         <WorkerGiftsSummaryDialog
           open={giftsOpen}
@@ -371,7 +343,6 @@ const AdminHome: React.FC = () => {
         />
       )}
 
-      {/* Worker navigation bar for gifts - shown when gifts dialog is open */}
       {giftsOpen && activeWorkers.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-[60] bg-background border-t p-2 flex items-center gap-1 overflow-x-auto" dir="rtl">
           {activeWorkers.map((w, idx) => (
@@ -394,4 +365,3 @@ const AdminHome: React.FC = () => {
 };
 
 export default AdminHome;
-
