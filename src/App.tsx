@@ -33,6 +33,7 @@ import Expenses from "./pages/Expenses";
 import ExpensesManagement from "./pages/admin/ExpensesManagement";
 import Guide from "./pages/Guide";
 import WarehouseStock from "./pages/admin/WarehouseStock";
+import WarehouseReview from "./pages/admin/WarehouseReview";
 import StockReceipts from "./pages/admin/StockReceipts";
 import LoadStock from "./pages/admin/LoadStock";
 import CustomerDebts from "./pages/admin/CustomerDebts";
@@ -257,6 +258,12 @@ const AppRoutes = () => {
       <Route path="/warehouse" element={
         <ProtectedRoute allowedRoles={['admin', 'branch_admin']} allowedCustomRoles={['warehouse_manager']}>
           <WarehouseStock />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/warehouse-review" element={
+        <ProtectedRoute allowedRoles={['admin', 'branch_admin']} allowedCustomRoles={['warehouse_manager']}>
+          <WarehouseReview />
         </ProtectedRoute>
       } />
 

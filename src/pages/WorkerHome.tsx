@@ -565,7 +565,7 @@ const WorkerHome: React.FC = () => {
               const isReviewDay = [0, 2, 4].includes(today);
               return (
                 <button
-                  onClick={() => { setShowStockManagement(false); navigate('/warehouse?tab=review'); }}
+                  onClick={() => { setShowStockManagement(false); navigate('/warehouse-review'); }}
                   className={`w-full flex items-center gap-3 p-4 rounded-xl border transition-colors ${isReviewDay ? 'border-blue-300 bg-blue-50/50 hover:bg-blue-100/50 dark:border-blue-800 dark:bg-blue-950/20' : 'border-border hover:bg-accent'}`}
                 >
                   <ClipboardCheck className={`w-6 h-6 ${isReviewDay ? 'text-blue-600' : 'text-primary'}`} />
