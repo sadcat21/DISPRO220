@@ -460,7 +460,16 @@ const OrderTracking: React.FC = () => {
                   <StatusProgressBar order={order} />
                   
                   <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                    <span>{order.events.length} حدث</span>
+                    <div className="flex items-center gap-1.5">
+                      <span>{order.events.length} حدث</span>
+                      {order.paymentType && (
+                        <Badge variant="outline" className={`text-[8px] py-0 px-1 ${
+                          order.paymentType === 'with_invoice' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-orange-50 text-orange-600 border-orange-200'
+                        }`}>
+                          {order.paymentType === 'with_invoice' ? 'F1' : 'F2'}
+                        </Badge>
+                      )}
+                    </div>
                     {order.totalAmount && <span>{Number(order.totalAmount).toLocaleString()} د.ج</span>}
                   </div>
                 </div>
