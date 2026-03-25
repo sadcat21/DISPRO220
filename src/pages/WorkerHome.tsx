@@ -384,8 +384,9 @@ const WorkerHome: React.FC = () => {
             quickActions.push({ key: 'my-stock', icon: <Package className="w-6 h-6" />, label: t('stock.my_stock'), onClick: () => navigate('/my-stock') });
           }
           if (hasOrdersAccess && !isOrdersPageHidden && !isCreateOrderHidden) {
-            quickActions.push({ key: 'orders', icon: <ShoppingCart className="w-6 h-6" />, label: t('orders.manage'), onClick: () => navigate('/orders') });
             quickActions.push({ key: 'create-order', icon: <ShoppingCart className="w-6 h-6" />, label: t('orders.create_new'), onClick: () => setShowCustomerPickerForOrder(true) });
+            quickActions.push({ key: 'orders', icon: <ShoppingCart className="w-6 h-6" />, label: t('orders.manage'), onClick: () => navigate('/orders') });
+            quickActions.push({ key: 'order-tracking', icon: <ClipboardCheck className="w-6 h-6" />, label: 'تتبع طلباتي', onClick: () => navigate('/my-order-tracking') });
           }
           if (hasOrdersAccess && !hasDeliveryAccess && !isWarehouseManager && !isMyPromosPageHidden) {
             quickActions.push({ key: 'promos', icon: <Gift className="w-6 h-6" />, label: t('promos.add_new'), onClick: () => navigate('/my-promos') });
@@ -431,6 +432,7 @@ const WorkerHome: React.FC = () => {
             'worker-actions': { bg: 'bg-gradient-to-br from-indigo-500 to-indigo-700', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
             'warehouse-stock': { bg: 'bg-gradient-to-br from-teal-500 to-emerald-700', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
             'factory-receipt': { bg: 'bg-gradient-to-br from-lime-500 to-green-700', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
+            'order-tracking': { bg: 'bg-gradient-to-br from-slate-500 to-slate-700', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
           };
 
           const gridCols = quickActions.length === 1 ? 'grid-cols-1' : quickActions.length === 2 ? 'grid-cols-2' : 'grid-cols-3';

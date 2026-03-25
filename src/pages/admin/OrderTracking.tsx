@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useAllOrderEvents } from '@/hooks/useOrderEvents';
 import { useOrderItems } from '@/hooks/useOrders';
 import { useQuery } from '@tanstack/react-query';
@@ -323,8 +324,9 @@ const StatusProgressBar: React.FC<{ order: GroupedOrder }> = ({ order }) => {
   );
 };
 
-const OrderTracking: React.FC = () => {
+const OrderTracking: React.FC<{ workerMode?: boolean }> = ({ workerMode = false }) => {
   const { language } = useLanguage();
+  const { workerId } = useAuth();
   const isRTL = language === 'ar';
   const [dateFrom, setDateFrom] = useState(() => {
     const d = new Date();
@@ -348,13 +350,15 @@ const OrderTracking: React.FC = () => {
       if (error) throw error;
       return data;
     },
+    enabled: !workerMode,
   });
 
   const { data: events, isLoading } = useAllOrderEvents({
     dateFrom,
     dateTo,
     eventType: eventTypeFilter,
-    workerId: workerFilter,
+    workerId: workerMode ? undefined : workerFilter,
+    createdBy: workerMode ? workerId || undefined : undefined,
   });
 
   const groupedOrders = useMemo<GroupedOrder[]>(() => {
@@ -419,7 +423,7 @@ const OrderTracking: React.FC = () => {
 
   return (
     <div className="space-y-3 pb-4" dir={isRTL ? 'rtl' : 'ltr'}>
-      <h1 className="text-xl font-bold">لوحة تتبع الطلبات</h1>
+      <h1 className="text-xl font-bold">{workerMode ? 'تتبع طلباتي' : 'لوحة تتبع الطلبات'}</h1>
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-2">
@@ -474,18 +478,20 @@ const OrderTracking: React.FC = () => {
               </SelectContent>
             </Select>
           </div>
-          <Select value={workerFilter} onValueChange={setWorkerFilter}>
-            <SelectTrigger className="h-8 text-sm">
-              <Users className="h-3 w-3 ml-1" />
-              <SelectValue placeholder="كل العمال" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">كل العمال</SelectItem>
-              {workers?.map(w => (
-                <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {!workerMode && (
+            <Select value={workerFilter} onValueChange={setWorkerFilter}>
+              <SelectTrigger className="h-8 text-sm">
+                <Users className="h-3 w-3 ml-1" />
+                <SelectValue placeholder="كل العمال" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">كل العمال</SelectItem>
+                {workers?.map(w => (
+                  <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </CardContent>
       </Card>
 

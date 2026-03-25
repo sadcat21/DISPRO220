@@ -38,7 +38,7 @@ export const useOrderEvents = (orderId: string | null) => {
   });
 };
 
-export const useAllOrderEvents = (filters?: { dateFrom?: string; dateTo?: string; eventType?: string; workerId?: string }) => {
+export const useAllOrderEvents = (filters?: { dateFrom?: string; dateTo?: string; eventType?: string; workerId?: string; createdBy?: string }) => {
   return useQuery({
     queryKey: ['all-order-events', filters],
     queryFn: async () => {
@@ -69,9 +69,16 @@ export const useAllOrderEvents = (filters?: { dateFrom?: string; dateTo?: string
       if (filters?.workerId && filters.workerId !== 'all') {
         query = query.eq('performed_by', filters.workerId);
       }
+      if (filters?.createdBy) {
+        query = query.eq('order.created_by', filters.createdBy);
+      }
 
       const { data, error } = await query;
       if (error) throw error;
+      // If createdBy filter, remove events where order is null (filtered out by PostgREST)
+      if (filters?.createdBy) {
+        return (data || []).filter((e: any) => e.order !== null);
+      }
       return data;
     },
   });
