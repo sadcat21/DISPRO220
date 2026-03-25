@@ -415,7 +415,6 @@ const WarehouseStock: React.FC = () => {
                 );
               })}
             </div>
-          </ScrollArea>
         )}
       </div>
 
