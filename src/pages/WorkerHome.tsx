@@ -361,7 +361,7 @@ const WorkerHome: React.FC = () => {
             quickActions.push({ key: 'direct-sale', icon: <ShoppingBag className="w-6 h-6" />, label: isWarehouseManager ? 'بيع مخزن - Vente Dépôt' : t('stock.direct_sale'), onClick: () => setShowActionDialog(true) });
           }
           // Warehouse stock for warehouse manager
-          if (isWarehouseManager && !isWarehouseStockHidden) {
+          if (isWarehouseManager && !isWarehouseStockHidden && !isWarehouseStockButtonHidden) {
             quickActions.push({ key: 'warehouse-stock', icon: <Package className="w-6 h-6" />, label: 'مخزون الفرع', onClick: () => navigate('/warehouse') });
           }
           if (hasDeliveryAccess && !isMyStockPageHidden && !isMyStockHidden) {
@@ -383,14 +383,16 @@ const WorkerHome: React.FC = () => {
           if (hasExpenseAccess && !isExpensesPageHidden && !isExpensesHidden) {
             quickActions.push({ key: 'expenses', icon: <Wallet className="w-6 h-6" />, label: t('expenses.my_expenses'), onClick: () => navigate('/expenses') });
           }
-          // Today's customers - always show
-          quickActions.push({ key: 'today-customers', icon: <MapPin className="w-6 h-6" />, label: todayCustomersLabel, onClick: () => setShowTodayCustomers(true) });
+          // Today's customers
+          if (!isTodayCustomersHidden) {
+            quickActions.push({ key: 'today-customers', icon: <MapPin className="w-6 h-6" />, label: todayCustomersLabel, onClick: () => setShowTodayCustomers(true) });
+          }
           // Rewards page
           if (!isRewardsHidden && !isRewardsPageHidden) {
             quickActions.push({ key: 'rewards', icon: <Trophy className="w-6 h-6" />, label: t('worker.rewards'), onClick: () => navigate('/my-rewards') });
           }
           // Worker Actions for supervisor or warehouse_manager
-          if ((isSupervisor || activeRole?.custom_role_code === 'warehouse_manager') && !isWorkerActionsHidden) {
+          if ((isSupervisor || activeRole?.custom_role_code === 'warehouse_manager') && !isWorkerActionsHidden && !isWorkerActionsButtonHidden) {
             quickActions.push({ key: 'worker-actions', icon: <HardHat className="w-6 h-6" />, label: t('worker.worker_actions'), onClick: () => navigate('/worker-actions') });
           }
           // Worker Actions for regular workers (self-view)
