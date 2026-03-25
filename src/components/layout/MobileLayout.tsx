@@ -307,42 +307,63 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
             </button>
           )}
 
-          {/* More Menu for Admin and Branch Admin */}
+          {/* More Menu - Sheet Style */}
           {moreNavItems.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  className={cn(
-                    'flex items-center justify-center w-9 h-9 rounded-lg transition-colors',
-                    isMoreActive
-                      ? 'text-primary-foreground bg-primary'
-                      : 'text-secondary-foreground hover:text-primary'
-                  )}
-                  title={t('nav.more')}
-                >
-                  <MoreHorizontal className="w-5 h-5" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" side="top" className="w-48 mb-2">
-                {moreNavItems.map((item) => {
-                  const isActive = location.pathname === item.path;
-                  return (
-                    <DropdownMenuItem key={item.path} asChild>
-                      <Link
-                        to={item.path}
-                        className={cn(
-                          'flex items-center gap-3 w-full cursor-pointer',
-                          isActive && 'text-primary font-semibold'
-                        )}
-                      >
-                        <item.icon className="w-4 h-4" />
-                        <span>{item.label}</span>
-                      </Link>
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <>
+              <button
+                onClick={() => setMoreOpen(true)}
+                className={cn(
+                  'flex items-center justify-center w-9 h-9 rounded-lg transition-colors',
+                  isMoreActive
+                    ? 'text-primary-foreground bg-primary'
+                    : 'text-secondary-foreground hover:text-primary'
+                )}
+                title={t('nav.more')}
+              >
+                <MoreHorizontal className="w-5 h-5" />
+              </button>
+
+              {moreOpen && (
+                <div className="fixed inset-0 z-[100]" onClick={() => setMoreOpen(false)}>
+                  <div className="absolute inset-0 bg-black/40" />
+                  <div
+                    className="absolute bottom-0 left-0 right-0 bg-background rounded-t-2xl shadow-2xl max-h-[75vh] overflow-y-auto animate-in slide-in-from-bottom duration-300"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex justify-center pt-3 pb-1">
+                      <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+                    </div>
+                    <div className="px-4 pb-6 pt-2">
+                      <div className="grid grid-cols-4 gap-3">
+                        {moreNavItems.map((item) => {
+                          const isActive = location.pathname === item.path;
+                          const colors = moreItemColors[item.path] || { bg: 'bg-muted/50', icon: 'text-muted-foreground', border: 'border-border' };
+                          return (
+                            <Link
+                              key={item.path}
+                              to={item.path}
+                              onClick={() => setMoreOpen(false)}
+                              className={cn(
+                                'flex flex-col items-center justify-center p-2.5 gap-1.5 rounded-xl border transition-all active:scale-95 hover:shadow-md',
+                                isActive
+                                  ? 'ring-2 ring-primary/40 shadow-md border-primary/30 bg-primary/5'
+                                  : `${colors.bg} ${colors.border}`
+                              )}
+                            >
+                              <item.icon className={cn('w-5 h-5', isActive ? 'text-primary' : colors.icon)} />
+                              <span className={cn(
+                                'text-[10px] font-medium text-center leading-tight',
+                                isActive ? 'text-primary font-bold' : 'text-foreground'
+                              )}>{item.label}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </nav>

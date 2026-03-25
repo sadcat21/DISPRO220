@@ -175,6 +175,11 @@ export const useNavigation = () => {
       moreItems.push({ path: '/products', icon: Package, label: t('nav.products') });
     }
 
+    // Order tracking - for workers with order permissions
+    if (hasPermission('view_orders') || hasPermission('create_orders') || hasPermission('page_orders') || hasPermission('view_assigned_orders')) {
+      moreItems.push({ path: '/order-tracking', icon: Radar, label: 'تتبع الطلبات' });
+    }
+
     // Customer debts - for workers with debt collection permission
     if (hasPermission('page_customer_debts') || hasPermission('view_customer_debts') || hasPermission('collect_debts')) {
       moreItems.push({ path: '/customer-debts', icon: Banknote, label: t('debts.title') });
