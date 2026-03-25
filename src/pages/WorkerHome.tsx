@@ -559,21 +559,20 @@ const WorkerHome: React.FC = () => {
               <Truck className="w-6 h-6 text-orange-600" />
               <span className="font-semibold">تسليم للمصنع</span>
             </button>
-            {/* Stock Review - available Sunday, Tuesday, Thursday */}
+            {/* Stock Review - scheduled Sun, Tue, Thu but always accessible */}
             {(() => {
               const today = new Date().getDay();
-              const isReviewDay = [0, 2, 4].includes(today); // Sun, Tue, Thu
+              const isReviewDay = [0, 2, 4].includes(today);
               return (
                 <button
                   onClick={() => { setShowStockManagement(false); navigate('/warehouse?tab=review'); }}
-                  className={`w-full flex items-center gap-3 p-4 rounded-xl border transition-colors ${isReviewDay ? 'border-blue-300 bg-blue-50/50 hover:bg-blue-100/50 dark:border-blue-800 dark:bg-blue-950/20' : 'border-border opacity-50 cursor-not-allowed'}`}
-                  disabled={!isReviewDay}
+                  className={`w-full flex items-center gap-3 p-4 rounded-xl border transition-colors ${isReviewDay ? 'border-blue-300 bg-blue-50/50 hover:bg-blue-100/50 dark:border-blue-800 dark:bg-blue-950/20' : 'border-border hover:bg-accent'}`}
                 >
-                  <ClipboardCheck className={`w-6 h-6 ${isReviewDay ? 'text-blue-600' : 'text-muted-foreground'}`} />
+                  <ClipboardCheck className={`w-6 h-6 ${isReviewDay ? 'text-blue-600' : 'text-primary'}`} />
                   <div className="text-right">
                     <span className="font-semibold block">مراجعة المخزون</span>
                     <span className="text-[10px] text-muted-foreground">
-                      {isReviewDay ? 'متاح اليوم' : 'متاح: الأحد، الثلاثاء، الخميس'}
+                      أيام المراجعة: الأحد، الثلاثاء، الخميس {isReviewDay ? '✅ اليوم يوم مراجعة' : ''}
                     </span>
                   </div>
                 </button>
