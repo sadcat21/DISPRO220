@@ -2394,7 +2394,7 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void; onCancelOr
             </div>
           )}
 
-          {/* Edit & Print Buttons */}
+          {/* Edit & Print & Cancel Buttons */}
           {order.id && (
             <Button className="w-full gap-2" variant="default" onClick={() => setShowModifyDialog(true)}>
               <Pencil className="w-4 h-4" />
@@ -2405,6 +2405,25 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void; onCancelOr
             <Printer className="w-4 h-4" />
             طباعة الوصل
           </Button>
+          {order.id && onCancelOrder && order._isOrderRequest && (
+            <Button
+              className="w-full gap-2"
+              variant="destructive"
+              disabled={cancelling}
+              onClick={async () => {
+                setCancelling(true);
+                try {
+                  await onCancelOrder(order.id);
+                  onClose();
+                } finally {
+                  setCancelling(false);
+                }
+              }}
+            >
+              {cancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+              إلغاء الطلبية
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
