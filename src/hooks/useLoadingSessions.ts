@@ -12,7 +12,7 @@ export interface LoadingSession {
   created_at: string;
   completed_at: string | null;
   worker?: { full_name: string };
-  manager?: { full_name: string };
+  manager?: { full_name: string; role?: string };
   items?: LoadingSessionItem[];
 }
 
@@ -41,7 +41,7 @@ export const useLoadingSessions = (workerId: string | null) => {
         .select(`
           *,
           worker:workers!loading_sessions_worker_id_fkey(full_name),
-          manager:workers!loading_sessions_manager_id_fkey(full_name)
+          manager:workers!loading_sessions_manager_id_fkey(full_name, role)
         `)
         .eq('worker_id', workerId)
         .order('created_at', { ascending: false })
