@@ -517,9 +517,9 @@ const OrderTracking: React.FC<{ workerMode?: boolean }> = ({ workerMode = false 
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex-1 min-w-0">
                       {order.customerData ? (
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <CustomerLabel customer={order.customerData} compact />
-                          <span className="text-[10px] text-muted-foreground shrink-0">#{order.orderId.slice(0, 6)}</span>
+                        <div className="flex items-start gap-2 flex-wrap">
+                          <CustomerLabel customer={order.customerData} />
+                          <span className="text-[10px] text-muted-foreground shrink-0 mt-0.5">#{order.orderId.slice(0, 6)}</span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
