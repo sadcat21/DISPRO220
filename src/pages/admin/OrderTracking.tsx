@@ -595,15 +595,50 @@ const OrderDetailsContent: React.FC<{ order: GroupedOrder }> = ({ order }) => {
                 
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-medium truncate">{item.product?.name || 'منتج'}</div>
-                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                  <div className="flex items-center gap-1.5 flex-wrap text-[10px] text-muted-foreground">
                     <span>الكمية: {item.quantity}</span>
                     {item.gift_quantity > 0 && (
                       <span className="text-green-600">+ {item.gift_quantity} هدية</span>
                     )}
                     {item.pricing_unit && item.pricing_unit !== 'box' && (
-                      <Badge variant="outline" className="text-[8px] py-0 px-1">{item.pricing_unit === 'piece' ? 'قطعة' : item.pricing_unit}</Badge>
+                      <Badge variant="outline" className="text-[8px] py-0 px-1">{item.pricing_unit === 'piece' ? 'قطعة' : item.pricing_unit === 'kg' ? 'كغ' : item.pricing_unit}</Badge>
+                    )}
+                    {(item as any).price_subtype && (
+                      <Badge variant="outline" className={`text-[8px] py-0 px-1 ${
+                        (item as any).price_subtype === 'invoice' ? 'border-blue-200 text-blue-600' :
+                        (item as any).price_subtype === 'super_gros' ? 'border-indigo-200 text-indigo-600' :
+                        (item as any).price_subtype === 'gros' ? 'border-purple-200 text-purple-600' :
+                        'border-green-200 text-green-600'
+                      }`}>
+                        {(item as any).price_subtype === 'invoice' ? 'F1' : (item as any).price_subtype === 'super_gros' ? 'SG' : (item as any).price_subtype === 'gros' ? 'G' : 'D'}
+                      </Badge>
                     )}
                   </div>
+                  {/* Product catalog prices */}
+                  {item.product && (
+                    <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                      {item.product.price_retail != null && (
+                        <span className={`text-[8px] px-1 rounded ${(item as any).price_subtype === 'retail' ? 'bg-green-100 text-green-700 font-bold' : 'text-muted-foreground'}`}>
+                          D: {Number(item.product.price_retail).toLocaleString()}
+                        </span>
+                      )}
+                      {item.product.price_gros != null && (
+                        <span className={`text-[8px] px-1 rounded ${(item as any).price_subtype === 'gros' ? 'bg-purple-100 text-purple-700 font-bold' : 'text-muted-foreground'}`}>
+                          G: {Number(item.product.price_gros).toLocaleString()}
+                        </span>
+                      )}
+                      {item.product.price_super_gros != null && (
+                        <span className={`text-[8px] px-1 rounded ${(item as any).price_subtype === 'super_gros' ? 'bg-indigo-100 text-indigo-700 font-bold' : 'text-muted-foreground'}`}>
+                          SG: {Number(item.product.price_super_gros).toLocaleString()}
+                        </span>
+                      )}
+                      {item.product.price_invoice != null && (
+                        <span className={`text-[8px] px-1 rounded ${(item as any).price_subtype === 'invoice' ? 'bg-blue-100 text-blue-700 font-bold' : 'text-muted-foreground'}`}>
+                          F1: {Number(item.product.price_invoice).toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 
                 <div className="text-left shrink-0">
