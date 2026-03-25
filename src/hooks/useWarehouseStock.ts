@@ -54,8 +54,23 @@ export const useWarehouseStock = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [workers, setWorkers] = useState<{ id: string; full_name: string; username: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [workerBranchId, setWorkerBranchId] = useState<string | null>(null);
 
-  const branchId = activeBranch?.id;
+  // Fallback: fetch worker's branch_id if activeBranch is not set
+  useEffect(() => {
+    if (activeBranch?.id || !workerId) return;
+    const fetchWorkerBranch = async () => {
+      const { data } = await supabase
+        .from('workers')
+        .select('branch_id')
+        .eq('id', workerId)
+        .maybeSingle();
+      if (data?.branch_id) setWorkerBranchId(data.branch_id);
+    };
+    fetchWorkerBranch();
+  }, [workerId, activeBranch?.id]);
+
+  const branchId = activeBranch?.id || workerBranchId;
 
   const fetchProducts = useCallback(async () => {
     const { data } = await supabase
