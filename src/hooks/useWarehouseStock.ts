@@ -166,9 +166,12 @@ export const useWarehouseStock = () => {
   const createReceipt = async (
     receiptData: { invoice_number?: string; notes?: string; invoice_photo_url?: string },
     items: { product_id: string; quantity: number }[],
-    palletCount?: number
+    palletCount?: number,
+    receiptStatus?: 'confirmed' | 'pending_approval'
   ) => {
     if (!workerId || !branchId) throw new Error('Missing worker or branch');
+
+    const status = receiptStatus || 'confirmed';
 
     const { data: receipt, error: receiptError } = await supabase
       .from('stock_receipts')
@@ -179,6 +182,7 @@ export const useWarehouseStock = () => {
         invoice_photo_url: receiptData.invoice_photo_url || null,
         notes: receiptData.notes || null,
         total_items: items.reduce((sum, i) => sum + i.quantity, 0),
+        status,
       })
       .select()
       .single();
@@ -207,67 +211,155 @@ export const useWarehouseStock = () => {
     const { error: itemsError } = await supabase.from('stock_receipt_items').insert(receiptItems);
     if (itemsError) throw itemsError;
 
-    // Create stock movements and update warehouse stock
-    for (const item of items) {
-      // Movement
+    // Only update stock if receipt is confirmed (not pending approval)
+    if (status === 'confirmed') {
+      // Create stock movements and update warehouse stock
+      for (const item of items) {
+        await supabase.from('stock_movements').insert({
+          product_id: item.product_id,
+          branch_id: branchId,
+          quantity: item.quantity,
+          movement_type: 'receipt',
+          status: 'approved',
+          created_by: workerId,
+          receipt_id: receipt.id,
+          notes: `استلام من المصنع - فاتورة: ${receiptData.invoice_number || 'بدون'}`,
+        });
+
+        const existing = warehouseStock.find(s => s.product_id === item.product_id);
+        if (existing) {
+          await supabase
+            .from('warehouse_stock')
+            .update({ quantity: existing.quantity + item.quantity })
+            .eq('id', existing.id);
+        } else {
+          await supabase.from('warehouse_stock').insert({
+            branch_id: branchId,
+            product_id: item.product_id,
+            quantity: item.quantity,
+          });
+        }
+      }
+
+      // Update branch pallet balance if palletCount provided
+      if (palletCount && palletCount > 0) {
+        const { data: bp } = await supabase
+          .from('branch_pallets')
+          .select('id, quantity')
+          .eq('branch_id', branchId)
+          .maybeSingle();
+
+        if (bp) {
+          await supabase.from('branch_pallets').update({
+            quantity: bp.quantity + palletCount,
+          }).eq('id', bp.id);
+        } else {
+          await supabase.from('branch_pallets').insert({
+            branch_id: branchId,
+            quantity: palletCount,
+          });
+        }
+
+        await supabase.from('pallet_movements').insert({
+          branch_id: branchId,
+          quantity: palletCount,
+          movement_type: 'receipt',
+          reference_id: receipt.id,
+          notes: `استلام باليطات مع فاتورة: ${receiptData.invoice_number || 'بدون'}`,
+          created_by: workerId,
+        });
+      }
+    }
+
+    await loadAll();
+    return receipt;
+  };
+
+  // Approve a pending receipt (admin/branch_admin only)
+  const approveReceipt = async (receiptId: string) => {
+    if (!workerId || !branchId) throw new Error('Missing worker or branch');
+
+    // Get receipt and its items
+    const { data: receipt, error: rErr } = await supabase
+      .from('stock_receipts')
+      .select('*')
+      .eq('id', receiptId)
+      .single();
+    if (rErr || !receipt) throw new Error('وصل غير موجود');
+    if (receipt.status !== 'pending_approval') throw new Error('هذا الوصل تمت معالجته مسبقاً');
+
+    const { data: items } = await supabase
+      .from('stock_receipt_items')
+      .select('*')
+      .eq('receipt_id', receiptId);
+
+    // Update receipt status
+    await supabase.from('stock_receipts').update({
+      status: 'confirmed',
+      approved_by: workerId,
+      approved_at: new Date().toISOString(),
+    }).eq('id', receiptId);
+
+    // Now apply stock changes
+    for (const item of (items || [])) {
       await supabase.from('stock_movements').insert({
         product_id: item.product_id,
-        branch_id: branchId,
+        branch_id: receipt.branch_id,
         quantity: item.quantity,
         movement_type: 'receipt',
         status: 'approved',
         created_by: workerId,
-        receipt_id: receipt.id,
-        notes: `استلام من المصنع - فاتورة: ${receiptData.invoice_number || 'بدون'}`,
+        receipt_id: receiptId,
+        notes: `موافقة على استلام من المصنع - فاتورة: ${receipt.invoice_number || 'بدون'}`,
       });
 
-      // Upsert warehouse stock
       const existing = warehouseStock.find(s => s.product_id === item.product_id);
       if (existing) {
-        await supabase
-          .from('warehouse_stock')
+        await supabase.from('warehouse_stock')
           .update({ quantity: existing.quantity + item.quantity })
           .eq('id', existing.id);
       } else {
         await supabase.from('warehouse_stock').insert({
-          branch_id: branchId,
+          branch_id: receipt.branch_id,
           product_id: item.product_id,
           quantity: item.quantity,
         });
       }
     }
 
-    // Update branch pallet balance if palletCount provided
-    if (palletCount && palletCount > 0) {
+    // Handle pallets
+    const totalPallets = (items || []).reduce((sum: number, i: any) => sum + (Number(i.pallet_quantity) || 0), 0);
+    if (totalPallets > 0) {
       const { data: bp } = await supabase
         .from('branch_pallets')
         .select('id, quantity')
-        .eq('branch_id', branchId)
+        .eq('branch_id', receipt.branch_id)
         .maybeSingle();
 
       if (bp) {
         await supabase.from('branch_pallets').update({
-          quantity: bp.quantity + palletCount,
+          quantity: bp.quantity + totalPallets,
         }).eq('id', bp.id);
       } else {
         await supabase.from('branch_pallets').insert({
-          branch_id: branchId,
-          quantity: palletCount,
+          branch_id: receipt.branch_id,
+          quantity: totalPallets,
         });
       }
-
-      await supabase.from('pallet_movements').insert({
-        branch_id: branchId,
-        quantity: palletCount,
-        movement_type: 'receipt',
-        reference_id: receipt.id,
-        notes: `استلام باليطات مع فاتورة: ${receiptData.invoice_number || 'بدون'}`,
-        created_by: workerId,
-      });
     }
 
     await loadAll();
-    return receipt;
+  };
+
+  // Reject a pending receipt
+  const rejectReceipt = async (receiptId: string) => {
+    if (!workerId) throw new Error('Missing worker');
+    await supabase.from('stock_receipts').update({
+      status: 'rejected',
+      approved_by: workerId,
+      approved_at: new Date().toISOString(),
+    }).eq('id', receiptId);
+    await loadAll();
   };
 
   // Load products to worker
@@ -335,6 +427,8 @@ export const useWarehouseStock = () => {
     workers,
     isLoading,
     createReceipt,
+    approveReceipt,
+    rejectReceipt,
     loadToWorker,
     refresh: loadAll,
     branchId,

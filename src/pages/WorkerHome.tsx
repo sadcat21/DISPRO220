@@ -9,13 +9,14 @@ import { useIsElementHidden } from '@/hooks/useUIOverrides';
 import ProductGrid from '@/components/promo/ProductGrid';
 import AddPromoDialog from '@/components/promo/AddPromoDialog';
 import DirectSaleDialog from '@/components/warehouse/DirectSaleDialog';
+import FactoryReceiptQuickDialog from '@/components/stock/FactoryReceiptQuickDialog';
 import CustomerActionDialog from '@/components/orders/CustomerActionDialog';
 import CreateOrderDialog from '@/components/orders/CreateOrderDialog';
 import CustomerPickerDialog from '@/components/orders/CustomerPickerDialog';
 import { useTrackVisit } from '@/hooks/useVisitTracking';
 import { Customer } from '@/types/database';
 import { toast } from 'sonner';
-import { ShoppingCart, Gift, Loader2, ShoppingBag, Truck, Package, Banknote, Users, Wallet, ClipboardList, MapPin, Trophy, MessageCircle, HardHat, CalendarCheck } from 'lucide-react';
+import { ShoppingCart, Gift, Loader2, ShoppingBag, Truck, Package, Banknote, Users, Wallet, ClipboardList, MapPin, Trophy, MessageCircle, HardHat, CalendarCheck, ArrowDownToLine } from 'lucide-react';
 
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -45,6 +46,7 @@ const WorkerHome: React.FC = () => {
   const [showTodayCustomers, setShowTodayCustomers] = useState(false);
   const [showPalletCalculator, setShowPalletCalculator] = useState(false);
   const [showManualPromoEntry, setShowManualPromoEntry] = useState(false);
+  const [showFactoryReceipt, setShowFactoryReceipt] = useState(false);
 
   const { trackVisit } = useTrackVisit();
   const isDirectSaleHidden = useIsElementHidden('button', 'home_direct_sale');
@@ -375,6 +377,10 @@ const WorkerHome: React.FC = () => {
           if (isWarehouseManager && !isWarehouseStockHidden && !isWarehouseStockButtonHidden) {
             quickActions.push({ key: 'warehouse-stock', icon: <Package className="w-6 h-6" />, label: 'مخزون الفرع', onClick: () => navigate('/warehouse') });
           }
+          // Factory receipt for warehouse manager
+          if (isWarehouseManager) {
+            quickActions.push({ key: 'factory-receipt', icon: <ArrowDownToLine className="w-6 h-6" />, label: 'استلام من المصنع', onClick: () => setShowFactoryReceipt(true) });
+          }
           if (hasDeliveryAccess && !isMyStockPageHidden && !isMyStockHidden) {
             quickActions.push({ key: 'my-stock', icon: <Package className="w-6 h-6" />, label: t('stock.my_stock'), onClick: () => navigate('/my-stock') });
           }
@@ -425,6 +431,7 @@ const WorkerHome: React.FC = () => {
             'rewards': { bg: 'bg-gradient-to-br from-yellow-400 to-amber-500', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
             'worker-actions': { bg: 'bg-gradient-to-br from-indigo-500 to-indigo-700', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
             'warehouse-stock': { bg: 'bg-gradient-to-br from-teal-500 to-emerald-700', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
+            'factory-receipt': { bg: 'bg-gradient-to-br from-lime-500 to-green-700', iconBg: 'bg-white/20', iconColor: 'text-white', text: 'text-white', border: '' },
           };
 
           const gridCols = quickActions.length === 1 ? 'grid-cols-1' : quickActions.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
@@ -517,6 +524,10 @@ const WorkerHome: React.FC = () => {
       <ManualPromoEntryDialog
         open={showManualPromoEntry}
         onOpenChange={setShowManualPromoEntry}
+      />
+      <FactoryReceiptQuickDialog
+        open={showFactoryReceipt}
+        onOpenChange={setShowFactoryReceipt}
       />
     </div>
   );
