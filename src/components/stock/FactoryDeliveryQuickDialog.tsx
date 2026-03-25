@@ -147,20 +147,29 @@ const FactoryDeliveryQuickDialog: React.FC<Props> = ({ open, onOpenChange }) => 
         .single();
       if (orderError) throw orderError;
 
-      // Insert items
+      // Insert items - convert pieces to box.piece format
       if (validItems.length > 0) {
-        const orderItems = validItems.map(i => ({
-          factory_order_id: order.id,
-          product_id: i.product_id,
-          product_quantity: i.quantity,
-          pallet_quantity: 0,
-        }));
+        const orderItems = validItems.map(i => {
+          const ppb = getPiecesPerBox(i.product_id);
+          const boxQty = piecesToBoxFormat(i.quantity, ppb);
+          return {
+            factory_order_id: order.id,
+            product_id: i.product_id,
+            product_quantity: boxQty,
+            pallet_quantity: 0,
+          };
+        });
         const { error: itemsError } = await supabase.from('factory_order_items').insert(orderItems);
         if (itemsError) throw itemsError;
       }
 
       if (status === 'confirmed') {
-        await applyDeliveryStock(order.id, validItems, palletCount, branchId);
+        // Convert items to box format for stock operations
+        const convertedItems = validItems.map(i => ({
+          product_id: i.product_id,
+          quantity: piecesToBoxFormat(i.quantity, getPiecesPerBox(i.product_id)),
+        }));
+        await applyDeliveryStock(order.id, convertedItems, palletCount, branchId);
         toast.success('تم تأكيد التسليم للمصنع');
       } else {
         toast.success('تم إرسال طلب التسليم للموافقة');
