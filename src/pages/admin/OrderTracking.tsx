@@ -754,18 +754,20 @@ const OrderDetailsContent: React.FC<{ order: GroupedOrder }> = ({ order }) => {
           <div className="divide-y divide-border/50">
             {orderItems.map((item: any) => (
               <div key={item.id} className="flex items-center gap-2.5 p-2.5">
-                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+                <div className="relative w-10 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-visible">
                   {item.product?.image_url ? (
-                    <img src={item.product.image_url} alt={item.product?.name} className="w-full h-full object-cover" />
+                    <img src={item.product.image_url} alt={item.product?.name} className="w-full h-full object-cover rounded-lg" />
                   ) : (
                     <Package className="h-4 w-4 text-muted-foreground" />
                   )}
+                  <span className="absolute -top-1.5 -end-1.5 bg-primary text-primary-foreground text-[10px] font-bold min-w-[20px] h-5 flex items-center justify-center rounded-full px-1 shadow-sm">
+                    {item.quantity}
+                  </span>
                 </div>
                 
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-medium truncate">{item.product?.name || 'منتج'}</div>
                   <div className="flex items-center gap-1.5 flex-wrap text-[10px] text-muted-foreground">
-                    <span className="font-medium text-foreground">×{item.quantity}</span>
                     {item.gift_quantity > 0 && (
                       <span className="text-green-600 font-medium">+ {item.gift_quantity} 🎁</span>
                     )}
