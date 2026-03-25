@@ -203,6 +203,18 @@ const AdminHome: React.FC = () => {
         </div>
       </div>
 
+      {/* Factory Receipt Quick Button */}
+      <div
+        className="relative overflow-hidden rounded-xl border-2 border-lime-300 bg-gradient-to-br from-lime-50 to-green-100 p-4 cursor-pointer active:scale-[0.97] transition-all hover:shadow-lg flex items-center gap-3"
+        onClick={() => setFactoryReceiptOpen(true)}
+      >
+        <ArrowDownToLine className="w-8 h-8 text-lime-600" />
+        <div>
+          <p className="font-bold text-sm text-lime-900">استلام من المصنع</p>
+          <p className="text-xs text-lime-700">تسجيل وصل استلام منتجات</p>
+        </div>
+      </div>
+
       {/* Invoice Request Quick Button */}
       {showInvoiceButton && (
         <div
