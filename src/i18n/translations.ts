@@ -1683,6 +1683,7 @@ export const translations: Translations = {
   'worker_actions.sector_schedule': { ar: 'جدول السيكتور', fr: 'Planning secteur', en: 'Sector Schedule' },
   'worker_actions.sector_coverage': { ar: 'تعويض السيكتورات', fr: 'Couverture secteurs', en: 'Sector Coverage' },
   'worker_actions.orders_summary': { ar: 'تجميع الطلبيات', fr: 'Résumé des commandes', en: 'Orders Summary' },
+  'worker_actions.exchange_damaged': { ar: 'استبدال تالف', fr: 'Échange endommagé', en: 'Exchange Damaged' },
   'worker_actions.delivery_sectors': { ar: 'توصيل:', fr: 'Livraison:', en: 'Delivery:' },
   'worker_actions.sales_sectors': { ar: 'طلبيات:', fr: 'Commandes:', en: 'Orders:' },
   'worker_actions.truck_balance': { ar: 'رصيد شاحنة', fr: 'Stock camion de', en: 'Truck stock of' },
