@@ -48,8 +48,8 @@ export const useAllOrderEvents = (filters?: { dateFrom?: string; dateTo?: string
           *,
           performer:workers!order_events_performed_by_fkey(id, full_name),
           order:orders!order_events_order_id_fkey(
-            id, status, total_amount, customer_id, assigned_worker_id, created_by, notes, payment_type, invoice_payment_method, prepaid_amount,
-            customer:customers(name),
+            id, status, total_amount, customer_id, assigned_worker_id, created_by, notes, payment_type, invoice_payment_method, prepaid_amount, created_at, updated_at,
+            customer:customers(name, store_name, customer_type, sector:sectors(name), zone:sector_zones(name)),
             assigned_worker:workers!orders_assigned_worker_id_fkey(id, full_name),
             created_by_worker:workers!orders_created_by_fkey(id, full_name)
           )

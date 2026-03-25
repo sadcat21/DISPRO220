@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { Search, Filter, ArrowRightLeft, UserCheck, CreditCard, Package, Printer, Plus, DollarSign, Clock, Users, ChevronLeft, Truck, ShoppingCart, CheckCircle2, XCircle, Loader2, MapPin, Ban, Lock, UserX, HandCoins, Receipt, Pencil } from 'lucide-react';
 import ModifyOrderDialog from '@/components/orders/ModifyOrderDialog';
+import CustomerLabel from '@/components/customers/CustomerLabel';
 
 const EVENT_TYPE_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   created: { label: 'إنشاء طلبية', icon: Plus, color: 'bg-green-100 text-green-700 border-green-200' },
@@ -68,6 +69,15 @@ interface GroupedOrder {
   orderNotes: string | null;
   paymentType: string | null;
   invoicePaymentMethod: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  customerData: {
+    name?: string | null;
+    store_name?: string | null;
+    customer_type?: string | null;
+    sector_name?: string | null;
+    zone_name?: string | null;
+  } | null;
 }
 
 const getDeliveryOutcome = (order: GroupedOrder) => {
@@ -317,6 +327,15 @@ const OrderTracking: React.FC = () => {
           orderNotes: e.order?.notes || null,
           paymentType: e.order?.payment_type || null,
           invoicePaymentMethod: e.order?.invoice_payment_method || null,
+          createdAt: e.order?.created_at || null,
+          updatedAt: e.order?.updated_at || null,
+          customerData: e.order?.customer ? {
+            name: e.order.customer.name,
+            store_name: e.order.customer.store_name,
+            customer_type: e.order.customer.customer_type,
+            sector_name: e.order.customer.sector?.name || null,
+            zone_name: e.order.customer.zone?.name || null,
+          } : null,
         });
       }
       map.get(e.order_id)!.events.push(e);
@@ -486,9 +505,27 @@ const OrderTracking: React.FC = () => {
         <DialogContent className="max-w-md max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-right">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-1">
                 <span className="text-[10px] text-muted-foreground">#{selectedOrder?.orderId.slice(0, 8)}</span>
                 <span>{selectedOrder?.customerName}</span>
+              </div>
+              {selectedOrder?.customerData && (
+                <CustomerLabel customer={selectedOrder.customerData} />
+              )}
+              {/* Order dates */}
+              <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground font-normal">
+                {selectedOrder?.createdAt && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    الإنشاء: {format(new Date(selectedOrder.createdAt), 'yyyy/MM/dd HH:mm')}
+                  </span>
+                )}
+                {selectedOrder?.currentStatus === 'delivered' && selectedOrder?.updatedAt && (
+                  <span className="flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3 text-green-600" />
+                    التسليم: {format(new Date(selectedOrder.updatedAt), 'yyyy/MM/dd HH:mm')}
+                  </span>
+                )}
               </div>
             </DialogTitle>
           </DialogHeader>
