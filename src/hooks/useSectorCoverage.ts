@@ -91,6 +91,27 @@ export const useSectorCoverage = () => {
       branch_id: data.branch_id || null,
     } as any);
     if (error) throw error;
+
+    // نقل جميع الطلبيات المعلقة/المعينة/قيد التنفيذ من العامل الغائب إلى العامل البديل
+    try {
+      const { data: pendingOrders } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('assigned_worker_id', data.absent_worker_id)
+        .in('status', ['pending', 'assigned', 'in_progress']);
+
+      if (pendingOrders && pendingOrders.length > 0) {
+        const orderIds = pendingOrders.map(o => o.id);
+        await supabase
+          .from('orders')
+          .update({ assigned_worker_id: data.substitute_worker_id })
+          .in('id', orderIds);
+        console.log(`تم نقل ${orderIds.length} طلبية من العامل الغائب إلى العامل البديل`);
+      }
+    } catch (transferError) {
+      console.error('خطأ في نقل الطلبيات:', transferError);
+    }
+
     await fetchCoverages();
   };
 
