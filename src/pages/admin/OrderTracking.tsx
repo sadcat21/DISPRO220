@@ -313,6 +313,8 @@ const OrderTracking: React.FC = () => {
           createdByName: e.order?.created_by_worker?.full_name || null,
           assignedWorkerName: e.order?.assigned_worker?.full_name || null,
           orderNotes: e.order?.notes || null,
+          paymentType: e.order?.payment_type || null,
+          invoicePaymentMethod: e.order?.invoice_payment_method || null,
         });
       }
       map.get(e.order_id)!.events.push(e);
