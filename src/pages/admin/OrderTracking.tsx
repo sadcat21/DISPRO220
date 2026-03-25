@@ -510,14 +510,14 @@ const OrderTracking: React.FC = () => {
             {filteredOrders.map(order => (
               <Card
                 key={order.orderId}
-                className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                className="cursor-pointer hover:shadow-md transition-shadow"
                 onClick={() => setSelectedOrder(order)}
               >
                 <div className="p-3">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex-1 min-w-0">
                       {order.customerData ? (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <CustomerLabel customer={order.customerData} compact />
                           <span className="text-[10px] text-muted-foreground shrink-0">#{order.orderId.slice(0, 6)}</span>
                         </div>
