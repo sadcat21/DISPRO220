@@ -251,12 +251,11 @@ const OrderTimeline: React.FC<{ order: GroupedOrder }> = ({ order }) => {
   );
 };
 
-const StatusProgressBar: React.FC<{ order: GroupedOrder }> = ({ order }) => {
+const StatusProgressBar: React.FC<{ order: GroupedOrder; large?: boolean }> = ({ order, large = false }) => {
   const { currentStatus } = order;
   const isCancelled = currentStatus === 'cancelled';
   const isDelivered = currentStatus === 'delivered';
   
-  // Determine how far the order progressed
   const hasAssigned = order.events.some((e: any) => 
     (e.event_type === 'status_change' && e.new_value === 'assigned') || e.event_type === 'worker_changed'
   );
@@ -276,46 +275,58 @@ const StatusProgressBar: React.FC<{ order: GroupedOrder }> = ({ order }) => {
     }
   };
 
+  const iconSize = large ? 'h-3.5 w-3.5' : 'h-2.5 w-2.5';
+  const dotSize = large ? 'w-7 h-7' : 'w-5 h-5';
+  const fontSize = large ? 'text-[9px]' : 'text-[7px]';
+  const workerFont = large ? 'text-[8px] max-w-[56px]' : 'text-[7px] max-w-[42px]';
+
   return (
     <div className="my-2 w-full">
-      <div className="grid grid-cols-5 gap-1 w-full">
-        {STATUS_STEPS.map((step) => {
-          const config = STATUS_STEP_CONFIG[step];
-          const StepIcon = config.icon;
-          const isActive = getStepActive(step);
-          const isCurrent = step === currentStatus || (step === 'arrived' && isCancelled);
+      {/* Connection line behind dots */}
+      <div className="relative">
+        <div className="grid grid-cols-5 gap-1 w-full">
+          {STATUS_STEPS.map((step, idx) => {
+            const config = STATUS_STEP_CONFIG[step];
+            const StepIcon = config.icon;
+            const isActive = getStepActive(step);
+            const isCurrent = step === currentStatus || (step === 'arrived' && isCancelled);
 
-          return (
-            <div key={step} className="flex flex-col items-center gap-0.5 min-w-0">
-              <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                isActive ? config.activeColor + ' text-white' : 'bg-muted text-muted-foreground'
-              } ${isCurrent ? 'ring-2 ring-offset-1 ring-primary' : ''}`}>
-                <StepIcon className="h-2.5 w-2.5" />
+            return (
+              <div key={step} className="flex flex-col items-center gap-0.5 min-w-0">
+                <div className={`${dotSize} rounded-full flex items-center justify-center transition-all ${
+                  isActive ? config.activeColor + ' text-white shadow-sm' : 'bg-muted text-muted-foreground'
+                } ${isCurrent ? 'ring-2 ring-offset-1 ring-primary/60' : ''} ${isCancelled && step === 'arrived' ? 'bg-destructive text-white ring-destructive/40' : ''}`}>
+                  {isCancelled && step === 'arrived' ? (
+                    <XCircle className={iconSize} />
+                  ) : (
+                    <StepIcon className={iconSize} />
+                  )}
+                </div>
+                <span className={`${fontSize} leading-tight text-center truncate max-w-full ${isActive ? 'font-semibold' : 'text-muted-foreground'}`}>
+                  {config.label}
+                </span>
+                {step === 'pending' && order.createdByName && (
+                  <span className={`${workerFont} text-muted-foreground truncate`}>{order.createdByName}</span>
+                )}
+                {step === 'assigned' && order.assignedWorkerName && (
+                  <span className={`${workerFont} text-muted-foreground truncate`}>{order.assignedWorkerName}</span>
+                )}
               </div>
-              <span className={`text-[7px] leading-tight text-center truncate max-w-full ${isActive ? 'font-medium' : 'text-muted-foreground'}`}>
-                {config.label}
-              </span>
-              {step === 'pending' && order.createdByName && (
-                <span className="text-[7px] text-muted-foreground truncate max-w-[42px]">{order.createdByName}</span>
-              )}
-              {step === 'assigned' && order.assignedWorkerName && (
-                <span className="text-[7px] text-muted-foreground truncate max-w-[42px]">{order.assignedWorkerName}</span>
-              )}
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
       {isCancelled && (
-        <div className="flex items-center justify-center gap-1 mt-1">
+        <div className="flex items-center justify-center gap-1.5 mt-1.5">
           {(() => {
             const outcome = getDeliveryOutcome(order);
             const reason = outcome?.reason || 'unknown';
             const reasonConfig = NON_DELIVERY_REASONS[reason];
             return (
-              <>
-                {React.createElement(reasonConfig.icon, { className: `h-3 w-3 ${reasonConfig.color}` })}
-                <span className={`text-[10px] font-medium ${reasonConfig.color}`}>{reasonConfig.label}</span>
-              </>
+              <Badge variant="outline" className={`text-[10px] px-2 py-0.5 border-destructive/30 ${reasonConfig.color}`}>
+                {React.createElement(reasonConfig.icon, { className: 'h-3 w-3 me-1 inline' })}
+                {reasonConfig.label}
+              </Badge>
             );
           })()}
         </div>
@@ -507,100 +518,113 @@ const OrderTracking: React.FC<{ workerMode?: boolean }> = ({ workerMode = false 
       ) : (
         <ScrollArea className="h-[calc(100vh-480px)]">
           <div className="space-y-2">
-            {filteredOrders.map(order => (
-              <Card
-                key={order.orderId}
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => setSelectedOrder(order)}
-              >
-                <div className="p-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex-1 min-w-0">
-                      {order.customerData ? (
-                        <div className="flex items-start gap-2 flex-wrap">
+            {filteredOrders.map(order => {
+              const statusStyle = 
+                order.currentStatus === 'delivered' ? 'border-s-green-500' :
+                order.currentStatus === 'cancelled' ? 'border-s-red-500' :
+                order.currentStatus === 'assigned' ? 'border-s-purple-500' :
+                order.currentStatus === 'in_transit' ? 'border-s-amber-500' :
+                'border-s-blue-500';
+
+              return (
+                <Card
+                  key={order.orderId}
+                  className={`cursor-pointer hover:shadow-md transition-all border-s-[3px] ${statusStyle} active:scale-[0.99]`}
+                  onClick={() => setSelectedOrder(order)}
+                >
+                  <div className="p-3 space-y-2">
+                    {/* Header: Customer + Status + Amount */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        {order.customerData ? (
                           <CustomerLabel customer={order.customerData} />
-                          <span className="text-[10px] text-muted-foreground shrink-0 mt-0.5">#{order.orderId.slice(0, 6)}</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
+                        ) : (
                           <span className="font-medium text-sm">{order.customerName}</span>
-                          <span className="text-[10px] text-muted-foreground">#{order.orderId.slice(0, 6)}</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Badge variant="outline" className={`text-[10px] ${
-                        order.currentStatus === 'delivered' ? 'bg-green-100 text-green-700' :
-                        order.currentStatus === 'cancelled' ? 'bg-red-100 text-red-700' :
-                        order.currentStatus === 'assigned' ? 'bg-purple-100 text-purple-700' :
-                        'bg-blue-100 text-blue-700'
-                      }`}>
-                        {STATUS_LABELS[order.currentStatus] || order.currentStatus}
-                      </Badge>
-                      <ChevronLeft className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  </div>
-                  
-                  <StatusProgressBar order={order} />
-                  
-                  <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                    <div className="flex items-center gap-1.5">
-                      <span>{order.events.length} حدث</span>
-                      {order.paymentType && (
-                        <Badge variant="outline" className={`text-[8px] py-0 px-1 ${
-                          order.paymentType === 'with_invoice' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-orange-50 text-orange-600 border-orange-200'
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <Badge variant="outline" className={`text-[10px] ${
+                          order.currentStatus === 'delivered' ? 'bg-green-100 text-green-700 border-green-200' :
+                          order.currentStatus === 'cancelled' ? 'bg-red-100 text-red-700 border-red-200' :
+                          order.currentStatus === 'assigned' ? 'bg-purple-100 text-purple-700 border-purple-200' :
+                          order.currentStatus === 'in_transit' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                          'bg-blue-100 text-blue-700 border-blue-200'
                         }`}>
-                          {order.paymentType === 'with_invoice' ? 'F1' : 'F2'}
+                          {STATUS_LABELS[order.currentStatus] || order.currentStatus}
                         </Badge>
-                      )}
+                        {order.totalAmount && (
+                          <span className="text-xs font-bold text-foreground">{Number(order.totalAmount).toLocaleString()} د.ج</span>
+                        )}
+                      </div>
                     </div>
-                    {order.totalAmount && <span>{Number(order.totalAmount).toLocaleString()} د.ج</span>}
+
+                    {/* Progress bar */}
+                    <StatusProgressBar order={order} />
+                    
+                    {/* Footer: meta info */}
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/40">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{order.events.length} حدث</span>
+                        {order.paymentType && (
+                          <Badge variant="outline" className={`text-[8px] py-0 px-1 ${
+                            order.paymentType === 'with_invoice' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-orange-50 text-orange-600 border-orange-200'
+                          }`}>
+                            {order.paymentType === 'with_invoice' ? 'F1' : 'F2'}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-muted-foreground">#{order.orderId.slice(0, 6)}</span>
+                        <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground/60" />
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
           </div>
         </ScrollArea>
       )}
 
       {/* Timeline Dialog */}
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
-        <DialogContent className="max-w-md max-h-[85vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="text-start">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] text-muted-foreground">#{selectedOrder?.orderId.slice(0, 8)}</span>
-                <Badge variant="outline" className={`text-[10px] ${
-                  selectedOrder?.currentStatus === 'delivered' ? 'bg-green-100 text-green-700' :
-                  selectedOrder?.currentStatus === 'cancelled' ? 'bg-red-100 text-red-700' :
-                  'bg-blue-100 text-blue-700'
-                }`}>
-                  {STATUS_LABELS[selectedOrder?.currentStatus || ''] || selectedOrder?.currentStatus}
-                </Badge>
-              </div>
-              {selectedOrder?.customerData && (
-                <CustomerLabel customer={selectedOrder.customerData} />
+        <DialogContent className="max-w-md max-h-[85vh] overflow-hidden flex flex-col p-0 gap-0">
+          {/* Dialog Header */}
+          <div className="p-4 pb-3 border-b space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-muted-foreground font-mono">#{selectedOrder?.orderId.slice(0, 8)}</span>
+              <Badge variant="outline" className={`text-[10px] ${
+                selectedOrder?.currentStatus === 'delivered' ? 'bg-green-100 text-green-700 border-green-200' :
+                selectedOrder?.currentStatus === 'cancelled' ? 'bg-red-100 text-red-700 border-red-200' :
+                selectedOrder?.currentStatus === 'in_transit' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                'bg-blue-100 text-blue-700 border-blue-200'
+              }`}>
+                {STATUS_LABELS[selectedOrder?.currentStatus || ''] || selectedOrder?.currentStatus}
+              </Badge>
+            </div>
+            {selectedOrder?.customerData && (
+              <CustomerLabel customer={selectedOrder.customerData} />
+            )}
+            <div className="flex items-center gap-3 text-[10px] text-muted-foreground flex-wrap">
+              {selectedOrder?.createdAt && (
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {format(new Date(selectedOrder.createdAt), 'yyyy/MM/dd HH:mm')}
+                </span>
               )}
-              {/* Order dates */}
-              <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground font-normal flex-wrap">
-                {selectedOrder?.createdAt && (
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    الإنشاء: {format(new Date(selectedOrder.createdAt), 'yyyy/MM/dd HH:mm')}
-                  </span>
-                )}
-                {selectedOrder?.currentStatus === 'delivered' && selectedOrder?.updatedAt && (
-                  <span className="flex items-center gap-1">
-                    <CheckCircle2 className="h-3 w-3 text-green-600" />
-                    التسليم: {format(new Date(selectedOrder.updatedAt), 'yyyy/MM/dd HH:mm')}
-                  </span>
-                )}
-              </div>
-            </DialogTitle>
-          </DialogHeader>
+              {selectedOrder?.currentStatus === 'delivered' && selectedOrder?.updatedAt && (
+                <span className="flex items-center gap-1 text-green-600">
+                  <CheckCircle2 className="h-3 w-3" />
+                  {format(new Date(selectedOrder.updatedAt), 'yyyy/MM/dd HH:mm')}
+                </span>
+              )}
+            </div>
+          </div>
           
           {selectedOrder && (
-            <OrderDetailsContent order={selectedOrder} />
+            <div className="flex-1 overflow-auto p-4">
+              <OrderDetailsContent order={selectedOrder} />
+            </div>
           )}
         </DialogContent>
       </Dialog>
@@ -649,57 +673,67 @@ const OrderDetailsContent: React.FC<{ order: GroupedOrder }> = ({ order }) => {
   const priceSubtype = orderItems?.[0]?.price_subtype as string | undefined;
 
   return (
-    <div className="flex-1 overflow-auto">
-      <StatusProgressBar order={order} />
+    <div className="space-y-4">
+      {/* Large Progress Bar */}
+      <StatusProgressBar order={order} large />
       
-      {/* Order Summary */}
-      <div className="flex flex-wrap items-center justify-center gap-2 mb-3">
+      {/* Order Summary Card */}
+      <div className="bg-muted/30 rounded-xl p-3 space-y-2.5">
+        {/* Amount row */}
         {order.totalAmount && (
-          <Badge className="bg-primary/10 text-primary border-primary/20">
-            {Number(order.totalAmount).toLocaleString()} د.ج
-          </Badge>
+          <div className="text-center">
+            <span className="text-2xl font-bold text-foreground">{Number(order.totalAmount).toLocaleString()}</span>
+            <span className="text-sm text-muted-foreground ms-1">د.ج</span>
+          </div>
         )}
-        {order.paymentType && (
-          <Badge variant="outline" className={`text-[10px] ${PAYMENT_TYPE_LABELS[order.paymentType]?.color || ''}`}>
-            <Receipt className="h-2.5 w-2.5 ml-1" />
-            {PAYMENT_TYPE_LABELS[order.paymentType]?.label || order.paymentType}
-          </Badge>
-        )}
-        {order.paymentType === 'without_invoice' && priceSubtype && (
-          <Badge variant="outline" className={`text-[10px] ${PRICE_SUBTYPE_LABELS[priceSubtype]?.color || ''}`}>
-            {PRICE_SUBTYPE_LABELS[priceSubtype]?.label || priceSubtype}
-          </Badge>
-        )}
-        {order.invoicePaymentMethod && (
-          <Badge variant="outline" className="text-[10px]">
-            <CreditCard className="h-2.5 w-2.5 ml-1" />
-            {INVOICE_METHOD_LABELS[order.invoicePaymentMethod] || order.invoicePaymentMethod}
-          </Badge>
-        )}
-      </div>
+        
+        {/* Payment badges */}
+        <div className="flex flex-wrap items-center justify-center gap-1.5">
+          {order.paymentType && (
+            <Badge variant="outline" className={`text-[10px] ${PAYMENT_TYPE_LABELS[order.paymentType]?.color || ''}`}>
+              <Receipt className="h-2.5 w-2.5 me-1" />
+              {PAYMENT_TYPE_LABELS[order.paymentType]?.label || order.paymentType}
+            </Badge>
+          )}
+          {order.paymentType === 'without_invoice' && priceSubtype && (
+            <Badge variant="outline" className={`text-[10px] ${PRICE_SUBTYPE_LABELS[priceSubtype]?.color || ''}`}>
+              {PRICE_SUBTYPE_LABELS[priceSubtype]?.label || priceSubtype}
+            </Badge>
+          )}
+          {order.invoicePaymentMethod && (
+            <Badge variant="outline" className="text-[10px]">
+              <CreditCard className="h-2.5 w-2.5 me-1" />
+              {INVOICE_METHOD_LABELS[order.invoicePaymentMethod] || order.invoicePaymentMethod}
+            </Badge>
+          )}
+        </div>
 
-      {/* Worker Info */}
-      <div className="flex gap-2 mb-3 justify-center">
-        {order.createdByName && (
-          <Badge variant="outline" className="text-[10px]">
-            <Plus className="h-2.5 w-2.5 ml-1" />
-            {order.createdByName}
-          </Badge>
-        )}
-        {order.assignedWorkerName && (
-          <Badge variant="outline" className="text-[10px]">
-            <Truck className="h-2.5 w-2.5 ml-1" />
-            {order.assignedWorkerName}
-          </Badge>
-        )}
+        {/* Workers row */}
+        <div className="flex items-center justify-center gap-2">
+          {order.createdByName && (
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <ShoppingCart className="h-3 w-3" />
+              <span>{order.createdByName}</span>
+            </div>
+          )}
+          {order.createdByName && order.assignedWorkerName && (
+            <span className="text-muted-foreground/40">|</span>
+          )}
+          {order.assignedWorkerName && (
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Truck className="h-3 w-3" />
+              <span>{order.assignedWorkerName}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Modify Button */}
-      <div className="flex justify-center mb-3">
+      <div className="flex justify-center">
         <Button
           variant="outline"
           size="sm"
-          className="text-xs gap-1.5"
+          className="text-xs gap-1.5 rounded-full px-4"
           onClick={() => setShowModify(true)}
         >
           <Pencil className="h-3 w-3" />
@@ -708,21 +742,20 @@ const OrderDetailsContent: React.FC<{ order: GroupedOrder }> = ({ order }) => {
       </div>
 
       {/* Order Items */}
-      <div className="border-t pt-3 mb-3">
-        <h3 className="text-xs font-medium text-muted-foreground mb-2">
-          <Package className="h-3 w-3 inline ml-1" />
-          منتجات الطلبية
-        </h3>
+      <div className="rounded-xl border bg-card overflow-hidden">
+        <div className="bg-muted/40 px-3 py-2 border-b flex items-center gap-1.5">
+          <Package className="h-3.5 w-3.5 text-muted-foreground" />
+          <h3 className="text-xs font-semibold text-foreground">منتجات الطلبية</h3>
+        </div>
         {itemsLoading ? (
           <div className="flex justify-center py-3">
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           </div>
         ) : orderItems && orderItems.length > 0 ? (
-          <div className="space-y-2">
+          <div className="divide-y divide-border/50">
             {orderItems.map((item: any) => (
-              <div key={item.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
-                {/* Product Image */}
-                <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+              <div key={item.id} className="flex items-center gap-2.5 p-2.5">
+                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden">
                   {item.product?.image_url ? (
                     <img src={item.product.image_url} alt={item.product?.name} className="w-full h-full object-cover" />
                   ) : (
@@ -733,9 +766,9 @@ const OrderDetailsContent: React.FC<{ order: GroupedOrder }> = ({ order }) => {
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-medium truncate">{item.product?.name || 'منتج'}</div>
                   <div className="flex items-center gap-1.5 flex-wrap text-[10px] text-muted-foreground">
-                    <span>الكمية: {item.quantity}</span>
+                    <span className="font-medium text-foreground">×{item.quantity}</span>
                     {item.gift_quantity > 0 && (
-                      <span className="text-green-600">+ {item.gift_quantity} هدية</span>
+                      <span className="text-green-600 font-medium">+ {item.gift_quantity} 🎁</span>
                     )}
                     {item.pricing_unit && item.pricing_unit !== 'box' && (
                       <Badge variant="outline" className="text-[8px] py-0 px-1">{item.pricing_unit === 'piece' ? 'قطعة' : item.pricing_unit === 'kg' ? 'كغ' : item.pricing_unit}</Badge>
@@ -751,7 +784,6 @@ const OrderDetailsContent: React.FC<{ order: GroupedOrder }> = ({ order }) => {
                       </Badge>
                     )}
                   </div>
-                  {/* Product catalog prices */}
                   {item.product && (
                     <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                       {item.product.price_retail != null && (
@@ -779,7 +811,7 @@ const OrderDetailsContent: React.FC<{ order: GroupedOrder }> = ({ order }) => {
                 </div>
                 
                 <div className="text-end shrink-0">
-                  <div className="text-xs font-medium">{Number(item.total_price || 0).toLocaleString()}</div>
+                  <div className="text-xs font-bold">{Number(item.total_price || 0).toLocaleString()}</div>
                   <div className="text-[9px] text-muted-foreground">
                     {Number(item.unit_price || 0).toLocaleString()} / و
                   </div>
@@ -788,14 +820,19 @@ const OrderDetailsContent: React.FC<{ order: GroupedOrder }> = ({ order }) => {
             ))}
           </div>
         ) : (
-          <div className="text-center text-xs text-muted-foreground py-2">لا توجد منتجات</div>
+          <div className="text-center text-xs text-muted-foreground py-4">لا توجد منتجات</div>
         )}
       </div>
       
       {/* Full Timeline */}
-      <div className="border-t pt-3">
-        <h3 className="text-xs font-medium text-muted-foreground mb-3">سجل الأحداث</h3>
-        <OrderTimeline order={order} />
+      <div className="rounded-xl border bg-card overflow-hidden">
+        <div className="bg-muted/40 px-3 py-2 border-b flex items-center gap-1.5">
+          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+          <h3 className="text-xs font-semibold text-foreground">سجل الأحداث</h3>
+        </div>
+        <div className="p-3">
+          <OrderTimeline order={order} />
+        </div>
       </div>
 
       {/* Modify Order Dialog */}
