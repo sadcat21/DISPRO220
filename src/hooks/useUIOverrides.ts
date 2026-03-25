@@ -206,6 +206,9 @@ export const UI_ELEMENTS = {
     { key: 'home_available_offers', label: 'العروض المتاحة', group: 'الرئيسية' },
     { key: 'home_attendance', label: 'الحضور والانصراف', group: 'الرئيسية' },
     { key: 'home_chat', label: 'المحادثات', group: 'الرئيسية' },
+    { key: 'home_today_customers', label: 'عملاء اليوم', group: 'الرئيسية' },
+    { key: 'home_worker_actions', label: 'إجراءات العمال', group: 'الرئيسية' },
+    { key: 'home_warehouse_stock', label: 'مخزون الفرع', group: 'الرئيسية' },
     // الطلبيات (Orders)
     { key: 'create_order', label: 'إنشاء طلبية', group: 'الطلبيات' },
     { key: 'orders_search', label: 'بحث في الطلبيات', group: 'الطلبيات' },
@@ -226,6 +229,11 @@ export const UI_ELEMENTS = {
     // تحميل للعامل (LoadStock)
     { key: 'load_stock', label: 'تحميل مخزون', group: 'تحميل للعامل' },
     { key: 'partial_load_orders', label: 'تحميل جزئي من الطلبيات', group: 'تحميل للعامل' },
+    { key: 'load_empty_truck', label: 'تفريغ الشاحنة', group: 'تحميل للعامل' },
+    { key: 'load_exchange', label: 'تبادل المنتجات', group: 'تحميل للعامل' },
+    { key: 'load_sheet_print', label: 'طباعة ورقة الشحن', group: 'تحميل للعامل' },
+    { key: 'load_review', label: 'مراجعة المخزون', group: 'تحميل للعامل' },
+    { key: 'load_session_history', label: 'سجل جلسات الشحن', group: 'تحميل للعامل' },
     // عروض المنتجات (ProductOffers)
     { key: 'add_offer', label: 'إضافة عرض', group: 'عروض المنتجات' },
     // المخزن (WarehouseStock)
