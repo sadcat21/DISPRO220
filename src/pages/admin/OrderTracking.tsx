@@ -145,8 +145,32 @@ const OrderTimeline: React.FC<{ order: GroupedOrder }> = ({ order }) => {
               )}
               
               {event.event_type === 'amount_changed' && (
-                <div className="mt-0.5 text-[11px] text-muted-foreground">
-                  {Number(event.old_value).toLocaleString()} → {Number(event.new_value).toLocaleString()} د.ج
+                <div className="mt-0.5 text-[11px]">
+                  <span className="text-muted-foreground">
+                    {Number(event.old_value).toLocaleString()} → {Number(event.new_value).toLocaleString()} د.ج
+                  </span>
+                  {event.details?.old_subtype && event.details?.new_subtype && event.details.old_subtype !== event.details.new_subtype && (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <Badge variant="outline" className="text-[8px] py-0 px-1">
+                        {event.details.old_subtype === 'super_gros' ? 'SG' : event.details.old_subtype === 'gros' ? 'G' : event.details.old_subtype === 'retail' ? 'D' : 'F1'}
+                      </Badge>
+                      <span className="text-[10px]">←</span>
+                      <Badge variant="outline" className="text-[8px] py-0 px-1 bg-primary/10 text-primary border-primary/20">
+                        {event.details.new_subtype === 'super_gros' ? 'SG' : event.details.new_subtype === 'gros' ? 'G' : event.details.new_subtype === 'retail' ? 'D' : 'F1'}
+                      </Badge>
+                    </div>
+                  )}
+                  {event.details?.payment_type_change && (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <Badge variant="outline" className="text-[8px] py-0 px-1">
+                        {event.details.old_payment_type === 'with_invoice' ? 'F1' : 'F2'}
+                      </Badge>
+                      <span className="text-[10px]">←</span>
+                      <Badge variant="outline" className="text-[8px] py-0 px-1 bg-primary/10 text-primary border-primary/20">
+                        {event.details.new_payment_type === 'with_invoice' ? 'F1' : 'F2'}
+                      </Badge>
+                    </div>
+                  )}
                 </div>
               )}
 
