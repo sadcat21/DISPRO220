@@ -64,6 +64,8 @@ interface GroupedOrder {
   createdByName: string | null;
   assignedWorkerName: string | null;
   orderNotes: string | null;
+  paymentType: string | null;
+  invoicePaymentMethod: string | null;
 }
 
 const getDeliveryOutcome = (order: GroupedOrder) => {
