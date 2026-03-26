@@ -302,7 +302,7 @@ const WorkerHome: React.FC = () => {
       </div>
 
       {/* Worker Sales Summary */}
-      <WorkerSalesSummaryCard />
+      <WorkerSalesSummaryCard onOpenSalesSummary={() => setShowSalesSummary(true)} />
 
       {/* Today's Customers Notification for Supervisors */}
       {isSupervisor && (
