@@ -27,6 +27,34 @@ const SectorCustomersPopover: React.FC = () => {
   const { data: todayCount = 0 } = useQuery({
     queryKey: ['sector-customers-count', workerId, activeBranch?.id, todayName, todayDateStr],
     queryFn: async () => {
+      // Check for assigned orders today (regardless of sectors)
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todayEnd = new Date();
+      todayEnd.setHours(23, 59, 59, 999);
+
+      let hasAssignedOrders = false;
+      if (!isAdmin && workerId) {
+        const { count } = await supabase
+          .from('orders')
+          .select('id', { count: 'exact', head: true })
+          .eq('assigned_worker_id', workerId)
+          .gte('created_at', todayStart.toISOString())
+          .lte('created_at', todayEnd.toISOString())
+          .in('status', ['pending', 'confirmed', 'processing', 'in_transit', 'ready']);
+        hasAssignedOrders = (count || 0) > 0;
+      } else if (isAdmin) {
+        let q = supabase
+          .from('orders')
+          .select('id', { count: 'exact', head: true })
+          .gte('created_at', todayStart.toISOString())
+          .lte('created_at', todayEnd.toISOString())
+          .in('status', ['pending', 'confirmed', 'processing', 'in_transit', 'ready']);
+        if (activeBranch && role === 'branch_admin') q = q.eq('branch_id', activeBranch.id);
+        const { count } = await q;
+        hasAssignedOrders = (count || 0) > 0;
+      }
+
       // Get sector schedules for today
       const { data: schedules } = await supabase
         .from('sector_schedules')
@@ -44,18 +72,17 @@ const SectorCustomersPopover: React.FC = () => {
         const { data: legacySectors } = await query.or(`visit_day_delivery.eq.${todayName},visit_day_sales.eq.${todayName}`);
 
         if (isAdmin) {
-          return (legacySectors || []).length > 0 || activeCoverages.length > 0 ? 1 : 0;
+          return (legacySectors || []).length > 0 || activeCoverages.length > 0 || hasAssignedOrders ? 1 : 0;
         }
 
-        // For worker: check own sectors + coverages where worker is substitute
         const hasOwnSectors = (legacySectors || []).some(
           s => s.sales_worker_id === workerId || s.delivery_worker_id === workerId
         );
         const isCovering = activeCoverages.some(c => c.substitute_worker_id === workerId);
-        return (hasOwnSectors || isCovering) ? 1 : 0;
+        return (hasOwnSectors || isCovering || hasAssignedOrders) ? 1 : 0;
       }
 
-      if (isAdmin) return schedules.length > 0 || activeCoverages.length > 0 ? 1 : 0;
+      if (isAdmin) return schedules.length > 0 || activeCoverages.length > 0 || hasAssignedOrders ? 1 : 0;
 
       // For worker: check own schedules (excluding sectors where worker is absent) + coverages
       const absentSectorKeys = new Set(
@@ -67,7 +94,6 @@ const SectorCustomersPopover: React.FC = () => {
         s.worker_id === workerId && !absentSectorKeys.has(`${s.sector_id}:${s.schedule_type}`)
       );
 
-      // Check if this worker is covering for someone today
       const coveringForSomeone = activeCoverages.some(c => {
         if (c.substitute_worker_id !== workerId) return false;
         const daySchedules = schedules.filter(
@@ -76,7 +102,7 @@ const SectorCustomersPopover: React.FC = () => {
         return daySchedules.length > 0;
       });
 
-      return (activeOwnSchedules.length > 0 || coveringForSomeone) ? 1 : 0;
+      return (activeOwnSchedules.length > 0 || coveringForSomeone || hasAssignedOrders) ? 1 : 0;
     },
     enabled: !!workerId,
   });
