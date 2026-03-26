@@ -426,6 +426,7 @@ const WorkerOrdersSummaryDialog: React.FC<Props> = ({ open, onOpenChange, worker
           dateRange={format(new Date(selectedDate), 'dd/MM/yyyy')}
           isVisible
           columnConfig={columnConfig}
+          extraRows={printExtraRows}
         />
       )}
       {isPrintReady && includePromoRegistre && (
