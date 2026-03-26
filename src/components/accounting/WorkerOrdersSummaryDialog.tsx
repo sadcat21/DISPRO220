@@ -697,7 +697,7 @@ const WorkerOrdersSummaryDialog: React.FC<Props> = ({ open, onOpenChange, worker
             </Button>
           </div>
         </div>
-        <ScrollArea className="flex-1 min-h-0" style={{ maxHeight: 'calc(80dvh - 160px)' }}>
+        <div className="flex-1 min-h-0 overflow-y-auto pe-1" style={{ maxHeight: 'calc(80dvh - 160px)', WebkitOverflowScrolling: 'touch' }}>
           <div className="space-y-1 pe-2">
             {uniqueCustomers.map((customer) => (
               <div
@@ -732,7 +732,7 @@ const WorkerOrdersSummaryDialog: React.FC<Props> = ({ open, onOpenChange, worker
               </div>
             ))}
           </div>
-        </ScrollArea>
+        </div>
         <div className="pt-2 shrink-0">
           <Button className="w-full" size="sm" onClick={() => setShowCustomerPicker(false)}>
             تأكيد ({selectedCustomerIds.size} عميل)
@@ -751,7 +751,7 @@ const WorkerOrdersSummaryDialog: React.FC<Props> = ({ open, onOpenChange, worker
           </DialogTitle>
         </DialogHeader>
         <p className="text-xs text-muted-foreground shrink-0">أضف كميات احتياطية لكل منتج. ستظهر كصف خاص في الطباعة.</p>
-        <ScrollArea className="flex-1 min-h-0 mt-2">
+        <div className="flex-1 min-h-0 mt-2 overflow-y-auto pe-1" style={{ WebkitOverflowScrolling: 'touch' }}>
           <div className="space-y-1.5 pe-2">
             {aggregatedProducts.map((product) => {
               const reserveQty = cashVanProducts[product.productId] || 0;
@@ -836,7 +836,7 @@ const WorkerOrdersSummaryDialog: React.FC<Props> = ({ open, onOpenChange, worker
               );
             })}
           </div>
-        </ScrollArea>
+        </div>
         <div className="grid grid-cols-2 gap-2 pt-2 shrink-0">
           <Button size="sm" onClick={() => setShowCashVanDialog(false)}>
             تأكيد
