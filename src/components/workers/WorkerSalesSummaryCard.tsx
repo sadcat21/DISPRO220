@@ -7,7 +7,11 @@ import { TrendingUp, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
-const WorkerSalesSummaryCard: React.FC = () => {
+interface WorkerSalesSummaryCardProps {
+  onOpenSalesSummary?: () => void;
+}
+
+const WorkerSalesSummaryCard: React.FC<WorkerSalesSummaryCardProps> = ({ onOpenSalesSummary }) => {
   const { workerId } = useAuth();
   const { t } = useLanguage();
 
@@ -87,7 +91,10 @@ const WorkerSalesSummaryCard: React.FC = () => {
 
   return (
     <div className="px-4 mt-3">
-      <Card className="border border-primary/20 bg-gradient-to-br from-background to-muted/30 overflow-hidden">
+      <Card
+        className="border border-primary/20 bg-gradient-to-br from-background to-muted/30 overflow-hidden cursor-pointer active:scale-[0.98] transition-all hover:shadow-md"
+        onClick={onOpenSalesSummary}
+      >
         <CardContent className="p-0">
           {/* Header */}
           <div className="flex items-center justify-between px-4 pt-3 pb-2">

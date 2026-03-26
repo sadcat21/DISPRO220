@@ -29,6 +29,7 @@ import PalletCalculatorDialog from '@/components/stock/PalletCalculatorDialog';
 import AttendanceButton from '@/components/attendance/AttendanceButton';
 import ManualPromoEntryDialog from '@/components/offers/ManualPromoEntryDialog';
 import WorkerSalesSummaryCard from '@/components/workers/WorkerSalesSummaryCard';
+import WorkerSalesSummaryDialog from '@/components/accounting/WorkerSalesSummaryDialog';
 
 const WorkerHome: React.FC = () => {
   const { user, workerId, role, activeRole, activeBranch } = useAuth();
@@ -51,6 +52,7 @@ const WorkerHome: React.FC = () => {
   const [showFactoryReceipt, setShowFactoryReceipt] = useState(false);
   const [showFactoryDelivery, setShowFactoryDelivery] = useState(false);
   const [showStockManagement, setShowStockManagement] = useState(false);
+  const [showSalesSummary, setShowSalesSummary] = useState(false);
 
   const { trackVisit } = useTrackVisit();
   const isDirectSaleHidden = useIsElementHidden('button', 'home_direct_sale');
@@ -300,7 +302,7 @@ const WorkerHome: React.FC = () => {
       </div>
 
       {/* Worker Sales Summary */}
-      <WorkerSalesSummaryCard />
+      <WorkerSalesSummaryCard onOpenSalesSummary={() => setShowSalesSummary(true)} />
 
       {/* Today's Customers Notification for Supervisors */}
       {isSupervisor && (
@@ -539,8 +541,13 @@ const WorkerHome: React.FC = () => {
         open={showFactoryDelivery}
         onOpenChange={setShowFactoryDelivery}
       />
+      <WorkerSalesSummaryDialog
+        open={showSalesSummary}
+        onOpenChange={setShowSalesSummary}
+        workerId={workerId || undefined}
+        workerName={user?.full_name}
+      />
 
-      {/* Stock Management Hub Dialog */}
       {showStockManagement && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center" onClick={() => setShowStockManagement(false)}>
           <div className="bg-background rounded-t-2xl w-full max-w-lg p-5 pb-8 space-y-3 animate-in slide-in-from-bottom" onClick={e => e.stopPropagation()}>
