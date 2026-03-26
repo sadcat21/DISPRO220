@@ -285,24 +285,6 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     enabled: !!effectiveWorkerId && open,
   });
 
-  // Merge sector customers with customers from assigned orders (who may lack a sector)
-  const customers = useMemo(() => {
-    const customerMap = new Map<string, any>();
-    sectorCustomers.forEach(c => customerMap.set(c.id, c));
-    // Add customers from assigned orders that aren't already in the map
-    assignedOrders.forEach(o => {
-      if (o.customer && o.customer_id && !customerMap.has(o.customer_id)) {
-        const c = o.customer as any;
-        customerMap.set(o.customer_id, {
-          id: c.id, name: c.name, phone: c.phone, wilaya: c.wilaya,
-          sector_id: c.sector_id, zone_id: c.zone_id, store_name: c.store_name,
-          latitude: c.latitude, longitude: c.longitude, customer_type: c.customer_type,
-        });
-      }
-    });
-    return Array.from(customerMap.values());
-  }, [sectorCustomers, assignedOrders]);
-
   const { data: todayVisits = [] } = useQuery({
     queryKey: ['today-visits-dialog', effectiveWorkerId, todayStart],
     queryFn: async () => {
