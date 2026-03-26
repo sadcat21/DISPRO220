@@ -47,6 +47,13 @@ const JS_DAY_TO_NAME: Record<number, string> = {
   6: 'saturday', 0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday', 4: 'thursday',
 };
 
+const toLocalDateKey = (date: Date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
 const toSafeNumber = (value: unknown): number => {
   const n = Number(value ?? 0);
   return Number.isFinite(n) ? n : 0;
@@ -231,6 +238,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
       start: start.toISOString(),
       end: end.toISOString(),
       weekStart: weekStart.toISOString(),
+      dateKey: toLocalDateKey(targetDate),
     };
   }, [selectedDay]);
 
@@ -544,7 +552,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     const targetOffset = targetJsDay === 6 ? 0 : targetJsDay + 1;
     const targetDate = new Date(weekStart);
     targetDate.setDate(weekStart.getDate() + targetOffset);
-    return targetDate.toISOString().split('T')[0];
+    return toLocalDateKey(targetDate);
   }, [selectedDay]);
 
   const activeCoveragesForSelectedDay = useMemo(() => {
@@ -784,7 +792,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     });
 
     // Include workers who have assigned orders for the selected day (even without sectors)
-    const selectedDateStr = selectedDayBounds.start.slice(0, 10);
+    const selectedDateStr = selectedDayBounds.dateKey;
     assignedOrders.forEach((order) => {
       if (!order.assigned_worker_id) return;
       const isForSelectedDay =
@@ -798,7 +806,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         .filter(([, assignments]) => assignments.size > 0)
         .map(([workerId]) => workerId)
     );
-  }, [sectorSchedules, sectors, selectedDay, activeCoveragesForSelectedDay, assignedOrders, selectedDayBounds.start, selectedDayBounds.end]);
+  }, [sectorSchedules, sectors, selectedDay, activeCoveragesForSelectedDay, assignedOrders, selectedDayBounds.start, selectedDayBounds.end, selectedDayBounds.dateKey]);
 
   // IMPORTANT: filter from all sectors using the computed IDs (which already include coverage substitutions)
   // so covered sectors appear immediately in direct-sale/delivery lists for substitute workers.
