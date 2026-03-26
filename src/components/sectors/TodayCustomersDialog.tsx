@@ -823,14 +823,17 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
       if (!o.customer_id) return;
       const customer = customers.find(c => c.id === o.customer_id);
       const matchesSector = customer?.sector_id && deliverySectorIds.has(customer.sector_id);
-      // Only include non-sector orders if they are explicitly assigned to this worker with today's date
-      const isExplicitlyAssigned = !customer?.sector_id && o.delivery_date && o.delivery_date.startsWith(todayDateStr) && o.assigned_worker_id === effectiveWorkerId;
+      // Include explicitly assigned orders for the selected day even if customer has a sector outside today's planned sectors
+      const isForSelectedDay =
+        (o.delivery_date && o.delivery_date.startsWith(selectedDayBounds.dateKey)) ||
+        (!o.delivery_date && o.created_at >= selectedDayBounds.start && o.created_at <= selectedDayBounds.end);
+      const isExplicitlyAssigned = !!effectiveWorkerId && o.assigned_worker_id === effectiveWorkerId && isForSelectedDay;
       if (matchesSector || isExplicitlyAssigned) ids.add(o.customer_id);
     });
     // Exclude direct-sale customers from delivery tracking
     todayDeliveredOrders.forEach(o => { if (o.customer_id && !directSoldCustomerIds.has(o.customer_id)) ids.add(o.customer_id); });
     return ids;
-  }, [assignedOrders, todayDeliveredOrders, todayDeliverySectors, customers, todayDateStr, effectiveWorkerId, directSoldCustomerIds]);
+  }, [assignedOrders, todayDeliveredOrders, todayDeliverySectors, customers, effectiveWorkerId, directSoldCustomerIds, selectedDayBounds.dateKey, selectedDayBounds.start, selectedDayBounds.end]);
 
   const deliveryCustomers = useMemo(() => customers.filter(c => deliveryCustomerIdsWithOrders.has(c.id)), [customers, deliveryCustomerIdsWithOrders]);
   const salesCustomers = useMemo(() => {
