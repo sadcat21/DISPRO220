@@ -2294,7 +2294,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
 };
 
 // Order Details Dialog - shows order/sale details similar to receipt content
-const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void; onCancelOrder?: (orderId: string) => void }> = ({ order, onClose, onCancelOrder }) => {
+const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void; onCancelOrder?: (orderId: string) => void; onCancelDirectSale?: (order: any) => Promise<void> }> = ({ order, onClose, onCancelOrder, onCancelDirectSale }) => {
   const { user } = useAuth();
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [showModifyDialog, setShowModifyDialog] = useState(false);
@@ -2459,6 +2459,9 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void; onCancelOr
             طباعة الوصل
           </Button>
           {order.id && onCancelOrder && order._isOrderRequest && (
+            <></>
+          )}
+          {order.id && (onCancelOrder || onCancelDirectSale) && (isDirectSale || order._isOrderRequest || order.status === 'delivered') && (
             <Button
               className="w-full gap-2"
               variant="destructive"
@@ -2466,7 +2469,11 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void; onCancelOr
               onClick={async () => {
                 setCancelling(true);
                 try {
-                  await onCancelOrder(order.id);
+                  if (isDirectSale && onCancelDirectSale) {
+                    await onCancelDirectSale(order);
+                  } else if (onCancelOrder) {
+                    await onCancelOrder(order.id);
+                  }
                   onClose();
                 } finally {
                   setCancelling(false);
@@ -2474,7 +2481,7 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void; onCancelOr
               }}
             >
               {cancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
-              إلغاء الطلبية
+              {isDirectSale ? 'إلغاء البيع المباشر' : 'إلغاء الطلبية'}
             </Button>
           )}
         </div>
