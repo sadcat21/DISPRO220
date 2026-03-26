@@ -44,12 +44,18 @@ interface ModifiedItem {
   pricing_unit: string; // 'box' | 'kg' | 'unit'
   weight_per_box: number;
   item_subtype?: string; // per-item override: 'super_gros' | 'gros' | 'retail' | 'invoice'
+  is_unit_sale?: boolean;
 }
 
 const getBoxMultiplier = (pricingUnit: string, weightPerBox: number, piecesPerBox: number): number => {
   if (pricingUnit === 'kg') return Math.max(1, weightPerBox);
   if (pricingUnit === 'unit') return Math.max(1, piecesPerBox);
   return 1;
+};
+
+const supportsUnitSale = (product?: Product | null): boolean => {
+  if (!product) return false;
+  return !!product.allow_unit_sale && Number(product.pieces_per_box || 0) > 1;
 };
 
 const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
@@ -64,6 +70,7 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
   const [items, setItems] = useState<ModifiedItem[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [newProductId, setNewProductId] = useState('');
+  const [newProductSaleUnit, setNewProductSaleUnit] = useState<'box' | 'piece'>('box');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [assignedWorkerId, setAssignedWorkerId] = useState(order.assigned_worker_id || '');
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -110,6 +117,7 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
           pieces_per_box: piecesPerBox,
           pricing_unit: pricingUnit,
           weight_per_box: weightPerBox,
+          is_unit_sale: false,
         };
       }));
       setAssignedWorkerId(order.assigned_worker_id || '');
@@ -145,6 +153,13 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
     };
     fetchProducts();
   }, [open]);
+
+  useEffect(() => {
+    const selectedProduct = products.find((p) => p.id === newProductId);
+    if (!supportsUnitSale(selectedProduct)) {
+      setNewProductSaleUnit('box');
+    }
+  }, [newProductId, products]);
 
   const recalcGiftBoxes = useCallback((productId: string, paidQty: number, piecesPerBox: number) => {
     const offersForProduct = activeOffers.filter((o: any) => o.product_id === productId);
@@ -210,6 +225,15 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
       if (i !== index) return item;
       const currentPaidQty = Math.max(0, item.new_quantity - (item.gift_quantity || 0));
       const newPaidQty = Math.max(0, currentPaidQty + delta);
+
+      if (item.is_unit_sale) {
+        return {
+          ...item,
+          new_quantity: newPaidQty,
+          gift_quantity: 0,
+        };
+      }
+
       const recalculated = recalcFromPaidQuantity(item.product_id, newPaidQty, item.pieces_per_box);
       return {
         ...item,
@@ -223,6 +247,15 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
     const paidQty = Math.max(0, Math.floor(Number(value) || 0));
     setItems(prev => prev.map((item, i) => {
       if (i !== index) return item;
+
+      if (item.is_unit_sale) {
+        return {
+          ...item,
+          new_quantity: paidQty,
+          gift_quantity: 0,
+        };
+      }
+
       const recalculated = recalcFromPaidQuantity(item.product_id, paidQty, item.pieces_per_box);
       return {
         ...item,
@@ -255,21 +288,29 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
     const piecesPerBox = Number(product.pieces_per_box || 1);
     const pricingUnit = product.pricing_unit || 'box';
     const weightPerBox = Number(product.weight_per_box || 1);
-    const recalculated = recalcFromPaidQuantity(product.id, initialPaidQuantity, piecesPerBox);
+    const isUnitSale = supportsUnitSale(product) && newProductSaleUnit === 'piece';
+    const effectiveUnitPrice = isUnitSale
+      ? unitPrice / Math.max(1, piecesPerBox)
+      : unitPrice;
+    const recalculated = isUnitSale
+      ? { gift_quantity: 0, total_quantity: initialPaidQuantity }
+      : recalcFromPaidQuantity(product.id, initialPaidQuantity, piecesPerBox);
 
     setItems(prev => [...prev, {
       product_id: product.id,
       product_name: product.name,
       original_quantity: 0,
       new_quantity: recalculated.total_quantity,
-      unit_price: unitPrice,
+      unit_price: effectiveUnitPrice,
       gift_quantity: recalculated.gift_quantity,
       original_gift_quantity: 0,
       pieces_per_box: piecesPerBox,
       pricing_unit: pricingUnit,
       weight_per_box: weightPerBox,
+      is_unit_sale: isUnitSale,
     }]);
     setNewProductId('');
+    setNewProductSaleUnit('box');
   };
 
   const removeNewItem = (index: number) => {
@@ -293,7 +334,12 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
           default: newUnitPrice = Number(product.price_gros || product.price_no_invoice || 0); break;
         }
       }
-      return { ...item, unit_price: newUnitPrice };
+
+      const adjustedUnitPrice = item.is_unit_sale
+        ? newUnitPrice / Math.max(1, item.pieces_per_box)
+        : newUnitPrice;
+
+      return { ...item, unit_price: adjustedUnitPrice };
     }));
   }, [products]);
 
@@ -313,7 +359,12 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
           default: newUnitPrice = Number(product.price_gros || product.price_no_invoice || 0); break;
         }
       }
-      return { ...item, unit_price: newUnitPrice, item_subtype: subtype };
+
+      const adjustedUnitPrice = item.is_unit_sale
+        ? newUnitPrice / Math.max(1, item.pieces_per_box)
+        : newUnitPrice;
+
+      return { ...item, unit_price: adjustedUnitPrice, item_subtype: subtype };
     }));
   }, [products]);
 
@@ -874,6 +925,8 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
   };
 
   const availableProducts = products.filter(p => !items.some(i => i.product_id === p.id));
+  const selectedNewProduct = products.find((p) => p.id === newProductId);
+  const canToggleNewProductUnit = supportsUnitSale(selectedNewProduct);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -1072,6 +1125,11 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
                           <span className="font-medium text-sm">{item.product_name}</span>
+                          {item.is_unit_sale && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                              {t('offers.unit_piece')}
+                            </Badge>
+                          )}
                           {item.gift_quantity > 0 && (
                             <Badge className="bg-pink-100 text-pink-700 dark:bg-pink-950/40 dark:text-pink-300 text-[10px] px-1.5 py-0 gap-0.5">
                               <Gift className="w-3 h-3" />
@@ -1165,6 +1223,31 @@ const ModifyOrderDialog: React.FC<ModifyOrderDialogProps> = ({
                   <PlusCircle className="w-4 h-4" />
                 </Button>
               </div>
+              {canToggleNewProductUnit && (
+                <div className="space-y-1">
+                  <p className="text-[11px] text-muted-foreground">وحدة إضافة المنتج</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={newProductSaleUnit === 'box' ? 'default' : 'outline'}
+                      className="h-8"
+                      onClick={() => setNewProductSaleUnit('box')}
+                    >
+                      {t('offers.unit_box')}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={newProductSaleUnit === 'piece' ? 'default' : 'outline'}
+                      className="h-8"
+                      onClick={() => setNewProductSaleUnit('piece')}
+                    >
+                      {t('offers.unit_piece')}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </ScrollArea>
