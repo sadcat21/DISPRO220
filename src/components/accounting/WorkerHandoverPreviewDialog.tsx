@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -41,10 +41,18 @@ const WorkerHandoverPreviewDialog: React.FC<WorkerHandoverPreviewDialogProps> = 
     enabled: open && !!effectiveWorkerId,
   });
 
-  // Use last session end as start, or fallback to today start
-  const now = new Date();
-  const periodEnd = now.toISOString();
-  const periodStart = lastSessionEnd || (now.toISOString().split('T')[0] + 'T00:00:00+01:00');
+  // Freeze period range while dialog is open to avoid infinite re-fetch loop
+  const { periodStart, periodEnd } = useMemo(() => {
+    const now = new Date();
+    const periodEndValue = now.toISOString();
+    const localDateKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const periodStartValue = lastSessionEnd || `${localDateKey}T00:00:00+01:00`;
+
+    return {
+      periodStart: periodStartValue,
+      periodEnd: periodEndValue,
+    };
+  }, [open, effectiveWorkerId, lastSessionEnd]);
 
   const { data: calc, isLoading } = useSessionCalculations(
     open && effectiveWorkerId ? { workerId: effectiveWorkerId, branchId: activeBranch?.id || undefined, periodStart, periodEnd } : null
