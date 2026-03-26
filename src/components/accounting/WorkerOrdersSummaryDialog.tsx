@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { ClipboardList, Package, User, Calendar, ChevronLeft, ChevronRight, Loader2, ShoppingCart, UserCheck, Printer, Settings2, Layers, Gift, Users, Truck, Minus, Plus, Check } from 'lucide-react';
+import { ClipboardList, Package, User, Calendar, ChevronLeft, ChevronRight, Loader2, ShoppingCart, UserCheck, Printer, Settings2, Layers, Gift, Users, Truck, Minus, Plus, Check, Save } from 'lucide-react';
 import { format, addDays, subDays } from 'date-fns';
 import OrdersPrintView from '@/components/print/OrdersPrintView';
 import type { PrintColumnConfig } from '@/components/print/OrdersPrintView';
@@ -20,6 +20,7 @@ import { OrderWithDetails, Product } from '@/types/database';
 import { useWorkerPrintInfo } from '@/hooks/useWorkerPrintInfo';
 import GiftsPrintView from '@/components/accounting/GiftsPrintView';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Props {
   open: boolean;
