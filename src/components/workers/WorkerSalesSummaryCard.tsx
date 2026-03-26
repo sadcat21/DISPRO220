@@ -95,6 +95,7 @@ const WorkerSalesSummaryCard: React.FC<WorkerSalesSummaryCardProps> = ({ onOpenS
         className="border border-primary/20 bg-gradient-to-br from-background to-muted/30 overflow-hidden cursor-pointer active:scale-[0.98] transition-all hover:shadow-md"
         onClick={onOpenSalesSummary}
       >
+        <CardContent className="p-0">
           {/* Header */}
           <div className="flex items-center justify-between px-4 pt-3 pb-2">
             <div className="flex items-center gap-2">
