@@ -476,13 +476,32 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
               );
             })}
 
-            {/* Extra rows (e.g. surplus) */}
+            {/* Orders Total row (red) */}
+            {extraRows.length > 0 && extraRows.some(r => productsWithOrders.some(p => (r.productQuantities[p.id] || 0) > 0)) ? (
+              <tr style={{ backgroundColor: '#fee2e2', fontWeight: 'bold' }}>
+                <td colSpan={visibleStaticCols} className="center" style={{ fontSize: '9pt', color: '#b91c1c' }}>
+                  {tp('print.header.total') || 'Total'} ({tp('print.header.orders_count') || 'Commandes'})
+                </td>
+                {isColVisible('products') && productsWithOrders.map((product) => (
+                  <td key={product.id} className="center bold" style={{ color: '#b91c1c' }}>
+                    {productTotals[product.id] > 0 ? productTotals[product.id] : ''}
+                  </td>
+                ))}
+                {isColEffective('total_amount') && (
+                  <td className="center bold" style={{ color: '#b91c1c' }}>
+                    {grandTotal > 0 ? grandTotal.toLocaleString() : ''}
+                  </td>
+                )}
+              </tr>
+            ) : null}
+
+            {/* Extra rows (e.g. CASH VAN - yellow) */}
             {extraRows.map((row, idx) => {
               const hasAny = productsWithOrders.some(p => (row.productQuantities[p.id] || 0) > 0);
               if (!hasAny) return null;
               return (
-                <tr key={`extra-${idx}`} style={{ backgroundColor: row.style === 'highlight' ? '#fff3cd' : undefined, fontWeight: 'bold' }}>
-                  <td colSpan={visibleStaticCols} className="center" style={{ fontSize: '9pt' }}>{row.label}</td>
+                <tr key={`extra-${idx}`} style={{ backgroundColor: '#fff3cd', fontWeight: 'bold' }}>
+                  <td colSpan={visibleStaticCols} className="center" style={{ fontSize: '9pt', color: '#92400e' }}>{row.label}</td>
                   {isColVisible('products') && productsWithOrders.map((product) => {
                     const qty = row.productQuantities[product.id] || 0;
                     return (
@@ -500,20 +519,32 @@ const OrdersPrintView = forwardRef<HTMLDivElement, OrdersPrintViewProps>(
               );
             })}
 
-            {/* Totals row */}
-            <tr className="totals-row">
-              <td colSpan={visibleStaticCols} className="totals-label">{tp('print.header.total')}</td>
-              {isColVisible('products') && productsWithOrders.map((product) => (
-                <td key={product.id} className="center bold">
-                  {productTotals[product.id] > 0 ? productTotals[product.id] : ''}
-                </td>
-              ))}
-              {isColEffective('total_amount') && (
-                <td className="center bold">
-                  {grandTotal > 0 ? grandTotal.toLocaleString() : ''}
-                </td>
-              )}
-            </tr>
+            {/* Grand Total row (red) - orders + extra rows combined */}
+            {(() => {
+              const hasExtras = extraRows.length > 0 && extraRows.some(r => productsWithOrders.some(p => (r.productQuantities[p.id] || 0) > 0));
+              return (
+                <tr className="totals-row" style={hasExtras ? { backgroundColor: '#fecaca' } : {}}>
+                  <td colSpan={visibleStaticCols} className="totals-label" style={hasExtras ? { color: '#b91c1c' } : {}}>
+                    {hasExtras ? (tp('print.header.grand_total') || 'Total Général') : tp('print.header.total')}
+                  </td>
+                  {isColVisible('products') && productsWithOrders.map((product) => {
+                    const orderQty = productTotals[product.id] || 0;
+                    const extraQty = extraRows.reduce((s, r) => s + (r.productQuantities[product.id] || 0), 0);
+                    const combined = orderQty + extraQty;
+                    return (
+                      <td key={product.id} className="center bold" style={hasExtras ? { color: '#b91c1c' } : {}}>
+                        {combined > 0 ? combined : ''}
+                      </td>
+                    );
+                  })}
+                  {isColEffective('total_amount') && (
+                    <td className="center bold" style={hasExtras ? { color: '#b91c1c' } : {}}>
+                      {grandTotal > 0 ? grandTotal.toLocaleString() : ''}
+                    </td>
+                  )}
+                </tr>
+              );
+            })()}
           </tbody>
         </table>
 
