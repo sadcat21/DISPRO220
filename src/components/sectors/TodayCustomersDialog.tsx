@@ -740,7 +740,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     return ids;
   }, [sectorSchedules, sectors, selectedDay, effectiveWorkerId, isAdmin, hasSpecificWorker, activeCoveragesForSelectedDay]);
 
-  const availableWorkerIdsForSelectedDay = useMemo(() => {
+   const availableWorkerIdsForSelectedDay = useMemo(() => {
     const workerAssignments = new Map<string, Set<string>>();
 
     const addAssignment = (workerId: string | null, key: string) => {
@@ -784,12 +784,19 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
       addAssignment(coverage.substitute_worker_id, key);
     });
 
+    // Include workers who have assigned orders today (even without sectors)
+    if (selectedDay === todayName) {
+      workerIdsWithOrdersToday.forEach(wId => {
+        addAssignment(wId, 'orders:assigned');
+      });
+    }
+
     return new Set(
       Array.from(workerAssignments.entries())
         .filter(([, assignments]) => assignments.size > 0)
         .map(([workerId]) => workerId)
     );
-  }, [sectorSchedules, sectors, selectedDay, activeCoveragesForSelectedDay]);
+  }, [sectorSchedules, sectors, selectedDay, activeCoveragesForSelectedDay, workerIdsWithOrdersToday, todayName]);
 
   // IMPORTANT: filter from all sectors using the computed IDs (which already include coverage substitutions)
   // so covered sectors appear immediately in direct-sale/delivery lists for substitute workers.
