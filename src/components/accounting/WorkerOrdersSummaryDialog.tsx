@@ -200,9 +200,97 @@ const WorkerOrdersSummaryDialog: React.FC<Props> = ({ open, onOpenChange, worker
   // Cash Van reserve products state
   const [showCashVanDialog, setShowCashVanDialog] = useState(false);
   const [cashVanProducts, setCashVanProducts] = useState<Record<string, number>>({});
+  const [cashVanSaving, setCashVanSaving] = useState(false);
+  const [customersSaving, setCustomersSaving] = useState(false);
+  const [loadedFromDb, setLoadedFromDb] = useState(false);
 
+  const { activeBranch } = useAuth();
   const { columns: columnConfig, saveColumns } = usePrintColumnsConfig();
   const { data: workerPrintInfo } = useWorkerPrintInfo(workerId);
+
+  // DB keys for persistence
+  const cashVanKey = workerId ? `cashvan_${workerId}_${selectedDate}` : '';
+  const customerSelKey = workerId ? `print_customers_${workerId}_${selectedDate}` : '';
+
+  // Load saved Cash Van & customer selection from DB
+  useEffect(() => {
+    if (!open || !workerId) return;
+    setLoadedFromDb(false);
+    const load = async () => {
+      try {
+        const { data: settings } = await supabase
+          .from('app_settings')
+          .select('key, value')
+          .in('key', [cashVanKey, customerSelKey]);
+        
+        if (settings) {
+          for (const s of settings) {
+            if (s.key === cashVanKey) {
+              try { setCashVanProducts(JSON.parse(s.value)); } catch {}
+            }
+            if (s.key === customerSelKey) {
+              try { setSelectedCustomerIds(new Set(JSON.parse(s.value))); } catch {}
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load saved settings:', e);
+      }
+      setLoadedFromDb(true);
+    };
+    load();
+  }, [open, workerId, selectedDate, cashVanKey, customerSelKey]);
+
+  // Save Cash Van to DB
+  const saveCashVan = useCallback(async () => {
+    if (!cashVanKey) return;
+    setCashVanSaving(true);
+    try {
+      const { data: existing } = await supabase
+        .from('app_settings')
+        .select('id')
+        .eq('key', cashVanKey)
+        .maybeSingle();
+      
+      if (existing) {
+        await supabase.from('app_settings').update({ value: JSON.stringify(cashVanProducts), updated_at: new Date().toISOString() }).eq('id', existing.id);
+      } else {
+        await supabase.from('app_settings').insert({ key: cashVanKey, value: JSON.stringify(cashVanProducts), branch_id: activeBranch?.id || null });
+      }
+      toast.success('تم حفظ كميات CASH VAN');
+    } catch (e) {
+      console.error(e);
+      toast.error('حدث خطأ أثناء الحفظ');
+    } finally {
+      setCashVanSaving(false);
+    }
+  }, [cashVanKey, cashVanProducts, activeBranch]);
+
+  // Save customer selection to DB
+  const saveCustomerSelection = useCallback(async () => {
+    if (!customerSelKey) return;
+    setCustomersSaving(true);
+    try {
+      const value = JSON.stringify(Array.from(selectedCustomerIds));
+      const { data: existing } = await supabase
+        .from('app_settings')
+        .select('id')
+        .eq('key', customerSelKey)
+        .maybeSingle();
+      
+      if (existing) {
+        await supabase.from('app_settings').update({ value, updated_at: new Date().toISOString() }).eq('id', existing.id);
+      } else {
+        await supabase.from('app_settings').insert({ key: customerSelKey, value, branch_id: activeBranch?.id || null });
+      }
+      toast.success('تم حفظ تحديد العملاء');
+    } catch (e) {
+      console.error(e);
+      toast.error('حدث خطأ أثناء الحفظ');
+    } finally {
+      setCustomersSaving(false);
+    }
+  }, [customerSelKey, selectedCustomerIds, activeBranch]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['worker-orders-summary', workerId, selectedDate],
