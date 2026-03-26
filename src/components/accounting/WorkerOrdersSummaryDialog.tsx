@@ -638,7 +638,7 @@ const WorkerOrdersSummaryDialog: React.FC<Props> = ({ open, onOpenChange, worker
             <Truck className="w-4 h-4" />
             CASH VAN - منتجات احتياطية
             {Object.values(cashVanProducts).some(q => q > 0) && (
-              <Badge variant="secondary" className="text-[10px] px-1.5 h-5 bg-amber-100 text-amber-800">
+              <Badge variant="secondary" className="text-[10px] px-1.5 h-5 bg-accent text-accent-foreground">
                 {Object.values(cashVanProducts).filter(q => q > 0).length} منتج
               </Badge>
             )}
@@ -780,7 +780,7 @@ const WorkerOrdersSummaryDialog: React.FC<Props> = ({ open, onOpenChange, worker
                       {reserveQty > 0 && (
                         <>
                           <span>+</span>
-                          <span className="text-amber-600 font-bold">{reserveQty}</span>
+                          <span className="text-destructive font-bold">{reserveQty}</span>
                           <span>=</span>
                           <span className="font-bold text-primary">{totalWithReserve}</span>
                         </>
