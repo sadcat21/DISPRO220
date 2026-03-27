@@ -59,7 +59,7 @@ export const useLoadingSessions = (workerId: string | null) => {
 
   const createSession = useMutation({
     mutationFn: async (params: { workerId: string; notes?: string }) => {
-      const { data, error } = await supabase.rpc('start_loading_session_atomic', {
+      const { data, error } = await (supabase.rpc as any)('start_loading_session_atomic', {
         p_worker_id: params.workerId,
         p_notes: params.notes || null,
       });

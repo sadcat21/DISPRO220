@@ -893,7 +893,7 @@ const LoadStock: React.FC = () => {
         toast.error(t('stock.add_products'));
         return;
       }
-      const { data: confirmationResult, error: confirmationError } = await supabase.rpc(
+      const { data: confirmationResult, error: confirmationError } = await (supabase.rpc as any)(
         'confirm_loading_session_atomic',
         { p_session_id: sessionToComplete }
       );
