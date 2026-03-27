@@ -1435,7 +1435,7 @@ const LoadStock: React.FC = () => {
                     variant="outline"
                     className="flex-1 h-10 rounded-xl text-xs border-primary/30 text-primary"
                     onClick={() => setShowPartialLoadDialog(true)}
-                    disabled={isSaving}
+                    disabled={isSaving || isConfirmingSession}
                   >
                     <ShoppingCart className="w-4 h-4 me-1" />
                     طلبيات
