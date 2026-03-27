@@ -8,6 +8,7 @@ import { Trash2, Loader2, AlertTriangle, Database, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface DataCategory {
   id: string;
