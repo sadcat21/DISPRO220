@@ -1382,7 +1382,7 @@ const LoadStock: React.FC = () => {
                       : "border-blue-400 text-blue-700 bg-blue-50/50 dark:bg-blue-900/10"
                     }`}
                     onClick={() => setShowVerificationDialog(true)}
-                    disabled={isEmptying}
+                    disabled={isEmptying || isStartingSession || isConfirmingSession}
                   >
                     {hasReviewToday ? <CheckCircle className="w-4 h-4 me-1" /> : <Search className="w-4 h-4 me-1" />}
                     {hasReviewToday ? 'مراجعة ✓' : 'مراجعة'}
