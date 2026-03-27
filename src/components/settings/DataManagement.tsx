@@ -44,6 +44,7 @@ const DATA_CATEGORIES: DataCategory[] = [
 
 const DataManagement: React.FC = () => {
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showConfirm, setShowConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
