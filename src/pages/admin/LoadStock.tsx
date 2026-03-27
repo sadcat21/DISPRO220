@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -130,6 +130,11 @@ const LoadStock: React.FC = () => {
   const [emptyTruckItems, setEmptyTruckItems] = useState<EmptyTruckItem[]>([]);
   const [isEmptying, setIsEmptying] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isStartingSession, setIsStartingSession] = useState(false);
+  const [isConfirmingSession, setIsConfirmingSession] = useState(false);
+
+  const startSessionLockRef = useRef(false);
+  const completeSessionLockRef = useRef(false);
 
   // Add product dialog state
   const [addProductId, setAddProductId] = useState('');
@@ -641,17 +646,26 @@ const LoadStock: React.FC = () => {
 
   // Start new session
   const handleStartSession = async () => {
+    if (startSessionLockRef.current || isStartingSession) return;
     if (!selectedWorker) { toast.error(t('stock.select_worker')); return; }
     if (!hasReviewToday) {
       toast.error(t('load_stock.review_first'));
       setShowVerificationDialog(true);
       return;
     }
+
+    startSessionLockRef.current = true;
+    setIsStartingSession(true);
+
     try {
       const result = await createSession.mutateAsync({ workerId: selectedWorker });
       setActiveSessionId(result.id);
       toast.success(t('load_stock.session_started'));
     } catch (err: any) { toast.error(err.message); }
+    finally {
+      startSessionLockRef.current = false;
+      setIsStartingSession(false);
+    }
   };
 
   // Open add product dialog
@@ -865,8 +879,14 @@ const LoadStock: React.FC = () => {
   };
 
   const handleCompleteSession = async () => {
+    if (completeSessionLockRef.current || isConfirmingSession) return;
+
     const sessionToComplete = activeSessionId || sessions.find(s => s.status === 'open')?.id;
     if (!sessionToComplete) { toast.error(t('load_stock.no_open_session')); return; }
+
+    completeSessionLockRef.current = true;
+    setIsConfirmingSession(true);
+
     try {
       // Get session items to apply stock changes
       const { data: itemsToApply } = await sessionItemsQuery(sessionToComplete);
@@ -944,6 +964,10 @@ const LoadStock: React.FC = () => {
       setActiveSessionId(null);
       setSessionItems([]);
     } catch (err: any) { toast.error(err.message); }
+    finally {
+      completeSessionLockRef.current = false;
+      setIsConfirmingSession(false);
+    }
   };
 
   // Delete entire session (no stock reversal needed since stock hasn't changed)
