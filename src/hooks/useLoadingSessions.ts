@@ -61,19 +61,14 @@ export const useLoadingSessions = (workerId: string | null) => {
 
   const createSession = useMutation({
     mutationFn: async (params: { workerId: string; notes?: string }) => {
-      const { data, error } = await supabase
-        .from('loading_sessions')
-        .insert({
-          worker_id: params.workerId,
-          manager_id: currentManagerId!,
-          branch_id: activeBranch?.id || null,
-          status: 'open',
-          notes: params.notes || null,
-        })
-        .select()
-        .single();
+      const { data, error } = await supabase.rpc('start_loading_session_atomic', {
+        p_worker_id: params.workerId,
+        p_notes: params.notes || null,
+      });
       if (error) throw error;
-      return data;
+      const session = (data as any)?.session;
+      if (!session) throw new Error('Failed to create loading session');
+      return session;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['loading-sessions'] });
