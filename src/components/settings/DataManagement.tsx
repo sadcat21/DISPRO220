@@ -202,6 +202,9 @@ const DataManagement: React.FC = () => {
         }
       }
 
+      // Invalidate all queries to refresh UI
+      await queryClient.invalidateQueries();
+
       if (!hasErrors) {
         toast.success(`تم حذف البيانات المحددة بنجاح (${selected.size} فئة)`);
       } else {
