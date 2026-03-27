@@ -8,6 +8,7 @@ import { Trash2, Loader2, AlertTriangle, Database, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface DataCategory {
   id: string;
@@ -43,6 +44,7 @@ const DATA_CATEGORIES: DataCategory[] = [
 
 const DataManagement: React.FC = () => {
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showConfirm, setShowConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -199,6 +201,9 @@ const DataManagement: React.FC = () => {
           }
         }
       }
+
+      // Invalidate all queries to refresh UI
+      await queryClient.invalidateQueries();
 
       if (!hasErrors) {
         toast.success(`تم حذف البيانات المحددة بنجاح (${selected.size} فئة)`);
