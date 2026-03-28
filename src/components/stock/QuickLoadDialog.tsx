@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Truck, Package, Loader2, AlertTriangle, PackageX } from 'lucide-react';
+import BoxPieceInput from '@/components/ui/BoxPieceInput';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useWarehouseStock } from '@/hooks/useWarehouseStock';
 import { useWorkerLoadSuggestions } from '@/hooks/useStockAlerts';

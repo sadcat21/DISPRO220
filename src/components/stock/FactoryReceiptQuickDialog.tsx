@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Package, Plus, Trash2, Loader2, ArrowDownToLine, Camera, CheckCircle, XCircle } from 'lucide-react';
+import BoxPieceInput from '@/components/ui/BoxPieceInput';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -40,7 +41,7 @@ const FactoryReceiptQuickDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   const [notes, setNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [pickerIndex, setPickerIndex] = useState<number | null>(null);
-  const [products, setProducts] = useState<{ id: string; name: string; image_url?: string | null }[]>([]);
+  const [products, setProducts] = useState<{ id: string; name: string; image_url?: string | null; pieces_per_box?: number }[]>([]);
   const [invoicePhoto, setInvoicePhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [palletCount, setPalletCount] = useState(0);
@@ -68,7 +69,7 @@ const FactoryReceiptQuickDialog: React.FC<Props> = ({ open, onOpenChange }) => {
 
   useEffect(() => {
     if (!open || !branchId) return;
-    supabase.from('products').select('id, name, image_url').eq('is_active', true).order('name')
+    supabase.from('products').select('id, name, image_url, pieces_per_box').eq('is_active', true).order('name')
       .then(({ data }) => setProducts(data || []));
     fetchPendingReceipts();
   }, [open, branchId]);
@@ -101,6 +102,7 @@ const FactoryReceiptQuickDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   const updateItem = (i: number, field: keyof ReceiptItem, value: any) => {
     setItems(prev => prev.map((item, idx) => idx === i ? { ...item, [field]: value } : item));
   };
+  const getProductPPB = (id: string) => products.find(p => p.id === id)?.pieces_per_box || 1;
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -339,12 +341,14 @@ const FactoryReceiptQuickDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                   )}
                 </div>
                 <div>
-                  <Label className="text-[10px] text-muted-foreground">الكمية (صندوق)</Label>
-                  <Input
-                    type="number" min={1}
+                  <Label className="text-[10px] text-muted-foreground">الكمية (صندوق.قطعة)</Label>
+                  <BoxPieceInput
                     value={item.quantity}
-                    onChange={e => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
+                    onChange={(val) => updateItem(index, 'quantity', val)}
+                    piecesPerBox={getProductPPB(item.product_id)}
                     className="text-center text-sm h-8"
+                    min={0}
+                    showHint={true}
                   />
                 </div>
               </div>

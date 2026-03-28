@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Package, Loader2, Minus, Plus, Truck } from 'lucide-react';
+import BoxPieceInput from '@/components/ui/BoxPieceInput';
 import { WorkerLoadSuggestion } from '@/hooks/useStockAlerts';
 
 interface BulkLoadNeedsDialogProps {
@@ -95,6 +96,7 @@ const BulkLoadNeedsDialog: React.FC<BulkLoadNeedsDialogProps> = ({
               const imageUrl = (product as any)?.image_url;
               const available = warehouseStock.find(ws => ws.product_id === s.product_id)?.quantity || 0;
               const qty = quantities[s.product_id] || 0;
+              const ppb = product?.pieces_per_box || 1;
 
               return (
                 <div key={s.product_id} className="flex items-center gap-2 p-2.5 rounded-xl ring-1 ring-border/40 bg-card">
@@ -128,13 +130,14 @@ const BulkLoadNeedsDialog: React.FC<BulkLoadNeedsDialogProps> = ({
                     >
                       <Minus className="w-3 h-3" />
                     </Button>
-                    <Input
-                      type="number"
-                      min={0}
-                      step="any"
+                    <BoxPieceInput
                       value={qty}
-                      onChange={e => setQty(s.product_id, parseFloat(e.target.value) || 0)}
-                      className="w-14 h-7 text-center text-sm font-bold px-1"
+                      onChange={(val) => setQty(s.product_id, val)}
+                      piecesPerBox={ppb}
+                      className="w-16 h-7 text-center text-sm font-bold px-1"
+                      min={0}
+                      max={available}
+                      showHint={true}
                     />
                     <Button
                       variant="outline"
