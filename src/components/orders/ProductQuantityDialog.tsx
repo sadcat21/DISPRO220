@@ -68,18 +68,24 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
   const [itemPriceSubType, setItemPriceSubType] = useState<PriceSubType>(defaultPriceSubType);
   const [itemInvoicePaymentMethod, setItemInvoicePaymentMethod] = useState<InvoicePaymentMethod | null>(defaultInvoicePaymentMethod);
 
+  // Derived quantity from B.P input
+  const parsed = useMemo(() => parseBP(quantityInput, piecesPerBox), [quantityInput, piecesPerBox]);
+  const quantity = isUnitSale ? (parseInt(quantityInput) || 0) : parsed.boxes;
+  const quantityPieces = isUnitSale ? 0 : parsed.pieces;
+
   // Sync quantity when initialQuantity changes (edit mode vs new)
   useEffect(() => {
     if (open) {
-      setQuantity(initialQuantity);
+      setQuantityInput(isUnitSale ? String(initialQuantity) : boxesToBP(initialQuantity, piecesPerBox));
     }
-  }, [open, initialQuantity]);
+  }, [open, initialQuantity, piecesPerBox, isUnitSale]);
 
   // Offer must be applied before confirming (mandatory)
   const hasUnappliedOffer = !isUnitSale && giftPieces > 0 && !offerApplied;
 
   const handleConfirm = () => {
-    if (product && quantity > 0 && !hasUnappliedOffer) {
+    const effectiveQty = isUnitSale ? quantity : parsed.totalBoxes;
+    if (product && effectiveQty > 0 && !hasUnappliedOffer) {
       const perItemPricing: PerItemPricing | undefined = showPricingOverride ? {
         paymentType: itemPaymentType,
         invoicePaymentMethod: itemPaymentType === 'with_invoice' ? itemInvoicePaymentMethod : null,
@@ -87,20 +93,20 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
       } : undefined;
 
       if (isUnitSale) {
-        onConfirm(product.id, quantity, undefined, true, perItemPricing);
+        onConfirm(product.id, effectiveQty, undefined, true, perItemPricing);
       } else {
         const giftBoxes = product.pieces_per_box > 0 ? Math.floor(giftPieces / product.pieces_per_box) : 0;
         const appliedGiftBoxes = offerApplied ? giftBoxes : 0;
         const appliedGiftPieces = offerApplied ? giftPieces : 0;
-        const totalQuantity = quantity + appliedGiftBoxes;
+        const totalQuantity = effectiveQty + appliedGiftBoxes;
 
         if (appliedGiftPieces > 0 || appliedGiftBoxes > 0) {
           onConfirm(product.id, totalQuantity, { giftQuantity: appliedGiftBoxes, giftPieces: appliedGiftPieces, offerId: giftOfferId }, false, perItemPricing);
         } else {
-          onConfirm(product.id, quantity, undefined, false, perItemPricing);
+          onConfirm(product.id, effectiveQty, undefined, false, perItemPricing);
         }
       }
-      setQuantity(1);
+      setQuantityInput('1');
       setGiftPieces(0);
       setGiftOfferId(undefined);
       setOfferApplied(false);
@@ -111,7 +117,12 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
   };
 
   const handleQuantityChange = (delta: number) => {
-    setQuantity(Math.max(1, quantity + delta));
+    const newQty = Math.max(1, quantity + delta);
+    if (isUnitSale) {
+      setQuantityInput(String(newQty));
+    } else {
+      setQuantityInput(boxesToBP(newQty + quantityPieces / piecesPerBox, piecesPerBox));
+    }
   };
 
   const handleGiftCalculated = useCallback((pieces: number, offerId?: string) => {
@@ -136,7 +147,7 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
     if (!isOpen) {
       setGiftPieces(0);
       setGiftOfferId(undefined);
-      setQuantity(initialQuantity);
+      setQuantityInput(isUnitSale ? String(initialQuantity) : boxesToBP(initialQuantity, piecesPerBox));
       setOfferApplied(false);
       setIsUnitSale(false);
       setShowPricingOverride(false);
@@ -148,8 +159,9 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
   };
 
   const handleQuantityInput = (value: string) => {
-    const parsedValue = Math.max(1, parseInt(value) || 1);
-    setQuantity(parsedValue);
+    // Allow digits, dots for B.P notation
+    const cleaned = value.replace(/[^0-9.]/g, '');
+    setQuantityInput(cleaned);
   };
 
   if (!product) return null;
@@ -159,10 +171,10 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
   const appliedGiftBoxes = offerApplied ? giftBoxes : 0;
   const appliedGiftPieces = offerApplied ? giftPieces : 0;
   const baseQuantity = quantity;
-  const basePieces = isUnitSale ? quantity : baseQuantity * product.pieces_per_box;
-  const totalPieces = isUnitSale ? quantity : (baseQuantity * product.pieces_per_box + appliedGiftPieces);
+  const basePieces = isUnitSale ? quantity : parsed.totalPieces;
+  const totalPieces = isUnitSale ? quantity : (parsed.totalPieces + appliedGiftPieces);
   const displayPrice = isUnitSale ? unitPiecePrice : unitPrice;
-  const displayTotal = isUnitSale ? (unitPiecePrice * quantity) : (unitPrice * baseQuantity);
+  const displayTotal = isUnitSale ? (unitPiecePrice * quantity) : (unitPrice * parsed.totalBoxes);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
