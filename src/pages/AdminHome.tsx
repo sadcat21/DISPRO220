@@ -106,7 +106,7 @@ const AdminHome: React.FC = () => {
   const { data: activeWorkers = [] } = useQuery({
     queryKey: ['admin-home-workers', activeBranch?.id],
     queryFn: async () => {
-      let q = supabase.from('workers').select('id, full_name, username').eq('is_active', true).eq('role', 'worker');
+      let q = supabase.from('workers').select('id, full_name, username').eq('is_active', true);
       if (activeBranch?.id) q = q.eq('branch_id', activeBranch.id);
       const { data } = await q.order('full_name');
       return data || [];
