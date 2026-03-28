@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Eye, EyeOff, Loader2, FlaskConical } from 'lucide-react';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
@@ -79,6 +80,8 @@ const LoginForm: React.FC = () => {
   
   const [testWorkers, setTestWorkers] = useState<QuickWorker[]>([]);
   const [realWorkers, setRealWorkers] = useState<QuickWorker[]>([]);
+  const isQuickLoginOpen = quickLoginMode !== 'none';
+  const quickWorkers = quickLoginMode === 'test' ? testWorkers : realWorkers;
 
   useEffect(() => {
     if (quickLoginMode === 'test' && testWorkers.length === 0) {
@@ -127,7 +130,7 @@ const LoginForm: React.FC = () => {
     else setRealWorkers(result);
   };
 
-  // Logo tap → real workers
+  // Logo tap â†’ real workers
   const handleLogoTap = () => {
     const newCount = logoTapCount + 1;
     setLogoTapCount(newCount);
@@ -140,7 +143,7 @@ const LoginForm: React.FC = () => {
     logoTapTimer.current = setTimeout(() => setLogoTapCount(0), 800);
   };
 
-  // Title tap → test workers
+  // Title tap â†’ test workers
   const handleTitleTap = () => {
     const newCount = titleTapCount + 1;
     setTitleTapCount(newCount);
@@ -158,7 +161,8 @@ const LoginForm: React.FC = () => {
     try {
       const result = await login(user.trim(), pass);
       if (!result.needsRoleSelection && !result.needsBranchSelection) {
-        toast.success(t('auth.login') + ' ✓');
+        if (isQuickLogin) setQuickLoginMode('none');
+        toast.success(t('auth.login') + ' âœ“');
       }
     } catch (error: any) {
       // For quick login, try alternative password casings
@@ -171,7 +175,8 @@ const LoginForm: React.FC = () => {
           try {
             const result = await login(user.trim(), alt);
             if (!result.needsRoleSelection && !result.needsBranchSelection) {
-              toast.success(t('auth.login') + ' ✓');
+              setQuickLoginMode('none');
+              toast.success(t('auth.login') + ' âœ“');
             }
             return;
           } catch {
@@ -260,58 +265,56 @@ const LoginForm: React.FC = () => {
             </Button>
           </form>
 
-          {/* Test workers quick login */}
-          {quickLoginMode === 'test' && <div className="mt-4 pt-4 border-t border-border space-y-2">
-            <p className="text-xs text-muted-foreground text-center mb-2 flex items-center justify-center gap-1">
-              <FlaskConical className="w-3 h-3" />
-              دخول سريع (تجريبي)
-            </p>
-            <div className="flex flex-col gap-2 max-h-48 overflow-y-auto">
-              {testWorkers.length > 0 ? (
-                testWorkers.map((tw) => (
-                  <Button
-                    key={tw.username}
-                    variant="outline"
-                    size="sm"
-                    className="w-full text-xs justify-start"
-                    disabled={isLoading}
-                    onClick={() => doLogin(tw.username, tw.username, true)}
-                  >
-                    {getWorkerEmoji(tw)} {tw.full_name}
-                    <span className="text-muted-foreground mr-auto text-[10px]">
-                      ({getWorkerLabel(tw)})
-                    </span>
-                  </Button>
-                ))
-              ) : (
-                <p className="text-xs text-center text-muted-foreground py-2">
-                  لا يوجد عمال تجريبيون. أنشئهم من إدارة العمال.
-                </p>
-              )}
-            </div>
-          </div>}
+      <Dialog open={isQuickLoginOpen} onOpenChange={(open) => setQuickLoginMode(open ? quickLoginMode : 'none')}>
+        <DialogContent className="max-w-md border-0 bg-white/95 p-0 shadow-2xl backdrop-blur" dir={dir}>
+          <DialogHeader className="border-b border-slate-200 bg-gradient-to-l from-purple-600 via-fuchsia-600 to-rose-500 px-6 py-5 text-white">
+            <DialogTitle className="flex items-center justify-center gap-2 text-xl font-bold">
+              {quickLoginMode === 'test' ? <FlaskConical className="h-5 w-5" /> : <span className="text-lg">🔑</span>}
+              {quickLoginMode === 'test' ? 'دخول سريع تجريبي' : 'دخول سريع حقيقي'}
+            </DialogTitle>
+            <DialogDescription className="text-center text-sm text-white/85">
+              اختر العامل للدخول بلمسة واحدة عبر نافذة أوضح وأكثر جاذبية.
+            </DialogDescription>
+          </DialogHeader>
 
-          {/* Real workers quick login */}
-          {quickLoginMode === 'real' && <div className="mt-4 pt-4 border-t border-border space-y-2">
-            <p className="text-xs text-muted-foreground text-center mb-2">🔑 دخول سريع (حقيقي)</p>
-            <div className="flex flex-col gap-2 max-h-48 overflow-y-auto">
-              {realWorkers.map((tw) => (
-                <Button
-                  key={tw.username}
-                  variant="outline"
-                  size="sm"
-                  className="w-full text-xs justify-start"
-                  disabled={isLoading}
-                  onClick={() => doLogin(tw.username, tw.username, true)}
-                >
-                  {getWorkerEmoji(tw)} {tw.full_name}
-                  <span className="text-muted-foreground mr-auto text-[10px]">
-                    ({getWorkerLabel(tw)})
-                  </span>
-                </Button>
-              ))}
-            </div>
-          </div>}
+          <div className="max-h-[60vh] overflow-y-auto px-4 py-4">
+            {quickWorkers.length > 0 ? (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {quickWorkers.map((worker) => (
+                  <button
+                    key={worker.username}
+                    type="button"
+                    disabled={isLoading}
+                    onClick={() => doLogin(worker.username, worker.username, true)}
+                    className="group flex min-h-[168px] flex-col items-center justify-between rounded-3xl border border-slate-200 bg-gradient-to-b from-white via-violet-50 to-fuchsia-50 px-3 py-4 text-center shadow-sm transition hover:-translate-y-1 hover:border-purple-300 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-600 to-fuchsia-500 text-2xl text-white shadow-lg">
+                      {getWorkerEmoji(worker)}
+                    </div>
+                    <div className="space-y-1">
+                      <div className="line-clamp-2 text-base font-bold leading-6 text-slate-800">
+                        {worker.full_name}
+                      </div>
+                      <div className="line-clamp-2 text-xs leading-5 text-slate-500">
+                        {getWorkerLabel(worker)}
+                      </div>
+                    </div>
+                    <div className="rounded-full bg-purple-600 px-4 py-1.5 text-sm font-medium text-white shadow-sm transition group-hover:bg-fuchsia-600">
+                      دخول
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                {quickLoginMode === 'test'
+                  ? 'لا يوجد عمال تجريبيون حاليًا.'
+                  : 'لا يوجد عمال مفعّلون للدخول السريع حاليًا.'}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
         </CardContent>
       </Card>
 
@@ -321,7 +324,7 @@ const LoginForm: React.FC = () => {
         roles={availableRoles}
         onSelectRole={(roleData) => {
           selectRole(roleData);
-          toast.success(t('auth.login') + ' ✓');
+          toast.success(t('auth.login') + ' âœ“');
         }}
       />
 
@@ -330,7 +333,7 @@ const LoginForm: React.FC = () => {
         open={showBranchSelection}
         onSelectBranch={(branch) => {
           selectBranch(branch);
-          toast.success(t('auth.login') + ' ✓');
+          toast.success(t('auth.login') + ' âœ“');
         }}
       />
     </div>
@@ -338,3 +341,4 @@ const LoginForm: React.FC = () => {
 };
 
 export default LoginForm;
+
