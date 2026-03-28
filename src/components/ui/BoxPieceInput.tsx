@@ -65,7 +65,13 @@ const BoxPieceInput: React.FC<BoxPieceInputProps> = ({
     onChange(newVal);
   };
 
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    setIsFocused(true);
+    onFocus?.(e);
+  };
+
   const handleBlur = () => {
+    setIsFocused(false);
     // Normalize display on blur
     const normalized = parsed.display || '0';
     setRawInput(normalized);
