@@ -516,6 +516,25 @@ const StockReceipts: React.FC = () => {
                   </div>
                 )}
               </div>
+
+              {/* Cancel Receipt Button */}
+              {viewReceipt.status !== 'cancelled' && (
+                <div className="border-t pt-3">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="w-full"
+                    disabled={isCancelling}
+                    onClick={() => handleCancelReceipt(viewReceipt)}
+                  >
+                    {isCancelling ? <Loader2 className="w-4 h-4 animate-spin ml-1" /> : <XCircle className="w-4 h-4 ml-1" />}
+                    إلغاء الاستلام وعكس الكميات
+                  </Button>
+                </div>
+              )}
+              {viewReceipt.status === 'cancelled' && (
+                <Badge variant="destructive" className="w-full justify-center py-1">ملغي</Badge>
+              )}
             </div>
           )}
         </DialogContent>
