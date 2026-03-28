@@ -102,6 +102,8 @@ const FactoryReceiptQuickDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   const updateItem = (i: number, field: keyof ReceiptItem, value: any) => {
     setItems(prev => prev.map((item, idx) => idx === i ? { ...item, [field]: value } : item));
   };
+  const getProductName = (id: string) => products.find(p => p.id === id)?.name || '';
+  const getProductPPB = (id: string) => products.find(p => p.id === id)?.pieces_per_box || 1;
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
