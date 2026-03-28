@@ -96,6 +96,7 @@ const BulkLoadNeedsDialog: React.FC<BulkLoadNeedsDialogProps> = ({
               const imageUrl = (product as any)?.image_url;
               const available = warehouseStock.find(ws => ws.product_id === s.product_id)?.quantity || 0;
               const qty = quantities[s.product_id] || 0;
+              const ppb = product?.pieces_per_box || 1;
 
               return (
                 <div key={s.product_id} className="flex items-center gap-2 p-2.5 rounded-xl ring-1 ring-border/40 bg-card">
