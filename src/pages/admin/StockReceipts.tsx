@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { boxesToBP } from '@/utils/boxPieceInput';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -509,7 +510,7 @@ const StockReceipts: React.FC = () => {
                             <Package className="w-4 h-4 text-primary" />
                             <span className="text-sm font-medium">{item.product?.name || item.product_id}</span>
                           </div>
-                          <span className="text-sm font-bold text-primary">{item.quantity}</span>
+                          <span className="text-sm font-bold text-primary">{boxesToBP(Number(item.quantity), item.product?.pieces_per_box || 20)}</span>
                         </div>
                         {item.pallet_quantity > 0 && (
                           <div className="flex items-center justify-end">
@@ -594,7 +595,7 @@ const StockReceipts: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-4 text-xs">
                           {item.product_quantity > 0 && (
-                            <span className="text-destructive font-medium">{t('stock_receipts.damaged')}: {item.product_quantity} {t('common.box')}</span>
+                            <span className="text-destructive font-medium">{t('stock_receipts.damaged')}: {boxesToBP(Number(item.product_quantity), products.find(p => p.id === item.product_id)?.pieces_per_box || 20)} {t('common.box')}</span>
                           )}
                           {item.pallet_quantity > 0 && (
                             <span className="text-amber-600 font-medium">{t('stock_receipts.pallets')}: {item.pallet_quantity}</span>
