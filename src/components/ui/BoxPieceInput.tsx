@@ -44,11 +44,14 @@ const BoxPieceInput: React.FC<BoxPieceInputProps> = ({
 }) => {
   const ppb = Math.max(1, Math.round(piecesPerBox));
   const [rawInput, setRawInput] = useState(() => boxesToBP(value, ppb));
+  const [isFocused, setIsFocused] = useState(false);
 
-  // Sync when external value changes
+  // Sync when external value changes — but NOT while user is typing
   useEffect(() => {
-    setRawInput(boxesToBP(value, ppb));
-  }, [value, ppb]);
+    if (!isFocused) {
+      setRawInput(boxesToBP(value, ppb));
+    }
+  }, [value, ppb, isFocused]);
 
   const parsed = useMemo(() => parseBP(rawInput, ppb), [rawInput, ppb]);
 
@@ -62,7 +65,13 @@ const BoxPieceInput: React.FC<BoxPieceInputProps> = ({
     onChange(newVal);
   };
 
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    setIsFocused(true);
+    onFocus?.(e);
+  };
+
   const handleBlur = () => {
+    setIsFocused(false);
     // Normalize display on blur
     const normalized = parsed.display || '0';
     setRawInput(normalized);
@@ -82,7 +91,7 @@ const BoxPieceInput: React.FC<BoxPieceInputProps> = ({
         value={rawInput}
         onChange={handleChange}
         onBlur={handleBlur}
-        onFocus={onFocus}
+        onFocus={handleFocus}
         className={className}
         placeholder={placeholder}
         disabled={disabled}

@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Package, Plus, Trash2, Loader2, ArrowDownToLine, Camera, CheckCircle, XCircle } from 'lucide-react';
 import BoxPieceInput from '@/components/ui/BoxPieceInput';
+import { boxesToBP } from '@/utils/boxPieceInput';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -136,7 +137,7 @@ const FactoryReceiptQuickDialog: React.FC<Props> = ({ open, onOpenChange }) => {
           invoice_number: invoiceNumber || null,
           invoice_photo_url: photoUrl || null,
           notes: notes || null,
-          total_items: validItems.reduce((sum, i) => sum + i.quantity, 0),
+          total_items: validItems.length,
           status,
         })
         .select()
@@ -407,7 +408,7 @@ const FactoryReceiptQuickDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                             </div>
                           )}
                           <span className="flex-1 truncate">{item.product_name}</span>
-                          <Badge variant="secondary" className="text-xs font-bold">{item.quantity}</Badge>
+                          <Badge variant="secondary" className="text-xs font-bold">{boxesToBP(Number(item.quantity), products.find(p => p.name === item.product_name)?.pieces_per_box || 20)}</Badge>
                         </div>
                       ))}
                     </div>
