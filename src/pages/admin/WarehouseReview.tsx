@@ -405,7 +405,7 @@ const WarehouseReview: React.FC = () => {
                         type="button"
                         size="sm"
                         variant="ghost"
-                        onClick={() => updateActual(item.productId, String(item.expected))}
+                        onClick={() => updateActual(item.productId, boxesToBP(item.expected, item.piecesPerBox))}
                         className={`w-14 h-8 text-[11px] px-1 font-bold ${
                           item.status === 'matched'
                             ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
