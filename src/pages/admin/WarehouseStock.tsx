@@ -340,25 +340,23 @@ const WarehouseStock: React.FC = () => {
         ) : (
           <div className="space-y-2 pb-2">
               {filteredSummaries.map(s => {
-                // Format gifts in boxes.pieces notation
                 const piecesPerBox = products.find(p => p.id === s.productId)?.pieces_per_box || 20;
-                const giftBoxes = Math.floor(s.gifts / piecesPerBox);
-                const giftPieces = Math.round(s.gifts % piecesPerBox);
-                const giftFormatted = giftBoxes > 0
-                  ? `${giftBoxes}.${String(giftPieces).padStart(2, '0')}`
-                  : s.gifts > 0 ? `0.${String(giftPieces).padStart(2, '0')}` : '0';
+                const fmt = (v: number) => boxesToBP(v, piecesPerBox);
+                // Format gifts: gifts are stored as total pieces, convert to boxes first
+                const giftInBoxes = s.gifts / piecesPerBox;
+                const giftFormatted = boxesToBP(giftInBoxes, piecesPerBox);
 
                 const row1 = [
-                  { label: t('warehouse.at_workers'), value: s.workerStock, display: String(s.workerStock), color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-950/30' },
-                  { label: t('warehouse.sold'), value: s.sold, display: String(s.sold), color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-950/30' },
-                  { label: t('warehouse.surplus'), value: s.surplus, display: String(s.surplus), color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30' },
-                  { label: t('warehouse.deficit'), value: s.deficit, display: String(s.deficit), color: 'text-destructive', bg: 'bg-red-50 dark:bg-red-950/30' },
+                  { label: t('warehouse.at_workers'), value: s.workerStock, display: fmt(s.workerStock), color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-950/30' },
+                  { label: t('warehouse.sold'), value: s.sold, display: fmt(s.sold), color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-950/30' },
+                  { label: t('warehouse.surplus'), value: s.surplus, display: fmt(s.surplus), color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30' },
+                  { label: t('warehouse.deficit'), value: s.deficit, display: fmt(s.deficit), color: 'text-destructive', bg: 'bg-red-50 dark:bg-red-950/30' },
                 ];
                 const row2 = [
                   { label: t('warehouse.gifts'), value: s.gifts, display: giftFormatted, color: 'text-pink-500', bg: 'bg-pink-50 dark:bg-pink-950/30' },
-                  { label: t('warehouse.damaged'), value: s.damaged, display: String(s.damaged), color: 'text-destructive', bg: 'bg-red-50 dark:bg-red-950/30' },
-                  { label: t('warehouse.returned'), value: s.factoryReturn, display: String(s.factoryReturn), color: 'text-violet-600', bg: 'bg-violet-50 dark:bg-violet-950/30' },
-                  { label: t('warehouse.compensation'), value: s.compensation, display: String(s.compensation), color: 'text-teal-600', bg: 'bg-teal-50 dark:bg-teal-950/30' },
+                  { label: t('warehouse.damaged'), value: s.damaged, display: fmt(s.damaged), color: 'text-destructive', bg: 'bg-red-50 dark:bg-red-950/30' },
+                  { label: t('warehouse.returned'), value: s.factoryReturn, display: fmt(s.factoryReturn), color: 'text-violet-600', bg: 'bg-violet-50 dark:bg-violet-950/30' },
+                  { label: t('warehouse.compensation'), value: s.compensation, display: fmt(s.compensation), color: 'text-teal-600', bg: 'bg-teal-50 dark:bg-teal-950/30' },
                 ];
                 return (
                   <Card key={s.productId} className="overflow-hidden border-border/60 shadow-sm">
