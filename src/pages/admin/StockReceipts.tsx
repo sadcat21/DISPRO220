@@ -600,6 +600,25 @@ const StockReceipts: React.FC = () => {
                   </div>
                 )}
               </div>
+
+              {/* Cancel Delivery Button */}
+              {viewSendingOrder.status !== 'cancelled' && (
+                <div className="border-t pt-3">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="w-full"
+                    disabled={isCancelling}
+                    onClick={() => handleCancelDelivery(viewSendingOrder)}
+                  >
+                    {isCancelling ? <Loader2 className="w-4 h-4 animate-spin ml-1" /> : <XCircle className="w-4 h-4 ml-1" />}
+                    إلغاء التسليم وإعادة الكميات
+                  </Button>
+                </div>
+              )}
+              {viewSendingOrder.status === 'cancelled' && (
+                <Badge variant="destructive" className="w-full justify-center py-1">ملغي</Badge>
+              )}
             </div>
           )}
         </DialogContent>
