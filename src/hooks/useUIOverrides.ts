@@ -349,4 +349,15 @@ export const UI_ELEMENTS = {
     { key: 'send_chat_message', label: 'إرسال رسالة', group: 'المحادثات' },
     { key: 'create_conversation', label: 'إنشاء محادثة', group: 'المحادثات' },
   ],
+  notifications: [
+    { key: 'notif_chat', label: 'المحادثات' },
+    { key: 'notif_offers', label: 'العروض' },
+    { key: 'notif_today_customers', label: 'عملاء اليوم / استحقاق الديون' },
+    { key: 'notif_stock_alerts', label: 'تنبيهات المخزون' },
+    { key: 'notif_tasks', label: 'المهام' },
+    { key: 'notif_worker_requests', label: 'طلبات العمال' },
+    { key: 'notif_receipt_modifications', label: 'تعديلات الفواتير' },
+    { key: 'notif_document_collections', label: 'تحصيل الوثائق' },
+    { key: 'notif_attendance', label: 'الحضور والانصراف' },
+  ],
 };
