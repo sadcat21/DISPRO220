@@ -209,7 +209,7 @@ const WarehouseReview: React.FC = () => {
         item_type: 'product',
         product_id: item.productId,
         expected_quantity: item.expected,
-        actual_quantity: getActualNum(item.actual),
+        actual_quantity: getActualNum(item.actual, item.piecesPerBox),
         status: item.status as string,
       }));
 
