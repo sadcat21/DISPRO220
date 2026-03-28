@@ -44,11 +44,14 @@ const BoxPieceInput: React.FC<BoxPieceInputProps> = ({
 }) => {
   const ppb = Math.max(1, Math.round(piecesPerBox));
   const [rawInput, setRawInput] = useState(() => boxesToBP(value, ppb));
+  const [isFocused, setIsFocused] = useState(false);
 
-  // Sync when external value changes
+  // Sync when external value changes — but NOT while user is typing
   useEffect(() => {
-    setRawInput(boxesToBP(value, ppb));
-  }, [value, ppb]);
+    if (!isFocused) {
+      setRawInput(boxesToBP(value, ppb));
+    }
+  }, [value, ppb, isFocused]);
 
   const parsed = useMemo(() => parseBP(rawInput, ppb), [rawInput, ppb]);
 
