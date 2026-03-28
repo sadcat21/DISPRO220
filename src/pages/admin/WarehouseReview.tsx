@@ -17,37 +17,32 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import WarehouseReviewHistory from '@/components/warehouse/WarehouseReviewHistory';
 
-/** Convert custom format (boxes.pieces) to total pieces */
-const customToTotalPieces = (customQty: number, piecesPerBox: number): number => {
-  const boxes = Math.floor(Math.round(customQty * 100) / 100);
-  const decimalPart = Math.round((Math.round(customQty * 100) / 100 - boxes) * 100);
-  return boxes * piecesPerBox + decimalPart;
+/** Convert DB fractional-box quantity to total pieces */
+const dbQtyToTotalPieces = (qty: number, piecesPerBox: number): number => {
+  return Math.round(qty * piecesPerBox);
 };
 
-/** Convert total pieces to custom format (boxes.pieces) */
-const totalPiecesToCustom = (totalPieces: number, piecesPerBox: number): number => {
-  if (totalPieces <= 0) return 0;
+/** Convert B.P user input string to total pieces */
+const bpInputToTotalPieces = (input: string, piecesPerBox: number): number => {
+  return parseBP(input, piecesPerBox).totalPieces;
+};
+
+/** Convert total pieces to B.P display format */
+const totalPiecesToBP = (totalPieces: number, piecesPerBox: number): string => {
+  if (totalPieces <= 0) return '0';
   const boxes = Math.floor(totalPieces / piecesPerBox);
-  const remainingPieces = Math.round(totalPieces % piecesPerBox);
-  return boxes + remainingPieces / 100;
+  const remaining = Math.round(totalPieces % piecesPerBox);
+  if (remaining === 0) return String(boxes);
+  return `${boxes}.${String(remaining).padStart(2, '0')}`;
 };
 
-interface ReviewItem {
-  productId: string;
-  productName: string;
-  imageUrl?: string | null;
-  piecesPerBox: number;
-  expected: number;
-  actual: string;
-  status: 'matched' | 'surplus' | 'deficit' | 'unverified';
-}
-
-const fmtQty = (n: number): string => {
-  const rounded = Math.round(n * 100) / 100;
-  return rounded.toFixed(2);
+const fmtQty = (n: number, piecesPerBox: number): string => {
+  return boxesToBP(n, piecesPerBox);
 };
 
-const getActualNum = (actual: string): number => parseFloat(actual) || 0;
+const getActualNum = (actual: string, piecesPerBox: number): number => {
+  return parseBP(actual, piecesPerBox).totalBoxes;
+};
 
 const computeStatus = (expected: number, actual: string, piecesPerBox: number): ReviewItem['status'] => {
   if (actual === '') return 'unverified';
