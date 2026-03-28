@@ -375,11 +375,10 @@ const WarehouseReview: React.FC = () => {
           {/* Product items */}
           <div className="space-y-1.5">
             {filteredItems.map(item => {
-              const actualNum = getActualNum(item.actual);
-              const expectedPieces = customToTotalPieces(item.expected, item.piecesPerBox);
-              const actualPieces = item.actual !== '' ? customToTotalPieces(actualNum, item.piecesPerBox) : 0;
+              const actualPieces = item.actual !== '' ? bpInputToTotalPieces(item.actual, item.piecesPerBox) : 0;
+              const expectedPieces = dbQtyToTotalPieces(item.expected, item.piecesPerBox);
               const diffPieces = item.actual !== '' ? actualPieces - expectedPieces : 0;
-              const diffInBoxPiece = diffPieces !== 0 ? totalPiecesToCustom(Math.abs(diffPieces), item.piecesPerBox) : 0;
+              const diffDisplay = diffPieces !== 0 ? totalPiecesToBP(Math.abs(diffPieces), item.piecesPerBox) : '0';
               return (
                 <div key={item.productId} className={`rounded-lg px-3 py-2.5 border ${
                   item.status === 'deficit' ? 'border-destructive/30 bg-destructive/5' :
