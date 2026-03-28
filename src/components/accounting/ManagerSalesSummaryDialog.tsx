@@ -155,16 +155,22 @@ const mergeProducts = (summaries: WorkerSummary[]): ProductAgg[] => {
   return Array.from(map.values()).sort((a, b) => b.totalAmount - a.totalAmount);
 };
 
-const fetchWorkerSalesSummary = async (workerId: string, lastAccounting: string | null) => {
+const getDefaultPeriodStart = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}T00:00:00+01:00`;
+};
+
+const fetchWorkerSalesSummary = async (workerId: string, periodStart: string) => {
   let ordersQuery = supabase
     .from('orders')
     .select('id, status, payment_type, created_at, updated_at, customer_id')
     .in('status', ['delivered', 'completed', 'confirmed'])
     .or(`assigned_worker_id.eq.${workerId},created_by.eq.${workerId}`);
 
-  if (lastAccounting) {
-    ordersQuery = ordersQuery.gte('updated_at', lastAccounting);
-  }
+  ordersQuery = ordersQuery.gte('updated_at', periodStart);
 
   const { data: orders, error } = await ordersQuery;
   if (error) throw error;
@@ -291,6 +297,7 @@ const BreakdownRow: React.FC<{ label: string; value: number }> = ({ label, value
 
 const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branchId, workers = [] }) => {
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>('all');
+  const workerButtons = workers;
 
   const { data, isLoading } = useQuery({
     queryKey: ['manager-sales-summary-dialog', branchId, workers.map(worker => worker.id).join(',')],
@@ -326,11 +333,12 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
           .maybeSingle();
 
         const lastAccounting = accounting?.completed_at || null;
-        const salesSummary = await fetchWorkerSalesSummary(worker.id, lastAccounting);
+        const periodStart = lastAccounting || getDefaultPeriodStart();
+        const salesSummary = await fetchWorkerSalesSummary(worker.id, periodStart);
         const calc = await fetchSessionCalculations({
           workerId: worker.id,
           branchId: branchId || undefined,
-          periodStart: lastAccounting || '1970-01-01',
+          periodStart,
           periodEnd: new Date().toISOString(),
         });
 
@@ -391,7 +399,7 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
             >
               الكل
             </Button>
-            {(data || []).map(({ worker }) => (
+            {workerButtons.map((worker) => (
               <Button
                 key={worker.id}
                 type="button"
