@@ -41,7 +41,7 @@ const FactoryReceiptQuickDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   const [notes, setNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [pickerIndex, setPickerIndex] = useState<number | null>(null);
-  const [products, setProducts] = useState<{ id: string; name: string; image_url?: string | null }[]>([]);
+  const [products, setProducts] = useState<{ id: string; name: string; image_url?: string | null; pieces_per_box?: number }[]>([]);
   const [invoicePhoto, setInvoicePhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [palletCount, setPalletCount] = useState(0);
@@ -69,7 +69,7 @@ const FactoryReceiptQuickDialog: React.FC<Props> = ({ open, onOpenChange }) => {
 
   useEffect(() => {
     if (!open || !branchId) return;
-    supabase.from('products').select('id, name, image_url').eq('is_active', true).order('name')
+    supabase.from('products').select('id, name, image_url, pieces_per_box').eq('is_active', true).order('name')
       .then(({ data }) => setProducts(data || []));
     fetchPendingReceipts();
   }, [open, branchId]);
