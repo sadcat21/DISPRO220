@@ -32,6 +32,7 @@ export interface StockReceipt {
   invoice_photo_url: string | null;
   notes: string | null;
   total_items: number | null;
+  status: string;
   created_at: string;
   items?: StockReceiptItem[];
   creator?: { full_name: string };

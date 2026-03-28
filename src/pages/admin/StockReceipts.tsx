@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Loader2, Camera, Trash2, ClipboardList, Image as ImageIcon, Package, Settings, Truck, ArrowDownToLine, ArrowUpFromLine, BarChart3 } from 'lucide-react';
+import { Plus, Loader2, Camera, Trash2, ClipboardList, Image as ImageIcon, Package, Settings, Truck, ArrowDownToLine, ArrowUpFromLine, BarChart3, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import SimpleProductPickerDialog from '@/components/stock/SimpleProductPickerDialog';
 import PalletSettingsDialog from '@/components/stock/PalletSettingsDialog';
@@ -65,6 +65,7 @@ const StockReceipts: React.FC = () => {
   const [viewReceipt, setViewReceipt] = useState<StockReceipt | null>(null);
   const [viewItems, setViewItems] = useState<StockReceiptItem[]>([]);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Settings & Delivery dialogs
   const [showPalletSettings, setShowPalletSettings] = useState(false);
@@ -205,6 +206,121 @@ const StockReceipts: React.FC = () => {
     setReceiptPallets(0);
   };
 
+  // Cancel a confirmed receipt: reverse stock additions
+  const handleCancelReceipt = async (receipt: StockReceipt) => {
+    if (!branchId || !receipt) return;
+    if (!confirm('هل أنت متأكد من إلغاء هذا الاستلام؟ سيتم خصم الكميات من المخزن.')) return;
+    
+    setIsCancelling(true);
+    try {
+      // Get receipt items
+      const { data: rItems } = await supabase
+        .from('stock_receipt_items')
+        .select('*')
+        .eq('receipt_id', receipt.id);
+
+      if (receipt.status === 'confirmed') {
+        // Reverse stock for each item
+        for (const item of (rItems || [])) {
+          const { data: stock } = await supabase
+            .from('warehouse_stock')
+            .select('id, quantity')
+            .eq('branch_id', branchId)
+            .eq('product_id', item.product_id)
+            .maybeSingle();
+
+          if (stock) {
+            await supabase.from('warehouse_stock')
+              .update({ quantity: Math.max(0, stock.quantity - item.quantity) })
+              .eq('id', stock.id);
+          }
+        }
+
+        // Reverse pallet additions
+        const totalPallets = (rItems || []).reduce((sum, i: any) => sum + (Number(i.pallet_quantity) || 0), 0);
+        if (totalPallets > 0) {
+          const { data: bp } = await supabase.from('branch_pallets').select('id, quantity').eq('branch_id', branchId).maybeSingle();
+          if (bp) {
+            await supabase.from('branch_pallets').update({ quantity: Math.max(0, bp.quantity - totalPallets) }).eq('id', bp.id);
+          }
+        }
+      }
+
+      // Mark receipt as cancelled
+      await supabase.from('stock_receipts').update({ status: 'cancelled' }).eq('id', receipt.id);
+
+      toast.success('تم إلغاء الاستلام وعكس الكميات');
+      setViewReceipt(null);
+      refresh();
+    } catch (e: any) {
+      toast.error(e.message || 'خطأ في الإلغاء');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  // Cancel a confirmed factory delivery: reverse stock deductions
+  const handleCancelDelivery = async (order: FactoryOrder) => {
+    if (!branchId || !order) return;
+    if (!confirm('هل أنت متأكد من إلغاء هذا التسليم؟ سيتم إعادة الكميات إلى المخزن.')) return;
+
+    setIsCancelling(true);
+    try {
+      const { data: oItems } = await supabase
+        .from('factory_order_items')
+        .select('*')
+        .eq('factory_order_id', order.id);
+
+      if (order.status === 'confirmed') {
+        // Reverse stock deductions for each item
+        for (const item of (oItems || [])) {
+          if (item.product_quantity > 0) {
+            const { data: stock } = await supabase
+              .from('warehouse_stock')
+              .select('id, quantity, damaged_quantity, factory_return_quantity')
+              .eq('branch_id', branchId)
+              .eq('product_id', item.product_id)
+              .maybeSingle();
+
+            if (stock) {
+              const currentQty = Number(stock.quantity) || 0;
+              const currentReturn = Number(stock.factory_return_quantity) || 0;
+              const currentDamaged = Number(stock.damaged_quantity) || 0;
+              await supabase.from('warehouse_stock').update({
+                quantity: currentQty + item.product_quantity,
+                factory_return_quantity: Math.max(0, currentReturn - item.product_quantity),
+                damaged_quantity: currentDamaged + item.product_quantity,
+              }).eq('id', stock.id);
+            }
+          }
+        }
+
+        // Reverse pallet deductions
+        // Check if order has pallet_count
+        const { data: orderData } = await supabase.from('factory_orders').select('*').eq('id', order.id).single();
+        const palletCount = Number((orderData as any)?.pallet_count) || 0;
+        if (palletCount > 0) {
+          const { data: bp } = await supabase.from('branch_pallets').select('id, quantity').eq('branch_id', branchId).maybeSingle();
+          if (bp) {
+            await supabase.from('branch_pallets').update({ quantity: bp.quantity + palletCount }).eq('id', bp.id);
+          }
+        }
+      }
+
+      // Mark as cancelled
+      await supabase.from('factory_orders').update({ status: 'cancelled' }).eq('id', order.id);
+
+      toast.success('تم إلغاء التسليم وإعادة الكميات');
+      setViewSendingOrder(null);
+      fetchSendingOrders();
+      refresh();
+    } catch (e: any) {
+      toast.error(e.message || 'خطأ في الإلغاء');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -280,7 +396,12 @@ const StockReceipts: React.FC = () => {
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{receipt.total_items} {t('stock.items')}</span>
+                      <div className="flex items-center gap-2">
+                        <span>{receipt.total_items} {t('stock.items')}</span>
+                        {receipt.status === 'cancelled' && (
+                          <Badge variant="destructive" className="text-[10px]">ملغي</Badge>
+                        )}
+                      </div>
                       {receipt.invoice_photo_url && (
                         <a href={receipt.invoice_photo_url} target="_blank" rel="noopener noreferrer" className="text-primary flex items-center gap-1" onClick={e => e.stopPropagation()}>
                           <ImageIcon className="w-3 h-3" />
@@ -321,8 +442,8 @@ const StockReceipts: React.FC = () => {
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-xs">
-                      <Badge variant={order.status === 'confirmed' ? 'default' : 'secondary'} className="text-[10px]">
-                        {order.status === 'confirmed' ? t('stock_receipts.confirmed') : t('stock_receipts.pending')}
+                      <Badge variant={order.status === 'confirmed' ? 'default' : order.status === 'cancelled' ? 'destructive' : 'secondary'} className="text-[10px]">
+                        {order.status === 'confirmed' ? t('stock_receipts.confirmed') : order.status === 'cancelled' ? 'ملغي' : t('stock_receipts.pending')}
                       </Badge>
                       {order.notes && <span className="text-muted-foreground truncate">{order.notes}</span>}
                     </div>
@@ -400,6 +521,25 @@ const StockReceipts: React.FC = () => {
                   </div>
                 )}
               </div>
+
+              {/* Cancel Receipt Button */}
+              {viewReceipt.status !== 'cancelled' && (
+                <div className="border-t pt-3">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="w-full"
+                    disabled={isCancelling}
+                    onClick={() => handleCancelReceipt(viewReceipt)}
+                  >
+                    {isCancelling ? <Loader2 className="w-4 h-4 animate-spin ml-1" /> : <XCircle className="w-4 h-4 ml-1" />}
+                    إلغاء الاستلام وعكس الكميات
+                  </Button>
+                </div>
+              )}
+              {viewReceipt.status === 'cancelled' && (
+                <Badge variant="destructive" className="w-full justify-center py-1">ملغي</Badge>
+              )}
             </div>
           )}
         </DialogContent>
@@ -465,6 +605,25 @@ const StockReceipts: React.FC = () => {
                   </div>
                 )}
               </div>
+
+              {/* Cancel Delivery Button */}
+              {viewSendingOrder.status !== 'cancelled' && (
+                <div className="border-t pt-3">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="w-full"
+                    disabled={isCancelling}
+                    onClick={() => handleCancelDelivery(viewSendingOrder)}
+                  >
+                    {isCancelling ? <Loader2 className="w-4 h-4 animate-spin ml-1" /> : <XCircle className="w-4 h-4 ml-1" />}
+                    إلغاء التسليم وإعادة الكميات
+                  </Button>
+                </div>
+              )}
+              {viewSendingOrder.status === 'cancelled' && (
+                <Badge variant="destructive" className="w-full justify-center py-1">ملغي</Badge>
+              )}
             </div>
           )}
         </DialogContent>
