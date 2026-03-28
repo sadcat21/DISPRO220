@@ -319,6 +319,7 @@ const StockReceipts: React.FC = () => {
     } finally {
       setIsCancelling(false);
     }
+  };
 
   if (isLoading) {
     return (
