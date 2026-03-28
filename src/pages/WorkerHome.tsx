@@ -418,10 +418,7 @@ const WorkerHome: React.FC = () => {
           if ((isSupervisor || activeRole?.custom_role_code === 'warehouse_manager') && !isWorkerActionsHidden && !isWorkerActionsButtonHidden) {
             quickActions.push({ key: 'worker-actions', icon: <HardHat className="w-6 h-6" />, label: t('worker.worker_actions'), onClick: () => navigate('/worker-actions') });
           }
-          // Worker Actions for regular workers (self-view)
-          if (!isSupervisor && activeRole?.custom_role_code !== 'warehouse_manager' && !isWorkerActionsHidden && !isWorkerActionsButtonHidden) {
-            quickActions.push({ key: 'worker-actions', icon: <HardHat className="w-6 h-6" />, label: t('worker.my_actions'), onClick: () => navigate('/worker-actions') });
-          }
+          // Worker Actions for regular workers (self-view) — removed per user request
 
           const itemColors: Record<string, { bg: string; icon: string; border: string }> = {
             deliveries: { bg: 'bg-blue-50', icon: 'text-blue-600', border: 'border-blue-200' },
