@@ -255,7 +255,7 @@ const WarehouseReview: React.FC = () => {
         if (item.status !== 'matched') {
           await supabase
             .from('warehouse_stock')
-            .update({ quantity: getActualNum(item.actual) })
+            .update({ quantity: getActualNum(item.actual, item.piecesPerBox) })
             .eq('branch_id', branchId)
             .eq('product_id', item.productId);
         }
