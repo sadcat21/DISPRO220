@@ -30,6 +30,7 @@ import { useNavbarPreferences } from '@/hooks/useNavbarPreferences';
 import { useBluetoothPrinter } from '@/hooks/useBluetoothPrinter';
 import { useLocationBroadcast } from '@/hooks/useWorkerLocation';
 import AttendanceButton from '@/components/attendance/AttendanceButton';
+import { useIsElementHidden } from '@/hooks/useUIOverrides';
 
 interface MobileLayoutProps {
   children: React.ReactNode;
@@ -87,6 +88,15 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   const showInvoiceButton = isAdminRole(role);
   const { totalUnread } = useChat();
   const { startTracking } = useLocationBroadcast();
+  const isChatHidden = useIsElementHidden('notification', 'notif_chat');
+  const isOffersHidden = useIsElementHidden('notification', 'notif_offers');
+  const isTodayCustomersHidden = useIsElementHidden('notification', 'notif_today_customers');
+  const isStockAlertsHidden = useIsElementHidden('notification', 'notif_stock_alerts');
+  const isTasksHidden = useIsElementHidden('notification', 'notif_tasks');
+  const isWorkerRequestsHidden = useIsElementHidden('notification', 'notif_worker_requests');
+  const isReceiptModsHidden = useIsElementHidden('notification', 'notif_receipt_modifications');
+  const isDocCollectionsHidden = useIsElementHidden('notification', 'notif_document_collections');
+  const isAttendanceHidden = useIsElementHidden('notification', 'notif_attendance');
 
   // Fetch pending invoice orders count for badge
   const { data: pendingInvoiceCount } = useQuery({
@@ -201,27 +211,29 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
           )}
 
           {/* Action icons */}
-          {(role === 'worker' || role === 'supervisor') && <AttendanceButton />}
-          <WorkerRequestsPopover />
-          <TasksPopover />
-          <SectorCustomersPopover />
-          <ReceiptModificationsNotification />
-          <StockAlertsNotification />
-          <OffersNotification />
-          <DocumentCollectionsPopover />
+          {(role === 'worker' || role === 'supervisor') && !isAttendanceHidden && <AttendanceButton />}
+          {!isWorkerRequestsHidden && <WorkerRequestsPopover />}
+          {!isTasksHidden && <TasksPopover />}
+          {!isTodayCustomersHidden && <SectorCustomersPopover />}
+          {!isReceiptModsHidden && <ReceiptModificationsNotification />}
+          {!isStockAlertsHidden && <StockAlertsNotification />}
+          {!isOffersHidden && <OffersNotification />}
+          {!isDocCollectionsHidden && <DocumentCollectionsPopover />}
 
           {/* Chat */}
-          <Link
-            to="/chat"
-            className="relative flex items-center justify-center w-8 h-8 shrink-0 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors"
-          >
-            <MessageCircle className="w-4 h-4 text-primary" />
-            {totalUnread > 0 && (
-              <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
-                {totalUnread > 9 ? '9+' : totalUnread}
-              </span>
-            )}
-          </Link>
+          {!isChatHidden && (
+            <Link
+              to="/chat"
+              className="relative flex items-center justify-center w-8 h-8 shrink-0 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors"
+            >
+              <MessageCircle className="w-4 h-4 text-primary" />
+              {totalUnread > 0 && (
+                <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                  {totalUnread > 9 ? '9+' : totalUnread}
+                </span>
+              )}
+            </Link>
+          )}
 
           {/* Settings dropdown */}
           <DropdownMenu>
