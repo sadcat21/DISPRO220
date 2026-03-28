@@ -159,7 +159,8 @@ const WarehouseReview: React.FC = () => {
     const newActuals: Record<string, string> = {};
     for (const product of products) {
       const expected = stockMap.get(product.id) ?? 0;
-      newActuals[product.id] = String(expected);
+      const ppb = product.pieces_per_box || 20;
+      newActuals[product.id] = boxesToBP(expected, ppb);
     }
     setActuals(newActuals);
   };
