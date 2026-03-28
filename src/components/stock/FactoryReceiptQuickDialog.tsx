@@ -136,7 +136,7 @@ const FactoryReceiptQuickDialog: React.FC<Props> = ({ open, onOpenChange }) => {
           invoice_number: invoiceNumber || null,
           invoice_photo_url: photoUrl || null,
           notes: notes || null,
-          total_items: validItems.reduce((sum, i) => sum + i.quantity, 0),
+          total_items: validItems.length,
           status,
         })
         .select()
