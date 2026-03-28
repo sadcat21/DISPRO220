@@ -65,6 +65,7 @@ const StockReceipts: React.FC = () => {
   const [viewReceipt, setViewReceipt] = useState<StockReceipt | null>(null);
   const [viewItems, setViewItems] = useState<StockReceiptItem[]>([]);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Settings & Delivery dialogs
   const [showPalletSettings, setShowPalletSettings] = useState(false);
