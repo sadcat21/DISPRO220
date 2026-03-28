@@ -442,8 +442,8 @@ const StockReceipts: React.FC = () => {
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-xs">
-                      <Badge variant={order.status === 'confirmed' ? 'default' : 'secondary'} className="text-[10px]">
-                        {order.status === 'confirmed' ? t('stock_receipts.confirmed') : t('stock_receipts.pending')}
+                      <Badge variant={order.status === 'confirmed' ? 'default' : order.status === 'cancelled' ? 'destructive' : 'secondary'} className="text-[10px]">
+                        {order.status === 'confirmed' ? t('stock_receipts.confirmed') : order.status === 'cancelled' ? 'ملغي' : t('stock_receipts.pending')}
                       </Badge>
                       {order.notes && <span className="text-muted-foreground truncate">{order.notes}</span>}
                     </div>
