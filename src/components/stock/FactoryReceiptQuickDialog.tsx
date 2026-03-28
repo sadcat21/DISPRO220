@@ -407,7 +407,7 @@ const FactoryReceiptQuickDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                             </div>
                           )}
                           <span className="flex-1 truncate">{item.product_name}</span>
-                          <Badge variant="secondary" className="text-xs font-bold">{item.quantity}</Badge>
+                          <Badge variant="secondary" className="text-xs font-bold">{boxesToBP(Number(item.quantity), products.find(p => p.name === item.product_name)?.pieces_per_box || 20)}</Badge>
                         </div>
                       ))}
                     </div>

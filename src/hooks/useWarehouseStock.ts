@@ -183,7 +183,7 @@ export const useWarehouseStock = () => {
         invoice_number: receiptData.invoice_number || null,
         invoice_photo_url: receiptData.invoice_photo_url || null,
         notes: receiptData.notes || null,
-        total_items: items.reduce((sum, i) => sum + i.quantity, 0),
+        total_items: items.length,
         status,
       })
       .select()
