@@ -64,6 +64,26 @@ This project is built with:
 
 Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
 
+## Vercel CLI
+
+You can manage Vercel locally from this project using these scripts:
+
+```bash
+npm run vercel:link
+npm run vercel:pull
+npm run vercel:build
+npm run vercel:deploy
+npm run vercel:deploy:prod
+```
+
+- `npm run vercel:link` links this folder to a Vercel project.
+- `npm run vercel:pull` downloads the Vercel environment and project settings.
+- `npm run vercel:build` builds the project with Vercel locally.
+- `npm run vercel:deploy` creates a preview deployment.
+- `npm run vercel:deploy:prod` deploys to production.
+
+These commands use `npx vercel`, so you only need to be logged in with Vercel CLI.
+
 ## النشر التلقائي إلى Vercel
 
 - أضف الأسرار التالية في إعدادات المستودع (Settings → Secrets and variables → Actions):
