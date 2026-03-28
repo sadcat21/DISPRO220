@@ -216,10 +216,9 @@ const WarehouseReview: React.FC = () => {
       if (includeDamaged) {
         for (const d of damagedItems) {
           const actualStr = damagedActuals[d.productId] ?? '';
-          const actual = parseFloat(actualStr) || 0;
           const ppb = piecesPerBoxMap.get(d.productId) || 20;
-          const expectedPieces = customToTotalPieces(d.expected, ppb);
-          const actualPieces = customToTotalPieces(actual, ppb);
+          const expectedPieces = dbQtyToTotalPieces(d.expected, ppb);
+          const actualPieces = bpInputToTotalPieces(actualStr, ppb);
           const diffPieces = actualPieces - expectedPieces;
           reviewItems.push({
             session_id: session.id,
