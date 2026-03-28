@@ -382,11 +382,11 @@ const WarehouseStock: React.FC = () => {
                       <div className="flex items-center gap-3 shrink-0">
                         <div className="flex items-center gap-1">
                          <span className="text-[11px] text-muted-foreground">{t('warehouse.received')}</span>
-                          <span className="text-sm font-bold tabular-nums text-emerald-600">{s.received}</span>
+                          <span className="text-sm font-bold tabular-nums text-emerald-600">{fmt(s.received)}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <span className="text-[11px] text-muted-foreground">{t('warehouse.remaining')}</span>
-                          <span className={`text-base font-extrabold tabular-nums ${s.remaining > 0 ? 'text-primary' : 'text-muted-foreground/50'}`}>{s.remaining}</span>
+                          <span className={`text-base font-extrabold tabular-nums ${s.remaining > 0 ? 'text-primary' : 'text-muted-foreground/50'}`}>{fmt(s.remaining)}</span>
                         </div>
                       </div>
                     </button>
