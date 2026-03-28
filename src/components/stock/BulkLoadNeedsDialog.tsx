@@ -129,13 +129,14 @@ const BulkLoadNeedsDialog: React.FC<BulkLoadNeedsDialogProps> = ({
                     >
                       <Minus className="w-3 h-3" />
                     </Button>
-                    <Input
-                      type="number"
-                      min={0}
-                      step="any"
+                    <BoxPieceInput
                       value={qty}
-                      onChange={e => setQty(s.product_id, parseFloat(e.target.value) || 0)}
-                      className="w-14 h-7 text-center text-sm font-bold px-1"
+                      onChange={(val) => setQty(s.product_id, val)}
+                      piecesPerBox={ppb}
+                      className="w-16 h-7 text-center text-sm font-bold px-1"
+                      min={0}
+                      max={available}
+                      showHint={true}
                     />
                     <Button
                       variant="outline"
