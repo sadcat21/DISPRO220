@@ -449,7 +449,7 @@ const WarehouseStock: React.FC = () => {
                       {data.items.map(item => (
                         <div key={item.id} className="flex items-center justify-between text-xs">
                           <span className="text-muted-foreground">{item.product?.name}</span>
-                          <span className="font-medium">{item.quantity}</span>
+                          <span className="font-medium">{boxesToBP(Number(item.quantity || 0), item.product?.pieces_per_box || 20)}</span>
                         </div>
                       ))}
                     </div>
