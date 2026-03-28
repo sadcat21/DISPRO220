@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Loader2, Search, Eye, EyeOff, ChevronRight, Layout, MousePointer, Layers, Zap } from 'lucide-react';
+import { User, Loader2, Search, Eye, EyeOff, ChevronRight, Layout, MousePointer, Layers, Zap, Bell } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,7 @@ const CATEGORIES = [
   { key: 'tabs', label: 'التبويبات', icon: Layers, type: 'tab', items: UI_ELEMENTS.tabs },
   { key: 'buttons', label: 'الأزرار', icon: MousePointer, type: 'button', items: UI_ELEMENTS.buttons },
   { key: 'actions', label: 'الإجراءات', icon: Zap, type: 'action', items: UI_ELEMENTS.actions },
+  { key: 'notifications', label: 'الإشعارات', icon: Bell, type: 'notification', items: UI_ELEMENTS.notifications },
 ];
 
 const WorkerUIOverridesSection: React.FC<{ initialWorkerId?: string | null }> = ({ initialWorkerId }) => {
@@ -165,7 +166,7 @@ const WorkerUIOverridesSection: React.FC<{ initialWorkerId?: string | null }> = 
         </div>
       ) : (
         <Tabs defaultValue="pages" dir="rtl">
-          <TabsList className="w-full grid grid-cols-4">
+          <TabsList className="w-full grid grid-cols-5">
             {CATEGORIES.map(cat => {
               const hiddenInCat = overrides?.filter(o => o.element_type === cat.type && o.is_hidden).length || 0;
               return (
