@@ -225,7 +225,7 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
                   checked={isUnitSale}
                   onCheckedChange={(checked) => {
                     setIsUnitSale(checked);
-                    setQuantity(1);
+                    setQuantityInput('1');
                     setOfferApplied(false);
                     setGiftPieces(0);
                   }}
@@ -239,17 +239,34 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
             {/* Quantity Selector - compact */}
             <div className="space-y-1">
               <Label className="text-center block text-xs">
-                {isUnitSale ? t('orders.quantity_pieces') || 'الكمية (قطع)' : t('orders.quantity_boxes')}
+                {isUnitSale ? t('orders.quantity_pieces') || 'الكمية (قطع)' : `${t('orders.quantity_boxes')} (صندوق.قطعة)`}
               </Label>
               <div className="flex items-center justify-center gap-3">
-                <Button variant="outline" size="icon" className="h-10 w-10 rounded-full" onClick={() => handleQuantityChange(-1)} disabled={quantity <= 1}>
+                <Button variant="outline" size="icon" className="h-10 w-10 rounded-full" onClick={() => handleQuantityChange(-1)} disabled={quantity <= (isUnitSale ? 1 : 0)}>
                   <Minus className="w-4 h-4" />
                 </Button>
-                <Input type="number" min={1} value={quantity} onChange={(e) => handleQuantityInput(e.target.value)} className="w-20 h-11 text-center text-xl font-bold" />
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={quantityInput}
+                  onChange={(e) => handleQuantityInput(e.target.value)}
+                  onBlur={() => {
+                    if (!isUnitSale) {
+                      setQuantityInput(parsed.display || '0');
+                    }
+                  }}
+                  className="w-24 h-11 text-center text-xl font-bold"
+                  placeholder={isUnitSale ? '1' : '0.00'}
+                />
                 <Button variant="outline" size="icon" className="h-10 w-10 rounded-full" onClick={() => handleQuantityChange(1)}>
                   <Plus className="w-4 h-4" />
                 </Button>
               </div>
+              {!isUnitSale && quantityPieces > 0 && (
+                <p className="text-center text-[10px] text-muted-foreground">
+                  {quantity} صندوق + {quantityPieces} قطعة
+                </p>
+              )}
             </div>
 
             {/* Product Detail Summary - always visible */}
