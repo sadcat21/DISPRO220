@@ -165,28 +165,125 @@ const DataManagement: React.FC = () => {
   };
 
   const nullifyFkReferences = async (selectedIds: Set<string>) => {
-    if (selectedIds.has('accounting')) {
-      setDeletionProgress('جاري تنظيف المراجع المرتبطة بجلسات المحاسبة...');
-      const { error: wdpErr } = await supabase.from('worker_debt_payments' as any).delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      if (wdpErr) console.error('Error deleting worker_debt_payments:', wdpErr);
-      const { error: wdErr } = await supabase.from('worker_debts' as any).delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      if (wdErr) {
-        console.error('Error deleting worker_debts:', wdErr);
-        await supabase.from('worker_debts' as any).update({ session_id: null }).neq('id', '00000000-0000-0000-0000-000000000000');
-      }
-      if (!selectedIds.has('treasury')) {
-        await supabase.from('manager_treasury').update({ session_id: null } as any).neq('id', '00000000-0000-0000-0000-000000000000');
-      }
-      await supabase.from('worker_liability_adjustments' as any).delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    }
+    const del = (table: string) => supabase.from(table as any).delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    const nullify = (table: string, col: string) => supabase.from(table as any).update({ [col]: null }).neq('id', '00000000-0000-0000-0000-000000000000');
+
+    // === orders ===
     if (selectedIds.has('orders')) {
       setDeletionProgress('جاري تنظيف المراجع المرتبطة بالطلبات...');
+      // Tables referencing orders that aren't in any category
+      await del('worker_load_request_items');
+      await del('worker_load_requests' as any);
+      await del('order_events');
+      await del('receipts');
+      // Nullify order_id in tables that may not be selected
       if (!selectedIds.has('debts')) {
-        await supabase.from('customer_debts').update({ order_id: null } as any).neq('id', '00000000-0000-0000-0000-000000000000');
+        await nullify('customer_debts', 'order_id');
+      }
+      if (!selectedIds.has('credits')) {
+        await nullify('customer_credits', 'order_id');
+        await nullify('customer_credits', 'used_in_order_id');
+      }
+      if (!selectedIds.has('doc_collections')) {
+        await nullify('document_collections', 'order_id');
+      }
+      if (!selectedIds.has('treasury')) {
+        await nullify('handover_items', 'order_id');
       }
       if (!selectedIds.has('stock')) {
-        await supabase.from('stock_movements' as any).delete().not('order_id', 'is', null);
+        await del('stock_movements');
       }
+    }
+
+    // === accounting ===
+    if (selectedIds.has('accounting')) {
+      setDeletionProgress('جاري تنظيف المراجع المرتبطة بجلسات المحاسبة...');
+      await del('worker_debt_payments');
+      await del('worker_debts');
+      if (!selectedIds.has('treasury')) {
+        await nullify('manager_treasury', 'session_id');
+      }
+      await del('worker_liability_adjustments');
+    }
+
+    // === debts ===
+    if (selectedIds.has('debts')) {
+      setDeletionProgress('جاري تنظيف المراجع المرتبطة بالديون...');
+      // receipts reference customer_debts
+      if (!selectedIds.has('orders')) {
+        await del('receipts');
+      }
+    }
+
+    // === customers ===
+    if (selectedIds.has('customers')) {
+      setDeletionProgress('جاري تنظيف المراجع المرتبطة بالعملاء...');
+      await del('visit_tracking');
+      await del('promo_split_customers');
+      await del('receipts');
+      if (!selectedIds.has('orders')) {
+        await del('worker_load_request_items');
+        await del('worker_load_requests' as any);
+        await del('order_events');
+        await del('product_shortage_tracking');
+        await del('order_items');
+        await del('orders');
+      }
+      if (!selectedIds.has('debts')) {
+        await del('debt_payments');
+        await del('debt_collections');
+        await del('customer_debts');
+      }
+      if (!selectedIds.has('credits')) {
+        await del('customer_credits');
+      }
+      if (!selectedIds.has('invoices')) {
+        await del('manual_invoice_requests');
+      }
+      if (!selectedIds.has('promos')) {
+        await nullify('promos', 'customer_id');
+      }
+    }
+
+    // === products ===
+    if (selectedIds.has('products')) {
+      setDeletionProgress('جاري تنظيف المراجع المرتبطة بالمنتجات...');
+      await del('factory_order_items');
+      await del('pallet_settings');
+      await del('stock_alerts');
+      await del('warehouse_review_items');
+      await del('worker_load_request_items');
+      if (!selectedIds.has('orders')) {
+        await del('order_items');
+        await del('product_shortage_tracking');
+      }
+      if (!selectedIds.has('stock')) {
+        await del('stock_movements');
+        await del('warehouse_stock');
+        await del('worker_stock');
+      }
+      if (!selectedIds.has('loading')) {
+        await del('loading_session_items');
+      }
+      if (!selectedIds.has('stock_receipts')) {
+        await del('stock_receipt_items');
+      }
+      if (!selectedIds.has('credits')) {
+        await nullify('customer_credits', 'product_id');
+      }
+      if (!selectedIds.has('promos')) {
+        await nullify('promos', 'product_id');
+      }
+      // promo_splits reference products
+      await del('promo_split_customers');
+      await del('promo_splits');
+    }
+
+    // === promos ===
+    if (selectedIds.has('promos')) {
+      setDeletionProgress('جاري تنظيف المراجع المرتبطة بالبروموهات...');
+      await del('promo_split_customers');
+      await del('promo_splits');
     }
   };
 
