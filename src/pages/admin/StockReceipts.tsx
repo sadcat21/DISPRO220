@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Loader2, Camera, Trash2, ClipboardList, Image as ImageIcon, Package, Settings, Truck, ArrowDownToLine, ArrowUpFromLine, BarChart3 } from 'lucide-react';
+import { Plus, Loader2, Camera, Trash2, ClipboardList, Image as ImageIcon, Package, Settings, Truck, ArrowDownToLine, ArrowUpFromLine, BarChart3, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import SimpleProductPickerDialog from '@/components/stock/SimpleProductPickerDialog';
 import PalletSettingsDialog from '@/components/stock/PalletSettingsDialog';
