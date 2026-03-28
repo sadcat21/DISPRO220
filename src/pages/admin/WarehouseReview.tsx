@@ -225,7 +225,7 @@ const WarehouseReview: React.FC = () => {
             item_type: 'damaged',
             product_id: d.productId,
             expected_quantity: d.expected,
-            actual_quantity: actual,
+            actual_quantity: parseBP(actualStr, ppb).totalBoxes,
             status: diffPieces === 0 ? 'matched' : diffPieces > 0 ? 'surplus' : 'deficit',
           });
         }
