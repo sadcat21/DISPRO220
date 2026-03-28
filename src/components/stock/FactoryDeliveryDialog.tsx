@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Package, Plus, Trash2, Loader2, Truck } from 'lucide-react';
+import BoxPieceInput from '@/components/ui/BoxPieceInput';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Product } from '@/types/database';
@@ -241,13 +242,13 @@ const FactoryDeliveryDialog: React.FC<Props> = ({ open, onOpenChange, branchId, 
                 )}
               </div>
               <div>
-                <Label className="text-[10px] text-muted-foreground">كمية التالف (صندوق)</Label>
-                <Input
-                  type="number"
-                  min={0}
+                <Label className="text-[10px] text-muted-foreground">كمية التالف (صندوق.قطعة)</Label>
+                <BoxPieceInput
                   value={item.product_quantity}
-                  onChange={e => updateItem(index, 'product_quantity', parseFloat(e.target.value) || 0)}
+                  onChange={(val) => updateItem(index, 'product_quantity', val)}
+                  piecesPerBox={products.find(p => p.id === item.product_id)?.pieces_per_box || 1}
                   className="text-center text-sm h-8"
+                  min={0}
                 />
               </div>
             </div>
