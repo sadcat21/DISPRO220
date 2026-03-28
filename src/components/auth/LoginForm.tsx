@@ -161,17 +161,22 @@ const LoginForm: React.FC = () => {
         toast.success(t('auth.login') + ' ✓');
       }
     } catch (error: any) {
-      // For quick login, try capitalized version of password
-      if (isQuickLogin && pass === pass.toLowerCase()) {
-        const capitalizedPass = pass.charAt(0).toUpperCase() + pass.slice(1);
-        try {
-          const result = await login(user.trim(), capitalizedPass);
-          if (!result.needsRoleSelection && !result.needsBranchSelection) {
-            toast.success(t('auth.login') + ' ✓');
+      // For quick login, try alternative password casings
+      if (isQuickLogin) {
+        const alternatives = [
+          pass.charAt(0).toUpperCase() + pass.slice(1), // Capitalized
+          pass.toUpperCase(), // ALL CAPS
+        ].filter(alt => alt !== pass);
+        for (const alt of alternatives) {
+          try {
+            const result = await login(user.trim(), alt);
+            if (!result.needsRoleSelection && !result.needsBranchSelection) {
+              toast.success(t('auth.login') + ' ✓');
+            }
+            return;
+          } catch {
+            // try next alternative
           }
-          return;
-        } catch {
-          // fall through to show original error
         }
       }
       console.error('Login error:', error);
