@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,7 @@ import { InvoicePaymentMethod } from '@/types/stamp';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ProductOfferBadge from '@/components/offers/ProductOfferBadge';
 import InvoicePaymentMethodSelect from '@/components/orders/InvoicePaymentMethodSelect';
+import { parseBP, boxesToBP } from '@/utils/boxPieceInput';
 
 export interface GiftInfo {
   giftQuantity: number;
