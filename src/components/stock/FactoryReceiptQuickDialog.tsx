@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Package, Plus, Trash2, Loader2, ArrowDownToLine, Camera, CheckCircle, XCircle } from 'lucide-react';
 import BoxPieceInput from '@/components/ui/BoxPieceInput';
+import { boxesToBP } from '@/utils/boxPieceInput';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
