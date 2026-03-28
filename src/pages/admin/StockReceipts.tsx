@@ -206,6 +206,120 @@ const StockReceipts: React.FC = () => {
     setReceiptPallets(0);
   };
 
+  // Cancel a confirmed receipt: reverse stock additions
+  const handleCancelReceipt = async (receipt: StockReceipt) => {
+    if (!branchId || !receipt) return;
+    if (!confirm('هل أنت متأكد من إلغاء هذا الاستلام؟ سيتم خصم الكميات من المخزن.')) return;
+    
+    setIsCancelling(true);
+    try {
+      // Get receipt items
+      const { data: rItems } = await supabase
+        .from('stock_receipt_items')
+        .select('*')
+        .eq('receipt_id', receipt.id);
+
+      if (receipt.status === 'confirmed') {
+        // Reverse stock for each item
+        for (const item of (rItems || [])) {
+          const { data: stock } = await supabase
+            .from('warehouse_stock')
+            .select('id, quantity')
+            .eq('branch_id', branchId)
+            .eq('product_id', item.product_id)
+            .maybeSingle();
+
+          if (stock) {
+            await supabase.from('warehouse_stock')
+              .update({ quantity: Math.max(0, stock.quantity - item.quantity) })
+              .eq('id', stock.id);
+          }
+        }
+
+        // Reverse pallet additions
+        const totalPallets = (rItems || []).reduce((sum, i: any) => sum + (Number(i.pallet_quantity) || 0), 0);
+        if (totalPallets > 0) {
+          const { data: bp } = await supabase.from('branch_pallets').select('id, quantity').eq('branch_id', branchId).maybeSingle();
+          if (bp) {
+            await supabase.from('branch_pallets').update({ quantity: Math.max(0, bp.quantity - totalPallets) }).eq('id', bp.id);
+          }
+        }
+      }
+
+      // Mark receipt as cancelled
+      await supabase.from('stock_receipts').update({ status: 'cancelled' }).eq('id', receipt.id);
+
+      toast.success('تم إلغاء الاستلام وعكس الكميات');
+      setViewReceipt(null);
+      refresh();
+    } catch (e: any) {
+      toast.error(e.message || 'خطأ في الإلغاء');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  // Cancel a confirmed factory delivery: reverse stock deductions
+  const handleCancelDelivery = async (order: FactoryOrder) => {
+    if (!branchId || !order) return;
+    if (!confirm('هل أنت متأكد من إلغاء هذا التسليم؟ سيتم إعادة الكميات إلى المخزن.')) return;
+
+    setIsCancelling(true);
+    try {
+      const { data: oItems } = await supabase
+        .from('factory_order_items')
+        .select('*')
+        .eq('factory_order_id', order.id);
+
+      if (order.status === 'confirmed') {
+        // Reverse stock deductions for each item
+        for (const item of (oItems || [])) {
+          if (item.product_quantity > 0) {
+            const { data: stock } = await supabase
+              .from('warehouse_stock')
+              .select('id, quantity, damaged_quantity, factory_return_quantity')
+              .eq('branch_id', branchId)
+              .eq('product_id', item.product_id)
+              .maybeSingle();
+
+            if (stock) {
+              const currentQty = Number(stock.quantity) || 0;
+              const currentReturn = Number(stock.factory_return_quantity) || 0;
+              const currentDamaged = Number(stock.damaged_quantity) || 0;
+              await supabase.from('warehouse_stock').update({
+                quantity: currentQty + item.product_quantity,
+                factory_return_quantity: Math.max(0, currentReturn - item.product_quantity),
+                damaged_quantity: currentDamaged + item.product_quantity,
+              }).eq('id', stock.id);
+            }
+          }
+        }
+
+        // Reverse pallet deductions
+        // Check if order has pallet_count
+        const { data: orderData } = await supabase.from('factory_orders').select('*').eq('id', order.id).single();
+        const palletCount = Number((orderData as any)?.pallet_count) || 0;
+        if (palletCount > 0) {
+          const { data: bp } = await supabase.from('branch_pallets').select('id, quantity').eq('branch_id', branchId).maybeSingle();
+          if (bp) {
+            await supabase.from('branch_pallets').update({ quantity: bp.quantity + palletCount }).eq('id', bp.id);
+          }
+        }
+      }
+
+      // Mark as cancelled
+      await supabase.from('factory_orders').update({ status: 'cancelled' }).eq('id', order.id);
+
+      toast.success('تم إلغاء التسليم وإعادة الكميات');
+      setViewSendingOrder(null);
+      fetchSendingOrders();
+      refresh();
+    } catch (e: any) {
+      toast.error(e.message || 'خطأ في الإلغاء');
+    } finally {
+      setIsCancelling(false);
+    }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
