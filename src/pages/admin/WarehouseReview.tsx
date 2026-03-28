@@ -44,11 +44,20 @@ const getActualNum = (actual: string, piecesPerBox: number): number => {
   return parseBP(actual, piecesPerBox).totalBoxes;
 };
 
+interface ReviewItem {
+  productId: string;
+  productName: string;
+  imageUrl?: string | null;
+  piecesPerBox: number;
+  expected: number;
+  actual: string;
+  status: 'matched' | 'surplus' | 'deficit' | 'unverified';
+}
+
 const computeStatus = (expected: number, actual: string, piecesPerBox: number): ReviewItem['status'] => {
   if (actual === '') return 'unverified';
-  const num = parseFloat(actual) || 0;
-  const expectedPieces = customToTotalPieces(expected, piecesPerBox);
-  const actualPieces = customToTotalPieces(num, piecesPerBox);
+  const expectedPieces = dbQtyToTotalPieces(expected, piecesPerBox);
+  const actualPieces = bpInputToTotalPieces(actual, piecesPerBox);
   const diffPieces = actualPieces - expectedPieces;
   if (diffPieces === 0) return 'matched';
   return diffPieces > 0 ? 'surplus' : 'deficit';
