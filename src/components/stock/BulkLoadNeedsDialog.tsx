@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Package, Loader2, Minus, Plus, Truck } from 'lucide-react';
+import BoxPieceInput from '@/components/ui/BoxPieceInput';
 import { WorkerLoadSuggestion } from '@/hooks/useStockAlerts';
 
 interface BulkLoadNeedsDialogProps {
