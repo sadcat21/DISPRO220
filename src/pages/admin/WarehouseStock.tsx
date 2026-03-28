@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { Package, Users, Loader2, ShoppingBag, Search, BarChart3, ChevronDown, ChevronUp, ClipboardList, Truck, ClipboardCheck } from 'lucide-react';
+import { boxesToBP } from '@/utils/boxPieceInput';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
