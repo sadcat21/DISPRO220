@@ -396,7 +396,12 @@ const StockReceipts: React.FC = () => {
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{receipt.total_items} {t('stock.items')}</span>
+                      <div className="flex items-center gap-2">
+                        <span>{receipt.total_items} {t('stock.items')}</span>
+                        {receipt.status === 'cancelled' && (
+                          <Badge variant="destructive" className="text-[10px]">ملغي</Badge>
+                        )}
+                      </div>
                       {receipt.invoice_photo_url && (
                         <a href={receipt.invoice_photo_url} target="_blank" rel="noopener noreferrer" className="text-primary flex items-center gap-1" onClick={e => e.stopPropagation()}>
                           <ImageIcon className="w-3 h-3" />
