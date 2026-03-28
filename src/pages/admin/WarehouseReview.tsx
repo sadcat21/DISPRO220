@@ -431,8 +431,8 @@ const WarehouseReview: React.FC = () => {
                   </div>
                   {item.actual !== '' && item.status !== 'matched' && item.status !== 'unverified' && (
                     <div className="mt-1 flex justify-end">
-                      {item.status === 'surplus' && <Badge className="bg-amber-500 text-white text-[9px]">فائض: +{fmtQty(diffInBoxPiece)}</Badge>}
-                      {item.status === 'deficit' && <Badge variant="destructive" className="text-[9px]">عجز: -{fmtQty(diffInBoxPiece)}</Badge>}
+                      {item.status === 'surplus' && <Badge className="bg-amber-500 text-white text-[9px]">فائض: +{diffDisplay}</Badge>}
+                      {item.status === 'deficit' && <Badge variant="destructive" className="text-[9px]">عجز: -{diffDisplay}</Badge>}
                     </div>
                   )}
                 </div>
