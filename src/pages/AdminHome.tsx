@@ -16,6 +16,7 @@ import { useIsElementHidden } from '@/hooks/useUIOverrides';
 import InvoiceRequestDialog from '@/components/treasury/InvoiceRequestDialog';
 import CreateOrderDialog from '@/components/orders/CreateOrderDialog';
 import WorkerGiftsSummaryDialog from '@/components/accounting/WorkerGiftsSummaryDialog';
+import ManagerSalesSummaryDialog from '@/components/accounting/ManagerSalesSummaryDialog';
 import ManualPromoEntryDialog from '@/components/offers/ManualPromoEntryDialog';
 import FactoryReceiptQuickDialog from '@/components/stock/FactoryReceiptQuickDialog';
 import FactoryDeliveryQuickDialog from '@/components/stock/FactoryDeliveryQuickDialog';
@@ -74,6 +75,7 @@ const itemColors: Record<string, { bg: string; icon: string; border: string }> =
   '/permissions': { bg: 'bg-slate-50', icon: 'text-slate-600', border: 'border-slate-200' },
   '/settings': { bg: 'bg-gray-50', icon: 'text-gray-600', border: 'border-gray-200' },
   '/guide': { bg: 'bg-stone-50', icon: 'text-stone-600', border: 'border-stone-200' },
+  '/manager-sales-summary': { bg: 'bg-emerald-50', icon: 'text-emerald-600', border: 'border-emerald-200' },
 };
 
 const defaultItemColor = { bg: 'bg-muted/30', icon: 'text-primary', border: 'border-border' };
@@ -87,6 +89,7 @@ const AdminHome: React.FC = () => {
   const [showCreateOrder, setShowCreateOrder] = useState(false);
   const [giftsOpen, setGiftsOpen] = useState(false);
   const [giftsWorkerIdx, setGiftsWorkerIdx] = useState(0);
+  const [managerSalesOpen, setManagerSalesOpen] = useState(false);
   const [manualPromoOpen, setManualPromoOpen] = useState(false);
   const [factoryReceiptOpen, setFactoryReceiptOpen] = useState(false);
   const [factoryDeliveryOpen, setFactoryDeliveryOpen] = useState(false);
@@ -152,6 +155,7 @@ const AdminHome: React.FC = () => {
         { path: '/daily-receipts', icon: FileText, label: t('nav.daily_receipts') },
         { path: '/shared-invoices', icon: FolderOpen, label: 'الفواتير المشاركة' },
         { path: '/worker-debts', icon: Banknote, label: t('nav.worker_debts') },
+        ...(isAdminRole(role) ? [{ path: '/manager-sales-summary', icon: ShoppingCart, label: 'تجميع مبيعات العمال', action: () => setManagerSalesOpen(true) }] : []),
       ],
     },
     // 2. الطلبات والتوصيل
@@ -298,6 +302,12 @@ const AdminHome: React.FC = () => {
       <ManualPromoEntryDialog open={manualPromoOpen} onOpenChange={setManualPromoOpen} />
       <FactoryReceiptQuickDialog open={factoryReceiptOpen} onOpenChange={setFactoryReceiptOpen} />
       <FactoryDeliveryQuickDialog open={factoryDeliveryOpen} onOpenChange={setFactoryDeliveryOpen} />
+      <ManagerSalesSummaryDialog
+        open={managerSalesOpen}
+        onOpenChange={setManagerSalesOpen}
+        branchId={activeBranch?.id}
+        workers={activeWorkers}
+      />
 
       {giftsOpen && (
         <WorkerGiftsSummaryDialog

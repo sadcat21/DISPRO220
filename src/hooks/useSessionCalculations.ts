@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-interface SessionCalcParams {
+export interface SessionCalcParams {
   workerId: string;
   branchId?: string;
   periodStart: string;
@@ -63,80 +63,68 @@ export interface SessionCalculations {
   customerSurplusCash: number;
 }
 
-export const useSessionCalculations = (params: SessionCalcParams | null, options?: { refetchInterval?: number | false }) => {
-  return useQuery({
-    queryKey: ['session-calculations', params],
-    refetchInterval: options?.refetchInterval ?? false,
-    queryFn: async (): Promise<SessionCalculations> => {
-      if (!params) return getEmptyCalculations();
+export async function fetchSessionCalculations(params: SessionCalcParams | null): Promise<SessionCalculations> {
+  if (!params) return getEmptyCalculations();
 
-      const { workerId, periodStart, periodEnd } = params;
-      const toTimestampTz = (v: string, isEnd: boolean) => {
-        if (v.includes('+') || v.includes('Z')) return v;
-        if (v.includes('T')) return v + ':00+01:00';
-        return isEnd ? v + 'T23:59:59+01:00' : v + 'T00:00:00+01:00';
-      };
-      // Use exact period timestamps for debt payments (no full-day expansion)
-      const periodStartTz = toTimestampTz(periodStart, false);
-      const periodEndTz = toTimestampTz(periodEnd, true);
+  const { workerId, periodStart, periodEnd } = params;
+  const toTimestampTz = (v: string, isEnd: boolean) => {
+    if (v.includes('+') || v.includes('Z')) return v;
+    if (v.includes('T')) return v + ':00+01:00';
+    return isEnd ? v + 'T23:59:59+01:00' : v + 'T00:00:00+01:00';
+  };
+  // Use exact period timestamps for debt payments (no full-day expansion)
+  const periodStartTz = toTimestampTz(periodStart, false);
+  const periodEndTz = toTimestampTz(periodEnd, true);
 
-      // 1. Fetch delivered orders using stock_movements (reliable delivery timestamp)
-      const { data: stockMovements } = await supabase
-        .from('stock_movements')
-        .select('order_id')
-        .eq('worker_id', workerId)
-        .eq('movement_type', 'delivery')
-        .eq('status', 'approved')
-        .gte('created_at', periodStartTz)
-        .lte('created_at', periodEndTz);
+  // 1. Fetch delivered orders using stock_movements (reliable delivery timestamp)
+  const { data: stockMovements } = await supabase
+    .from('stock_movements')
+    .select('order_id')
+    .eq('worker_id', workerId)
+    .eq('movement_type', 'delivery')
+    .eq('status', 'approved')
+    .gte('created_at', periodStartTz)
+    .lte('created_at', periodEndTz);
 
-      const deliveryOrderIds = Array.from(new Set((stockMovements || []).map((m: any) => m.order_id).filter(Boolean)));
+  const deliveryOrderIds = Array.from(new Set((stockMovements || []).map((m: any) => m.order_id).filter(Boolean)));
 
-      let orders: any[] = [];
-      if (deliveryOrderIds.length > 0) {
-        const { data: ordersData } = await supabase
-          .from('orders')
-          .select('id, total_amount, payment_status, payment_type, invoice_payment_method, partial_amount, customer_id, document_verification, customer:customers(name, store_name, phone, address, sector:sectors(name)), updated_at, notes, order_items(quantity, unit_price, total_price, gift_quantity, gift_offer_id, product_id, pieces_per_box, product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box))')
-          .in('id', deliveryOrderIds)
-          .eq('assigned_worker_id', workerId)
-          .eq('status', 'delivered');
-        orders = ordersData || [];
-      }
+  let orders: any[] = [];
+  if (deliveryOrderIds.length > 0) {
+    const { data: ordersData } = await supabase
+      .from('orders')
+      .select('id, total_amount, payment_status, payment_type, invoice_payment_method, partial_amount, customer_id, document_verification, customer:customers(name, store_name, phone, address, sector:sectors(name)), updated_at, notes, order_items(quantity, unit_price, total_price, gift_quantity, gift_offer_id, product_id, pieces_per_box, product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box))')
+      .in('id', deliveryOrderIds)
+      .eq('assigned_worker_id', workerId)
+      .eq('status', 'delivered');
+    orders = ordersData || [];
+  }
 
-      // 2. Fetch debt payments (use exact period timestamps)
-      const { data: debtPayments } = await supabase
-        .from('debt_payments')
-        .select('amount, payment_method')
-        .eq('worker_id', workerId)
-        .gte('collected_at', periodStartTz)
-        .lte('collected_at', periodEndTz);
+  // 2. Fetch debt payments (use exact period timestamps)
+  const { data: debtPayments } = await supabase
+    .from('debt_payments')
+    .select('amount, payment_method')
+    .eq('worker_id', workerId)
+    .gte('collected_at', periodStartTz)
+    .lte('collected_at', periodEndTz);
 
-      // 2b. Fetch collected pending documents (use exact timestamps)
-      const { data: collectedDocuments } = await supabase
-        .from('document_collections')
-        .select('status, action, collection_date, created_at, order:orders!document_collections_order_id_fkey(total_amount, invoice_payment_method)')
-        .eq('worker_id', workerId)
-        .eq('action', 'collected')
-        .neq('status', 'rejected')
-        .gte('created_at', periodStartTz)
-        .lte('created_at', periodEndTz);
+  // 2b. Fetch collected pending documents (use exact timestamps)
+  const { data: collectedDocuments } = await supabase
+    .from('document_collections')
+    .select('status, action, collection_date, created_at, order:orders!document_collections_order_id_fkey(total_amount, invoice_payment_method)')
+    .eq('worker_id', workerId)
+    .eq('action', 'collected')
+    .neq('status', 'rejected')
+    .gte('created_at', periodStartTz)
+    .lte('created_at', periodEndTz);
 
-      // 3. Fetch expenses
-      const { data: expenseData } = await supabase
-        .from('expenses')
-        .select('amount, payment_method, category:expense_categories(name)')
-        .eq('worker_id', workerId)
-        .in('status', ['approved', 'pending'])
-        .gte('expense_date', periodStart)
-        .lte('expense_date', periodEnd);
-
-      // 4. Fetch promos from promos table (fallback/complement to order_items gift data)
-      const { data: promosData } = await supabase
-        .from('promos')
-        .select('product_id, vente_quantity, gratuite_quantity, notes, promo_date, customer_id, customer:customers(name, store_name, phone, address, sector:sectors(name)), product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box)')
-        .eq('worker_id', workerId)
-        .gte('promo_date', periodStartTz)
-        .lte('promo_date', periodEndTz);
+  // 3. Fetch expenses
+  const { data: expenseData } = await supabase
+    .from('expenses')
+    .select('amount, payment_method, category:expense_categories(name)')
+    .eq('worker_id', workerId)
+    .in('status', ['approved', 'pending'])
+    .gte('expense_date', periodStart)
+    .lte('expense_date', periodEnd);
 
       // 4b. Fetch active offers to determine gift_quantity_unit per product
       const promoProductIds = [...new Set((promosData || []).map(p => p.product_id))];
@@ -445,23 +433,29 @@ export const useSessionCalculations = (params: SessionCalcParams | null, options
 
       const physicalCash = invoice2.cash + invoice1.espaceCash + invoice1.versementCash + debtCollections.cash - cashExpenses + customerSurplusCash;
 
-      return {
-        totalSales,
-        totalPaid,
-        newDebts,
-        invoice1,
-        invoice2,
-        debtCollections,
-        physicalCash,
-        expenses,
-        cashExpenses,
-        salesDebtCollectionsCash: debtCollections.cash,
-        salesDebtCollectionsNonCash: debtCollections.total - debtCollections.cash,
-        giftOfferValue,
-        promoTracking: Object.values(promoMap).sort((a, b) => b.giftQuantity - a.giftQuantity),
-        customerSurplusCash,
-      };
-    },
+  return {
+    totalSales,
+    totalPaid,
+    newDebts,
+    invoice1,
+    invoice2,
+    debtCollections,
+    physicalCash,
+    expenses,
+    cashExpenses,
+    salesDebtCollectionsCash: debtCollections.cash,
+    salesDebtCollectionsNonCash: debtCollections.total - debtCollections.cash,
+    giftOfferValue,
+    promoTracking: Object.values(promoMap).sort((a, b) => b.giftQuantity - a.giftQuantity),
+    customerSurplusCash,
+  };
+}
+
+export const useSessionCalculations = (params: SessionCalcParams | null, options?: { refetchInterval?: number | false }) => {
+  return useQuery({
+    queryKey: ['session-calculations', params],
+    refetchInterval: options?.refetchInterval ?? false,
+    queryFn: () => fetchSessionCalculations(params),
     enabled: !!params,
   });
 };
