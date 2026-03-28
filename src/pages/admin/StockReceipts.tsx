@@ -510,7 +510,7 @@ const StockReceipts: React.FC = () => {
                             <Package className="w-4 h-4 text-primary" />
                             <span className="text-sm font-medium">{item.product?.name || item.product_id}</span>
                           </div>
-                          <span className="text-sm font-bold text-primary">{item.quantity}</span>
+                          <span className="text-sm font-bold text-primary">{boxesToBP(Number(item.quantity), item.product?.pieces_per_box || 20)}</span>
                         </div>
                         {item.pallet_quantity > 0 && (
                           <div className="flex items-center justify-end">
