@@ -449,7 +449,7 @@ const WarehouseReview: React.FC = () => {
                   <div key={`damaged-${d.productId}`} className="rounded-lg px-3 py-2 border border-border bg-card flex items-center justify-between mb-1.5">
                     <div>
                       <div className="text-sm font-medium">{d.productName}</div>
-                      <div className="text-[10px] text-muted-foreground">المتوقع: {fmtQty(d.expected)}</div>
+                      <div className="text-[10px] text-muted-foreground">المتوقع: {fmtQty(d.expected, piecesPerBoxMap.get(d.productId) || 20)}</div>
                     </div>
                     <Input
                       type="number"
