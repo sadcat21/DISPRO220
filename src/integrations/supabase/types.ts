@@ -6771,6 +6771,10 @@ export type Database = {
       set_worker_session: { Args: { p_worker_id: string }; Returns: undefined }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      start_loading_session_atomic: {
+        Args: { p_notes?: string; p_worker_id: string }
+        Returns: Json
+      }
       verify_customer_password: {
         Args: { p_password_hash: string; p_username: string }
         Returns: {

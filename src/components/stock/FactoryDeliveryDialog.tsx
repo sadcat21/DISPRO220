@@ -113,20 +113,22 @@ const FactoryDeliveryDialog: React.FC<Props> = ({ open, onOpenChange, branchId, 
         const { error: itemsError } = await supabase.from('factory_order_items').insert(orderItems);
         if (itemsError) throw itemsError;
 
-        // Update warehouse_stock: add to factory_return_quantity, deduct from damaged_quantity
+        // Update warehouse_stock: deduct from quantity, update damaged/factory_return tracking
         for (const item of validItems) {
           if (item.product_quantity > 0) {
             const { data: stock } = await supabase
               .from('warehouse_stock')
-              .select('id, damaged_quantity, factory_return_quantity')
+              .select('id, quantity, damaged_quantity, factory_return_quantity')
               .eq('branch_id', branchId)
               .eq('product_id', item.product_id)
               .maybeSingle();
 
             if (stock) {
+              const currentQty = Number(stock.quantity) || 0;
               const currentDamaged = Number(stock.damaged_quantity) || 0;
               const currentReturn = Number(stock.factory_return_quantity) || 0;
               await supabase.from('warehouse_stock').update({
+                quantity: Math.max(0, currentQty - item.product_quantity),
                 damaged_quantity: Math.max(0, currentDamaged - item.product_quantity),
                 factory_return_quantity: currentReturn + item.product_quantity,
               }).eq('id', stock.id);

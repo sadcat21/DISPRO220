@@ -185,20 +185,22 @@ const FactoryDeliveryQuickDialog: React.FC<Props> = ({ open, onOpenChange }) => 
   };
 
   const applyDeliveryStock = async (orderId: string, validItems: DeliveryItem[], pallets: number, bId: string) => {
-    // Update warehouse_stock: deduct damaged, add factory_return
+    // Update warehouse_stock: deduct from quantity, update damaged/factory_return tracking
     for (const item of validItems) {
       if (item.quantity > 0) {
         const { data: stock } = await supabase
           .from('warehouse_stock')
-          .select('id, damaged_quantity, factory_return_quantity')
+          .select('id, quantity, damaged_quantity, factory_return_quantity')
           .eq('branch_id', bId)
           .eq('product_id', item.product_id)
           .maybeSingle();
 
         if (stock) {
+          const currentQty = Number(stock.quantity) || 0;
           const currentDamaged = Number(stock.damaged_quantity) || 0;
           const currentReturn = Number(stock.factory_return_quantity) || 0;
           await supabase.from('warehouse_stock').update({
+            quantity: Math.max(0, currentQty - item.quantity),
             damaged_quantity: Math.max(0, currentDamaged - item.quantity),
             factory_return_quantity: currentReturn + item.quantity,
           }).eq('id', stock.id);
