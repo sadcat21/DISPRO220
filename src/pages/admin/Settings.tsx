@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useFontSize, FontSize } from '@/contexts/FontSizeContext';
 import { useWorkerPermissions } from '@/hooks/usePermissions';
-import { Users, Coffee, LogOut, Info, Globe, Shield, Building2, RefreshCw, Key, Loader2, Type } from 'lucide-react';
+import { Users, Coffee, LogOut, Info, Globe, Shield, Building2, RefreshCw, Key, Loader2, Type, Settings2, Wrench, Database } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import icon from '@/assets/icon.png';
 import RoleSelectionDialog from '@/components/auth/RoleSelectionDialog';
 import BranchSelectionDialog from '@/components/auth/BranchSelectionDialog';
@@ -21,21 +22,10 @@ import VerificationChecklistCard from '@/components/settings/VerificationCheckli
 import SmsSettingsCard from '@/components/settings/SmsSettingsCard';
 import AppUpdateSettingsCard from '@/components/settings/AppUpdateSettingsCard';
 import { isAdminRole, isSuperAdminRole } from '@/lib/utils';
-import { Separator } from '@/components/ui/separator';
-
-const SectionHeader: React.FC<{ icon: React.ReactNode; title: string }> = ({ icon, title }) => (
-  <div className="flex items-center gap-2 pt-2 pb-1">
-    <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground uppercase tracking-wide">
-      {icon}
-      {title}
-    </div>
-    <Separator className="flex-1" />
-  </div>
-);
 
 const Settings: React.FC = () => {
   const { user, logout, role, activeBranch, availableRoles, switchRole, switchBranch, showRoleSelection, showBranchSelection, selectRole, selectBranch } = useAuth();
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage, t, dir } = useLanguage();
   const { fontSize, setFontSize } = useFontSize();
   const { data: myPermissions, isLoading: permissionsLoading } = useWorkerPermissions();
 
@@ -56,206 +46,219 @@ const Settings: React.FC = () => {
     return acc;
   }, {} as Record<string, typeof myPermissions>);
 
+  // Build available tabs based on role
+  const tabs: { value: string; label: string; icon: React.ReactNode }[] = [
+    { value: 'general', label: 'عام', icon: <Settings2 className="w-4 h-4" /> },
+  ];
+  if (isAdminRole(role)) {
+    tabs.push({ value: 'admin', label: 'أدوات', icon: <Wrench className="w-4 h-4" /> });
+  }
+  if (isSuperAdminRole(role)) {
+    tabs.push({ value: 'advanced', label: 'متقدم', icon: <Building2 className="w-4 h-4" /> });
+    tabs.push({ value: 'data', label: 'البيانات', icon: <Database className="w-4 h-4" /> });
+  }
+  tabs.push({ value: 'info', label: 'حول', icon: <Info className="w-4 h-4" /> });
+
   return (
-    <div className="p-4 space-y-4 max-w-2xl mx-auto">
-      <h2 className="text-xl font-bold">{t('settings.title')}</h2>
+    <div className="p-4 max-w-2xl mx-auto">
+      <h2 className="text-xl font-bold mb-3">{t('settings.title')}</h2>
 
-      {/* ═══════ Section: Account & Role ═══════ */}
-      <SectionHeader icon={<Shield className="w-4 h-4" />} title={t('settings.current_role')} />
+      <Tabs defaultValue="general" dir={dir}>
+        <TabsList className="w-full flex-wrap h-auto gap-1 mb-4">
+          {tabs.map(tab => (
+            <TabsTrigger key={tab.value} value={tab.value} className="flex-1 gap-1.5 min-w-0 text-xs sm:text-sm">
+              {tab.icon}
+              <span className="truncate">{tab.label}</span>
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      <Card className="border-primary/20 bg-primary/5">
-        <CardContent className="pt-4 space-y-3">
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">{t('settings.role')}</span>
-            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">{getRoleLabel(role || '')}</Badge>
-          </div>
-          {(isSuperAdminRole(role) || role === 'branch_admin') && activeBranch && (
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">{t('settings.branch')}</span>
-              <Badge variant="secondary">{activeBranch.name}</Badge>
-            </div>
-          )}
-          {isSuperAdminRole(role) && !activeBranch && (
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">{t('settings.branch')}</span>
-              <Badge variant="secondary">{t('settings.all_branches')}</Badge>
-            </div>
-          )}
-          <div className="flex gap-2 pt-1">
-            {availableRoles.length > 1 && (
-              <Button variant="outline" size="sm" className="flex-1" onClick={switchRole}>
-                <RefreshCw className="w-4 h-4 ms-2" />{t('settings.switch_role')}
-              </Button>
-            )}
-            {isSuperAdminRole(role) && (
-              <Button variant="outline" size="sm" className="flex-1" onClick={switchBranch}>
-                <Building2 className="w-4 h-4 ms-2" />{t('settings.switch_branch')}
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* My Permissions - non-admin only */}
-      {role !== 'admin' && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Key className="w-4 h-4" />{t('settings.my_permissions')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {permissionsLoading ? (
-              <div className="flex items-center justify-center py-4"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
-            ) : myPermissions && myPermissions.length > 0 ? (
-              <div className="space-y-3">
-                {Object.entries(groupedPermissions || {}).map(([category, perms]) => (
-                  <div key={category}>
-                    <p className="text-xs font-medium text-muted-foreground mb-1.5">{category}</p>
-                    <div className="flex flex-wrap gap-1">
-                      {perms?.map((p) => (
-                        <Badge key={p.permission_code} variant="secondary" className="text-xs">{p.permission_name}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+        {/* ═══ Tab: General ═══ */}
+        <TabsContent value="general" className="space-y-4 mt-0">
+          {/* Role & Branch */}
+          <Card className="border-primary/20 bg-primary/5">
+            <CardContent className="pt-4 space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">{t('settings.role')}</span>
+                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">{getRoleLabel(role || '')}</Badge>
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">{t('settings.no_permissions')}</p>
-            )}
-          </CardContent>
-        </Card>
-      )}
+              {(isSuperAdminRole(role) || role === 'branch_admin') && activeBranch && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">{t('settings.branch')}</span>
+                  <Badge variant="secondary">{activeBranch.name}</Badge>
+                </div>
+              )}
+              {isSuperAdminRole(role) && !activeBranch && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">{t('settings.branch')}</span>
+                  <Badge variant="secondary">{t('settings.all_branches')}</Badge>
+                </div>
+              )}
+              <div className="flex gap-2 pt-1">
+                {availableRoles.length > 1 && (
+                  <Button variant="outline" size="sm" className="flex-1" onClick={switchRole}>
+                    <RefreshCw className="w-4 h-4 ms-2" />{t('settings.switch_role')}
+                  </Button>
+                )}
+                {isSuperAdminRole(role) && (
+                  <Button variant="outline" size="sm" className="flex-1" onClick={switchBranch}>
+                    <Building2 className="w-4 h-4 ms-2" />{t('settings.switch_branch')}
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-      {/* ═══════ Section: Preferences ═══════ */}
-      <SectionHeader icon={<Globe className="w-4 h-4" />} title="التفضيلات" />
+          {/* Preferences */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Card>
+              <CardContent className="pt-4 space-y-2">
+                <p className="text-sm font-medium flex items-center gap-1.5">
+                  <Globe className="w-4 h-4 text-muted-foreground" /> {t('settings.language')}
+                </p>
+                <Select value={language} onValueChange={(val) => setLanguage(val as 'ar' | 'fr' | 'en')}>
+                  <SelectTrigger className="w-full h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ar"><span className="flex items-center gap-2">🇩🇿 {t('settings.arabic')}</span></SelectItem>
+                    <SelectItem value="fr"><span className="flex items-center gap-2">🇫🇷 {t('settings.french')}</span></SelectItem>
+                    <SelectItem value="en"><span className="flex items-center gap-2">🇺🇸 {t('settings.english')}</span></SelectItem>
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 space-y-2">
+                <p className="text-sm font-medium flex items-center gap-1.5">
+                  <Type className="w-4 h-4 text-muted-foreground" /> {t('settings.font_size')}
+                </p>
+                <div className="flex gap-1.5">
+                  {(['small', 'medium', 'large'] as FontSize[]).map((size) => (
+                    <Button key={size} variant={fontSize === size ? 'default' : 'outline'} className="flex-1 h-9" size="sm" onClick={() => setFontSize(size)}>
+                      {t(`settings.font_${size}`)}
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {/* Language */}
-        <Card>
-          <CardContent className="pt-4 space-y-2">
-            <p className="text-sm font-medium flex items-center gap-1.5">
-              <Globe className="w-4 h-4 text-muted-foreground" /> {t('settings.language')}
-            </p>
-            <Select value={language} onValueChange={(val) => setLanguage(val as 'ar' | 'fr' | 'en')}>
-              <SelectTrigger className="w-full h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ar"><span className="flex items-center gap-2">🇩🇿 {t('settings.arabic')}</span></SelectItem>
-                <SelectItem value="fr"><span className="flex items-center gap-2">🇫🇷 {t('settings.french')}</span></SelectItem>
-                <SelectItem value="en"><span className="flex items-center gap-2">🇺🇸 {t('settings.english')}</span></SelectItem>
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
+          {/* My Permissions - non-admin only */}
+          {role !== 'admin' && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Key className="w-4 h-4" />{t('settings.my_permissions')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {permissionsLoading ? (
+                  <div className="flex items-center justify-center py-4"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+                ) : myPermissions && myPermissions.length > 0 ? (
+                  <div className="space-y-3">
+                    {Object.entries(groupedPermissions || {}).map(([category, perms]) => (
+                      <div key={category}>
+                        <p className="text-xs font-medium text-muted-foreground mb-1.5">{category}</p>
+                        <div className="flex flex-wrap gap-1">
+                          {perms?.map((p) => (
+                            <Badge key={p.permission_code} variant="secondary" className="text-xs">{p.permission_name}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">{t('settings.no_permissions')}</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
-        {/* Font Size */}
-        <Card>
-          <CardContent className="pt-4 space-y-2">
-            <p className="text-sm font-medium flex items-center gap-1.5">
-              <Type className="w-4 h-4 text-muted-foreground" /> {t('settings.font_size')}
-            </p>
-            <div className="flex gap-1.5">
-              {(['small', 'medium', 'large'] as FontSize[]).map((size) => (
-                <Button key={size} variant={fontSize === size ? 'default' : 'outline'} className="flex-1 h-9" size="sm" onClick={() => setFontSize(size)}>
-                  {t(`settings.font_${size}`)}
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          {/* Logout */}
+          <Button variant="destructive" className="w-full" size="lg" onClick={logout}>
+            <LogOut className="w-4 h-4 ms-2" />{t('auth.logout')}
+          </Button>
+        </TabsContent>
 
-      {/* ═══════ Section: Admin Tools ═══════ */}
-      {isAdminRole(role) && (
-        <>
-          <SectionHeader icon={<Shield className="w-4 h-4" />} title="أدوات المدير" />
-          <div className="space-y-3">
+        {/* ═══ Tab: Admin Tools ═══ */}
+        {isAdminRole(role) && (
+          <TabsContent value="admin" className="space-y-4 mt-0">
             <PrintSettingsCard />
             <NavbarCustomization />
-          </div>
-        </>
-      )}
+          </TabsContent>
+        )}
 
-      {/* ═══════ Section: Super Admin Settings ═══════ */}
-      {isSuperAdminRole(role) && (
-        <>
-          <SectionHeader icon={<Building2 className="w-4 h-4" />} title="إعدادات متقدمة" />
-          <div className="space-y-3">
+        {/* ═══ Tab: Advanced Settings ═══ */}
+        {isSuperAdminRole(role) && (
+          <TabsContent value="advanced" className="space-y-4 mt-0">
             <CompanyInfoCard />
             <LocationSettingsCard />
             <CustomerTypesCard />
             <VerificationChecklistCard />
             <SmsSettingsCard />
             <AppUpdateSettingsCard />
+          </TabsContent>
+        )}
+
+        {/* ═══ Tab: Data Management ═══ */}
+        {isSuperAdminRole(role) && (
+          <TabsContent value="data" className="space-y-4 mt-0">
+            <DataManagement />
+          </TabsContent>
+        )}
+
+        {/* ═══ Tab: Info ═══ */}
+        <TabsContent value="info" className="space-y-4 mt-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Card>
+              <CardContent className="pt-4 space-y-2">
+                <p className="text-sm font-medium flex items-center gap-1.5">
+                  <Users className="w-4 h-4 text-muted-foreground" /> {t('settings.account_info')}
+                </p>
+                <div className="space-y-1.5 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t('common.name')}</span>
+                    <span className="font-medium truncate max-w-[140px]">{user?.full_name || t('workers.role_admin')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t('auth.username')}</span>
+                    <span className="font-medium">@{user?.username || 'admin'}</span>
+                  </div>
+                  {availableRoles.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {availableRoles.map((r, i) => (
+                        <Badge key={i} variant="secondary" className="text-[10px]">{getRoleLabel(r.role)}</Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 space-y-2">
+                <p className="text-sm font-medium flex items-center gap-1.5">
+                  <Coffee className="w-4 h-4 text-muted-foreground" /> {t('settings.app_info')}
+                </p>
+                <div className="space-y-1.5 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">{t('app.name')}</span>
+                    <div className="flex items-center gap-1.5">
+                      <img src={icon} alt="Laser Food" className="w-5 h-5" />
+                      <span className="font-medium">Laser Food</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t('settings.version')}</span>
+                    <span className="font-medium">1.0.0</span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed pt-1 border-t border-border/50">
+                  {t('settings.about_text')}
+                </p>
+              </CardContent>
+            </Card>
           </div>
-
-          <SectionHeader icon={<Users className="w-4 h-4" />} title="إدارة البيانات" />
-          <DataManagement />
-        </>
-      )}
-
-      {/* ═══════ Section: Info ═══════ */}
-      <SectionHeader icon={<Info className="w-4 h-4" />} title="معلومات" />
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {/* Account Info */}
-        <Card>
-          <CardContent className="pt-4 space-y-2">
-            <p className="text-sm font-medium flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-muted-foreground" /> {t('settings.account_info')}
-            </p>
-            <div className="space-y-1.5 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">{t('common.name')}</span>
-                <span className="font-medium truncate max-w-[140px]">{user?.full_name || t('workers.role_admin')}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">{t('auth.username')}</span>
-                <span className="font-medium">@{user?.username || 'admin'}</span>
-              </div>
-              {availableRoles.length > 0 && (
-                <div className="flex flex-wrap gap-1 pt-1">
-                  {availableRoles.map((r, i) => (
-                    <Badge key={i} variant="secondary" className="text-[10px]">{getRoleLabel(r.role)}</Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* App Info */}
-        <Card>
-          <CardContent className="pt-4 space-y-2">
-            <p className="text-sm font-medium flex items-center gap-1.5">
-              <Coffee className="w-4 h-4 text-muted-foreground" /> {t('settings.app_info')}
-            </p>
-            <div className="space-y-1.5 text-sm">
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">{t('app.name')}</span>
-                <div className="flex items-center gap-1.5">
-                  <img src={icon} alt="Laser Food" className="w-5 h-5" />
-                  <span className="font-medium">Laser Food</span>
-                </div>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">{t('settings.version')}</span>
-                <span className="font-medium">1.0.0</span>
-              </div>
-            </div>
-            <p className="text-[11px] text-muted-foreground leading-relaxed pt-1 border-t border-border/50">
-              {t('settings.about_text')}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Logout */}
-      <Button variant="destructive" className="w-full" size="lg" onClick={logout}>
-        <LogOut className="w-4 h-4 ms-2" />{t('auth.logout')}
-      </Button>
+        </TabsContent>
+      </Tabs>
 
       <RoleSelectionDialog open={showRoleSelection} roles={availableRoles} onSelectRole={selectRole} />
       <BranchSelectionDialog open={showBranchSelection} onSelectBranch={selectBranch} />
