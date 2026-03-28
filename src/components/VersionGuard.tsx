@@ -9,10 +9,18 @@ export const APP_VERSION = 1;
 const VersionGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [needsUpdate, setNeedsUpdate] = useState(false);
   const [updateUrl, setUpdateUrl] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setIsChecking(false);
+    }, 5000);
+
     checkVersion();
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
   }, []);
 
   const checkVersion = async () => {
@@ -25,7 +33,6 @@ const VersionGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
       if (error) {
         console.error('Version check failed:', error);
-        setLoading(false);
         return;
       }
 
@@ -42,11 +49,13 @@ const VersionGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     } catch {
       console.error('Version check error');
     } finally {
-      setLoading(false);
+      setIsChecking(false);
     }
   };
 
-  if (loading) return null;
+  if (isChecking) {
+    return <>{children}</>;
+  }
 
   if (needsUpdate) {
     return (
