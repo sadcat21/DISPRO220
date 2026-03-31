@@ -123,7 +123,13 @@ const Customers: React.FC = () => {
 
   // Re-fetch counts and customer data when realtime triggers
   useEffect(() => {
-    const channel = supabase.channel('customers-realtime-refresh')
+    const baseChannelName = 'customers-realtime-refresh';
+    const existing = (supabase as any).getChannels?.()?.find((ch: any) => ch.topic === `realtime:${baseChannelName}`);
+    if (existing) {
+      supabase.removeChannel(existing);
+    }
+
+    const channel = supabase.channel(`${baseChannelName}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'customer_approval_requests' }, () => {
         fetchRequestsCount();
         fetchPendingRequestsPerCustomer();

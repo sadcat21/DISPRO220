@@ -203,8 +203,14 @@ export const useWorkerLocations = () => {
   useEffect(() => {
     if (!isAdmin) return;
 
+    const baseChannelName = 'worker-locations-realtime';
+    const existing = (supabase as any).getChannels?.()?.find((ch: any) => ch.topic === `realtime:${baseChannelName}`);
+    if (existing) {
+      supabase.removeChannel(existing);
+    }
+
     const channel = supabase
-      .channel('worker-locations-realtime')
+      .channel(`${baseChannelName}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'worker_locations' }, () => {
         queryClient.invalidateQueries({ queryKey: ['worker-locations'] });
       })

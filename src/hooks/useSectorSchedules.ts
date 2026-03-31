@@ -39,8 +39,14 @@ export const useSectorSchedules = (sectorId?: string) => {
 
   // Realtime subscription
   useEffect(() => {
+    const baseChannelName = 'sector-schedules-realtime';
+    const existing = (supabase as any).getChannels?.()?.find((ch: any) => ch.topic === `realtime:${baseChannelName}`);
+    if (existing) {
+      supabase.removeChannel(existing);
+    }
+
     const channel = supabase
-      .channel('sector-schedules-realtime')
+      .channel(`${baseChannelName}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sector_schedules' }, () => {
         fetchSchedules();
       })

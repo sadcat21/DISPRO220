@@ -150,8 +150,16 @@ export const useProductOffers = () => {
     fetchActiveOffers();
 
     // Realtime for product_offers
+    const baseChannelName = 'product-offers-realtime';
+
+    // Defensive cleanup: if a channel with the same base topic exists, remove it first.
+    const existing = (supabase as any).getChannels?.()?.find((ch: any) => ch.topic === `realtime:${baseChannelName}`);
+    if (existing) {
+      supabase.removeChannel(existing);
+    }
+
     const channel = supabase
-      .channel('product-offers-realtime')
+      .channel(`${baseChannelName}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'product_offers' }, () => {
         fetchOffers();
         fetchActiveOffers();

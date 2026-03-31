@@ -52,8 +52,14 @@ const PricingGroupsTab: React.FC = () => {
     fetchData();
 
     // Realtime for products, pricing_groups, product_pricing_groups
+    const baseChannelName = 'pricing-groups-realtime';
+    const existing = (supabase as any).getChannels?.()?.find((ch: any) => ch.topic === `realtime:${baseChannelName}`);
+    if (existing) {
+      supabase.removeChannel(existing);
+    }
+
     const channel = supabase
-      .channel('pricing-groups-realtime')
+      .channel(`${baseChannelName}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => fetchData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pricing_groups' }, () => fetchData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'product_pricing_groups' }, () => fetchData())

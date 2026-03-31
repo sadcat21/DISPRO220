@@ -99,8 +99,14 @@ const OffersNotification: React.FC = () => {
 
   useEffect(() => {
     fetchActiveOffers();
+    const baseChannelName = 'product_offers_changes';
+    const existing = (supabase as any).getChannels?.()?.find((ch: any) => ch.topic === `realtime:${baseChannelName}`);
+    if (existing) {
+      supabase.removeChannel(existing);
+    }
+
     const channel = supabase
-      .channel('product_offers_changes')
+      .channel(`${baseChannelName}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'product_offers' }, () => fetchActiveOffers())
       .subscribe();
     return () => { supabase.removeChannel(channel); };

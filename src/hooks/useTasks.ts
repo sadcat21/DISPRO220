@@ -93,8 +93,14 @@ export const useTasks = (taskType: TaskType = 'task') => {
 
   // Realtime subscription for tasks
   useEffect(() => {
+    const baseChannelName = `tasks-realtime-${taskType}`;
+    const existing = (supabase as any).getChannels?.()?.find((ch: any) => ch.topic === `realtime:${baseChannelName}`);
+    if (existing) {
+      supabase.removeChannel(existing);
+    }
+
     const channel = supabase
-      .channel(`tasks-realtime-${taskType}`)
+      .channel(`${baseChannelName}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
         queryClient.invalidateQueries({ queryKey: ['tasks'] });
       })

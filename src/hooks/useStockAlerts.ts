@@ -32,8 +32,14 @@ export const useStockAlerts = () => {
   useEffect(() => {
     if (!isAdmin) return;
 
+    const baseChannelName = 'stock-alerts-realtime';
+    const existing = (supabase as any).getChannels?.()?.find((ch: any) => ch.topic === `realtime:${baseChannelName}`);
+    if (existing) {
+      supabase.removeChannel(existing);
+    }
+
     const channel = supabase
-      .channel('stock-alerts-realtime')
+      .channel(`${baseChannelName}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
         queryClient.invalidateQueries({ queryKey: ['stock-alerts'] });
       })

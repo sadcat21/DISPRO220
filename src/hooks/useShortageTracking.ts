@@ -32,8 +32,14 @@ export const useShortageTracking = () => {
 
   // Realtime subscription
   useEffect(() => {
+    const baseChannelName = 'shortage-tracking-realtime';
+    const existing = (supabase as any).getChannels?.()?.find((ch: any) => ch.topic === `realtime:${baseChannelName}`);
+    if (existing) {
+      supabase.removeChannel(existing);
+    }
+
     const channel = supabase
-      .channel('shortage-tracking-realtime')
+      .channel(`${baseChannelName}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'product_shortage_tracking' }, () => {
         queryClient.invalidateQueries({ queryKey: ['shortage-tracking'] });
       })

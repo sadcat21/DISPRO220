@@ -95,8 +95,14 @@ const Products: React.FC = () => {
     fetchProducts();
 
     // Realtime subscription for products
+    const baseChannelName = 'products-realtime';
+    const existing = (supabase as any).getChannels?.()?.find((ch: any) => ch.topic === `realtime:${baseChannelName}`);
+    if (existing) {
+      supabase.removeChannel(existing);
+    }
+
     const channel = supabase
-      .channel('products-realtime')
+      .channel(`${baseChannelName}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
         fetchProducts();
       })

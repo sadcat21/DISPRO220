@@ -203,8 +203,14 @@ export const usePromoSplits = () => {
 
   useEffect(() => {
     fetchSplits();
+    const baseChannelName = 'promo-splits-realtime';
+    const existing = (supabase as any).getChannels?.()?.find((ch: any) => ch.topic === `realtime:${baseChannelName}`);
+    if (existing) {
+      supabase.removeChannel(existing);
+    }
+
     const channel = supabase
-      .channel('promo-splits-realtime')
+      .channel(`${baseChannelName}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'promo_splits' }, () => fetchSplits())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'promo_split_customers' }, () => fetchSplits())
       .subscribe();

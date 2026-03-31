@@ -32,8 +32,14 @@ export const useSectors = () => {
 
   // Realtime subscription for sectors
   useEffect(() => {
+    const baseChannelName = 'sectors-realtime';
+    const existing = (supabase as any).getChannels?.()?.find((ch: any) => ch.topic === `realtime:${baseChannelName}`);
+    if (existing) {
+      supabase.removeChannel(existing);
+    }
+
     const channel = supabase
-      .channel('sectors-realtime')
+      .channel(`${baseChannelName}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sectors' }, () => {
         fetchSectors();
       })

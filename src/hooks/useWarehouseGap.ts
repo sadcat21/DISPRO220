@@ -25,8 +25,14 @@ export const useWarehouseGap = () => {
   useEffect(() => {
     if (!isAdmin) return;
 
+    const baseChannelName = 'warehouse-gap-realtime';
+    const existing = (supabase as any).getChannels?.()?.find((ch: any) => ch.topic === `realtime:${baseChannelName}`);
+    if (existing) {
+      supabase.removeChannel(existing);
+    }
+
     const channel = supabase
-      .channel('warehouse-gap-realtime')
+      .channel(`${baseChannelName}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
         queryClient.invalidateQueries({ queryKey: ['warehouse-gap'] });
       })

@@ -29,7 +29,15 @@ export const useRealtimeSubscription = (
     };
 
     let realtimeHealthy = false;
-    let channel = supabase.channel(channelName);
+
+    // Ensure we never reuse a stale channel instance with the same name (Supabase can throw if .on() is called on a subscribed channel).
+    const baseChannelName = channelName;
+    const existing = (supabase as any).getChannels?.()?.find((ch: any) => ch.topic === `realtime:${baseChannelName}`);
+    if (existing) {
+      supabase.removeChannel(existing);
+    }
+
+    let channel = supabase.channel(`${baseChannelName}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
     for (const { table, filter } of tables) {
       const opts: { event: '*'; schema: 'public'; table: string; filter?: string } = {
