@@ -325,8 +325,15 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
     return { start, end };
   };
 
+  const resetFilters = () => {
+    setPeriodFrom('');
+    setPeriodTo('');
+    setSelectedWorkerId('all');
+  };
+
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['manager-sales-summary-dialog', branchId, workers.map(worker => worker.id).join(','), periodFrom, periodTo],
+
     enabled: open,
     queryFn: async () => {
       let availableWorkers = workers;
@@ -440,6 +447,7 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
             />
 
             <Button onClick={() => refetch()} size="sm" className="rounded-full">تحديث</Button>
+            <Button onClick={resetFilters} size="sm" variant="outline" className="rounded-full">إعادة تعيين</Button>
           </div>
 
           <div className="flex gap-2 overflow-x-auto pb-1">
@@ -474,7 +482,17 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
         ) : !data?.length ? (
           <div className="flex min-h-[320px] flex-col items-center justify-center gap-3 text-slate-500">
             <ClipboardList className="h-10 w-10 opacity-40" />
-            <p>لا يوجد عمال متاحون لهذا الفرع حاليًا.</p>
+            <p className="text-center">
+              {workerButtons.length > 0
+                ? 'لا توجد مبيعات في هذه الفترة للعمال المحددين'
+                : 'لا يوجد عمال متاحون لهذا الفرع حاليًا'
+              }
+            </p>
+            {workerButtons.length > 0 && (
+              <p className="text-xs text-slate-400 text-center">
+                جرب تغيير الفترة الزمنية أو اختيار عمال مختلفين
+              </p>
+            )}
           </div>
         ) : (
           <Tabs defaultValue="overview" className="flex min-h-0 flex-1 flex-col">

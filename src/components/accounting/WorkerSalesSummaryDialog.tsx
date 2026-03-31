@@ -295,6 +295,35 @@ const PriceTrackingTab: React.FC<{ priceTracking: PriceTrackedProduct[] }> = ({ 
 const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerId, workerName }) => {
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>('products');
+  const [periodFrom, setPeriodFrom] = useState<string>('');
+  const [periodTo, setPeriodTo] = useState<string>('');
+
+  const normalizePeriodRange = (from: string, to: string) => {
+    const now = new Date();
+
+    let start = from ? new Date(`${from}T00:00:00`) : null;
+    let end = to ? new Date(`${to}T23:59:59`) : null;
+
+    if (!start && !end) {
+      return null;
+    }
+
+    if (!start) start = new Date('1970-01-01T00:00:00Z');
+    if (!end) end = now;
+
+    if (start > end) {
+      const tmp = start;
+      start = end;
+      end = tmp;
+    }
+
+    return { start, end };
+  };
+
+  const resetFilters = () => {
+    setPeriodFrom('');
+    setPeriodTo('');
+  };
 
   useRealtimeSubscription(
     `worker-sales-realtime-${workerId}`,
@@ -302,7 +331,7 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
       { table: 'orders' },
       { table: 'order_items' },
     ],
-    [['worker-sales-summary', workerId], ['worker-last-accounting-sales', workerId]],
+    [['worker-sales-summary', workerId, periodFrom, periodTo], ['worker-last-accounting-sales', workerId]],
     open && !!workerId
   );
 
@@ -323,7 +352,7 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
   });
 
   const { data: salesData, isLoading } = useQuery({
-    queryKey: ['worker-sales-summary', workerId, lastAccounting],
+    queryKey: ['worker-sales-summary', workerId, lastAccounting, periodFrom, periodTo],
     queryFn: async () => {
       let ordersQuery = supabase
         .from('orders')
@@ -331,7 +360,10 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
         .in('status', ['delivered', 'completed', 'confirmed'])
         .or(`assigned_worker_id.eq.${workerId!},created_by.eq.${workerId!}`);
 
-      if (lastAccounting) {
+      const normalized = normalizePeriodRange(periodFrom, periodTo);
+      if (normalized) {
+        ordersQuery = ordersQuery.gte('created_at', normalized.start.toISOString()).lte('created_at', normalized.end.toISOString());
+      } else if (lastAccounting) {
         ordersQuery = ordersQuery.gte('updated_at', lastAccounting);
       }
 
@@ -526,6 +558,30 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
         )}
 
         {!expandedProduct && (
+          <div className="flex flex-wrap gap-1.5 items-center text-xs mb-3">
+            <label className="text-xs font-medium text-slate-700" htmlFor="workerPeriodFrom">من</label>
+            <input
+              id="workerPeriodFrom"
+              type="date"
+              className="rounded-md border border-slate-300 px-2 py-1 text-xs"
+              value={periodFrom}
+              onChange={e => setPeriodFrom(e.target.value)}
+            />
+
+            <label className="text-xs font-medium text-slate-700" htmlFor="workerPeriodTo">إلى</label>
+            <input
+              id="workerPeriodTo"
+              type="date"
+              className="rounded-md border border-slate-300 px-2 py-1 text-xs"
+              value={periodTo}
+              onChange={e => setPeriodTo(e.target.value)}
+            />
+
+            <Button onClick={resetFilters} size="sm" variant="outline" className="text-xs px-2 py-1 h-auto">إعادة تعيين</Button>
+          </div>
+        )}
+
+        {!expandedProduct && (
           <div className="flex flex-wrap gap-1.5 items-center text-xs">
             <Badge variant="secondary" className="text-xs">
               {salesData?.orderCount || 0} طلبية
@@ -635,6 +691,7 @@ const WorkerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, workerI
               <div className="py-10 text-center text-muted-foreground">
                 <ShoppingBag className="w-10 h-10 mx-auto mb-2 opacity-40" />
                 <p>لا توجد مبيعات في هذه الفترة</p>
+                <p className="text-xs mt-1">جرب تغيير الفترة الزمنية أو إعادة التعيين</p>
               </div>
             ) : expandedProduct ? (
               <ExpandedCarousel
