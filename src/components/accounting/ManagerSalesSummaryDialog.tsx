@@ -170,9 +170,9 @@ const fetchWorkerSalesSummary = async (workerId: string, periodStart: string, pe
     .in('status', ['delivered', 'completed', 'confirmed'])
     .or(`assigned_worker_id.eq.${workerId},created_by.eq.${workerId}`);
 
-  // Use created_at for date-range filtering to capture actual order occurrences,
-  // not only the times orders were edited/updated.
-  ordersQuery = ordersQuery.gte('created_at', periodStart).lte('created_at', periodEnd);
+  // Use updated_at for date-range filtering so we include orders that were
+  // completed/updated within the period, matching the worker sales summary behavior.
+  ordersQuery = ordersQuery.gte('updated_at', periodStart).lte('updated_at', periodEnd);
 
   const { data: orders, error } = await ordersQuery;
   if (error) throw error;
