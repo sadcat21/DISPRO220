@@ -106,9 +106,26 @@ const AdminHome: React.FC = () => {
   const { data: activeWorkers = [] } = useQuery({
     queryKey: ['admin-home-workers', activeBranch?.id],
     queryFn: async () => {
-      let q = supabase.from('workers').select('id, full_name, username').eq('is_active', true);
-      if (activeBranch?.id) q = q.eq('branch_id', activeBranch.id);
-      const { data } = await q.order('full_name');
+      let rolesQuery = supabase
+        .from('worker_roles')
+        .select('worker_id, custom_roles!inner(code)')
+        .eq('custom_roles.code', 'delivery_rep');
+
+      if (activeBranch?.id) {
+        rolesQuery = rolesQuery.eq('branch_id', activeBranch.id);
+      }
+
+      const { data: workerRoles } = await rolesQuery;
+      if (!workerRoles || workerRoles.length === 0) return [];
+
+      const workerIds = [...new Set(workerRoles.map(wr => wr.worker_id))];
+      const { data } = await supabase
+        .from('workers')
+        .select('id, full_name, username')
+        .in('id', workerIds)
+        .eq('is_active', true)
+        .order('full_name');
+
       return data || [];
     },
     enabled: showGiftsButton,
