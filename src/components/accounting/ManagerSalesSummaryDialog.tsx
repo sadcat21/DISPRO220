@@ -301,6 +301,28 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
   const [periodTo, setPeriodTo] = useState<string>('');
   const workerButtons = workers;
 
+  const normalizePeriodRange = (from: string, to: string) => {
+    const now = new Date();
+
+    let start = from ? new Date(`${from}T00:00:00`) : null;
+    let end = to ? new Date(`${to}T23:59:59`) : null;
+
+    if (!start && !end) {
+      return null;
+    }
+
+    if (!start) start = new Date('1970-01-01T00:00:00Z');
+    if (!end) end = now;
+
+    if (start > end) {
+      const tmp = start;
+      start = end;
+      end = tmp;
+    }
+
+    return { start, end };
+  };
+
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['manager-sales-summary-dialog', branchId, workers.map(worker => worker.id).join(','), periodFrom, periodTo],
     enabled: open,
@@ -335,8 +357,10 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
           .maybeSingle();
 
         const lastAccounting = accounting?.completed_at || null;
-        const computedStart = periodFrom ? `${periodFrom}T00:00:00+01:00` : (lastAccounting || getDefaultPeriodStart());
-        const computedEnd = periodTo ? `${periodTo}T23:59:59+01:00` : new Date().toISOString();
+
+        const normalized = normalizePeriodRange(periodFrom, periodTo);
+        const computedStart = normalized ? normalized.start.toISOString() : (lastAccounting || getDefaultPeriodStart());
+        const computedEnd = normalized ? normalized.end.toISOString() : new Date().toISOString();
 
         const salesSummary = await fetchWorkerSalesSummary(worker.id, computedStart, computedEnd);
         const calc = await fetchSessionCalculations({
