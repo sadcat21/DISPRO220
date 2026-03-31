@@ -30,14 +30,16 @@ export const useRealtimeSubscription = (
 
     let realtimeHealthy = false;
 
-    // Ensure we never reuse a stale channel instance with the same name (Supabase can throw if .on() is called on a subscribed channel).
+    // Ensure we never reuse a stale channel instance with the same base name.
+    // If we keep generating unique names, the same base topics can conflict in Supabase internals.
     const baseChannelName = channelName;
-    const existing = (supabase as any).getChannels?.()?.find((ch: any) => ch.topic === `realtime:${baseChannelName}`);
-    if (existing) {
-      supabase.removeChannel(existing);
-    }
+    const existingChannels = (supabase as any).getChannels?.()?.filter(
+      (ch: any) => typeof ch.topic === 'string' && ch.topic.startsWith(`realtime:${baseChannelName}`)
+    ) || [];
 
-    let channel = supabase.channel(`${baseChannelName}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    existingChannels.forEach((ch: any) => supabase.removeChannel(ch));
+
+    let channel = supabase.channel(baseChannelName);
 
     for (const { table, filter } of tables) {
       const opts: { event: '*'; schema: 'public'; table: string; filter?: string } = {
