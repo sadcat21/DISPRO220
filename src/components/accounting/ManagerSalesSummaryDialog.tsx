@@ -163,14 +163,14 @@ const getDefaultPeriodStart = () => {
   return `${year}-${month}-${day}T00:00:00+01:00`;
 };
 
-const fetchWorkerSalesSummary = async (workerId: string, periodStart: string) => {
+const fetchWorkerSalesSummary = async (workerId: string, periodStart: string, periodEnd: string) => {
   let ordersQuery = supabase
     .from('orders')
     .select('id, status, payment_type, created_at, updated_at, customer_id')
     .in('status', ['delivered', 'completed', 'confirmed'])
     .or(`assigned_worker_id.eq.${workerId},created_by.eq.${workerId}`);
 
-  ordersQuery = ordersQuery.gte('updated_at', periodStart);
+  ordersQuery = ordersQuery.gte('updated_at', periodStart).lte('updated_at', periodEnd);
 
   const { data: orders, error } = await ordersQuery;
   if (error) throw error;
@@ -297,10 +297,12 @@ const BreakdownRow: React.FC<{ label: string; value: number }> = ({ label, value
 
 const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branchId, workers = [] }) => {
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>('all');
+  const [periodFrom, setPeriodFrom] = useState<string>('');
+  const [periodTo, setPeriodTo] = useState<string>('');
   const workerButtons = workers;
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['manager-sales-summary-dialog', branchId, workers.map(worker => worker.id).join(',')],
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['manager-sales-summary-dialog', branchId, workers.map(worker => worker.id).join(','), periodFrom, periodTo],
     enabled: open,
     queryFn: async () => {
       let availableWorkers = workers;
@@ -333,13 +335,15 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
           .maybeSingle();
 
         const lastAccounting = accounting?.completed_at || null;
-        const periodStart = lastAccounting || getDefaultPeriodStart();
-        const salesSummary = await fetchWorkerSalesSummary(worker.id, periodStart);
+        const computedStart = periodFrom ? `${periodFrom}T00:00:00+01:00` : (lastAccounting || getDefaultPeriodStart());
+        const computedEnd = periodTo ? `${periodTo}T23:59:59+01:00` : new Date().toISOString();
+
+        const salesSummary = await fetchWorkerSalesSummary(worker.id, computedStart, computedEnd);
         const calc = await fetchSessionCalculations({
           workerId: worker.id,
           branchId: branchId || undefined,
-          periodStart,
-          periodEnd: new Date().toISOString(),
+          periodStart: computedStart,
+          periodEnd: computedEnd,
         });
 
         return {
@@ -385,10 +389,33 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
         </div>
 
         <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
-          <div className="mb-2 flex items-center justify-between">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <div className="text-sm font-semibold text-slate-700">اختيار العامل</div>
             <Badge className="border-0 bg-white text-slate-700 shadow-sm">{aggregate.workerLabel}</Badge>
           </div>
+
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <label className="text-sm font-medium text-slate-700" htmlFor="periodFrom">من</label>
+            <input
+              id="periodFrom"
+              type="date"
+              className="rounded-lg border border-slate-300 p-2 text-sm"
+              value={periodFrom}
+              onChange={e => setPeriodFrom(e.target.value)}
+            />
+
+            <label className="text-sm font-medium text-slate-700" htmlFor="periodTo">إلى</label>
+            <input
+              id="periodTo"
+              type="date"
+              className="rounded-lg border border-slate-300 p-2 text-sm"
+              value={periodTo}
+              onChange={e => setPeriodTo(e.target.value)}
+            />
+
+            <Button onClick={() => refetch()} size="sm" className="rounded-full">تحديث</Button>
+          </div>
+
           <div className="flex gap-2 overflow-x-auto pb-1">
             <Button
               type="button"
