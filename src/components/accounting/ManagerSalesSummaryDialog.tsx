@@ -47,6 +47,8 @@ interface ProductAgg {
 interface WorkerSummary {
   worker: WorkerInfo;
   lastAccounting: string | null;
+  periodStart: string;
+  periodEnd: string;
   orderCount: number;
   items: ProductAgg[];
   firstOrderTime: string | null;
@@ -155,16 +157,12 @@ const mergeProducts = (summaries: WorkerSummary[]): ProductAgg[] => {
   return Array.from(map.values()).sort((a, b) => b.totalAmount - a.totalAmount);
 };
 
-const toDateString = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
-const getDefaultPeriodStart = () => `${toDateString(new Date())}T00:00:00+01:00`;
-
-const fetchWorkerSalesSummary = async (workerId: string, periodStart: string, periodEnd: string) => {
+const fetchWorkerSalesSummary = async (
+  workerId: string,
+  periodStart?: string | null,
+  periodEnd?: string | null,
+  lastAccounting?: string | null,
+) => {
   const baseQuery = () =>
     supabase
       .from('orders')
@@ -172,19 +170,31 @@ const fetchWorkerSalesSummary = async (workerId: string, periodStart: string, pe
       .in('status', ['delivered', 'completed', 'confirmed'])
       .or(`assigned_worker_id.eq.${workerId},created_by.eq.${workerId}`);
 
-  const [{ data: createdOrders, error: createdError }, { data: updatedOrders, error: updatedError }] = await Promise.all([
-    baseQuery().gte('created_at', periodStart).lte('created_at', periodEnd),
-    baseQuery().gte('updated_at', periodStart).lte('updated_at', periodEnd),
-  ]);
+  let orders: any[] = [];
 
-  if (createdError) throw createdError;
-  if (updatedError) throw updatedError;
+  if (periodStart && periodEnd) {
+    const [{ data: createdOrders, error: createdError }, { data: updatedOrders, error: updatedError }] = await Promise.all([
+      baseQuery().gte('created_at', periodStart).lte('created_at', periodEnd),
+      baseQuery().gte('updated_at', periodStart).lte('updated_at', periodEnd),
+    ]);
 
-  const ordersMap = new Map<string, any>();
-  for (const order of createdOrders || []) ordersMap.set(order.id, order);
-  for (const order of updatedOrders || []) ordersMap.set(order.id, order);
+    if (createdError) throw createdError;
+    if (updatedError) throw updatedError;
 
-  const orders = Array.from(ordersMap.values());
+    const ordersMap = new Map<string, any>();
+    for (const order of createdOrders || []) ordersMap.set(order.id, order);
+    for (const order of updatedOrders || []) ordersMap.set(order.id, order);
+    orders = Array.from(ordersMap.values());
+  } else {
+    let query = baseQuery();
+    if (lastAccounting) {
+      query = query.gte('updated_at', lastAccounting);
+    }
+    const { data: fallbackOrders, error } = await query;
+    if (error) throw error;
+    orders = fallbackOrders || [];
+  }
+
   if (orders.length === 0) {
     return { items: [] as ProductAgg[], orderCount: 0, firstOrderTime: null, lastOrderTime: null };
   }
@@ -356,10 +366,29 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
 
       const settled = await Promise.allSettled(
         availableWorkers.map(async (worker) => {
+          const { data: accounting } = await supabase
+            .from('accounting_sessions')
+            .select('completed_at')
+            .eq('worker_id', worker.id)
+            .eq('status', 'completed')
+            .order('completed_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          const lastAccounting = accounting?.completed_at || null;
           const normalized = normalizePeriodRange(periodFrom, periodTo);
-          const periodStart = normalized ? normalized.start.toISOString() : getDefaultPeriodStart();
-          const periodEnd = normalized ? normalized.end.toISOString() : new Date().toISOString();
-          const salesSummary = await fetchWorkerSalesSummary(worker.id, periodStart, periodEnd);
+          const periodStart = normalized
+            ? normalized.start.toISOString()
+            : (lastAccounting || '1970-01-01T00:00:00Z');
+          const periodEnd = normalized
+            ? normalized.end.toISOString()
+            : new Date().toISOString();
+          const salesSummary = await fetchWorkerSalesSummary(
+            worker.id,
+            normalized ? periodStart : null,
+            normalized ? periodEnd : null,
+            lastAccounting,
+          );
           const calc = await fetchSessionCalculations({
             workerId: worker.id,
             branchId: branchId || undefined,
@@ -369,7 +398,9 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
 
           return {
             worker: worker as WorkerInfo,
-            lastAccounting: null,
+            lastAccounting,
+            periodStart,
+            periodEnd,
             orderCount: salesSummary.orderCount,
             items: salesSummary.items,
             firstOrderTime: salesSummary.firstOrderTime,
