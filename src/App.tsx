@@ -56,6 +56,7 @@ import NotFound from "./pages/NotFound";
 import Chat from "./pages/Chat";
 import Attendance from "./pages/admin/Attendance";
 import OrderTracking from "./pages/admin/OrderTracking";
+import ManagerSalesSummaryPage from "./pages/admin/ManagerSalesSummaryPage";
 import FloatingChat from "./components/chat/FloatingChat";
 import { Loader2 } from "lucide-react";
 
@@ -378,6 +379,12 @@ const AppRoutes = () => {
       <Route path="/order-tracking" element={
         <ProtectedRoute allowedRoles={['admin', 'branch_admin']}>
           <OrderTracking />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/manager-sales-summary" element={
+        <ProtectedRoute adminOnly>
+          <ManagerSalesSummaryPage />
         </ProtectedRoute>
       } />
 
