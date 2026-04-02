@@ -65,6 +65,74 @@ interface AggregateSummary {
   calc: SessionCalculations;
 }
 
+const calcOrderTotal = (order: any, items: any[]) => {
+  const storedTotal = Number(order?.total_amount || 0);
+  if (storedTotal > 0) return storedTotal;
+  return items.reduce((sum, item) => sum + Number(item.total_price || 0), 0);
+};
+
+const buildCalcFromOrders = (orders: any[], items: any[]): SessionCalculations => {
+  const calc = emptyCalc();
+  const itemsByOrder = new Map<string, any[]>();
+
+  for (const item of items) {
+    const current = itemsByOrder.get(item.order_id) || [];
+    current.push(item);
+    itemsByOrder.set(item.order_id, current);
+  }
+
+  for (const order of orders) {
+    const orderItems = itemsByOrder.get(order.id) || [];
+    const totalAmount = calcOrderTotal(order, orderItems);
+    calc.totalSales += totalAmount;
+
+    let paidAmount = 0;
+    const paymentStatus = String(order.payment_status || 'pending').toLowerCase();
+    if (paymentStatus === 'cash' || paymentStatus === 'check' || paymentStatus === 'paid') {
+      paidAmount = totalAmount;
+    } else if (paymentStatus === 'partial') {
+      paidAmount = Number(order.partial_amount || 0);
+    }
+
+    const debtAmount = Math.max(0, totalAmount - paidAmount);
+    calc.totalPaid += paidAmount;
+    calc.newDebts += debtAmount;
+
+    if (paidAmount > 0) {
+      const paymentType = order.payment_type || 'without_invoice';
+      const invoiceMethod = String(order.invoice_payment_method || '').toLowerCase();
+      const docVerification = order.document_verification && typeof order.document_verification === 'object'
+        ? order.document_verification
+        : null;
+      const paidByCash = docVerification?.paid_by_cash === true;
+
+      if (paymentType === 'with_invoice') {
+        calc.invoice1.total += paidAmount;
+        if (paymentStatus === 'check' || invoiceMethod === 'check') calc.invoice1.check += paidAmount;
+        else if ((invoiceMethod === 'receipt' || invoiceMethod === 'transfer') && paidByCash) calc.invoice1.versementCash += paidAmount;
+        else if (invoiceMethod === 'transfer' || invoiceMethod === 'virement') calc.invoice1.transfer += paidAmount;
+        else if (invoiceMethod === 'receipt' || invoiceMethod === 'versement') calc.invoice1.receipt += paidAmount;
+        else calc.invoice1.espaceCash += paidAmount;
+      } else {
+        calc.invoice2.total += paidAmount;
+        calc.invoice2.cash += paidAmount;
+      }
+    }
+
+    for (const item of orderItems) {
+      const giftQty = Number(item.gift_quantity || 0);
+      const qty = Number(item.quantity || 0);
+      const totalPrice = Number(item.total_price || 0);
+      if (giftQty <= 0 || qty <= 0) continue;
+      const estimatedUnit = totalPrice > 0 ? totalPrice / qty : Number(item.unit_price || 0);
+      calc.giftOfferValue += giftQty * estimatedUnit;
+    }
+  }
+
+  calc.physicalCash = calc.invoice2.cash + calc.invoice1.espaceCash + calc.invoice1.versementCash;
+  return calc;
+};
+
 const emptyCalc = (): SessionCalculations => ({
   totalSales: 0,
   totalPaid: 0,
@@ -205,7 +273,7 @@ const fetchWorkerSalesSummary = async (
 
   const { data: items, error: itemsError } = await supabase
     .from('order_items')
-    .select('order_id, product_id, quantity, gift_quantity, total_price, product:products(name, pieces_per_box, image_url)')
+    .select('order_id, product_id, quantity, gift_quantity, unit_price, total_price, product:products(name, pieces_per_box, image_url)')
     .in('order_id', orderIds);
 
   if (itemsError) throw itemsError;
@@ -262,12 +330,14 @@ const fetchWorkerSalesSummary = async (
 
   const createdTimes = orders.map((o) => new Date(o.created_at).getTime());
   const updatedTimes = orders.map((o) => new Date(o.updated_at).getTime());
+  const calc = buildCalcFromOrders(orders, items || []);
 
   return {
     items: Object.values(agg).sort((a, b) => b.totalAmount - a.totalAmount),
     orderCount: orders.length,
     firstOrderTime: createdTimes.length ? new Date(Math.min(...createdTimes)).toISOString() : null,
     lastOrderTime: updatedTimes.length ? new Date(Math.max(...updatedTimes)).toISOString() : null,
+    calc,
   };
 };
 
@@ -390,14 +460,30 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
             lastAccounting,
           );
 
-          let calc = emptyCalc();
+          let calc = salesSummary.calc || emptyCalc();
           try {
-            calc = await fetchSessionCalculations({
+            const fetchedCalc = await fetchSessionCalculations({
               workerId: worker.id,
               branchId: branchId || undefined,
               periodStart,
               periodEnd,
             });
+            if (fetchedCalc.totalSales > 0 || fetchedCalc.totalPaid > 0 || fetchedCalc.newDebts > 0) {
+              calc = fetchedCalc;
+            } else if (calc.totalSales > 0 || calc.totalPaid > 0 || calc.newDebts > 0) {
+              calc = {
+                ...fetchedCalc,
+                totalSales: calc.totalSales,
+                totalPaid: calc.totalPaid,
+                newDebts: calc.newDebts,
+                invoice1: calc.invoice1,
+                invoice2: calc.invoice2,
+                physicalCash: calc.physicalCash,
+                giftOfferValue: calc.giftOfferValue,
+              };
+            } else {
+              calc = fetchedCalc;
+            }
           } catch (error) {
             console.error('Manager sales calculations failed for worker:', worker.id, error);
           }
