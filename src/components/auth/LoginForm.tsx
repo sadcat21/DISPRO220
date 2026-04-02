@@ -17,6 +17,9 @@ import {
   ScanEye,
   UserRound,
   BriefcaseBusiness,
+  FolderKanban,
+  Calculator,
+  ClipboardPenLine,
   Truck,
   Warehouse,
   LucideIcon,
@@ -51,14 +54,20 @@ const FUNCTIONAL_ROLE_LABEL_AR: Record<string, string> = {
 
 const ROLE_ICONS: Record<string, LucideIcon> = {
   admin: ShieldCheck,
+  project_manager: FolderKanban,
   branch_admin: Building2,
+  accountant: Calculator,
+  admin_assistant: ClipboardPenLine,
   supervisor: ScanEye,
   worker: UserRound,
 };
 
 const ROLE_LABEL_AR: Record<string, string> = {
   admin: 'مدير',
+  project_manager: 'مدير مشروع',
   branch_admin: 'مدير فرع',
+  accountant: 'محاسب',
+  admin_assistant: 'عون إداري',
   supervisor: 'مشرف',
   worker: 'عامل',
 };
@@ -79,7 +88,10 @@ const getWorkerIconTone = (w: QuickWorker, isRealMode: boolean) => {
   if (w.functional_role === 'sales_rep') return 'text-violet-600';
   if (w.functional_role === 'warehouse_manager') return 'text-amber-600';
   if (w.role === 'admin') return 'text-rose-600';
+  if (w.role === 'project_manager') return 'text-fuchsia-600';
   if (w.role === 'branch_admin') return 'text-emerald-600';
+  if (w.role === 'accountant') return 'text-orange-600';
+  if (w.role === 'admin_assistant') return 'text-cyan-600';
   if (w.role === 'supervisor') return 'text-sky-600';
   return 'text-slate-600';
 };
