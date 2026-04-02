@@ -636,12 +636,12 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
 
   return (
       <div className="flex h-full min-h-0 flex-col overflow-hidden" dir="rtl">
-        <div className="border-b border-slate-200 bg-slate-50 px-3 py-2 sm:px-4">
-          <div className="grid grid-cols-2 gap-2">
+        <div className="border-b border-slate-200 bg-slate-50 px-3 py-2.5 sm:px-4 sm:py-3">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <button
               type="button"
               onClick={() => setTimeFilterOpen(true)}
-              className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-right shadow-sm"
+              className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-right shadow-sm transition-colors hover:border-red-200 hover:bg-red-50/40"
             >
               <div className="text-[11px] font-semibold text-slate-500">فلتر التوقيت</div>
               <div className="mt-1 truncate text-xs font-bold text-slate-800">{timingSummary}</div>
@@ -649,14 +649,14 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
             <button
               type="button"
               onClick={() => setWorkerFilterOpen(true)}
-              className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-right shadow-sm"
+              className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-right shadow-sm transition-colors hover:border-red-200 hover:bg-red-50/40"
             >
               <div className="text-[11px] font-semibold text-slate-500">فلتر العمال</div>
               <div className="mt-1 truncate text-xs font-bold text-slate-800">{selectedWorkerLabel}</div>
             </button>
           </div>
 
-          <div className="mt-2 flex items-center justify-between gap-2">
+          <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
             <Button size="sm" className="h-8 rounded-full bg-red-500 px-4 text-xs hover:bg-red-600 sm:h-9 sm:px-5 sm:text-sm" onClick={() => void refetch()}>
               تحديث
             </Button>
@@ -667,7 +667,7 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
         </div>
 
         <Dialog open={timeFilterOpen} onOpenChange={setTimeFilterOpen}>
-          <DialogContent className="max-w-md p-0" dir="rtl">
+          <DialogContent className="max-w-md rounded-[28px] p-0" dir="rtl">
             <div className="border-b border-slate-200 px-4 py-3">
               <div className="text-sm font-bold text-slate-900">فلتر التوقيت</div>
               <div className="text-xs text-slate-500">حدد يومًا سريعًا أو اختر فترة يدوية</div>
@@ -724,7 +724,7 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
         </Dialog>
 
         <Dialog open={workerFilterOpen} onOpenChange={setWorkerFilterOpen}>
-          <DialogContent className="max-w-md p-0" dir="rtl">
+          <DialogContent className="max-w-md rounded-[28px] p-0" dir="rtl">
             <div className="border-b border-slate-200 px-4 py-3">
               <div className="text-sm font-bold text-slate-900">فلتر العمال</div>
               <div className="text-xs text-slate-500">اختر كل العمال أو عاملًا محددًا</div>
