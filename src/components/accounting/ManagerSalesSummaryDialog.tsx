@@ -165,17 +165,27 @@ const toDateString = (date: Date) => {
 const getDefaultPeriodStart = () => `${toDateString(new Date())}T00:00:00+01:00`;
 
 const fetchWorkerSalesSummary = async (workerId: string, periodStart: string, periodEnd: string) => {
-  let ordersQuery = supabase
-    .from('orders')
-    .select('id, status, payment_type, created_at, updated_at, customer_id')
-    .in('status', ['delivered', 'completed', 'confirmed'])
-    .or(`assigned_worker_id.eq.${workerId},created_by.eq.${workerId}`);
+  const baseQuery = () =>
+    supabase
+      .from('orders')
+      .select('id, status, payment_type, created_at, updated_at, customer_id')
+      .in('status', ['delivered', 'completed', 'confirmed'])
+      .or(`assigned_worker_id.eq.${workerId},created_by.eq.${workerId}`);
 
-  ordersQuery = ordersQuery.gte('updated_at', periodStart).lte('updated_at', periodEnd);
+  const [{ data: createdOrders, error: createdError }, { data: updatedOrders, error: updatedError }] = await Promise.all([
+    baseQuery().gte('created_at', periodStart).lte('created_at', periodEnd),
+    baseQuery().gte('updated_at', periodStart).lte('updated_at', periodEnd),
+  ]);
 
-  const { data: orders, error } = await ordersQuery;
-  if (error) throw error;
-  if (!orders || orders.length === 0) {
+  if (createdError) throw createdError;
+  if (updatedError) throw updatedError;
+
+  const ordersMap = new Map<string, any>();
+  for (const order of createdOrders || []) ordersMap.set(order.id, order);
+  for (const order of updatedOrders || []) ordersMap.set(order.id, order);
+
+  const orders = Array.from(ordersMap.values());
+  if (orders.length === 0) {
     return { items: [] as ProductAgg[], orderCount: 0, firstOrderTime: null, lastOrderTime: null };
   }
 
@@ -331,25 +341,15 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
       let availableWorkers = workers;
 
       if (availableWorkers.length === 0) {
-        let workerRolesQuery = supabase
-          .from('worker_roles')
-          .select('worker_id, custom_roles!inner(code)')
-          .eq('custom_roles.code', 'delivery_rep');
-
-        if (branchId) workerRolesQuery = workerRolesQuery.eq('branch_id', branchId);
-
-        const { data: workerRoles, error } = await workerRolesQuery;
-        if (error) throw error;
-        if (!workerRoles || workerRoles.length === 0) return [];
-
-        const workerIds = [...new Set(workerRoles.map((item) => item.worker_id))];
-        const { data: fetchedWorkers, error: workersError } = await supabase
+        let workersQuery = supabase
           .from('workers')
           .select('id, full_name, username')
-          .in('id', workerIds)
           .eq('is_active', true)
           .order('full_name');
 
+        if (branchId) workersQuery = workersQuery.eq('branch_id', branchId);
+
+        const { data: fetchedWorkers, error: workersError } = await workersQuery;
         if (workersError) throw workersError;
         availableWorkers = (fetchedWorkers || []) as WorkerInfo[];
       }
