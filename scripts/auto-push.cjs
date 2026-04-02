@@ -46,6 +46,44 @@ function shouldIgnore(filePath) {
   return IGNORED_PATTERNS.some((pattern) => pattern.test(filePath));
 }
 
+function humanizeFileName(filePath) {
+  const base = path.basename(filePath, path.extname(filePath));
+  if (!base) return filePath;
+  return base
+    .replace(/[-_]+/g, ' ')
+    .replace(/([a-z\d])([A-Z])/g, '$1 $2')
+    .trim();
+}
+
+function buildCommitMessage(statusOutput) {
+  const lines = statusOutput
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .filter(Boolean);
+
+  const changedFiles = lines.map((line) => {
+    const statusCode = line.slice(0, 2).trim() || 'M';
+    const rawPath = line.slice(3).trim();
+    const finalPath = rawPath.includes('->')
+      ? rawPath.split('->').pop().trim()
+      : rawPath;
+    return { statusCode, filePath: finalPath };
+  });
+
+  const primary = changedFiles[0];
+  const primaryName = humanizeFileName(primary.filePath);
+  const extraCount = changedFiles.length - 1;
+
+  if (changedFiles.length === 1) {
+    if (primary.statusCode.includes('A')) return `Add ${primaryName}`;
+    if (primary.statusCode.includes('D')) return `Remove ${primaryName}`;
+    if (primary.statusCode.includes('R')) return `Rename ${primaryName}`;
+    return `Update ${primaryName}`;
+  }
+
+  return `Update ${primaryName}${extraCount === 1 ? ' and 1 more file' : ` and ${extraCount} more files`}`;
+}
+
 async function doCommitAndPush() {
   try {
     console.log('[auto-push] Staging changes...');
@@ -56,12 +94,9 @@ async function doCommitAndPush() {
       return;
     }
 
-    const date = new Date().toISOString();
-    const branchRes = await run('git rev-parse --abbrev-ref HEAD');
-    const branch = branchRes.stdout.trim();
-    const message = `chore(auto): auto-save ${date} (${branch})`;
+    const message = buildCommitMessage(status);
 
-    console.log('[auto-push] Committing...');
+    console.log(`[auto-push] Committing with message: ${message}`);
     await run(`git commit -m "${message}"`);
     console.log('[auto-push] Pushing...');
 
