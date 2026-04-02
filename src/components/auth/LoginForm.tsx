@@ -80,10 +80,6 @@ const getWorkerIcon = (w: QuickWorker) => {
 };
 
 const getWorkerIconTone = (w: QuickWorker, isRealMode: boolean) => {
-  if (isRealMode) {
-    return 'text-red-600';
-  }
-
   if (w.functional_role === 'delivery_rep') return 'text-blue-600';
   if (w.functional_role === 'sales_rep') return 'text-violet-600';
   if (w.functional_role === 'warehouse_manager') return 'text-amber-600';
