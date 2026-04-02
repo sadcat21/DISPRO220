@@ -619,16 +619,6 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="h-[min(94dvh,860px)] w-[calc(100vw-0.35rem)] max-w-4xl overflow-hidden gap-0 p-0 sm:h-[min(92dvh,860px)] sm:w-[calc(100vw-0.5rem)]" dir="rtl">
-        <div className="border-b border-red-200 bg-gradient-to-r from-rose-500 to-red-500 px-3 py-3 text-white sm:px-4 sm:py-3.5">
-          <DialogHeader className="space-y-1 text-right">
-            <DialogTitle className="flex items-center justify-end gap-2 text-base font-bold sm:text-xl">
-              <ShoppingBag className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
-              تجميع مبيعات العمال
-            </DialogTitle>
-            <p className="text-[11px] leading-5 text-white/90 sm:text-xs">مراجعة المبيعات والديون والتحصيلات لكل العمال</p>
-          </DialogHeader>
-        </div>
-
         <div className="border-b border-slate-200 bg-slate-50 px-3 py-2.5 sm:px-4">
           <div className="mb-2 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
             <label htmlFor="periodFrom" className="text-xs text-slate-600 sm:text-sm">من</label>
