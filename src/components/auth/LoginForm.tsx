@@ -307,11 +307,11 @@ const LoginForm: React.FC = () => {
           <div className="max-h-[60vh] overflow-y-auto px-4 py-4">
             {quickWorkers.length > 0 ? (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {quickWorkers.map((worker) => (
-                  (() => {
-                    const WorkerIcon = getWorkerIcon(worker);
-                    const isRealMode = quickLoginMode === 'real';
-                    return (
+                {quickWorkers.map((worker) => {
+                  const WorkerIcon = getWorkerIcon(worker);
+                  const isRealMode = quickLoginMode === 'real';
+
+                  return (
                   <button
                     key={worker.username}
                     type="button"
@@ -344,9 +344,8 @@ const LoginForm: React.FC = () => {
                       </div>
                     )}
                   </button>
-                    );
-                  })()
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
