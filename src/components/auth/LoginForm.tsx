@@ -551,9 +551,7 @@ const LoginForm: React.FC = () => {
 
                   <TabsContent value="admins" className="mt-0">
                     {adminQuickWorkers.length > 0 ? (
-                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                        {adminQuickWorkers.map((worker) => renderQuickWorkerCard(worker, true))}
-                      </div>
+                      renderQuickWorkerGroups(adminQuickWorkers)
                     ) : (
                       <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
                         لا يوجد حسابات إدارية مفعّلة حاليًا.
@@ -568,9 +566,7 @@ const LoginForm: React.FC = () => {
                         <div className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
                           {branch.name} - مدير الفرع والعمال
                         </div>
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                          {branchWorkers.map((worker) => renderQuickWorkerCard(worker, true))}
-                        </div>
+                        {renderQuickWorkerGroups(branchWorkers)}
                       </TabsContent>
                     );
                   })}
