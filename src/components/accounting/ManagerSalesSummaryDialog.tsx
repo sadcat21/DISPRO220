@@ -389,12 +389,18 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
             normalized ? periodEnd : null,
             lastAccounting,
           );
-          const calc = await fetchSessionCalculations({
-            workerId: worker.id,
-            branchId: branchId || undefined,
-            periodStart,
-            periodEnd,
-          });
+
+          let calc = emptyCalc();
+          try {
+            calc = await fetchSessionCalculations({
+              workerId: worker.id,
+              branchId: branchId || undefined,
+              periodStart,
+              periodEnd,
+            });
+          } catch (error) {
+            console.error('Manager sales calculations failed for worker:', worker.id, error);
+          }
 
           return {
             worker: worker as WorkerInfo,
