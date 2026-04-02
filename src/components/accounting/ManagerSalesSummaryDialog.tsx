@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchSessionCalculations, SessionCalculations } from '@/hooks/useSessionCalculations';
-import { Banknote, Calendar, ClipboardList, Gift, HandCoins, Package, ShoppingBag, TrendingDown, Users, Wallet } from 'lucide-react';
+import { Banknote, Calendar, ClipboardList, Gift, HandCoins, Package, ShoppingBag, TrendingDown, Wallet } from 'lucide-react';
 
 interface Props {
   open: boolean;
@@ -450,11 +450,6 @@ const getDayButtonClass = (isSelected: boolean, isToday: boolean) => {
   }
   return 'h-9 shrink-0 rounded-full border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 hover:border-red-200 hover:bg-red-50';
 };
-
-const getFilterCardClass = (isActive: boolean) =>
-  isActive
-    ? 'rounded-2xl border border-red-200 bg-red-50/80 p-2.5 text-right shadow-sm'
-    : 'rounded-2xl border border-slate-200 bg-white p-2.5 text-right shadow-sm';
 
 const StatCard: React.FC<{ label: string; value: string; icon: React.ReactNode; tone?: string }> = ({ label, value, icon, tone = '' }) => (
   <div className="group relative overflow-hidden rounded-[22px] border border-slate-200 bg-white p-3 sm:rounded-[26px] sm:p-4 shadow-[0_10px_30px_-18px_rgba(15,23,42,0.35)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_35px_-20px_rgba(15,23,42,0.4)]">
