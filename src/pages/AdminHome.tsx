@@ -16,7 +16,6 @@ import { useIsElementHidden } from '@/hooks/useUIOverrides';
 import InvoiceRequestDialog from '@/components/treasury/InvoiceRequestDialog';
 import CreateOrderDialog from '@/components/orders/CreateOrderDialog';
 import WorkerGiftsSummaryDialog from '@/components/accounting/WorkerGiftsSummaryDialog';
-import ManagerSalesSummaryDialog from '@/components/accounting/ManagerSalesSummaryDialog';
 import ManualPromoEntryDialog from '@/components/offers/ManualPromoEntryDialog';
 import FactoryReceiptQuickDialog from '@/components/stock/FactoryReceiptQuickDialog';
 import FactoryDeliveryQuickDialog from '@/components/stock/FactoryDeliveryQuickDialog';
@@ -96,7 +95,6 @@ const AdminHome: React.FC = () => {
   const [showCreateOrder, setShowCreateOrder] = useState(false);
   const [giftsOpen, setGiftsOpen] = useState(false);
   const [giftsWorkerIdx, setGiftsWorkerIdx] = useState(0);
-  const [managerSalesOpen, setManagerSalesOpen] = useState(false);
   const [manualPromoOpen, setManualPromoOpen] = useState(false);
   const [factoryReceiptOpen, setFactoryReceiptOpen] = useState(false);
   const [factoryDeliveryOpen, setFactoryDeliveryOpen] = useState(false);
@@ -286,7 +284,7 @@ const AdminHome: React.FC = () => {
         { path: '/daily-receipts', icon: FileText, label: t('nav.daily_receipts') },
         { path: '/shared-invoices', icon: FolderOpen, label: 'الفواتير المشاركة' },
         { path: '/worker-debts', icon: Banknote, label: t('nav.worker_debts') },
-        ...(isAdminRole(role) ? [{ path: '/manager-sales-summary', icon: ShoppingCart, label: 'تجميع مبيعات العمال', action: () => setManagerSalesOpen(true) }] : []),
+        ...(isAdminRole(role) ? [{ path: '/manager-sales-summary', icon: ShoppingCart, label: 'تجميع مبيعات العمال' }] : []),
       ],
     },
     // 2. الطلبات والتوصيل
@@ -547,12 +545,6 @@ const AdminHome: React.FC = () => {
       <ManualPromoEntryDialog open={manualPromoOpen} onOpenChange={setManualPromoOpen} />
       <FactoryReceiptQuickDialog open={factoryReceiptOpen} onOpenChange={setFactoryReceiptOpen} />
       <FactoryDeliveryQuickDialog open={factoryDeliveryOpen} onOpenChange={setFactoryDeliveryOpen} />
-      <ManagerSalesSummaryDialog
-        open={managerSalesOpen}
-        onOpenChange={setManagerSalesOpen}
-        branchId={activeBranch?.id}
-        workers={activeWorkers}
-      />
       <AddTaskDialog
         open={taskDialogType === 'task'}
         onOpenChange={(open) => setTaskDialogType(open ? 'task' : null)}
