@@ -303,10 +303,11 @@ const LoginForm: React.FC = () => {
     else setRealWorkers(result);
   };
 
-  const adminQuickWorkers = realWorkers.filter((worker) => ADMIN_TAB_ROLES.includes(worker.role) || !worker.branch_id);
+  const isAdminQuickWorker = (worker: QuickWorker) => ADMIN_TAB_ROLES.includes(worker.role) || !worker.branch_id;
+  const adminQuickWorkers = realWorkers.filter(isAdminQuickWorker);
   const branchQuickTabs = [...new Map(
     realWorkers
-      .filter((worker) => worker.branch_id && worker.branch_name)
+      .filter((worker) => worker.branch_id && worker.branch_name && !isAdminQuickWorker(worker))
       .map((worker) => [worker.branch_id, { id: worker.branch_id!, name: worker.branch_name! }])
   ).values()].sort((a, b) => a.name.localeCompare(b.name, 'ar'));
 
@@ -576,7 +577,7 @@ const LoginForm: React.FC = () => {
                   </TabsContent>
 
                   {branchQuickTabs.map((branch) => {
-                    const branchWorkers = realWorkers.filter((worker) => worker.branch_id === branch.id);
+                    const branchWorkers = realWorkers.filter((worker) => worker.branch_id === branch.id && !isAdminQuickWorker(worker));
                     return (
                       <TabsContent key={branch.id} value={branch.id} className="mt-0 space-y-3">
                         <div className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
