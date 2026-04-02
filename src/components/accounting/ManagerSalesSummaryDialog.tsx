@@ -477,6 +477,8 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>('all');
   const [periodFrom, setPeriodFrom] = useState<string>('');
   const [periodTo, setPeriodTo] = useState<string>('');
+  const [timeFilterOpen, setTimeFilterOpen] = useState(false);
+  const [workerFilterOpen, setWorkerFilterOpen] = useState(false);
   const workerButtons = workers;
   const today = new Date();
   const todayDateString = today.toISOString().slice(0, 10);
@@ -620,26 +622,36 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
     setPeriodTo(selectedDate);
   };
 
+  const selectedWorkerLabel = selectedWorkerId === 'all'
+    ? 'كل العمال'
+    : (workerButtons.find((worker) => worker.id === selectedWorkerId)?.full_name || 'عامل محدد');
+  const timingSummary = periodFrom && periodTo
+    ? (periodFrom === periodTo ? periodFrom : `${periodFrom} - ${periodTo}`)
+    : 'من آخر محاسبة';
+
   return (
       <div className="flex h-full min-h-0 flex-col overflow-hidden" dir="rtl">
         <div className="border-b border-slate-200 bg-slate-50 px-3 py-2 sm:px-4">
-          <div className="mb-2 flex flex-wrap items-center justify-end gap-2">
-            <label htmlFor="periodFrom" className="text-xs text-slate-600 sm:text-sm">من</label>
-            <input
-              id="periodFrom"
-              type="date"
-              className="h-8 w-[9.5rem] rounded-full border border-slate-300 bg-white px-3 text-xs shadow-sm outline-none focus:border-slate-900 sm:h-9 sm:w-auto sm:px-4 sm:text-sm"
-              value={periodFrom}
-              onChange={(e) => setPeriodFrom(e.target.value)}
-            />
-            <label htmlFor="periodTo" className="text-xs text-slate-600 sm:text-sm">إلى</label>
-            <input
-              id="periodTo"
-              type="date"
-              className="h-8 w-[9.5rem] rounded-full border border-slate-300 bg-white px-3 text-xs shadow-sm outline-none focus:border-slate-900 sm:h-9 sm:w-auto sm:px-4 sm:text-sm"
-              value={periodTo}
-              onChange={(e) => setPeriodTo(e.target.value)}
-            />
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setTimeFilterOpen(true)}
+              className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-right shadow-sm"
+            >
+              <div className="text-[11px] font-semibold text-slate-500">فلتر التوقيت</div>
+              <div className="mt-1 truncate text-xs font-bold text-slate-800">{timingSummary}</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => setWorkerFilterOpen(true)}
+              className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-right shadow-sm"
+            >
+              <div className="text-[11px] font-semibold text-slate-500">فلتر العمال</div>
+              <div className="mt-1 truncate text-xs font-bold text-slate-800">{selectedWorkerLabel}</div>
+            </button>
+          </div>
+
+          <div className="mt-2 flex items-center justify-between gap-2">
             <Button size="sm" className="h-8 rounded-full bg-red-500 px-4 text-xs hover:bg-red-600 sm:h-9 sm:px-5 sm:text-sm" onClick={() => void refetch()}>
               تحديث
             </Button>
@@ -647,54 +659,102 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
               إعادة تعيين
             </Button>
           </div>
-
-          <div className="mb-1.5 flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {WORK_DAYS.map((day) => {
-              const date = new Date();
-              while (date.getDay() !== day.jsDay) {
-                date.setDate(date.getDate() - 1);
-              }
-              const dayDateString = date.toISOString().slice(0, 10);
-              const isSelected = selectedSingleDay === dayDateString;
-              const isToday = today.getDay() === day.jsDay;
-
-              return (
-                <button
-                  key={day.key}
-                  type="button"
-                  className={getDayButtonClass(isSelected, isToday)}
-                  onClick={() => handleDaySelect(day.jsDay)}
-                >
-                  {day.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <Button
-              type="button"
-              size="sm"
-              variant={selectedWorkerId === 'all' ? 'default' : 'outline'}
-              className={getWorkerButtonClass(selectedWorkerId === 'all')}
-              onClick={() => setSelectedWorkerId('all')}
-            >
-              الكل
-            </Button>
-            {workerButtons.map((worker) => (
-              <Button
-                key={worker.id}
-                type="button"
-                size="sm"
-                variant={selectedWorkerId === worker.id ? 'default' : 'outline'}
-                className={getWorkerButtonClass(selectedWorkerId === worker.id)}
-                onClick={() => setSelectedWorkerId(worker.id)}
-              >
-                {worker.full_name || worker.username}
-              </Button>
-            ))}
-          </div>
         </div>
+
+        <Dialog open={timeFilterOpen} onOpenChange={setTimeFilterOpen}>
+          <DialogContent className="max-w-md p-0" dir="rtl">
+            <div className="border-b border-slate-200 px-4 py-3">
+              <div className="text-sm font-bold text-slate-900">فلتر التوقيت</div>
+              <div className="text-xs text-slate-500">حدد يومًا سريعًا أو اختر فترة يدوية</div>
+            </div>
+            <div className="space-y-3 px-4 py-4">
+              <div className="grid grid-cols-1 gap-2">
+                <label htmlFor="periodFrom" className="text-xs text-slate-600">من</label>
+                <input
+                  id="periodFrom"
+                  type="date"
+                  className="h-10 rounded-full border border-slate-300 bg-white px-4 text-sm shadow-sm outline-none focus:border-slate-900"
+                  value={periodFrom}
+                  onChange={(e) => setPeriodFrom(e.target.value)}
+                />
+                <label htmlFor="periodTo" className="text-xs text-slate-600">إلى</label>
+                <input
+                  id="periodTo"
+                  type="date"
+                  className="h-10 rounded-full border border-slate-300 bg-white px-4 text-sm shadow-sm outline-none focus:border-slate-900"
+                  value={periodTo}
+                  onChange={(e) => setPeriodTo(e.target.value)}
+                />
+              </div>
+
+              <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {WORK_DAYS.map((day) => {
+                  const date = new Date();
+                  while (date.getDay() !== day.jsDay) {
+                    date.setDate(date.getDate() - 1);
+                  }
+                  const dayDateString = date.toISOString().slice(0, 10);
+                  const isSelected = selectedSingleDay === dayDateString;
+                  const isToday = today.getDay() === day.jsDay;
+
+                  return (
+                    <button
+                      key={day.key}
+                      type="button"
+                      className={getDayButtonClass(isSelected, isToday)}
+                      onClick={() => handleDaySelect(day.jsDay)}
+                    >
+                      {day.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center justify-between gap-2">
+                <Button variant="outline" className="rounded-full" onClick={resetFilters}>إعادة تعيين</Button>
+                <Button className="rounded-full bg-red-500 hover:bg-red-600" onClick={() => setTimeFilterOpen(false)}>تم</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={workerFilterOpen} onOpenChange={setWorkerFilterOpen}>
+          <DialogContent className="max-w-md p-0" dir="rtl">
+            <div className="border-b border-slate-200 px-4 py-3">
+              <div className="text-sm font-bold text-slate-900">فلتر العمال</div>
+              <div className="text-xs text-slate-500">اختر كل العمال أو عاملًا محددًا</div>
+            </div>
+            <div className="space-y-3 px-4 py-4">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={selectedWorkerId === 'all' ? 'default' : 'outline'}
+                  className={getWorkerButtonClass(selectedWorkerId === 'all')}
+                  onClick={() => setSelectedWorkerId('all')}
+                >
+                  الكل
+                </Button>
+                {workerButtons.map((worker) => (
+                  <Button
+                    key={worker.id}
+                    type="button"
+                    size="sm"
+                    variant={selectedWorkerId === worker.id ? 'default' : 'outline'}
+                    className={getWorkerButtonClass(selectedWorkerId === worker.id)}
+                    onClick={() => setSelectedWorkerId(worker.id)}
+                  >
+                    {worker.full_name || worker.username}
+                  </Button>
+                ))}
+              </div>
+
+              <div className="flex justify-end">
+                <Button className="rounded-full bg-red-500 hover:bg-red-600" onClick={() => setWorkerFilterOpen(false)}>تم</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {isLoading ? (
           <div className="flex min-h-[320px] items-center justify-center">
