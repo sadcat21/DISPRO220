@@ -105,6 +105,94 @@ const getWorkerLabel = (w: QuickWorker) => {
 };
 
 const ADMIN_TAB_ROLES = ['admin', 'project_manager', 'accountant', 'admin_assistant'];
+const QUICK_GROUP_ORDER = [
+  'admin',
+  'project_manager',
+  'accountant',
+  'admin_assistant',
+  'branch_admin',
+  'supervisor',
+  'warehouse_manager',
+  'sales_rep',
+  'delivery_rep',
+  'worker',
+] as const;
+
+const QUICK_GROUP_META: Record<string, { label: string; sectionClass: string; badgeClass: string; cardClass: string }> = {
+  admin: {
+    label: 'الإدارة العامة',
+    sectionClass: 'border-rose-200 bg-rose-50 text-rose-700',
+    badgeClass: 'bg-rose-100 text-rose-700',
+    cardClass: 'hover:border-rose-300 hover:bg-rose-50/40',
+  },
+  project_manager: {
+    label: 'مديرو المشاريع',
+    sectionClass: 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700',
+    badgeClass: 'bg-fuchsia-100 text-fuchsia-700',
+    cardClass: 'hover:border-fuchsia-300 hover:bg-fuchsia-50/40',
+  },
+  accountant: {
+    label: 'المحاسبة',
+    sectionClass: 'border-orange-200 bg-orange-50 text-orange-700',
+    badgeClass: 'bg-orange-100 text-orange-700',
+    cardClass: 'hover:border-orange-300 hover:bg-orange-50/40',
+  },
+  admin_assistant: {
+    label: 'الإدارة المساندة',
+    sectionClass: 'border-cyan-200 bg-cyan-50 text-cyan-700',
+    badgeClass: 'bg-cyan-100 text-cyan-700',
+    cardClass: 'hover:border-cyan-300 hover:bg-cyan-50/40',
+  },
+  branch_admin: {
+    label: 'مدير الفرع',
+    sectionClass: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    badgeClass: 'bg-emerald-100 text-emerald-700',
+    cardClass: 'hover:border-emerald-300 hover:bg-emerald-50/40',
+  },
+  supervisor: {
+    label: 'المشرفون',
+    sectionClass: 'border-sky-200 bg-sky-50 text-sky-700',
+    badgeClass: 'bg-sky-100 text-sky-700',
+    cardClass: 'hover:border-sky-300 hover:bg-sky-50/40',
+  },
+  warehouse_manager: {
+    label: 'مديرو المستودع',
+    sectionClass: 'border-amber-200 bg-amber-50 text-amber-700',
+    badgeClass: 'bg-amber-100 text-amber-700',
+    cardClass: 'hover:border-amber-300 hover:bg-amber-50/40',
+  },
+  sales_rep: {
+    label: 'مندوبو المبيعات',
+    sectionClass: 'border-violet-200 bg-violet-50 text-violet-700',
+    badgeClass: 'bg-violet-100 text-violet-700',
+    cardClass: 'hover:border-violet-300 hover:bg-violet-50/40',
+  },
+  delivery_rep: {
+    label: 'مندوبو التوصيل',
+    sectionClass: 'border-blue-200 bg-blue-50 text-blue-700',
+    badgeClass: 'bg-blue-100 text-blue-700',
+    cardClass: 'hover:border-blue-300 hover:bg-blue-50/40',
+  },
+  worker: {
+    label: 'العمال',
+    sectionClass: 'border-slate-200 bg-slate-50 text-slate-700',
+    badgeClass: 'bg-slate-100 text-slate-700',
+    cardClass: 'hover:border-slate-300 hover:bg-slate-50/70',
+  },
+};
+
+const getQuickWorkerGroupKey = (worker: QuickWorker) => {
+  if (worker.role === 'branch_admin') return 'branch_admin';
+  if (worker.role === 'supervisor') return 'supervisor';
+  if (worker.role === 'admin') return 'admin';
+  if (worker.role === 'project_manager') return 'project_manager';
+  if (worker.role === 'accountant') return 'accountant';
+  if (worker.role === 'admin_assistant') return 'admin_assistant';
+  if (worker.functional_role === 'warehouse_manager') return 'warehouse_manager';
+  if (worker.functional_role === 'sales_rep') return 'sales_rep';
+  if (worker.functional_role === 'delivery_rep') return 'delivery_rep';
+  return 'worker';
+};
 
 const LoginForm: React.FC = () => {
   const { login, selectRole, selectBranch, showRoleSelection, showBranchSelection, availableRoles } = useAuth();
