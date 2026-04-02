@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,11 @@ import { Banknote, Calendar, ClipboardList, Gift, HandCoins, Package, ShoppingBa
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  branchId?: string | null;
+  workers?: WorkerInfo[];
+}
+
+interface ContentProps {
   branchId?: string | null;
   workers?: WorkerInfo[];
 }
@@ -468,7 +473,7 @@ const BreakdownRow: React.FC<{ label: string; value: number }> = ({ label, value
   </div>
 );
 
-const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branchId, workers = [] }) => {
+export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, workers = [] }) => {
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>('all');
   const [periodFrom, setPeriodFrom] = useState<string>('');
   const [periodTo, setPeriodTo] = useState<string>('');
@@ -496,7 +501,7 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['manager-sales-summary-dialog', branchId, workers.map((worker) => worker.id).join(','), periodFrom, periodTo],
-    enabled: open,
+    enabled: true,
     queryFn: async () => {
       let availableWorkers = workers;
 
@@ -587,14 +592,13 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
         .filter((result): result is PromiseFulfilledResult<WorkerSummary> => result.status === 'fulfilled')
         .map((result) => result.value);
     },
-    refetchInterval: open ? 15000 : false,
+    refetchInterval: 15000,
     refetchOnWindowFocus: true,
   });
 
   useEffect(() => {
-    if (!open) return;
     setSelectedWorkerId('all');
-  }, [open]);
+  }, [branchId, workers]);
 
   const aggregate = useMemo(() => buildAggregateSummary(data || [], selectedWorkerId), [data, selectedWorkerId]);
   const totalQuantity = useMemo(() => aggregate.items.reduce((sum, item) => sum + item.quantity, 0), [aggregate.items]);
@@ -617,8 +621,7 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="h-[min(94dvh,860px)] w-[calc(100vw-0.35rem)] max-w-4xl overflow-hidden gap-0 p-0 sm:h-[min(92dvh,860px)] sm:w-[calc(100vw-0.5rem)]" dir="rtl">
+      <div className="flex h-full min-h-0 flex-col overflow-hidden" dir="rtl">
         <div className="border-b border-slate-200 bg-slate-50 px-3 py-2.5 sm:px-4">
           <div className="mb-2 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
             <label htmlFor="periodFrom" className="text-xs text-slate-600 sm:text-sm">من</label>
@@ -834,9 +837,16 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
             </TabsContent>
           </Tabs>
         )}
-      </DialogContent>
-    </Dialog>
+      </div>
   );
 };
+
+const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branchId, workers = [] }) => (
+  <Dialog open={open} onOpenChange={onOpenChange}>
+    <DialogContent className="h-[min(94dvh,860px)] w-[calc(100vw-0.35rem)] max-w-4xl overflow-hidden gap-0 p-0 sm:h-[min(92dvh,860px)] sm:w-[calc(100vw-0.5rem)]">
+      <ManagerSalesSummaryContent branchId={branchId} workers={workers} />
+    </DialogContent>
+  </Dialog>
+);
 
 export default ManagerSalesSummaryDialog;
