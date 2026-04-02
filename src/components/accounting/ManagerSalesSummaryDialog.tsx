@@ -65,6 +65,15 @@ interface AggregateSummary {
   calc: SessionCalculations;
 }
 
+const WORK_DAYS = [
+  { key: 'saturday', label: 'السبت', jsDay: 6 },
+  { key: 'sunday', label: 'الأحد', jsDay: 0 },
+  { key: 'monday', label: 'الاثنين', jsDay: 1 },
+  { key: 'tuesday', label: 'الثلاثاء', jsDay: 2 },
+  { key: 'wednesday', label: 'الأربعاء', jsDay: 3 },
+  { key: 'thursday', label: 'الخميس', jsDay: 4 },
+] as const;
+
 const calcOrderTotal = (order: any, items: any[]) => {
   const storedTotal = Number(order?.total_amount || 0);
   if (storedTotal > 0) return storedTotal;
@@ -374,6 +383,16 @@ const getWorkerButtonClass = (isActive: boolean) =>
     ? 'h-10 shrink-0 rounded-full border border-red-500 bg-red-500 px-4 text-sm font-semibold text-white shadow-sm hover:bg-red-600'
     : 'h-10 shrink-0 rounded-full border border-slate-200 bg-white px-4 text-sm text-slate-600 hover:border-red-200 hover:bg-red-50';
 
+const getDayButtonClass = (isSelected: boolean, isToday: boolean) => {
+  if (isSelected) {
+    return 'h-9 shrink-0 rounded-full border border-red-500 bg-red-500 px-3 text-xs font-semibold text-white shadow-sm';
+  }
+  if (isToday) {
+    return 'h-9 shrink-0 rounded-full border-2 border-red-400 bg-red-50 px-3 text-xs font-semibold text-red-600';
+  }
+  return 'h-9 shrink-0 rounded-full border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 hover:border-red-200 hover:bg-red-50';
+};
+
 const StatCard: React.FC<{ label: string; value: string; icon: React.ReactNode; tone?: string }> = ({ label, value, icon, tone = '' }) => (
   <div className="group relative overflow-hidden rounded-[22px] border border-slate-200 bg-white p-3 sm:rounded-[26px] sm:p-4 shadow-[0_10px_30px_-18px_rgba(15,23,42,0.35)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_35px_-20px_rgba(15,23,42,0.4)]">
     <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-slate-100 via-slate-200 to-slate-100" />
@@ -401,6 +420,9 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
   const [periodFrom, setPeriodFrom] = useState<string>('');
   const [periodTo, setPeriodTo] = useState<string>('');
   const workerButtons = workers;
+  const today = new Date();
+  const todayDateString = today.toISOString().slice(0, 10);
+  const selectedSingleDay = periodFrom && periodFrom === periodTo ? periodFrom : null;
 
   const normalizePeriodRange = (from: string, to: string) => {
     let start = from ? new Date(`${from}T00:00:00`) : null;
@@ -530,6 +552,16 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
     void refetch();
   };
 
+  const handleDaySelect = (jsDay: number) => {
+    const date = new Date();
+    while (date.getDay() !== jsDay) {
+      date.setDate(date.getDate() - 1);
+    }
+    const selectedDate = date.toISOString().slice(0, 10);
+    setPeriodFrom(selectedDate);
+    setPeriodTo(selectedDate);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="h-[min(94dvh,860px)] w-[calc(100vw-0.35rem)] max-w-4xl overflow-hidden gap-0 p-0 sm:h-[min(92dvh,860px)] sm:w-[calc(100vw-0.5rem)]" dir="rtl">
@@ -567,6 +599,29 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
             <Button size="sm" variant="outline" className="h-10 w-full rounded-full px-5 sm:w-auto" onClick={resetFilters}>
               إعادة تعيين
             </Button>
+          </div>
+
+          <div className="mb-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {WORK_DAYS.map((day) => {
+              const date = new Date();
+              while (date.getDay() !== day.jsDay) {
+                date.setDate(date.getDate() - 1);
+              }
+              const dayDateString = date.toISOString().slice(0, 10);
+              const isSelected = selectedSingleDay === dayDateString;
+              const isToday = today.getDay() === day.jsDay;
+
+              return (
+                <button
+                  key={day.key}
+                  type="button"
+                  className={getDayButtonClass(isSelected, isToday)}
+                  onClick={() => handleDaySelect(day.jsDay)}
+                >
+                  {day.label}
+                </button>
+              );
+            })}
           </div>
 
           <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
