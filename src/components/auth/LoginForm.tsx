@@ -6,7 +6,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Eye, EyeOff, Loader2, FlaskConical } from 'lucide-react';
+import {
+  Eye,
+  EyeOff,
+  Loader2,
+  FlaskConical,
+  ShieldCheck,
+  Building2,
+  ScanEye,
+  UserRound,
+  BriefcaseBusiness,
+  Truck,
+  Warehouse,
+  LucideIcon,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
 import RoleSelectionDialog from './RoleSelectionDialog';
@@ -20,10 +33,10 @@ interface QuickWorker {
   functional_role?: string | null; // e.g. sales_rep, delivery_rep, warehouse_manager
 }
 
-const FUNCTIONAL_ROLE_EMOJI: Record<string, string> = {
-  sales_rep: '💼',
-  delivery_rep: '🚚',
-  warehouse_manager: '🏭',
+const FUNCTIONAL_ROLE_ICONS: Record<string, LucideIcon> = {
+  sales_rep: BriefcaseBusiness,
+  delivery_rep: Truck,
+  warehouse_manager: Warehouse,
 };
 
 const FUNCTIONAL_ROLE_LABEL_AR: Record<string, string> = {
@@ -32,11 +45,11 @@ const FUNCTIONAL_ROLE_LABEL_AR: Record<string, string> = {
   warehouse_manager: 'مدير مستودع',
 };
 
-const ROLE_EMOJI: Record<string, string> = {
-  admin: '🔑',
-  branch_admin: '🏢',
-  supervisor: '👁️',
-  worker: '👤',
+const ROLE_ICONS: Record<string, LucideIcon> = {
+  admin: ShieldCheck,
+  branch_admin: Building2,
+  supervisor: ScanEye,
+  worker: UserRound,
 };
 
 const ROLE_LABEL_AR: Record<string, string> = {
@@ -46,11 +59,25 @@ const ROLE_LABEL_AR: Record<string, string> = {
   worker: 'عامل',
 };
 
-const getWorkerEmoji = (w: QuickWorker) => {
-  if (w.functional_role && FUNCTIONAL_ROLE_EMOJI[w.functional_role]) {
-    return FUNCTIONAL_ROLE_EMOJI[w.functional_role];
+const getWorkerIcon = (w: QuickWorker) => {
+  if (w.functional_role && FUNCTIONAL_ROLE_ICONS[w.functional_role]) {
+    return FUNCTIONAL_ROLE_ICONS[w.functional_role];
   }
-  return ROLE_EMOJI[w.role] || '👤';
+  return ROLE_ICONS[w.role] || UserRound;
+};
+
+const getWorkerIconTone = (w: QuickWorker, isRealMode: boolean) => {
+  if (isRealMode) {
+    return 'text-red-600';
+  }
+
+  if (w.functional_role === 'delivery_rep') return 'text-blue-600';
+  if (w.functional_role === 'sales_rep') return 'text-violet-600';
+  if (w.functional_role === 'warehouse_manager') return 'text-amber-600';
+  if (w.role === 'admin') return 'text-rose-600';
+  if (w.role === 'branch_admin') return 'text-emerald-600';
+  if (w.role === 'supervisor') return 'text-sky-600';
+  return 'text-slate-600';
 };
 
 const getWorkerLabel = (w: QuickWorker) => {
@@ -281,23 +308,27 @@ const LoginForm: React.FC = () => {
             {quickWorkers.length > 0 ? (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {quickWorkers.map((worker) => (
+                  (() => {
+                    const WorkerIcon = getWorkerIcon(worker);
+                    const isRealMode = quickLoginMode === 'real';
+                    return (
                   <button
                     key={worker.username}
                     type="button"
                     disabled={isLoading}
                     onClick={() => doLogin(worker.username, worker.username, true)}
                     className={`group flex min-h-[168px] flex-col items-center text-center transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
-                      quickLoginMode === 'real'
+                      isRealMode
                         ? 'justify-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-5 hover:border-red-300 hover:bg-red-50/40'
                         : 'justify-between rounded-2xl border-2 border-slate-200 bg-white px-3 py-4 hover:border-slate-300 hover:bg-slate-50 hover:shadow-md'
                     }`}
                   >
                     <div className={`flex h-14 w-14 items-center justify-center text-2xl ring-1 ${
-                      quickLoginMode === 'real'
+                      isRealMode
                         ? 'rounded-xl bg-red-50 ring-red-100'
                         : 'rounded-2xl bg-slate-100 ring-slate-200'
                     }`}>
-                      {getWorkerEmoji(worker)}
+                      <WorkerIcon className={`h-7 w-7 ${getWorkerIconTone(worker, isRealMode)}`} strokeWidth={2.2} />
                     </div>
                     <div className="space-y-1">
                       <div className="line-clamp-2 text-base font-bold leading-6 text-slate-800">
@@ -307,12 +338,14 @@ const LoginForm: React.FC = () => {
                         {getWorkerLabel(worker)}
                       </div>
                     </div>
-                    {quickLoginMode !== 'real' && (
+                    {!isRealMode && (
                       <div className="rounded-lg border border-slate-200 bg-slate-100 px-4 py-1.5 text-sm font-medium text-slate-700 transition-colors group-hover:bg-slate-200">
                         دخول
                       </div>
                     )}
                   </button>
+                    );
+                  })()
                 ))}
               </div>
             ) : (
