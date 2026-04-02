@@ -375,24 +375,24 @@ const getWorkerButtonClass = (isActive: boolean) =>
     : 'h-10 shrink-0 rounded-full border border-slate-200 bg-white px-4 text-sm text-slate-600 hover:border-red-200 hover:bg-red-50';
 
 const StatCard: React.FC<{ label: string; value: string; icon: React.ReactNode; tone?: string }> = ({ label, value, icon, tone = '' }) => (
-  <div className="group relative overflow-hidden rounded-[26px] border border-slate-200 bg-white p-4 shadow-[0_10px_30px_-18px_rgba(15,23,42,0.35)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_35px_-20px_rgba(15,23,42,0.4)]">
+  <div className="group relative overflow-hidden rounded-[22px] border border-slate-200 bg-white p-3 sm:rounded-[26px] sm:p-4 shadow-[0_10px_30px_-18px_rgba(15,23,42,0.35)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_35px_-20px_rgba(15,23,42,0.4)]">
     <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-slate-100 via-slate-200 to-slate-100" />
-    <div className="mb-5 flex items-center gap-3">
-      <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 ring-1 ring-slate-100 ${tone}`}>
+    <div className="mb-3 flex items-center gap-2.5 sm:mb-5 sm:gap-3">
+      <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 ring-1 ring-slate-100 sm:h-12 sm:w-12 sm:rounded-2xl ${tone}`}>
         {icon}
       </div>
-      <span className="text-sm font-semibold leading-6 text-slate-500">{label}</span>
+      <span className="text-xs font-semibold leading-5 text-slate-500 sm:text-sm sm:leading-6">{label}</span>
     </div>
-    <div className="text-right text-[2rem] font-black tracking-tight text-slate-700">
+    <div className="text-right text-2xl font-black tracking-tight text-slate-700 sm:text-[2rem]">
       {value}
     </div>
   </div>
 );
 
 const BreakdownRow: React.FC<{ label: string; value: number }> = ({ label, value }) => (
-  <div className="flex items-center justify-between border-b border-slate-100 py-3 text-sm last:border-b-0">
+  <div className="flex items-center justify-between gap-3 border-b border-slate-100 py-3 text-sm last:border-b-0">
     <span className="text-slate-600">{label}</span>
-    <span className="font-semibold text-slate-700">{fmtMoney(value)}</span>
+    <span className="shrink-0 font-semibold text-slate-700">{fmtMoney(value)}</span>
   </div>
 );
 
@@ -532,44 +532,44 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="h-[min(92dvh,860px)] w-[calc(100vw-0.5rem)] max-w-4xl overflow-hidden gap-0 p-0" dir="rtl">
-        <div className="border-b border-red-200 bg-gradient-to-r from-rose-500 to-red-500 px-5 py-5 text-white">
+      <DialogContent className="h-[min(94dvh,860px)] w-[calc(100vw-0.35rem)] max-w-4xl overflow-hidden gap-0 p-0 sm:h-[min(92dvh,860px)] sm:w-[calc(100vw-0.5rem)]" dir="rtl">
+        <div className="border-b border-red-200 bg-gradient-to-r from-rose-500 to-red-500 px-3 py-4 text-white sm:px-5 sm:py-5">
           <DialogHeader className="space-y-2 text-right">
-            <DialogTitle className="flex items-center justify-end gap-2 text-2xl font-bold">
-              <ShoppingBag className="h-5 w-5 shrink-0" />
+            <DialogTitle className="flex items-center justify-end gap-2 text-lg font-bold sm:text-2xl">
+              <ShoppingBag className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
               تجميع مبيعات العمال
             </DialogTitle>
-            <p className="text-sm text-white/90">مراجعة المبيعات والديون والتحصيلات لكل العمال</p>
+            <p className="text-xs leading-6 text-white/90 sm:text-sm">مراجعة المبيعات والديون والتحصيلات لكل العمال</p>
           </DialogHeader>
         </div>
 
-        <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
-          <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
-            <label htmlFor="periodFrom" className="text-sm text-slate-600">من</label>
+        <div className="border-b border-slate-200 bg-slate-50 px-3 py-3 sm:px-4">
+          <div className="mb-3 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
+            <label htmlFor="periodFrom" className="text-xs text-slate-600 sm:text-sm">من</label>
             <input
               id="periodFrom"
               type="date"
-              className="h-10 rounded-full border border-slate-300 bg-white px-4 text-sm shadow-sm outline-none focus:border-slate-900"
+              className="h-10 w-full rounded-full border border-slate-300 bg-white px-4 text-sm shadow-sm outline-none focus:border-slate-900 sm:w-auto"
               value={periodFrom}
               onChange={(e) => setPeriodFrom(e.target.value)}
             />
-            <label htmlFor="periodTo" className="text-sm text-slate-600">إلى</label>
+            <label htmlFor="periodTo" className="text-xs text-slate-600 sm:text-sm">إلى</label>
             <input
               id="periodTo"
               type="date"
-              className="h-10 rounded-full border border-slate-300 bg-white px-4 text-sm shadow-sm outline-none focus:border-slate-900"
+              className="h-10 w-full rounded-full border border-slate-300 bg-white px-4 text-sm shadow-sm outline-none focus:border-slate-900 sm:w-auto"
               value={periodTo}
               onChange={(e) => setPeriodTo(e.target.value)}
             />
-            <Button size="sm" className="h-10 rounded-full bg-red-500 px-5 hover:bg-red-600" onClick={() => void refetch()}>
+            <Button size="sm" className="h-10 w-full rounded-full bg-red-500 px-5 hover:bg-red-600 sm:w-auto" onClick={() => void refetch()}>
               تحديث
             </Button>
-            <Button size="sm" variant="outline" className="h-10 rounded-full px-5" onClick={resetFilters}>
+            <Button size="sm" variant="outline" className="h-10 w-full rounded-full px-5 sm:w-auto" onClick={resetFilters}>
               إعادة تعيين
             </Button>
           </div>
 
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <Button
               type="button"
               size="sm"
@@ -599,7 +599,7 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
             <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-red-500" />
           </div>
         ) : !data?.length ? (
-          <div className="flex min-h-[320px] flex-col items-center justify-center gap-3 text-slate-500">
+          <div className="flex min-h-[280px] flex-col items-center justify-center gap-3 px-4 text-slate-500 sm:min-h-[320px]">
             <ClipboardList className="h-10 w-10 opacity-40" />
             <p className="text-center">
               {workerButtons.length > 0 ? 'لا توجد مبيعات في هذه الفترة للعمال المحددين' : 'لا يوجد عمال متاحون لهذا الفرع حاليًا'}
@@ -607,7 +607,7 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
           </div>
         ) : (
           <Tabs defaultValue="overview" className="flex min-h-0 flex-1 flex-col">
-            <div className="px-4 pt-3">
+            <div className="px-3 pt-3 sm:px-4">
               <TabsList className="grid h-11 grid-cols-2 rounded-2xl bg-slate-100 p-1">
                 <TabsTrigger value="overview" className="rounded-2xl text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">
                   الملخص
@@ -620,8 +620,8 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
 
             <TabsContent value="overview" className="mt-0 min-h-0 flex-1">
               <ScrollArea className="h-full">
-                <div className="space-y-4 px-4 py-4">
-                  <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                <div className="space-y-4 px-3 py-4 sm:px-4">
+                  <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-4">
                     <StatCard label="إجمالي المبيعات" value={fmtMoney(aggregate.calc.totalSales)} icon={<ShoppingBag className="h-4 w-4" />} tone="text-emerald-600" />
                     <StatCard label="المبلغ المقبوض" value={fmtMoney(aggregate.calc.totalPaid)} icon={<Banknote className="h-4 w-4" />} tone="text-blue-600" />
                     <StatCard label="ديون جديدة" value={fmtMoney(aggregate.calc.newDebts)} icon={<TrendingDown className="h-4 w-4" />} tone="text-red-600" />
@@ -633,26 +633,26 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
                   </div>
 
                   <Tabs defaultValue="snapshot" className="space-y-3">
-                    <TabsList className="h-auto justify-start gap-2 rounded-none bg-transparent p-0">
-                      <TabsTrigger value="snapshot" className="rounded-full border border-slate-200 bg-slate-100 px-4 text-sm data-[state=active]:border-slate-900 data-[state=active]:bg-slate-900 data-[state=active]:text-white">
+                    <TabsList className="h-auto w-full justify-start gap-2 overflow-x-auto rounded-none bg-transparent p-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                      <TabsTrigger value="snapshot" className="shrink-0 rounded-full border border-slate-200 bg-slate-100 px-3 text-xs sm:px-4 sm:text-sm data-[state=active]:border-slate-900 data-[state=active]:bg-slate-900 data-[state=active]:text-white">
                         نظرة عامة
                       </TabsTrigger>
-                      <TabsTrigger value="payments" className="rounded-full border border-slate-200 bg-slate-100 px-4 text-sm data-[state=active]:border-slate-900 data-[state=active]:bg-slate-900 data-[state=active]:text-white">
+                      <TabsTrigger value="payments" className="shrink-0 rounded-full border border-slate-200 bg-slate-100 px-3 text-xs sm:px-4 sm:text-sm data-[state=active]:border-slate-900 data-[state=active]:bg-slate-900 data-[state=active]:text-white">
                         طرق الدفع
                       </TabsTrigger>
-                      <TabsTrigger value="collections" className="rounded-full border border-slate-200 bg-slate-100 px-4 text-sm data-[state=active]:border-slate-900 data-[state=active]:bg-slate-900 data-[state=active]:text-white">
+                      <TabsTrigger value="collections" className="shrink-0 rounded-full border border-slate-200 bg-slate-100 px-3 text-xs sm:px-4 sm:text-sm data-[state=active]:border-slate-900 data-[state=active]:bg-slate-900 data-[state=active]:text-white">
                         التحصيلات
                       </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="snapshot" className="mt-0 rounded-[22px] border border-slate-200 bg-white p-4 shadow-sm">
+                    <TabsContent value="snapshot" className="mt-0 rounded-[22px] border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
                       <BreakdownRow label="إجمالي النقد (مبيعات + تحصيلات)" value={aggregate.calc.totalPaid + aggregate.calc.debtCollections.total} />
                       <BreakdownRow label="إجمالي غير نقدي" value={aggregate.calc.invoice1.check + aggregate.calc.invoice1.transfer + aggregate.calc.invoice1.receipt + aggregate.calc.debtCollections.check + aggregate.calc.debtCollections.transfer + aggregate.calc.debtCollections.receipt} />
                       <BreakdownRow label="المصاريف النقدية" value={aggregate.calc.cashExpenses} />
                       <BreakdownRow label="فائض العملاء" value={aggregate.calc.customerSurplusCash} />
                     </TabsContent>
 
-                    <TabsContent value="payments" className="mt-0 rounded-[22px] border border-slate-200 bg-white p-4 shadow-sm">
+                    <TabsContent value="payments" className="mt-0 rounded-[22px] border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
                       <BreakdownRow label="فواتير 1 - إجمالي" value={aggregate.calc.invoice1.total} />
                       <BreakdownRow label="فواتير 1 - شيك" value={aggregate.calc.invoice1.check} />
                       <BreakdownRow label="فواتير 1 - تحويل" value={aggregate.calc.invoice1.transfer} />
@@ -661,7 +661,7 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
                       <BreakdownRow label="فواتير 2 - كاش" value={aggregate.calc.invoice2.cash} />
                     </TabsContent>
 
-                    <TabsContent value="collections" className="mt-0 rounded-[22px] border border-slate-200 bg-white p-4 shadow-sm">
+                    <TabsContent value="collections" className="mt-0 rounded-[22px] border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
                       <BreakdownRow label="تحصيلات الديون - إجمالي" value={aggregate.calc.debtCollections.total} />
                       <BreakdownRow label="تحصيلات الديون - كاش" value={aggregate.calc.debtCollections.cash} />
                       <BreakdownRow label="تحصيلات الديون - شيك" value={aggregate.calc.debtCollections.check} />
@@ -676,11 +676,11 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
 
             <TabsContent value="products" className="mt-0 min-h-0 flex-1">
               <ScrollArea className="h-full">
-                <div className="grid grid-cols-2 gap-3 px-3 py-4 sm:px-4 md:grid-cols-3">
+                <div className="grid grid-cols-2 gap-2.5 px-3 py-4 sm:gap-3 sm:px-4 md:grid-cols-3">
                   {aggregate.items.map((item) => (
                     <div key={item.productId} className="flex flex-col overflow-hidden rounded-2xl border-2 border-slate-200 bg-white shadow-lg transition-all hover:border-primary/40">
-                      <div className="border-b border-slate-200 bg-slate-50 px-3 py-2 text-center">
-                        <span className="block truncate text-sm font-bold text-slate-800">
+                      <div className="border-b border-slate-200 bg-slate-50 px-2.5 py-2 text-center">
+                        <span className="block truncate text-xs font-bold text-slate-800 sm:text-sm">
                           {item.name}
                         </span>
                       </div>
@@ -693,19 +693,19 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
                           </div>
                         )}
                       </div>
-                      <div className="flex flex-col gap-2 bg-white px-3 py-2.5">
+                      <div className="flex flex-col gap-2 bg-white px-2.5 py-2.5">
                         <div className="flex items-center gap-2">
-                          <div className="flex flex-1 items-center justify-center gap-1 rounded-md bg-primary/10 py-1.5 text-sm font-bold text-primary">
+                          <div className="flex flex-1 items-center justify-center gap-1 rounded-md bg-primary/10 py-1.5 text-xs font-bold text-primary sm:text-sm">
                             <Package className="h-3.5 w-3.5" />
                             {item.quantity}
                           </div>
                           {item.giftQuantity > 0 && (
-                            <div className="rounded-md bg-secondary px-2 py-1.5 text-xs font-semibold text-secondary-foreground">
+                            <div className="rounded-md bg-secondary px-2 py-1.5 text-[10px] font-semibold text-secondary-foreground sm:text-xs">
                               🎁 {item.giftQuantity}
                             </div>
                           )}
                         </div>
-                        <div className="flex items-center justify-center rounded-md bg-slate-100 py-1.5 text-xs font-semibold text-slate-600">
+                        <div className="flex items-center justify-center rounded-md bg-slate-100 py-1.5 text-[10px] font-semibold text-slate-600 sm:text-xs">
                           {fmtMoney(item.totalAmount)}
                         </div>
                       </div>
