@@ -622,13 +622,13 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
 
   return (
       <div className="flex h-full min-h-0 flex-col overflow-hidden" dir="rtl">
-        <div className="border-b border-slate-200 bg-slate-50 px-3 py-2.5 sm:px-4">
-          <div className="mb-2 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
+        <div className="border-b border-slate-200 bg-slate-50 px-3 py-2 sm:px-4">
+          <div className="mb-2 flex flex-wrap items-center justify-end gap-2">
             <label htmlFor="periodFrom" className="text-xs text-slate-600 sm:text-sm">من</label>
             <input
               id="periodFrom"
               type="date"
-              className="h-9 w-full rounded-full border border-slate-300 bg-white px-4 text-sm shadow-sm outline-none focus:border-slate-900 sm:w-auto"
+              className="h-8 w-[9.5rem] rounded-full border border-slate-300 bg-white px-3 text-xs shadow-sm outline-none focus:border-slate-900 sm:h-9 sm:w-auto sm:px-4 sm:text-sm"
               value={periodFrom}
               onChange={(e) => setPeriodFrom(e.target.value)}
             />
@@ -636,19 +636,19 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
             <input
               id="periodTo"
               type="date"
-              className="h-9 w-full rounded-full border border-slate-300 bg-white px-4 text-sm shadow-sm outline-none focus:border-slate-900 sm:w-auto"
+              className="h-8 w-[9.5rem] rounded-full border border-slate-300 bg-white px-3 text-xs shadow-sm outline-none focus:border-slate-900 sm:h-9 sm:w-auto sm:px-4 sm:text-sm"
               value={periodTo}
               onChange={(e) => setPeriodTo(e.target.value)}
             />
-            <Button size="sm" className="h-9 w-full rounded-full bg-red-500 px-5 hover:bg-red-600 sm:w-auto" onClick={() => void refetch()}>
+            <Button size="sm" className="h-8 rounded-full bg-red-500 px-4 text-xs hover:bg-red-600 sm:h-9 sm:px-5 sm:text-sm" onClick={() => void refetch()}>
               تحديث
             </Button>
-            <Button size="sm" variant="outline" className="h-9 w-full rounded-full px-5 sm:w-auto" onClick={resetFilters}>
+            <Button size="sm" variant="outline" className="h-8 rounded-full px-4 text-xs sm:h-9 sm:px-5 sm:text-sm" onClick={resetFilters}>
               إعادة تعيين
             </Button>
           </div>
 
-          <div className="mb-2 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="mb-1.5 flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {WORK_DAYS.map((day) => {
               const date = new Date();
               while (date.getDay() !== day.jsDay) {
@@ -671,7 +671,7 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
             })}
           </div>
 
-          <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <Button
               type="button"
               size="sm"
