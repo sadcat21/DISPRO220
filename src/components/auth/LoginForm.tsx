@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Eye,
   EyeOff,
@@ -27,10 +28,13 @@ import BranchSelectionDialog from './BranchSelectionDialog';
 import { supabase } from '@/integrations/supabase/client';
 
 interface QuickWorker {
+  id?: string;
   username: string;
   full_name: string;
   role: string;
   functional_role?: string | null; // e.g. sales_rep, delivery_rep, warehouse_manager
+  branch_id?: string | null;
+  branch_name?: string | null;
 }
 
 const FUNCTIONAL_ROLE_ICONS: Record<string, LucideIcon> = {
@@ -88,6 +92,8 @@ const getWorkerLabel = (w: QuickWorker) => {
   return base;
 };
 
+const ADMIN_TAB_ROLES = ['admin', 'project_manager', 'accountant', 'admin_assistant'];
+
 const LoginForm: React.FC = () => {
   const { login, selectRole, selectBranch, showRoleSelection, showBranchSelection, availableRoles } = useAuth();
   const { t, dir } = useLanguage();
@@ -107,6 +113,7 @@ const LoginForm: React.FC = () => {
   
   const [testWorkers, setTestWorkers] = useState<QuickWorker[]>([]);
   const [realWorkers, setRealWorkers] = useState<QuickWorker[]>([]);
+  const [realQuickTab, setRealQuickTab] = useState('admins');
   const isQuickLoginOpen = quickLoginMode !== 'none';
   const quickWorkers = quickLoginMode === 'test' ? testWorkers : realWorkers;
 
@@ -119,10 +126,15 @@ const LoginForm: React.FC = () => {
     }
   }, [quickLoginMode]);
 
+  useEffect(() => {
+    if (quickLoginMode !== 'real') return;
+    setRealQuickTab('admins');
+  }, [quickLoginMode]);
+
   const fetchWorkers = async (isTest: boolean) => {
     const { data: workers } = await supabase
       .from('workers')
-      .select('id, username, full_name, role')
+      .select('id, username, full_name, role, branch_id')
       .eq('is_test', isTest)
       .eq('is_active', true)
       .order('role')
@@ -146,15 +158,84 @@ const LoginForm: React.FC = () => {
       }
     }
 
+    const branchIds = [...new Set(workers.map((w) => w.branch_id).filter(Boolean))];
+    const branchMap: Record<string, string> = {};
+    if (branchIds.length > 0) {
+      const { data: branches } = await supabase
+        .from('branches')
+        .select('id, name')
+        .in('id', branchIds);
+
+      if (branches) {
+        for (const branch of branches) {
+          branchMap[branch.id] = branch.name;
+        }
+      }
+    }
+
     const result: QuickWorker[] = workers.map(w => ({
+      id: w.id,
       username: w.username,
       full_name: w.full_name,
       role: w.role,
       functional_role: funcRoleMap[w.id] || null,
+      branch_id: w.branch_id || null,
+      branch_name: w.branch_id ? branchMap[w.branch_id] || null : null,
     }));
 
     if (isTest) setTestWorkers(result);
     else setRealWorkers(result);
+  };
+
+  const adminQuickWorkers = realWorkers.filter((worker) => ADMIN_TAB_ROLES.includes(worker.role) || !worker.branch_id);
+  const branchQuickTabs = [...new Map(
+    realWorkers
+      .filter((worker) => worker.branch_id && worker.branch_name)
+      .map((worker) => [worker.branch_id, { id: worker.branch_id!, name: worker.branch_name! }])
+  ).values()].sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+
+  const renderQuickWorkerCard = (worker: QuickWorker, isRealMode: boolean) => {
+    const WorkerIcon = getWorkerIcon(worker);
+
+    return (
+      <button
+        key={worker.id || worker.username}
+        type="button"
+        disabled={isLoading}
+        onClick={() => doLogin(worker.username, worker.username, true)}
+        className={`group flex min-h-[168px] flex-col items-center text-center transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+          isRealMode
+            ? 'justify-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-5 hover:border-red-300 hover:bg-red-50/40'
+            : 'justify-between rounded-2xl border-2 border-slate-200 bg-white px-3 py-4 hover:border-slate-300 hover:bg-slate-50 hover:shadow-md'
+        }`}
+      >
+        <div className={`flex h-14 w-14 items-center justify-center text-2xl ring-1 ${
+          isRealMode
+            ? 'rounded-xl bg-red-50 ring-red-100'
+            : 'rounded-2xl bg-slate-100 ring-slate-200'
+        }`}>
+          <WorkerIcon className={`h-7 w-7 ${getWorkerIconTone(worker, isRealMode)}`} strokeWidth={2.2} />
+        </div>
+        <div className="space-y-1">
+          <div className="line-clamp-2 text-base font-bold leading-6 text-slate-800">
+            {worker.full_name}
+          </div>
+          <div className="line-clamp-2 text-xs leading-5 text-slate-500">
+            {getWorkerLabel(worker)}
+          </div>
+          {isRealMode && worker.branch_name && (
+            <div className="text-[11px] font-medium text-red-500">
+              {worker.branch_name}
+            </div>
+          )}
+        </div>
+        {!isRealMode && (
+          <div className="rounded-lg border border-slate-200 bg-slate-100 px-4 py-1.5 text-sm font-medium text-slate-700 transition-colors group-hover:bg-slate-200">
+            دخول
+          </div>
+        )}
+      </button>
+    );
   };
 
   // Logo tap â†’ real workers
