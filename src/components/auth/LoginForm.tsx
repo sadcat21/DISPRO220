@@ -118,66 +118,86 @@ const QUICK_GROUP_ORDER = [
   'worker',
 ] as const;
 
-const QUICK_GROUP_META: Record<string, { label: string; sectionClass: string; badgeClass: string; cardClass: string }> = {
+const QUICK_GROUP_META: Record<string, { label: string; sectionClass: string; badgeClass: string; cardClass: string; iconWrapClass: string; branchTextClass: string }> = {
   admin: {
     label: 'الإدارة العامة',
     sectionClass: 'border-rose-200 bg-rose-50 text-rose-700',
     badgeClass: 'bg-rose-100 text-rose-700',
-    cardClass: 'hover:border-rose-300 hover:bg-rose-50/40',
+    cardClass: 'border-rose-200 bg-rose-50/20 hover:border-rose-300 hover:bg-rose-50/40',
+    iconWrapClass: 'bg-rose-50 ring-rose-100',
+    branchTextClass: 'text-rose-500',
   },
   project_manager: {
     label: 'مديرو المشاريع',
     sectionClass: 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700',
     badgeClass: 'bg-fuchsia-100 text-fuchsia-700',
-    cardClass: 'hover:border-fuchsia-300 hover:bg-fuchsia-50/40',
+    cardClass: 'border-fuchsia-200 bg-fuchsia-50/20 hover:border-fuchsia-300 hover:bg-fuchsia-50/40',
+    iconWrapClass: 'bg-fuchsia-50 ring-fuchsia-100',
+    branchTextClass: 'text-fuchsia-500',
   },
   accountant: {
     label: 'المحاسبة',
     sectionClass: 'border-orange-200 bg-orange-50 text-orange-700',
     badgeClass: 'bg-orange-100 text-orange-700',
-    cardClass: 'hover:border-orange-300 hover:bg-orange-50/40',
+    cardClass: 'border-orange-200 bg-orange-50/20 hover:border-orange-300 hover:bg-orange-50/40',
+    iconWrapClass: 'bg-orange-50 ring-orange-100',
+    branchTextClass: 'text-orange-500',
   },
   admin_assistant: {
     label: 'الإدارة المساندة',
     sectionClass: 'border-cyan-200 bg-cyan-50 text-cyan-700',
     badgeClass: 'bg-cyan-100 text-cyan-700',
-    cardClass: 'hover:border-cyan-300 hover:bg-cyan-50/40',
+    cardClass: 'border-cyan-200 bg-cyan-50/20 hover:border-cyan-300 hover:bg-cyan-50/40',
+    iconWrapClass: 'bg-cyan-50 ring-cyan-100',
+    branchTextClass: 'text-cyan-500',
   },
   branch_admin: {
     label: 'مدير الفرع',
     sectionClass: 'border-emerald-200 bg-emerald-50 text-emerald-700',
     badgeClass: 'bg-emerald-100 text-emerald-700',
-    cardClass: 'hover:border-emerald-300 hover:bg-emerald-50/40',
+    cardClass: 'border-emerald-200 bg-emerald-50/20 hover:border-emerald-300 hover:bg-emerald-50/40',
+    iconWrapClass: 'bg-emerald-50 ring-emerald-100',
+    branchTextClass: 'text-emerald-500',
   },
   supervisor: {
     label: 'المشرفون',
     sectionClass: 'border-sky-200 bg-sky-50 text-sky-700',
     badgeClass: 'bg-sky-100 text-sky-700',
-    cardClass: 'hover:border-sky-300 hover:bg-sky-50/40',
+    cardClass: 'border-sky-200 bg-sky-50/20 hover:border-sky-300 hover:bg-sky-50/40',
+    iconWrapClass: 'bg-sky-50 ring-sky-100',
+    branchTextClass: 'text-sky-500',
   },
   warehouse_manager: {
     label: 'مديرو المستودع',
     sectionClass: 'border-amber-200 bg-amber-50 text-amber-700',
     badgeClass: 'bg-amber-100 text-amber-700',
-    cardClass: 'hover:border-amber-300 hover:bg-amber-50/40',
+    cardClass: 'border-amber-200 bg-amber-50/20 hover:border-amber-300 hover:bg-amber-50/40',
+    iconWrapClass: 'bg-amber-50 ring-amber-100',
+    branchTextClass: 'text-amber-500',
   },
   sales_rep: {
     label: 'مندوبو المبيعات',
     sectionClass: 'border-violet-200 bg-violet-50 text-violet-700',
     badgeClass: 'bg-violet-100 text-violet-700',
-    cardClass: 'hover:border-violet-300 hover:bg-violet-50/40',
+    cardClass: 'border-violet-200 bg-violet-50/20 hover:border-violet-300 hover:bg-violet-50/40',
+    iconWrapClass: 'bg-violet-50 ring-violet-100',
+    branchTextClass: 'text-violet-500',
   },
   delivery_rep: {
     label: 'مندوبو التوصيل',
     sectionClass: 'border-blue-200 bg-blue-50 text-blue-700',
     badgeClass: 'bg-blue-100 text-blue-700',
-    cardClass: 'hover:border-blue-300 hover:bg-blue-50/40',
+    cardClass: 'border-blue-200 bg-blue-50/20 hover:border-blue-300 hover:bg-blue-50/40',
+    iconWrapClass: 'bg-blue-50 ring-blue-100',
+    branchTextClass: 'text-blue-500',
   },
   worker: {
     label: 'العمال',
     sectionClass: 'border-slate-200 bg-slate-50 text-slate-700',
     badgeClass: 'bg-slate-100 text-slate-700',
-    cardClass: 'hover:border-slate-300 hover:bg-slate-50/70',
+    cardClass: 'border-slate-200 bg-slate-50/40 hover:border-slate-300 hover:bg-slate-50/70',
+    iconWrapClass: 'bg-slate-50 ring-slate-100',
+    branchTextClass: 'text-slate-500',
   },
 };
 
@@ -330,7 +350,7 @@ const LoginForm: React.FC = () => {
       >
         <div className={`flex items-center justify-center text-2xl ring-1 ${
           isRealMode
-            ? 'h-11 w-11 rounded-lg bg-red-50 ring-red-100'
+            ? `h-11 w-11 rounded-lg ${groupMeta.iconWrapClass}`
             : 'rounded-2xl bg-slate-100 ring-slate-200'
         }`}>
           <WorkerIcon className={`${isRealMode ? 'h-5.5 w-5.5' : 'h-7 w-7'} ${getWorkerIconTone(worker, isRealMode)}`} strokeWidth={2.2} />
@@ -343,7 +363,7 @@ const LoginForm: React.FC = () => {
             {getWorkerLabel(worker)}
           </div>
           {isRealMode && worker.branch_name && (
-            <div className="text-[10px] font-medium text-red-500">
+            <div className={`text-[10px] font-medium ${groupMeta.branchTextClass}`}>
               {worker.branch_name}
             </div>
           )}
