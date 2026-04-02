@@ -286,9 +286,9 @@ const LoginForm: React.FC = () => {
                     type="button"
                     disabled={isLoading}
                     onClick={() => doLogin(worker.username, worker.username, true)}
-                    className="group flex min-h-[168px] flex-col items-center justify-between rounded-3xl border border-slate-200 bg-gradient-to-b from-white via-violet-50 to-fuchsia-50 px-3 py-4 text-center shadow-sm transition hover:-translate-y-1 hover:border-purple-300 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
+                    className="group flex min-h-[168px] flex-col items-center justify-between rounded-2xl border-2 border-slate-200 bg-white px-3 py-4 text-center transition-all hover:border-slate-300 hover:bg-slate-50 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-600 to-fuchsia-500 text-2xl text-white shadow-lg">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-2xl ring-1 ring-slate-200">
                       {getWorkerEmoji(worker)}
                     </div>
                     <div className="space-y-1">
@@ -299,7 +299,7 @@ const LoginForm: React.FC = () => {
                         {getWorkerLabel(worker)}
                       </div>
                     </div>
-                    <div className="rounded-full bg-purple-600 px-4 py-1.5 text-sm font-medium text-white shadow-sm transition group-hover:bg-fuchsia-600">
+                    <div className="rounded-lg border border-slate-200 bg-slate-100 px-4 py-1.5 text-sm font-medium text-slate-700 transition-colors group-hover:bg-slate-200">
                       دخول
                     </div>
                   </button>

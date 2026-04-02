@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 const { exec } = require('child_process');
-const chokidar = require('chokidar');
 const path = require('path');
+const chokidar = require('chokidar');
 
 function run(cmd) {
   return new Promise((resolve, reject) => {
@@ -64,6 +64,7 @@ async function doCommitAndPush() {
     console.log('[auto-push] Committing...');
     await run(`git commit -m "${message}"`);
     console.log('[auto-push] Pushing...');
+
     try {
       await run('git push');
     } catch (pushError) {
@@ -75,6 +76,7 @@ async function doCommitAndPush() {
         throw pushError;
       }
     }
+
     console.log('[auto-push] Push complete.');
   } catch (e) {
     console.error('[auto-push] Error during commit/push:', e.err ? e.err.message : e);
