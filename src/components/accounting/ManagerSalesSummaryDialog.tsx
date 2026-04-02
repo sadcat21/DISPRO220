@@ -301,20 +301,49 @@ const buildAggregateSummary = (workerSummaries: WorkerSummary[], selectedWorkerI
   };
 };
 
-const StatCard: React.FC<{ label: string; value: string; icon: React.ReactNode; tone?: string }> = ({ label, value, icon, tone = '' }) => (
-  <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+const getWorkerButtonClass = (isActive: boolean) => (
+  isActive
+    ? 'h-9 shrink-0 rounded-full border border-emerald-500 bg-emerald-500 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-600'
+    : 'h-9 shrink-0 rounded-full border border-slate-200 bg-white px-4 text-sm text-slate-700 hover:border-emerald-200 hover:bg-emerald-50'
+);
+
+const getDayButtonClass = (isActive: boolean) => (
+  isActive
+    ? 'h-9 shrink-0 rounded-full border border-cyan-500 bg-cyan-500 px-4 text-sm font-semibold text-white shadow-sm hover:bg-cyan-600'
+    : 'h-9 shrink-0 rounded-full border border-slate-200 bg-white px-4 text-sm text-slate-700 hover:border-cyan-200 hover:bg-cyan-50'
+);
+
+const StatCard: React.FC<{
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+  tone?: string;
+  iconWrapClass?: string;
+  accentClass?: string;
+  valueClass?: string;
+}> = ({
+  label,
+  value,
+  icon,
+  tone = '',
+  iconWrapClass = 'bg-slate-100',
+  accentClass = 'from-slate-200 via-slate-100 to-white',
+  valueClass = 'text-slate-800',
+}) => (
+  <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-3 shadow-[0_10px_30px_-18px_rgba(15,23,42,0.45)]">
+    <div className={`absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${accentClass}`} />
     <div className="mb-2 flex items-center gap-2 text-slate-500">
-      <div className={`flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 ${tone}`}>{icon}</div>
-      <span className="text-xs font-medium">{label}</span>
+      <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${iconWrapClass} ${tone}`}>{icon}</div>
+      <span className="text-xs font-medium leading-5">{label}</span>
     </div>
-    <div className="text-base font-bold text-slate-800">{value}</div>
+    <div className={`text-base font-bold ${valueClass}`}>{value}</div>
   </div>
 );
 
-const BreakdownRow: React.FC<{ label: string; value: number }> = ({ label, value }) => (
-  <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-sm">
+const BreakdownRow: React.FC<{ label: string; value: number; toneClass?: string }> = ({ label, value, toneClass = 'bg-slate-50 text-slate-800 border-slate-100' }) => (
+  <div className={`flex items-center justify-between rounded-2xl border px-3 py-2.5 text-sm ${toneClass}`}>
     <span className="text-slate-600">{label}</span>
-    <span className="font-semibold text-slate-800">{fmtMoney(value)}</span>
+    <span className="font-semibold">{fmtMoney(value)}</span>
   </div>
 );
 
@@ -414,14 +443,14 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
         <div className="border-b border-slate-200 bg-slate-50 px-3 py-3 sm:px-4">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <div className="text-sm font-semibold text-slate-700">اختيار العامل</div>
-            <Badge className="border-0 bg-white text-slate-700 shadow-sm">{aggregate.workerLabel}</Badge>
+            <Badge className="border-0 bg-white text-slate-700 shadow-sm shadow-emerald-100">{aggregate.workerLabel}</Badge>
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1">
             <Button
               type="button"
               size="sm"
               variant={selectedWorkerId === 'all' ? 'default' : 'outline'}
-              className="h-9 shrink-0 rounded-full px-4 text-sm"
+              className={getWorkerButtonClass(selectedWorkerId === 'all')}
               onClick={() => setSelectedWorkerId('all')}
             >
               الكل
@@ -432,7 +461,7 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
                 type="button"
                 size="sm"
                 variant={selectedWorkerId === worker.id ? 'default' : 'outline'}
-                className="h-9 shrink-0 rounded-full px-4 text-sm"
+                className={getWorkerButtonClass(selectedWorkerId === worker.id)}
                 onClick={() => setSelectedWorkerId(worker.id)}
               >
                 {worker.full_name || worker.username}
@@ -441,7 +470,7 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
           </div>
           <div className="mt-3 flex items-center justify-between gap-2">
             <div className="text-sm font-semibold text-slate-700">فلترة اليوم</div>
-            <Badge variant="outline">{selectedDay.label}</Badge>
+            <Badge variant="outline" className="border-cyan-200 bg-cyan-50 text-cyan-700">{selectedDay.label}</Badge>
           </div>
           <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
             {DAY_OPTIONS.map((day) => (
@@ -450,12 +479,27 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
                 type="button"
                 size="sm"
                 variant={selectedDayKey === day.key ? 'default' : 'outline'}
-                className="h-9 shrink-0 rounded-full px-4 text-sm"
+                className={getDayButtonClass(selectedDayKey === day.key)}
                 onClick={() => setSelectedDayKey(day.key)}
               >
                 {day.label}
               </Button>
             ))}
+          </div>
+
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-3 py-2">
+              <div className="text-[11px] text-emerald-700">العامل المحدد</div>
+              <div className="truncate text-sm font-bold text-emerald-900">{aggregate.workerLabel}</div>
+            </div>
+            <div className="rounded-2xl border border-cyan-100 bg-cyan-50 px-3 py-2">
+              <div className="text-[11px] text-cyan-700">اليوم</div>
+              <div className="text-sm font-bold text-cyan-900">{selectedDay.label}</div>
+            </div>
+            <div className="rounded-2xl border border-violet-100 bg-violet-50 px-3 py-2">
+              <div className="text-[11px] text-violet-700">عدد الطلبات</div>
+              <div className="text-sm font-bold text-violet-900">{aggregate.orderCount}</div>
+            </div>
           </div>
         </div>
 
@@ -481,9 +525,9 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
         ) : (
           <Tabs defaultValue="overview" className="flex min-h-0 flex-1 flex-col">
             <div className="px-3 pt-3 sm:px-4">
-              <TabsList className="grid grid-cols-2 h-10">
-                <TabsTrigger value="overview" className="text-sm">الملخص</TabsTrigger>
-                <TabsTrigger value="products" className="text-sm">المنتجات</TabsTrigger>
+              <TabsList className="grid h-11 grid-cols-2 rounded-2xl bg-slate-100 p-1">
+                <TabsTrigger value="overview" className="rounded-xl text-sm data-[state=active]:bg-white data-[state=active]:text-emerald-700 data-[state=active]:shadow-sm">الملخص</TabsTrigger>
+                <TabsTrigger value="products" className="rounded-xl text-sm data-[state=active]:bg-white data-[state=active]:text-cyan-700 data-[state=active]:shadow-sm">المنتجات</TabsTrigger>
               </TabsList>
             </div>
 
@@ -491,44 +535,44 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
               <ScrollArea className="h-full">
                 <div className="space-y-4 px-3 py-4 sm:px-4">
                   <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4">
-                    <StatCard label="إجمالي المبيعات" value={fmtMoney(aggregate.calc.totalSales)} icon={<ShoppingBag className="h-4 w-4" />} tone="text-emerald-600" />
-                    <StatCard label="المبلغ المقبوض" value={fmtMoney(aggregate.calc.totalPaid)} icon={<Banknote className="h-4 w-4" />} tone="text-blue-600" />
-                    <StatCard label="ديون جديدة" value={fmtMoney(aggregate.calc.newDebts)} icon={<TrendingDown className="h-4 w-4" />} tone="text-red-600" />
-                    <StatCard label="ديون محصلة" value={fmtMoney(aggregate.calc.debtCollections.total)} icon={<HandCoins className="h-4 w-4" />} tone="text-orange-600" />
-                    <StatCard label="النقد الفعلي" value={fmtMoney(aggregate.calc.physicalCash)} icon={<Banknote className="h-4 w-4" />} tone="text-green-700" />
-                    <StatCard label="المصاريف" value={fmtMoney(aggregate.calc.expenses)} icon={<Wallet className="h-4 w-4" />} tone="text-amber-700" />
-                    <StatCard label="قيمة العروض" value={fmtMoney(aggregate.calc.giftOfferValue)} icon={<Gift className="h-4 w-4" />} tone="text-fuchsia-600" />
-                    <StatCard label="الطلبات / الكميات" value={`${aggregate.orderCount} / ${totalQuantity}`} icon={<Package className="h-4 w-4" />} tone="text-violet-600" />
+                    <StatCard label="إجمالي المبيعات" value={fmtMoney(aggregate.calc.totalSales)} icon={<ShoppingBag className="h-4 w-4" />} tone="text-emerald-700" iconWrapClass="bg-emerald-50" accentClass="from-emerald-500 via-emerald-300 to-white" valueClass="text-emerald-900" />
+                    <StatCard label="المبلغ المقبوض" value={fmtMoney(aggregate.calc.totalPaid)} icon={<Banknote className="h-4 w-4" />} tone="text-blue-700" iconWrapClass="bg-blue-50" accentClass="from-blue-500 via-blue-300 to-white" valueClass="text-blue-900" />
+                    <StatCard label="ديون جديدة" value={fmtMoney(aggregate.calc.newDebts)} icon={<TrendingDown className="h-4 w-4" />} tone="text-rose-700" iconWrapClass="bg-rose-50" accentClass="from-rose-500 via-rose-300 to-white" valueClass="text-rose-900" />
+                    <StatCard label="ديون محصلة" value={fmtMoney(aggregate.calc.debtCollections.total)} icon={<HandCoins className="h-4 w-4" />} tone="text-orange-700" iconWrapClass="bg-orange-50" accentClass="from-orange-500 via-orange-300 to-white" valueClass="text-orange-900" />
+                    <StatCard label="النقد الفعلي" value={fmtMoney(aggregate.calc.physicalCash)} icon={<Banknote className="h-4 w-4" />} tone="text-green-700" iconWrapClass="bg-green-50" accentClass="from-green-500 via-green-300 to-white" valueClass="text-green-900" />
+                    <StatCard label="المصاريف" value={fmtMoney(aggregate.calc.expenses)} icon={<Wallet className="h-4 w-4" />} tone="text-amber-700" iconWrapClass="bg-amber-50" accentClass="from-amber-500 via-amber-300 to-white" valueClass="text-amber-900" />
+                    <StatCard label="قيمة العروض" value={fmtMoney(aggregate.calc.giftOfferValue)} icon={<Gift className="h-4 w-4" />} tone="text-fuchsia-700" iconWrapClass="bg-fuchsia-50" accentClass="from-fuchsia-500 via-fuchsia-300 to-white" valueClass="text-fuchsia-900" />
+                    <StatCard label="الطلبات / الكميات" value={`${aggregate.orderCount} / ${totalQuantity}`} icon={<Package className="h-4 w-4" />} tone="text-violet-700" iconWrapClass="bg-violet-50" accentClass="from-violet-500 via-violet-300 to-white" valueClass="text-violet-900" />
                   </div>
 
                   <div className="grid gap-4 md:grid-cols-2">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                      <div className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-800">
-                        <Calendar className="h-4 w-4 text-primary" />
+                    <div className="rounded-3xl border border-emerald-100 bg-gradient-to-br from-white via-emerald-50/60 to-white p-4 shadow-[0_14px_35px_-22px_rgba(16,185,129,0.65)]">
+                      <div className="mb-3 flex items-center gap-2 text-sm font-bold text-emerald-900">
+                        <Calendar className="h-4 w-4 text-emerald-600" />
                         ملخص طرق الدفع
                       </div>
                       <div className="space-y-2">
-                        <BreakdownRow label="فواتير 1 - إجمالي" value={aggregate.calc.invoice1.total} />
-                        <BreakdownRow label="فواتير 1 - شيك" value={aggregate.calc.invoice1.check} />
-                        <BreakdownRow label="فواتير 1 - تحويل" value={aggregate.calc.invoice1.transfer} />
-                        <BreakdownRow label="فواتير 1 - وصل" value={aggregate.calc.invoice1.receipt} />
-                        <BreakdownRow label="فواتير 1 - كاش" value={aggregate.calc.invoice1.espaceCash + aggregate.calc.invoice1.versementCash} />
-                        <BreakdownRow label="فواتير 2 - كاش" value={aggregate.calc.invoice2.cash} />
+                        <BreakdownRow label="فواتير 1 - إجمالي" value={aggregate.calc.invoice1.total} toneClass="border-emerald-100 bg-white text-emerald-900" />
+                        <BreakdownRow label="فواتير 1 - شيك" value={aggregate.calc.invoice1.check} toneClass="border-cyan-100 bg-cyan-50/70 text-cyan-900" />
+                        <BreakdownRow label="فواتير 1 - تحويل" value={aggregate.calc.invoice1.transfer} toneClass="border-sky-100 bg-sky-50/70 text-sky-900" />
+                        <BreakdownRow label="فواتير 1 - وصل" value={aggregate.calc.invoice1.receipt} toneClass="border-violet-100 bg-violet-50/70 text-violet-900" />
+                        <BreakdownRow label="فواتير 1 - كاش" value={aggregate.calc.invoice1.espaceCash + aggregate.calc.invoice1.versementCash} toneClass="border-amber-100 bg-amber-50/70 text-amber-900" />
+                        <BreakdownRow label="فواتير 2 - كاش" value={aggregate.calc.invoice2.cash} toneClass="border-teal-100 bg-teal-50/70 text-teal-900" />
                       </div>
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                      <div className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-800">
-                        <HandCoins className="h-4 w-4 text-primary" />
+                    <div className="rounded-3xl border border-cyan-100 bg-gradient-to-br from-white via-cyan-50/60 to-white p-4 shadow-[0_14px_35px_-22px_rgba(6,182,212,0.65)]">
+                      <div className="mb-3 flex items-center gap-2 text-sm font-bold text-cyan-900">
+                        <HandCoins className="h-4 w-4 text-cyan-600" />
                         تحصيلات وملحقات
                       </div>
                       <div className="space-y-2">
-                        <BreakdownRow label="تحصيلات الديون - كاش" value={aggregate.calc.debtCollections.cash} />
-                        <BreakdownRow label="تحصيلات الديون - شيك" value={aggregate.calc.debtCollections.check} />
-                        <BreakdownRow label="تحصيلات الديون - تحويل" value={aggregate.calc.debtCollections.transfer} />
-                        <BreakdownRow label="تحصيلات الديون - وصل" value={aggregate.calc.debtCollections.receipt} />
-                        <BreakdownRow label="فائض العملاء" value={aggregate.calc.customerSurplusCash} />
-                        <BreakdownRow label="المصاريف النقدية" value={aggregate.calc.cashExpenses} />
+                        <BreakdownRow label="تحصيلات الديون - كاش" value={aggregate.calc.debtCollections.cash} toneClass="border-cyan-100 bg-white text-cyan-900" />
+                        <BreakdownRow label="تحصيلات الديون - شيك" value={aggregate.calc.debtCollections.check} toneClass="border-indigo-100 bg-indigo-50/70 text-indigo-900" />
+                        <BreakdownRow label="تحصيلات الديون - تحويل" value={aggregate.calc.debtCollections.transfer} toneClass="border-blue-100 bg-blue-50/70 text-blue-900" />
+                        <BreakdownRow label="تحصيلات الديون - وصل" value={aggregate.calc.debtCollections.receipt} toneClass="border-fuchsia-100 bg-fuchsia-50/70 text-fuchsia-900" />
+                        <BreakdownRow label="فائض العملاء" value={aggregate.calc.customerSurplusCash} toneClass="border-emerald-100 bg-emerald-50/70 text-emerald-900" />
+                        <BreakdownRow label="المصاريف النقدية" value={aggregate.calc.cashExpenses} toneClass="border-amber-100 bg-amber-50/70 text-amber-900" />
                       </div>
                     </div>
                   </div>
@@ -540,7 +584,8 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
               <ScrollArea className="h-full">
                 <div className="grid grid-cols-2 gap-2 px-3 py-4 sm:gap-3 sm:px-4 md:grid-cols-4">
                   {aggregate.items.map((item) => (
-                    <div key={item.productId} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div key={item.productId} className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_14px_34px_-22px_rgba(15,23,42,0.55)]">
+                      <div className="h-1.5 bg-gradient-to-r from-cyan-500 via-emerald-400 to-violet-500" />
                       <div className="aspect-square bg-slate-100">
                         {item.imageUrl ? (
                           <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
@@ -553,16 +598,16 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
                       <div className="space-y-2 p-3">
                         <div className="line-clamp-2 min-h-[2.5rem] text-sm font-bold text-slate-800">{item.name}</div>
                         <div className="grid grid-cols-2 gap-2 text-center">
-                          <div className="rounded-xl bg-emerald-50 px-2 py-2">
+                          <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-2 py-2">
                             <div className="text-[11px] text-emerald-700">الكمية</div>
                             <div className="text-sm font-bold text-emerald-800">{item.quantity}</div>
                           </div>
-                          <div className="rounded-xl bg-fuchsia-50 px-2 py-2">
+                          <div className="rounded-2xl border border-fuchsia-100 bg-fuchsia-50 px-2 py-2">
                             <div className="text-[11px] text-fuchsia-700">العروض</div>
                             <div className="text-sm font-bold text-fuchsia-800">{item.giftQuantity}</div>
                           </div>
                         </div>
-                        <div className="rounded-xl bg-slate-50 px-3 py-2 text-center">
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-center">
                           <div className="text-[11px] text-slate-500">قيمة المبيعات</div>
                           <div className="text-sm font-bold text-slate-800">{fmtMoney(item.totalAmount)}</div>
                         </div>
