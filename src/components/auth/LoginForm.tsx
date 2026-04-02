@@ -217,26 +217,26 @@ const LoginForm: React.FC = () => {
         onClick={() => doLogin(worker.username, worker.username, true)}
         className={`group flex min-h-[168px] flex-col items-center text-center transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
           isRealMode
-            ? 'justify-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-5 hover:border-red-300 hover:bg-red-50/40'
+            ? 'min-h-[132px] justify-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-3.5 hover:border-red-300 hover:bg-red-50/40'
             : 'justify-between rounded-2xl border-2 border-slate-200 bg-white px-3 py-4 hover:border-slate-300 hover:bg-slate-50 hover:shadow-md'
         }`}
       >
-        <div className={`flex h-14 w-14 items-center justify-center text-2xl ring-1 ${
+        <div className={`flex items-center justify-center text-2xl ring-1 ${
           isRealMode
-            ? 'rounded-xl bg-red-50 ring-red-100'
+            ? 'h-11 w-11 rounded-lg bg-red-50 ring-red-100'
             : 'rounded-2xl bg-slate-100 ring-slate-200'
         }`}>
-          <WorkerIcon className={`h-7 w-7 ${getWorkerIconTone(worker, isRealMode)}`} strokeWidth={2.2} />
+          <WorkerIcon className={`${isRealMode ? 'h-5.5 w-5.5' : 'h-7 w-7'} ${getWorkerIconTone(worker, isRealMode)}`} strokeWidth={2.2} />
         </div>
         <div className="space-y-1">
-          <div className="line-clamp-2 text-base font-bold leading-6 text-slate-800">
+          <div className={`line-clamp-2 font-bold text-slate-800 ${isRealMode ? 'text-sm leading-5' : 'text-base leading-6'}`}>
             {worker.full_name}
           </div>
-          <div className="line-clamp-2 text-xs leading-5 text-slate-500">
+          <div className={`line-clamp-2 text-slate-500 ${isRealMode ? 'text-[11px] leading-4' : 'text-xs leading-5'}`}>
             {getWorkerLabel(worker)}
           </div>
           {isRealMode && worker.branch_name && (
-            <div className="text-[11px] font-medium text-red-500">
+            <div className="text-[10px] font-medium text-red-500">
               {worker.branch_name}
             </div>
           )}
