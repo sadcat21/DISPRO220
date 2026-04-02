@@ -43,6 +43,7 @@ interface ProductAgg {
   imageUrl: string | null;
   warehouseQuantity?: number;
   workerStockQuantity?: number;
+  workerStockByWorker?: Record<string, number>;
   customers: CustomerBreakdown[];
 }
 
@@ -211,6 +212,7 @@ const mergeProducts = (summaries: WorkerSummary[]): ProductAgg[] => {
           piecesPerBox: item.piecesPerBox,
           imageUrl: item.imageUrl,
           customers: [],
+          workerStockByWorker: { ...(item.workerStockByWorker || {}) },
         });
       }
 
@@ -220,6 +222,10 @@ const mergeProducts = (summaries: WorkerSummary[]): ProductAgg[] => {
       current.totalAmount += item.totalAmount;
       current.warehouseQuantity = item.warehouseQuantity ?? current.warehouseQuantity ?? 0;
       current.workerStockQuantity = item.workerStockQuantity ?? current.workerStockQuantity ?? 0;
+      current.workerStockByWorker = {
+        ...(current.workerStockByWorker || {}),
+        ...(item.workerStockByWorker || {}),
+      };
 
       for (const customer of item.customers) {
         const existing = current.customers.find((c) => c.customerId === customer.customerId);
@@ -307,7 +313,7 @@ const fetchWorkerSalesSummary = async (
       ? (() => {
           let query = supabase
             .from('worker_stock')
-            .select('product_id, quantity');
+            .select('product_id, quantity, worker_id');
           if (branchId) query = query.eq('branch_id', branchId);
           return query.in('product_id', productIds);
         })()
@@ -323,8 +329,12 @@ const fetchWorkerSalesSummary = async (
   }
 
   const workerStockQtyMap = new Map<string, number>();
+  const workerStockByWorkerMap = new Map<string, Record<string, number>>();
   for (const row of workerStockResult.data || []) {
     workerStockQtyMap.set(row.product_id, (workerStockQtyMap.get(row.product_id) || 0) + Number(row.quantity || 0));
+    const current = workerStockByWorkerMap.get(row.product_id) || {};
+    current[row.worker_id] = (current[row.worker_id] || 0) + Number(row.quantity || 0);
+    workerStockByWorkerMap.set(row.product_id, current);
   }
 
   const customerIds = [...new Set(orders.map((o) => o.customer_id).filter(Boolean))];
@@ -352,6 +362,7 @@ const fetchWorkerSalesSummary = async (
         imageUrl: product?.image_url || null,
         warehouseQuantity: warehouseQtyMap.get(item.product_id) || 0,
         workerStockQuantity: workerStockQtyMap.get(item.product_id) || 0,
+        workerStockByWorker: workerStockByWorkerMap.get(item.product_id) || {},
         customers: [],
       };
     }
@@ -775,7 +786,12 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
             <TabsContent value="products" className="mt-0 min-h-0 flex-1">
               <ScrollArea className="h-full">
                 <div className="grid grid-cols-2 gap-2.5 px-3 py-4 sm:gap-3 sm:px-4 md:grid-cols-3">
-                  {aggregate.items.map((item) => (
+                  {aggregate.items.map((item) => {
+                    const displayedWorkerStock = selectedWorkerId !== 'all'
+                      ? (item.workerStockByWorker?.[selectedWorkerId] || 0)
+                      : (item.workerStockQuantity || 0);
+
+                    return (
                     <div key={item.productId} dir="rtl" className="flex flex-col overflow-hidden rounded-2xl border-2 border-slate-200 bg-white shadow-lg transition-all hover:border-primary/40">
                       <div className="border-b border-slate-200 bg-slate-50 px-2.5 py-2 text-center">
                         <span className="block truncate text-xs font-bold text-slate-800 sm:text-sm">
@@ -816,13 +832,13 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
                           <div className="rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-2">
                             <div className="text-[10px] font-medium text-blue-700">رصيد العمال</div>
                             <div className="mt-1 text-sm font-bold text-blue-900">
-                              {(item.workerStockQuantity || 0).toLocaleString('ar-DZ')}
+                              {displayedWorkerStock.toLocaleString('ar-DZ')}
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               </ScrollArea>
             </TabsContent>
