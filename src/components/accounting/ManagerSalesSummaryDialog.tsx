@@ -64,12 +64,12 @@ interface AggregateSummary {
 }
 
 const DAY_OPTIONS = [
-  { key: 'saturday', label: 'Ø§Ù„Ø³Ø¨Øª', jsDay: 6 },
-  { key: 'sunday', label: 'Ø§Ù„Ø£Ø­Ø¯', jsDay: 0 },
-  { key: 'monday', label: 'Ø§Ù„Ø§Ø«Ù†ÙŠÙ†', jsDay: 1 },
-  { key: 'tuesday', label: 'Ø§Ù„Ø«Ù„Ø§Ø«Ø§Ø¡', jsDay: 2 },
-  { key: 'wednesday', label: 'Ø§Ù„Ø£Ø±Ø¨Ø¹Ø§Ø¡', jsDay: 3 },
-  { key: 'thursday', label: 'Ø§Ù„Ø®Ù…ÙŠØ³', jsDay: 4 },
+  { key: 'saturday', label: 'السبت', jsDay: 6 },
+  { key: 'sunday', label: 'الأحد', jsDay: 0 },
+  { key: 'monday', label: 'الاثنين', jsDay: 1 },
+  { key: 'tuesday', label: 'الثلاثاء', jsDay: 2 },
+  { key: 'wednesday', label: 'الأربعاء', jsDay: 3 },
+  { key: 'thursday', label: 'الخميس', jsDay: 4 },
 ] as const;
 
 const emptyCalc = (): SessionCalculations => ({
@@ -89,7 +89,7 @@ const emptyCalc = (): SessionCalculations => ({
   customerSurplusCash: 0,
 });
 
-const fmtMoney = (value: number) => `${value.toLocaleString('ar-DZ')} Ø¯.Ø¬`;
+const fmtMoney = (value: number) => `${value.toLocaleString('ar-DZ')} د.ج`;
 
 const mergeCalcs = (calcs: SessionCalculations[]): SessionCalculations => {
   const merged = emptyCalc();
@@ -229,7 +229,7 @@ const fetchWorkerSalesSummary = async (workerId: string, periodStart: string, pe
     if (!agg[item.product_id]) {
       agg[item.product_id] = {
         productId: item.product_id,
-        name: product?.name || 'Ù…Ù†ØªØ¬ ØºÙŠØ± Ù…Ø¹Ø±ÙˆÙ',
+        name: product?.name || 'منتج غير معروف',
         quantity: 0,
         giftQuantity: 0,
         totalAmount: 0,
@@ -251,7 +251,7 @@ const fetchWorkerSalesSummary = async (workerId: string, periodStart: string, pe
     } else {
       agg[item.product_id].customers.push({
         customerId,
-        customerName: customerNameMap.get(customerId) || 'Ø¹Ù…ÙŠÙ„ ØºÙŠØ± Ù…Ø¹Ø±ÙˆÙ',
+        customerName: customerNameMap.get(customerId) || 'عميل غير معروف',
         storeName: customerStoreMap.get(customerId) || null,
         phone: customerPhoneMap.get(customerId) || null,
         deliveryTime: orderTimeMap.get(item.order_id) || null,
@@ -292,7 +292,7 @@ const buildAggregateSummary = (workerSummaries: WorkerSummary[], selectedWorkerI
   const lastTimes = workerSummaries.map(w => w.lastOrderTime).filter(Boolean).map(v => new Date(v!).getTime());
 
   return {
-    workerLabel: 'ÙƒÙ„ Ø§Ù„Ø¹Ù…Ø§Ù„',
+    workerLabel: 'كل العمال',
     orderCount: workerSummaries.reduce((sum, item) => sum + item.orderCount, 0),
     items: mergeProducts(workerSummaries),
     firstOrderTime: firstTimes.length ? new Date(Math.min(...firstTimes)).toISOString() : null,
@@ -398,22 +398,22 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[96vw] sm:max-w-3xl max-h-[92dvh] overflow-hidden p-0 gap-0" dir="rtl">
-        <div className="border-b border-slate-200 bg-gradient-to-l from-emerald-600 via-teal-600 to-cyan-500 px-5 py-4 text-white">
+      <DialogContent className="h-[min(92dvh,860px)] w-[calc(100vw-1rem)] max-w-lg overflow-hidden p-0 gap-0 sm:max-w-3xl" dir="rtl">
+        <div className="border-b border-slate-200 bg-gradient-to-l from-emerald-600 via-teal-600 to-cyan-500 px-4 py-3 text-white sm:px-5 sm:py-4">
           <DialogHeader className="space-y-2">
-            <DialogTitle className="flex items-center gap-2 text-xl font-bold">
-              <ShoppingBag className="h-5 w-5" />
-              ØªØ¬Ù…ÙŠØ¹ Ù…Ø¨ÙŠØ¹Ø§Øª Ø§Ù„Ø¹Ù…Ø§Ù„
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold sm:text-xl">
+              <ShoppingBag className="h-5 w-5 shrink-0" />
+              تجميع مبيعات العمال
             </DialogTitle>
-            <p className="text-sm text-white/85">
-              Ù†Ø§ÙØ°Ø© Ù…ÙˆØ­Ù‘Ø¯Ø© Ù„Ù„Ù…Ø¯ÙŠØ± Ù„Ù…Ø±Ø§Ø¬Ø¹Ø© Ø§Ù„Ù…Ø¨ÙŠØ¹Ø§Øª ÙˆØ§Ù„Ø¯ÙŠÙˆÙ† ÙˆØ§Ù„ØªØ­ØµÙŠÙ„Ø§Øª ÙˆØ§Ù„Ù…Ù†ØªØ¬Ø§Øª Ù„ÙƒÙ„ Ø§Ù„Ø¹Ù…Ø§Ù„ Ø£Ùˆ Ù„ÙƒÙ„ Ø¹Ø§Ù…Ù„ Ø¹Ù„Ù‰ Ø­Ø¯Ø©.
+            <p className="text-xs leading-6 text-white/85 sm:text-sm">
+              نافذة موحدة لمراجعة المبيعات والديون والتحصيلات والمنتجات لكل العمال أو لكل عامل على حدة.
             </p>
           </DialogHeader>
         </div>
 
-        <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+        <div className="border-b border-slate-200 bg-slate-50 px-3 py-3 sm:px-4">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-            <div className="text-sm font-semibold text-slate-700">Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„Ø¹Ø§Ù…Ù„</div>
+            <div className="text-sm font-semibold text-slate-700">اختيار العامل</div>
             <Badge className="border-0 bg-white text-slate-700 shadow-sm">{aggregate.workerLabel}</Badge>
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1">
@@ -421,10 +421,10 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
               type="button"
               size="sm"
               variant={selectedWorkerId === 'all' ? 'default' : 'outline'}
-              className="shrink-0 rounded-full"
+              className="h-9 shrink-0 rounded-full px-4 text-sm"
               onClick={() => setSelectedWorkerId('all')}
             >
-              Ø§Ù„ÙƒÙ„
+              الكل
             </Button>
             {workerButtons.map((worker) => (
               <Button
@@ -432,15 +432,15 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
                 type="button"
                 size="sm"
                 variant={selectedWorkerId === worker.id ? 'default' : 'outline'}
-                className="shrink-0 rounded-full"
+                className="h-9 shrink-0 rounded-full px-4 text-sm"
                 onClick={() => setSelectedWorkerId(worker.id)}
               >
                 {worker.full_name || worker.username}
               </Button>
             ))}
           </div>
-          <div className="mt-3 flex items-center justify-between">
-            <div className="text-sm font-semibold text-slate-700">ÙÙ„ØªØ±Ø© Ø§Ù„ÙŠÙˆÙ…</div>
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <div className="text-sm font-semibold text-slate-700">فلترة اليوم</div>
             <Badge variant="outline">{selectedDay.label}</Badge>
           </div>
           <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
@@ -450,7 +450,7 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
                 type="button"
                 size="sm"
                 variant={selectedDayKey === day.key ? 'default' : 'outline'}
-                className="shrink-0 rounded-full"
+                className="h-9 shrink-0 rounded-full px-4 text-sm"
                 onClick={() => setSelectedDayKey(day.key)}
               >
                 {day.label}
@@ -464,71 +464,71 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
             <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-primary" />
           </div>
         ) : !data?.length ? (
-          <div className="flex min-h-[320px] flex-col items-center justify-center gap-3 text-slate-500">
-            <ClipboardList className="h-10 w-10 opacity-40" />
-            <p className="text-center">
-              {workerButtons.length > 0
-                ? 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…Ø¨ÙŠØ¹Ø§Øª ÙÙŠ Ù‡Ø°Ù‡ Ø§Ù„ÙØªØ±Ø© Ù„Ù„Ø¹Ù…Ø§Ù„ Ø§Ù„Ù…Ø­Ø¯Ø¯ÙŠÙ†'
-                : 'Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø¹Ù…Ø§Ù„ Ù…ØªØ§Ø­ÙˆÙ† Ù„Ù‡Ø°Ø§ Ø§Ù„ÙØ±Ø¹ Ø­Ø§Ù„ÙŠÙ‹Ø§'
+            <div className="flex min-h-[320px] flex-col items-center justify-center gap-3 text-slate-500">
+              <ClipboardList className="h-10 w-10 opacity-40" />
+              <p className="text-center">
+                {workerButtons.length > 0
+                ? 'لا توجد مبيعات في هذه الفترة للعمال المحددين'
+                : 'لا يوجد عمال متاحون لهذا الفرع حاليًا'
               }
             </p>
             {workerButtons.length > 0 && (
               <p className="text-xs text-slate-400 text-center">
-                Ø¬Ø±Ø¨ ØªØºÙŠÙŠØ± Ø§Ù„ÙØªØ±Ø© Ø§Ù„Ø²Ù…Ù†ÙŠØ© Ø£Ùˆ Ø§Ø®ØªÙŠØ§Ø± Ø¹Ù…Ø§Ù„ Ù…Ø®ØªÙ„ÙÙŠÙ†
+                جرّب تغيير اليوم أو اختيار عامل مختلف
               </p>
             )}
           </div>
         ) : (
           <Tabs defaultValue="overview" className="flex min-h-0 flex-1 flex-col">
-            <div className="px-4 pt-3">
-              <TabsList className="grid grid-cols-2">
-                <TabsTrigger value="overview">Ø§Ù„Ù…Ù„Ø®Øµ</TabsTrigger>
-                <TabsTrigger value="products">Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª</TabsTrigger>
+            <div className="px-3 pt-3 sm:px-4">
+              <TabsList className="grid grid-cols-2 h-10">
+                <TabsTrigger value="overview" className="text-sm">الملخص</TabsTrigger>
+                <TabsTrigger value="products" className="text-sm">المنتجات</TabsTrigger>
               </TabsList>
             </div>
 
             <TabsContent value="overview" className="min-h-0 flex-1 mt-0">
               <ScrollArea className="h-full">
-                <div className="space-y-4 px-4 py-4">
-                  <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                    <StatCard label="Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…Ø¨ÙŠØ¹Ø§Øª" value={fmtMoney(aggregate.calc.totalSales)} icon={<ShoppingBag className="h-4 w-4" />} tone="text-emerald-600" />
-                    <StatCard label="Ø§Ù„Ù…Ø¨Ù„Øº Ø§Ù„Ù…Ù‚Ø¨ÙˆØ¶" value={fmtMoney(aggregate.calc.totalPaid)} icon={<Banknote className="h-4 w-4" />} tone="text-blue-600" />
-                    <StatCard label="Ø¯ÙŠÙˆÙ† Ø¬Ø¯ÙŠØ¯Ø©" value={fmtMoney(aggregate.calc.newDebts)} icon={<TrendingDown className="h-4 w-4" />} tone="text-red-600" />
-                    <StatCard label="Ø¯ÙŠÙˆÙ† Ù…Ø­ØµÙ„Ø©" value={fmtMoney(aggregate.calc.debtCollections.total)} icon={<HandCoins className="h-4 w-4" />} tone="text-orange-600" />
-                    <StatCard label="Ø§Ù„Ù†Ù‚Ø¯ Ø§Ù„ÙØ¹Ù„ÙŠ" value={fmtMoney(aggregate.calc.physicalCash)} icon={<Banknote className="h-4 w-4" />} tone="text-green-700" />
-                    <StatCard label="Ø§Ù„Ù…ØµØ§Ø±ÙŠÙ" value={fmtMoney(aggregate.calc.expenses)} icon={<Wallet className="h-4 w-4" />} tone="text-amber-700" />
-                    <StatCard label="Ù‚ÙŠÙ…Ø© Ø§Ù„Ø¹Ø±ÙˆØ¶" value={fmtMoney(aggregate.calc.giftOfferValue)} icon={<Gift className="h-4 w-4" />} tone="text-fuchsia-600" />
-                    <StatCard label="Ø§Ù„Ø·Ù„Ø¨ÙŠØ§Øª / Ø§Ù„ÙƒÙ…ÙŠØ§Øª" value={`${aggregate.orderCount} / ${totalQuantity}`} icon={<Package className="h-4 w-4" />} tone="text-violet-600" />
+                <div className="space-y-4 px-3 py-4 sm:px-4">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4">
+                    <StatCard label="إجمالي المبيعات" value={fmtMoney(aggregate.calc.totalSales)} icon={<ShoppingBag className="h-4 w-4" />} tone="text-emerald-600" />
+                    <StatCard label="المبلغ المقبوض" value={fmtMoney(aggregate.calc.totalPaid)} icon={<Banknote className="h-4 w-4" />} tone="text-blue-600" />
+                    <StatCard label="ديون جديدة" value={fmtMoney(aggregate.calc.newDebts)} icon={<TrendingDown className="h-4 w-4" />} tone="text-red-600" />
+                    <StatCard label="ديون محصلة" value={fmtMoney(aggregate.calc.debtCollections.total)} icon={<HandCoins className="h-4 w-4" />} tone="text-orange-600" />
+                    <StatCard label="النقد الفعلي" value={fmtMoney(aggregate.calc.physicalCash)} icon={<Banknote className="h-4 w-4" />} tone="text-green-700" />
+                    <StatCard label="المصاريف" value={fmtMoney(aggregate.calc.expenses)} icon={<Wallet className="h-4 w-4" />} tone="text-amber-700" />
+                    <StatCard label="قيمة العروض" value={fmtMoney(aggregate.calc.giftOfferValue)} icon={<Gift className="h-4 w-4" />} tone="text-fuchsia-600" />
+                    <StatCard label="الطلبات / الكميات" value={`${aggregate.orderCount} / ${totalQuantity}`} icon={<Package className="h-4 w-4" />} tone="text-violet-600" />
                   </div>
 
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                       <div className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-800">
                         <Calendar className="h-4 w-4 text-primary" />
-                        Ù…Ù„Ø®Øµ Ø·Ø±Ù‚ Ø§Ù„Ø¯ÙØ¹
+                        ملخص طرق الدفع
                       </div>
                       <div className="space-y-2">
-                        <BreakdownRow label="ÙÙˆØ§ØªÙŠØ± 1 - Ø¥Ø¬Ù…Ø§Ù„ÙŠ" value={aggregate.calc.invoice1.total} />
-                        <BreakdownRow label="ÙÙˆØ§ØªÙŠØ± 1 - Ø´ÙŠÙƒ" value={aggregate.calc.invoice1.check} />
-                        <BreakdownRow label="ÙÙˆØ§ØªÙŠØ± 1 - ØªØ­ÙˆÙŠÙ„" value={aggregate.calc.invoice1.transfer} />
-                        <BreakdownRow label="ÙÙˆØ§ØªÙŠØ± 1 - ÙˆØµÙ„" value={aggregate.calc.invoice1.receipt} />
-                        <BreakdownRow label="ÙÙˆØ§ØªÙŠØ± 1 - ÙƒØ§Ø´" value={aggregate.calc.invoice1.espaceCash + aggregate.calc.invoice1.versementCash} />
-                        <BreakdownRow label="ÙÙˆØ§ØªÙŠØ± 2 - ÙƒØ§Ø´" value={aggregate.calc.invoice2.cash} />
+                        <BreakdownRow label="فواتير 1 - إجمالي" value={aggregate.calc.invoice1.total} />
+                        <BreakdownRow label="فواتير 1 - شيك" value={aggregate.calc.invoice1.check} />
+                        <BreakdownRow label="فواتير 1 - تحويل" value={aggregate.calc.invoice1.transfer} />
+                        <BreakdownRow label="فواتير 1 - وصل" value={aggregate.calc.invoice1.receipt} />
+                        <BreakdownRow label="فواتير 1 - كاش" value={aggregate.calc.invoice1.espaceCash + aggregate.calc.invoice1.versementCash} />
+                        <BreakdownRow label="فواتير 2 - كاش" value={aggregate.calc.invoice2.cash} />
                       </div>
                     </div>
 
                     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                       <div className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-800">
                         <HandCoins className="h-4 w-4 text-primary" />
-                        ØªØ­ØµÙŠÙ„Ø§Øª ÙˆÙ…Ù„Ø­Ù‚Ø§Øª
+                        تحصيلات وملحقات
                       </div>
                       <div className="space-y-2">
-                        <BreakdownRow label="ØªØ­ØµÙŠÙ„Ø§Øª Ø§Ù„Ø¯ÙŠÙˆÙ† - ÙƒØ§Ø´" value={aggregate.calc.debtCollections.cash} />
-                        <BreakdownRow label="ØªØ­ØµÙŠÙ„Ø§Øª Ø§Ù„Ø¯ÙŠÙˆÙ† - Ø´ÙŠÙƒ" value={aggregate.calc.debtCollections.check} />
-                        <BreakdownRow label="ØªØ­ØµÙŠÙ„Ø§Øª Ø§Ù„Ø¯ÙŠÙˆÙ† - ØªØ­ÙˆÙŠÙ„" value={aggregate.calc.debtCollections.transfer} />
-                        <BreakdownRow label="ØªØ­ØµÙŠÙ„Ø§Øª Ø§Ù„Ø¯ÙŠÙˆÙ† - ÙˆØµÙ„" value={aggregate.calc.debtCollections.receipt} />
-                        <BreakdownRow label="ÙØ§Ø¦Ø¶ Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡" value={aggregate.calc.customerSurplusCash} />
-                        <BreakdownRow label="Ø§Ù„Ù…ØµØ§Ø±ÙŠÙ Ø§Ù„Ù†Ù‚Ø¯ÙŠØ©" value={aggregate.calc.cashExpenses} />
+                        <BreakdownRow label="تحصيلات الديون - كاش" value={aggregate.calc.debtCollections.cash} />
+                        <BreakdownRow label="تحصيلات الديون - شيك" value={aggregate.calc.debtCollections.check} />
+                        <BreakdownRow label="تحصيلات الديون - تحويل" value={aggregate.calc.debtCollections.transfer} />
+                        <BreakdownRow label="تحصيلات الديون - وصل" value={aggregate.calc.debtCollections.receipt} />
+                        <BreakdownRow label="فائض العملاء" value={aggregate.calc.customerSurplusCash} />
+                        <BreakdownRow label="المصاريف النقدية" value={aggregate.calc.cashExpenses} />
                       </div>
                     </div>
                   </div>
@@ -538,7 +538,7 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
 
             <TabsContent value="products" className="min-h-0 flex-1 mt-0">
               <ScrollArea className="h-full">
-                <div className="grid grid-cols-2 gap-3 px-4 py-4 md:grid-cols-4">
+                <div className="grid grid-cols-2 gap-2 px-3 py-4 sm:gap-3 sm:px-4 md:grid-cols-4">
                   {aggregate.items.map((item) => (
                     <div key={item.productId} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                       <div className="aspect-square bg-slate-100">
@@ -554,16 +554,16 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
                         <div className="line-clamp-2 min-h-[2.5rem] text-sm font-bold text-slate-800">{item.name}</div>
                         <div className="grid grid-cols-2 gap-2 text-center">
                           <div className="rounded-xl bg-emerald-50 px-2 py-2">
-                            <div className="text-[11px] text-emerald-700">Ø§Ù„ÙƒÙ…ÙŠØ©</div>
+                            <div className="text-[11px] text-emerald-700">الكمية</div>
                             <div className="text-sm font-bold text-emerald-800">{item.quantity}</div>
                           </div>
                           <div className="rounded-xl bg-fuchsia-50 px-2 py-2">
-                            <div className="text-[11px] text-fuchsia-700">Ø§Ù„Ø¹Ø±ÙˆØ¶</div>
+                            <div className="text-[11px] text-fuchsia-700">العروض</div>
                             <div className="text-sm font-bold text-fuchsia-800">{item.giftQuantity}</div>
                           </div>
                         </div>
                         <div className="rounded-xl bg-slate-50 px-3 py-2 text-center">
-                          <div className="text-[11px] text-slate-500">Ù‚ÙŠÙ…Ø© Ø§Ù„Ù…Ø¨ÙŠØ¹Ø§Øª</div>
+                          <div className="text-[11px] text-slate-500">قيمة المبيعات</div>
                           <div className="text-sm font-bold text-slate-800">{fmtMoney(item.totalAmount)}</div>
                         </div>
                       </div>
