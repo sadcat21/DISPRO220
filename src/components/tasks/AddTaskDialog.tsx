@@ -24,6 +24,7 @@ interface AddTaskDialogProps {
 // Role hierarchy levels (higher number = higher rank)
 const ROLE_LEVELS: Record<string, number> = {
   admin: 4,
+  project_manager: 4,
   branch_admin: 3,
   supervisor: 2,
   worker: 1,
@@ -31,6 +32,7 @@ const ROLE_LEVELS: Record<string, number> = {
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'مدير النظام',
+  project_manager: 'مدير المشروع',
   branch_admin: 'مدير فرع',
   supervisor: 'مشرف',
   worker: 'عامل',

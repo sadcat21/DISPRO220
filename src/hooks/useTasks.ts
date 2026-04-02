@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { isAdminRole } from '@/lib/utils';
 
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 export type TaskStatus = 'todo' | 'doing' | 'done';
@@ -48,8 +49,8 @@ const fetchTasksWithWorkers = async (activeBranchId: string | undefined, taskTyp
     query = query.or(`branch_id.eq.${activeBranchId},branch_id.is.null`);
   }
 
-  // Admins/branch_admins see all tasks; others see only their own or general
-  if (userId && userRole !== 'admin' && userRole !== 'branch_admin') {
+  // Admin-level roles see all tasks; others see only their own or general
+  if (userId && !isAdminRole(userRole as any)) {
     query = query.or(`assigned_to.eq.${userId},created_by.eq.${userId},assigned_to.is.null`);
   }
 
