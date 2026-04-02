@@ -619,23 +619,23 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="h-[min(94dvh,860px)] w-[calc(100vw-0.35rem)] max-w-4xl overflow-hidden gap-0 p-0 sm:h-[min(92dvh,860px)] sm:w-[calc(100vw-0.5rem)]" dir="rtl">
-        <div className="border-b border-red-200 bg-gradient-to-r from-rose-500 to-red-500 px-3 py-4 text-white sm:px-5 sm:py-5">
-          <DialogHeader className="space-y-2 text-right">
-            <DialogTitle className="flex items-center justify-end gap-2 text-lg font-bold sm:text-2xl">
+        <div className="border-b border-red-200 bg-gradient-to-r from-rose-500 to-red-500 px-3 py-3 text-white sm:px-4 sm:py-3.5">
+          <DialogHeader className="space-y-1 text-right">
+            <DialogTitle className="flex items-center justify-end gap-2 text-base font-bold sm:text-xl">
               <ShoppingBag className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
               تجميع مبيعات العمال
             </DialogTitle>
-            <p className="text-xs leading-6 text-white/90 sm:text-sm">مراجعة المبيعات والديون والتحصيلات لكل العمال</p>
+            <p className="text-[11px] leading-5 text-white/90 sm:text-xs">مراجعة المبيعات والديون والتحصيلات لكل العمال</p>
           </DialogHeader>
         </div>
 
-        <div className="border-b border-slate-200 bg-slate-50 px-3 py-3 sm:px-4">
-          <div className="mb-3 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
+        <div className="border-b border-slate-200 bg-slate-50 px-3 py-2.5 sm:px-4">
+          <div className="mb-2 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
             <label htmlFor="periodFrom" className="text-xs text-slate-600 sm:text-sm">من</label>
             <input
               id="periodFrom"
               type="date"
-              className="h-10 w-full rounded-full border border-slate-300 bg-white px-4 text-sm shadow-sm outline-none focus:border-slate-900 sm:w-auto"
+              className="h-9 w-full rounded-full border border-slate-300 bg-white px-4 text-sm shadow-sm outline-none focus:border-slate-900 sm:w-auto"
               value={periodFrom}
               onChange={(e) => setPeriodFrom(e.target.value)}
             />
@@ -643,19 +643,19 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
             <input
               id="periodTo"
               type="date"
-              className="h-10 w-full rounded-full border border-slate-300 bg-white px-4 text-sm shadow-sm outline-none focus:border-slate-900 sm:w-auto"
+              className="h-9 w-full rounded-full border border-slate-300 bg-white px-4 text-sm shadow-sm outline-none focus:border-slate-900 sm:w-auto"
               value={periodTo}
               onChange={(e) => setPeriodTo(e.target.value)}
             />
-            <Button size="sm" className="h-10 w-full rounded-full bg-red-500 px-5 hover:bg-red-600 sm:w-auto" onClick={() => void refetch()}>
+            <Button size="sm" className="h-9 w-full rounded-full bg-red-500 px-5 hover:bg-red-600 sm:w-auto" onClick={() => void refetch()}>
               تحديث
             </Button>
-            <Button size="sm" variant="outline" className="h-10 w-full rounded-full px-5 sm:w-auto" onClick={resetFilters}>
+            <Button size="sm" variant="outline" className="h-9 w-full rounded-full px-5 sm:w-auto" onClick={resetFilters}>
               إعادة تعيين
             </Button>
           </div>
 
-          <div className="mb-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="mb-2 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {WORK_DAYS.map((day) => {
               const date = new Date();
               while (date.getDay() !== day.jsDay) {
@@ -678,7 +678,7 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
             })}
           </div>
 
-          <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <Button
               type="button"
               size="sm"
@@ -716,7 +716,7 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
           </div>
         ) : (
           <Tabs defaultValue="overview" className="flex min-h-0 flex-1 flex-col">
-            <div className="px-3 pt-3 sm:px-4">
+            <div className="px-3 pt-2 sm:px-4">
               <TabsList className="grid h-11 grid-cols-2 rounded-2xl bg-slate-100 p-1">
                 <TabsTrigger value="overview" className="rounded-2xl text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">
                   الملخص
@@ -729,7 +729,7 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
 
             <TabsContent value="overview" className="mt-0 min-h-0 flex-1">
               <ScrollArea className="h-full">
-                <div className="space-y-4 px-3 py-4 sm:px-4">
+                <div className="space-y-3 px-3 py-3 sm:px-4 sm:py-4">
                   <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-4">
                     <StatCard label="إجمالي المبيعات" value={fmtMoney(aggregate.calc.totalSales)} icon={<ShoppingBag className="h-4 w-4" />} tone="text-emerald-600" />
                     <StatCard label="المبلغ المقبوض" value={fmtMoney(aggregate.calc.totalPaid)} icon={<Banknote className="h-4 w-4" />} tone="text-blue-600" />
@@ -785,7 +785,7 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
 
             <TabsContent value="products" className="mt-0 min-h-0 flex-1">
               <ScrollArea className="h-full">
-                <div className="grid grid-cols-2 gap-2.5 px-3 py-4 sm:gap-3 sm:px-4 md:grid-cols-3">
+                <div className="grid grid-cols-2 gap-2.5 px-3 py-3 sm:gap-3 sm:px-4 sm:py-4 md:grid-cols-3">
                   {aggregate.items.map((item) => {
                     const displayedWorkerStock = selectedWorkerId !== 'all'
                       ? (item.workerStockByWorker?.[selectedWorkerId] || 0)
