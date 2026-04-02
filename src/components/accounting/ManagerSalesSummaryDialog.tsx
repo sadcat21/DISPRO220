@@ -375,12 +375,17 @@ const getWorkerButtonClass = (isActive: boolean) =>
     : 'h-10 shrink-0 rounded-full border border-slate-200 bg-white px-4 text-sm text-slate-600 hover:border-red-200 hover:bg-red-50';
 
 const StatCard: React.FC<{ label: string; value: string; icon: React.ReactNode; tone?: string }> = ({ label, value, icon, tone = '' }) => (
-  <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-sm">
-    <div className="mb-4 flex items-center gap-3 text-slate-500">
-      <div className={`flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-50 ${tone}`}>{icon}</div>
-      <span className="text-sm font-medium text-slate-500">{label}</span>
+  <div className="group relative overflow-hidden rounded-[26px] border border-slate-200 bg-white p-4 shadow-[0_10px_30px_-18px_rgba(15,23,42,0.35)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_35px_-20px_rgba(15,23,42,0.4)]">
+    <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-slate-100 via-slate-200 to-slate-100" />
+    <div className="mb-5 flex items-center gap-3">
+      <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 ring-1 ring-slate-100 ${tone}`}>
+        {icon}
+      </div>
+      <span className="text-sm font-semibold leading-6 text-slate-500">{label}</span>
     </div>
-    <div className="text-2xl font-bold text-slate-700">{value}</div>
+    <div className="text-right text-[2rem] font-black tracking-tight text-slate-700">
+      {value}
+    </div>
   </div>
 );
 
