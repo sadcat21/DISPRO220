@@ -294,8 +294,27 @@ const LoginForm: React.FC = () => {
       .map((worker) => [worker.branch_id, { id: worker.branch_id!, name: worker.branch_name! }])
   ).values()].sort((a, b) => a.name.localeCompare(b.name, 'ar'));
 
+  const groupQuickWorkers = (workers: QuickWorker[]) => {
+    const grouped = new Map<string, QuickWorker[]>();
+
+    workers.forEach((worker) => {
+      const groupKey = getQuickWorkerGroupKey(worker);
+      const current = grouped.get(groupKey) || [];
+      current.push(worker);
+      grouped.set(groupKey, current);
+    });
+
+    return QUICK_GROUP_ORDER
+      .map((groupKey) => ({
+        key: groupKey,
+        workers: (grouped.get(groupKey) || []).sort((a, b) => a.full_name.localeCompare(b.full_name, 'ar')),
+      }))
+      .filter((group) => group.workers.length > 0);
+  };
+
   const renderQuickWorkerCard = (worker: QuickWorker, isRealMode: boolean) => {
     const WorkerIcon = getWorkerIcon(worker);
+    const groupMeta = QUICK_GROUP_META[getQuickWorkerGroupKey(worker)] || QUICK_GROUP_META.worker;
 
     return (
       <button
@@ -305,7 +324,7 @@ const LoginForm: React.FC = () => {
         onClick={() => doLogin(worker.username, worker.username, true)}
         className={`group flex min-h-[168px] flex-col items-center text-center transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
           isRealMode
-            ? 'min-h-[132px] justify-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-3.5 hover:border-red-300 hover:bg-red-50/40'
+            ? `min-h-[132px] justify-center gap-2 rounded-xl border bg-white px-2.5 py-3.5 ${groupMeta.cardClass}`
             : 'justify-between rounded-2xl border-2 border-slate-200 bg-white px-3 py-4 hover:border-slate-300 hover:bg-slate-50 hover:shadow-md'
         }`}
       >
@@ -335,6 +354,32 @@ const LoginForm: React.FC = () => {
           </div>
         )}
       </button>
+    );
+  };
+
+  const renderQuickWorkerGroups = (workers: QuickWorker[]) => {
+    const groupedWorkers = groupQuickWorkers(workers);
+
+    return (
+      <div className="space-y-3">
+        {groupedWorkers.map((group) => {
+          const groupMeta = QUICK_GROUP_META[group.key] || QUICK_GROUP_META.worker;
+
+          return (
+            <div key={group.key} className="space-y-2">
+              <div className={`flex items-center justify-between rounded-xl border px-3 py-2 text-xs font-semibold ${groupMeta.sectionClass}`}>
+                <span>{groupMeta.label}</span>
+                <span className={`rounded-full px-2 py-0.5 text-[11px] ${groupMeta.badgeClass}`}>
+                  {group.workers.length}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {group.workers.map((worker) => renderQuickWorkerCard(worker, true))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     );
   };
 
