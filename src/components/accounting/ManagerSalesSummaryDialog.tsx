@@ -243,6 +243,7 @@ const fetchWorkerSalesSummary = async (
   periodStart?: string | null,
   periodEnd?: string | null,
   lastAccounting?: string | null,
+  branchId?: string | null,
 ) => {
   const baseQuery = () =>
     supabase
