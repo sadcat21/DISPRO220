@@ -387,47 +387,54 @@ const LoginForm: React.FC = () => {
 
           <div className="max-h-[60vh] overflow-y-auto px-4 py-4">
             {quickWorkers.length > 0 ? (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {quickWorkers.map((worker) => {
-                  const WorkerIcon = getWorkerIcon(worker);
-                  const isRealMode = quickLoginMode === 'real';
+              quickLoginMode === 'real' ? (
+                <Tabs value={realQuickTab} onValueChange={setRealQuickTab} dir={dir}>
+                  <TabsList className="mb-4 h-auto w-full justify-start gap-2 rounded-xl bg-slate-100 p-1">
+                    <TabsTrigger value="admins" className="rounded-lg px-3 text-xs data-[state=active]:bg-white data-[state=active]:text-red-600">
+                      الإداريون
+                    </TabsTrigger>
+                    {branchQuickTabs.map((branch) => (
+                      <TabsTrigger
+                        key={branch.id}
+                        value={branch.id}
+                        className="rounded-lg px-3 text-xs data-[state=active]:bg-white data-[state=active]:text-red-600"
+                      >
+                        {branch.name}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
 
-                  return (
-                  <button
-                    key={worker.username}
-                    type="button"
-                    disabled={isLoading}
-                    onClick={() => doLogin(worker.username, worker.username, true)}
-                    className={`group flex min-h-[168px] flex-col items-center text-center transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
-                      isRealMode
-                        ? 'justify-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-5 hover:border-red-300 hover:bg-red-50/40'
-                        : 'justify-between rounded-2xl border-2 border-slate-200 bg-white px-3 py-4 hover:border-slate-300 hover:bg-slate-50 hover:shadow-md'
-                    }`}
-                  >
-                    <div className={`flex h-14 w-14 items-center justify-center text-2xl ring-1 ${
-                      isRealMode
-                        ? 'rounded-xl bg-red-50 ring-red-100'
-                        : 'rounded-2xl bg-slate-100 ring-slate-200'
-                    }`}>
-                      <WorkerIcon className={`h-7 w-7 ${getWorkerIconTone(worker, isRealMode)}`} strokeWidth={2.2} />
-                    </div>
-                    <div className="space-y-1">
-                      <div className="line-clamp-2 text-base font-bold leading-6 text-slate-800">
-                        {worker.full_name}
+                  <TabsContent value="admins" className="mt-0">
+                    {adminQuickWorkers.length > 0 ? (
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                        {adminQuickWorkers.map((worker) => renderQuickWorkerCard(worker, true))}
                       </div>
-                      <div className="line-clamp-2 text-xs leading-5 text-slate-500">
-                        {getWorkerLabel(worker)}
-                      </div>
-                    </div>
-                    {!isRealMode && (
-                      <div className="rounded-lg border border-slate-200 bg-slate-100 px-4 py-1.5 text-sm font-medium text-slate-700 transition-colors group-hover:bg-slate-200">
-                        دخول
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                        لا يوجد حسابات إدارية مفعّلة حاليًا.
                       </div>
                     )}
-                  </button>
-                  );
-                })}
-              </div>
+                  </TabsContent>
+
+                  {branchQuickTabs.map((branch) => {
+                    const branchWorkers = realWorkers.filter((worker) => worker.branch_id === branch.id);
+                    return (
+                      <TabsContent key={branch.id} value={branch.id} className="mt-0 space-y-3">
+                        <div className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
+                          {branch.name} - مدير الفرع والعمال
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                          {branchWorkers.map((worker) => renderQuickWorkerCard(worker, true))}
+                        </div>
+                      </TabsContent>
+                    );
+                  })}
+                </Tabs>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {quickWorkers.map((worker) => renderQuickWorkerCard(worker, false))}
+                </div>
+              )
             ) : (
               <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
                 {quickLoginMode === 'test'
