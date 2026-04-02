@@ -41,6 +41,8 @@ interface ProductAgg {
   totalAmount: number;
   piecesPerBox: number | null;
   imageUrl: string | null;
+  warehouseQuantity?: number;
+  workerStockQuantity?: number;
   customers: CustomerBreakdown[];
 }
 
@@ -216,6 +218,8 @@ const mergeProducts = (summaries: WorkerSummary[]): ProductAgg[] => {
       current.quantity += item.quantity;
       current.giftQuantity += item.giftQuantity;
       current.totalAmount += item.totalAmount;
+      current.warehouseQuantity = item.warehouseQuantity ?? current.warehouseQuantity ?? 0;
+      current.workerStockQuantity = item.workerStockQuantity ?? current.workerStockQuantity ?? 0;
 
       for (const customer of item.customers) {
         const existing = current.customers.find((c) => c.customerId === customer.customerId);
@@ -276,7 +280,7 @@ const fetchWorkerSalesSummary = async (
     return { items: [] as ProductAgg[], orderCount: 0, firstOrderTime: null, lastOrderTime: null };
   }
 
-  const orderIds = orders.map((o) => o.id);
+      const orderIds = orders.map((o) => o.id);
   const orderCustomerMap = new Map(orders.map((o) => [o.id, o.customer_id]));
   const orderTimeMap = new Map(orders.map((o) => [o.id, o.updated_at]));
 
@@ -286,6 +290,41 @@ const fetchWorkerSalesSummary = async (
     .in('order_id', orderIds);
 
   if (itemsError) throw itemsError;
+
+  const productIds = [...new Set((items || []).map((item) => item.product_id).filter(Boolean))];
+  const [warehouseStockResult, workerStockResult] = await Promise.all([
+    productIds.length > 0
+      ? (() => {
+          let query = supabase
+            .from('warehouse_stock')
+            .select('product_id, quantity');
+          if (branchId) query = query.eq('branch_id', branchId);
+          return query.in('product_id', productIds);
+        })()
+      : Promise.resolve({ data: [], error: null } as any),
+    productIds.length > 0
+      ? (() => {
+          let query = supabase
+            .from('worker_stock')
+            .select('product_id, quantity');
+          if (branchId) query = query.eq('branch_id', branchId);
+          return query.in('product_id', productIds);
+        })()
+      : Promise.resolve({ data: [], error: null } as any),
+  ]);
+
+  if (warehouseStockResult.error) throw warehouseStockResult.error;
+  if (workerStockResult.error) throw workerStockResult.error;
+
+  const warehouseQtyMap = new Map<string, number>();
+  for (const row of warehouseStockResult.data || []) {
+    warehouseQtyMap.set(row.product_id, (warehouseQtyMap.get(row.product_id) || 0) + Number(row.quantity || 0));
+  }
+
+  const workerStockQtyMap = new Map<string, number>();
+  for (const row of workerStockResult.data || []) {
+    workerStockQtyMap.set(row.product_id, (workerStockQtyMap.get(row.product_id) || 0) + Number(row.quantity || 0));
+  }
 
   const customerIds = [...new Set(orders.map((o) => o.customer_id).filter(Boolean))];
   const { data: customers } = customerIds.length > 0
@@ -310,6 +349,8 @@ const fetchWorkerSalesSummary = async (
         totalAmount: 0,
         piecesPerBox: product?.pieces_per_box || null,
         imageUrl: product?.image_url || null,
+        warehouseQuantity: warehouseQtyMap.get(item.product_id) || 0,
+        workerStockQuantity: workerStockQtyMap.get(item.product_id) || 0,
         customers: [],
       };
     }
@@ -485,6 +526,7 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
             normalized ? periodStart : null,
             normalized ? periodEnd : null,
             lastAccounting,
+            branchId || null,
           );
 
           let calc = salesSummary.calc || emptyCalc();
@@ -733,7 +775,7 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
               <ScrollArea className="h-full">
                 <div className="grid grid-cols-2 gap-2.5 px-3 py-4 sm:gap-3 sm:px-4 md:grid-cols-3">
                   {aggregate.items.map((item) => (
-                    <div key={item.productId} className="flex flex-col overflow-hidden rounded-2xl border-2 border-slate-200 bg-white shadow-lg transition-all hover:border-primary/40">
+                    <div key={item.productId} dir="rtl" className="flex flex-col overflow-hidden rounded-2xl border-2 border-slate-200 bg-white shadow-lg transition-all hover:border-primary/40">
                       <div className="border-b border-slate-200 bg-slate-50 px-2.5 py-2 text-center">
                         <span className="block truncate text-xs font-bold text-slate-800 sm:text-sm">
                           {item.name}
@@ -762,6 +804,20 @@ const ManagerSalesSummaryDialog: React.FC<Props> = ({ open, onOpenChange, branch
                         </div>
                         <div className="flex items-center justify-center rounded-md bg-slate-100 py-1.5 text-[10px] font-semibold text-slate-600 sm:text-xs">
                           {fmtMoney(item.totalAmount)}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-right">
+                          <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-2.5 py-2">
+                            <div className="text-[10px] font-medium text-emerald-700">المخزون</div>
+                            <div className="mt-1 text-sm font-bold text-emerald-900">
+                              {(item.warehouseQuantity || 0).toLocaleString('ar-DZ')}
+                            </div>
+                          </div>
+                          <div className="rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-2">
+                            <div className="text-[10px] font-medium text-blue-700">رصيد العمال</div>
+                            <div className="mt-1 text-sm font-bold text-blue-900">
+                              {(item.workerStockQuantity || 0).toLocaleString('ar-DZ')}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
