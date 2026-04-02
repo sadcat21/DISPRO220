@@ -267,7 +267,7 @@ const LoginForm: React.FC = () => {
 
       <Dialog open={isQuickLoginOpen} onOpenChange={(open) => setQuickLoginMode(open ? quickLoginMode : 'none')}>
         <DialogContent className="max-w-md border-0 bg-white/95 p-0 shadow-2xl backdrop-blur" dir={dir}>
-          <DialogHeader className="border-b border-slate-200 bg-gradient-to-l from-purple-600 via-fuchsia-600 to-rose-500 px-6 py-5 text-white">
+          <DialogHeader className={`border-b border-slate-200 px-6 py-5 text-white ${quickLoginMode === 'test' ? 'bg-gradient-to-l from-purple-600 via-fuchsia-600 to-rose-500' : 'bg-red-600'}`}>
             <DialogTitle className="flex items-center justify-center gap-2 text-xl font-bold">
               {quickLoginMode === 'test' ? <FlaskConical className="h-5 w-5" /> : <span className="text-lg">🔑</span>}
               {quickLoginMode === 'test' ? 'دخول سريع تجريبي' : 'دخول سريع حقيقي'}
