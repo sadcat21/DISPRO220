@@ -13,7 +13,6 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDate } from '@/utils/formatters';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCustomerDebts, useCreateDebt } from '@/hooks/useCustomerDebts';
-import { useWorkerPermissions } from '@/hooks/usePermissions';
 import { CustomerDebtWithDetails } from '@/types/accounting';
 import DebtDetailsDialog from '@/components/debts/DebtDetailsDialog';
 import PendingDocumentsSection from '@/components/debts/PendingDocumentsSection';
@@ -58,7 +57,6 @@ const CustomerDebts: React.FC = () => {
   const { t, language } = useLanguage();
   const { role, workerId } = useAuth();
   const isAdmin = isAdminRole(role);
-  const isCollectDebtHidden = useIsElementHidden('button', 'collect_debt_btn');
   const [activeTab, setActiveTab] = useState<'debts' | 'documents'>('debts');
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
