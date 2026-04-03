@@ -524,7 +524,13 @@ const ManagerTreasury = () => {
                 </div>
                 <PickerSection label="💶 Espèces" items={pickedCash} onOpen={() => setPickerType('cash')} onRemove={(id) => setPickedCash(p => p.filter(i => i.order_id !== id))} currency={cur} />
                 <PickerSection label={`📝 ${t('treasury.checks')}`} items={pickedChecks} onOpen={() => setPickerType('check')} onRemove={(id) => setPickedChecks(p => p.filter(i => i.order_id !== id))} currency={cur} />
-                <PickerSection label={`🧾 ${t('treasury.versement')}`} items={pickedReceipts} onOpen={() => setPickerType('receipt')} onRemove={(id) => setPickedReceipts(p => p.filter(i => i.order_id !== id))} currency={cur} />
+                <div className="rounded-xl border border-purple-200/70 bg-purple-50/50 p-3">
+                  <div className="mb-3">
+                    <p className="text-sm font-semibold text-purple-900">Versement Doc</p>
+                    <p className="text-[11px] text-purple-700">العمليات التي قدّم فيها العميل وصل Versement فعليًا</p>
+                  </div>
+                  <PickerSection label="Versement Doc" items={pickedReceipts} onOpen={() => setPickerType('receipt')} onRemove={(id) => setPickedReceipts(p => p.filter(i => i.order_id !== id))} currency={cur} />
+                </div>
                 <PickerSection label={`🏦 ${t('treasury.virement')}`} items={pickedTransfers} onOpen={() => setPickerType('transfer')} onRemove={(id) => setPickedTransfers(p => p.filter(i => i.order_id !== id))} currency={cur} />
                 
                 <div className="rounded-xl border border-fuchsia-200/70 bg-fuchsia-50/50 p-3">
