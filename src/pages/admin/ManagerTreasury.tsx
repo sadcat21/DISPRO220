@@ -298,14 +298,20 @@ const ManagerTreasury = () => {
   const checksAmount = pickedChecks.reduce((s, i) => s + i.amount, 0);
   const pureCashInvoice1Amount = pickedCash.reduce((s, i) => s + i.amount, 0);
   const receiptCashAmount = pickedReceiptCash.reduce((s, i) => s + i.amount, 0);
+  const remainingInvoice1BaseAmount = Math.max((summary?.cash_invoice1 || 0) - (summary?.cash_invoice1_handed || 0), 0);
+  const remainingInvoice1StampAmount = remainingInvoice1BaseAmount > 0 && (summary?.cash_invoice1 || 0) > 0
+    ? ((summary?.cash_invoice1_stamp || 0) * remainingInvoice1BaseAmount) / (summary?.cash_invoice1 || 1)
+    : 0;
   const invoice1CashAmount = pureCashInvoice1Amount + receiptCashAmount;
+  const invoice1CashAmountWithStamp = invoice1CashAmount + remainingInvoice1StampAmount;
   const receiptsAmount = pickedReceipts.reduce((s, i) => s + i.amount, 0);
   const transfersAmount = pickedTransfers.reduce((s, i) => s + i.amount, 0);
   const deliveredCashAmount = Number(handoverForm.cash_delivered || 0);
-  const invoice2CashAmount = Math.max(0, deliveredCashAmount - invoice1CashAmount);
+  const availableInvoice2CashAmount = Math.max((summary?.cash_invoice2 || 0) - (summary?.cash_invoice2_handed || 0), 0);
+  const invoice2CashAmount = Math.max(0, deliveredCashAmount - invoice1CashAmountWithStamp);
 
   const handleHandover = async () => {
-    const finalCash1 = invoice1CashAmount;
+    const finalCash1 = invoice1CashAmountWithStamp;
     const finalCash2 = invoice2CashAmount;
     if (deliveredCashAmount < finalCash1) {
       toast.error('الكاش المسلم يجب أن يكون أكبر من أو يساوي كاش فاتورة 1');
