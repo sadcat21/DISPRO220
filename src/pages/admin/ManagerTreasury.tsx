@@ -483,27 +483,34 @@ const ManagerTreasury = () => {
                     <p className="font-medium text-sm">💵 {t('treasury.cash')}</p>
                     <div className="flex items-center gap-2">
                       <Label className="text-xs">{t('treasury.unified_cash') || 'موحد'}</Label>
-                      <Switch checked={unifiedCash} onCheckedChange={setUnifiedCash} />
+                      <Badge variant="outline" className="text-[10px]">حساب تلقائي</Badge>
                     </div>
                   </div>
-                  {unifiedCash ? (
-                    <div>
-                      <Label className="text-xs">{t('treasury.cash_amount') || 'المبلغ النقدي'}</Label>
-                      <Input type="number" placeholder="0" value={unifiedCashAmount} onChange={e => setUnifiedCashAmount(e.target.value)} />
+                  <div>
+                    <Label className="text-xs">الكاش المسلم</Label>
+                    <Input type="number" placeholder="0" value={handoverForm.cash_delivered} onChange={e => setHandoverForm(f => ({ ...f, cash_delivered: e.target.value }))} />
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                      <p className="text-[11px] text-emerald-700">{t('treasury.cash_invoice1')}</p>
+                      <p className="mt-1 text-lg font-bold text-emerald-600">{invoice1CashAmount.toLocaleString()} {cur}</p>
                     </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-2">
-                      <div><Label className="text-xs">{t('treasury.cash_invoice1')}</Label><Input type="number" placeholder="0" value={handoverForm.cash_invoice1} onChange={e => setHandoverForm(f => ({ ...f, cash_invoice1: e.target.value }))} /></div>
-                      <div><Label className="text-xs">{t('treasury.cash_invoice2')}</Label><Input type="number" placeholder="0" value={handoverForm.cash_invoice2} onChange={e => setHandoverForm(f => ({ ...f, cash_invoice2: e.target.value }))} /></div>
+                    <div className="rounded-xl border border-sky-200 bg-sky-50 p-3">
+                      <p className="text-[11px] text-sky-700">{t('treasury.cash_invoice2')}</p>
+                      <p className="mt-1 text-lg font-bold text-sky-600">{invoice2CashAmount.toLocaleString()} {cur}</p>
                     </div>
+                  </div>
+                  {deliveredCashAmount > 0 && deliveredCashAmount < invoice1CashAmount && (
+                    <p className="text-xs font-medium text-destructive">الكاش المسلم أقل من كاش فاتورة 1 المحدد.</p>
                   )}
                 </div>
+                <PickerSection label="💶 Espèces" items={pickedCash} onOpen={() => setPickerType('cash')} onRemove={(id) => setPickedCash(p => p.filter(i => i.order_id !== id))} currency={cur} />
                 <PickerSection label={`📝 ${t('treasury.checks')}`} items={pickedChecks} onOpen={() => setPickerType('check')} onRemove={(id) => setPickedChecks(p => p.filter(i => i.order_id !== id))} currency={cur} />
                 <PickerSection label={`🧾 ${t('treasury.versement')}`} items={pickedReceipts} onOpen={() => setPickerType('receipt')} onRemove={(id) => setPickedReceipts(p => p.filter(i => i.order_id !== id))} currency={cur} />
                 <PickerSection label={`🏦 ${t('treasury.virement')}`} items={pickedTransfers} onOpen={() => setPickerType('transfer')} onRemove={(id) => setPickedTransfers(p => p.filter(i => i.order_id !== id))} currency={cur} />
                 
                 {(() => {
-                  const cashTotal = unifiedCash ? Number(unifiedCashAmount || 0) : (Number(handoverForm.cash_invoice1 || 0) + Number(handoverForm.cash_invoice2 || 0));
+                  const cashTotal = deliveredCashAmount;
                   const grandTotal = cashTotal + checksAmount + receiptsAmount + transfersAmount;
                   return grandTotal > 0 ? (
                   <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
