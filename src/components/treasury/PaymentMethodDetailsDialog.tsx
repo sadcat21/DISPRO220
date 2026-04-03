@@ -70,6 +70,22 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
     queryKey: ['treasury-details', category, activeBranch?.id, stampTiers?.length],
     enabled: open && (isCashInvoice1 ? !!stampTiers : true),
     queryFn: async () => {
+      let handedQuery = supabase
+        .from('handover_items')
+        .select('order_id, payment_method, handover:manager_handovers!inner(branch_id)');
+      if (activeBranch?.id) handedQuery = handedQuery.eq('handover.branch_id', activeBranch.id);
+      const { data: handedItems, error: handedError } = await handedQuery;
+      if (handedError) throw handedError;
+
+      const handedByOrder = new Map<string, Set<string>>();
+      for (const item of handedItems || []) {
+        if (!item.order_id) continue;
+        if (!handedByOrder.has(item.order_id)) {
+          handedByOrder.set(item.order_id, new Set());
+        }
+        handedByOrder.get(item.order_id)!.add(String(item.payment_method || ''));
+      }
+
       let query = supabase
         .from('orders')
         .select(
@@ -106,6 +122,17 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
 
       (data || []).forEach((o: any) => {
         const receiptBucket = resolveReceiptBucket(o.document_verification);
+        const handedMethods = handedByOrder.get(o.id) || new Set<string>();
+
+        const isHandedForCategory =
+          (category === 'cash_invoice1' && handedMethods.has('cash')) ||
+          (category === 'check' && handedMethods.has('check')) ||
+          (category === 'bank_receipt' && handedMethods.has('receipt')) ||
+          (category === 'bank_transfer' && handedMethods.has('transfer')) ||
+          (category === 'bank_receipt_cash' &&
+            (handedMethods.has('receipt_cash') || handedMethods.has('cash') || handedMethods.has('receipt')));
+
+        if (isHandedForCategory) return;
         if (category === 'bank_receipt_cash' && receiptBucket !== 'cash') return;
         if (category === 'bank_receipt' && receiptBucket !== 'doc') return;
 
