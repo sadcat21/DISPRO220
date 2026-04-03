@@ -19,13 +19,14 @@ export interface PickedItem {
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  paymentMethod: 'check' | 'receipt' | 'transfer' | 'cash';
+  paymentMethod: 'check' | 'receipt' | 'receipt_cash' | 'transfer' | 'cash';
   onConfirm: (items: PickedItem[]) => void;
 }
 
 const labels: Record<string, string> = {
   check: 'Chèques',
-  receipt: 'Versement',
+  receipt: 'Versement Doc',
+  receipt_cash: 'Versement Cash',
   transfer: 'Virement',
   cash: 'Espèces',
 };
