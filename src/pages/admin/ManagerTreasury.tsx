@@ -503,13 +503,13 @@ const ManagerTreasury = () => {
                     <Label className="text-xs">الكاش المسلم</Label>
                     <Input type="number" placeholder="0" value={handoverForm.cash_delivered} onChange={e => setHandoverForm(f => ({ ...f, cash_delivered: e.target.value }))} />
                     <div className="mt-2 flex flex-wrap gap-1.5">
-                      <Button type="button" size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => setHandoverForm(f => ({ ...f, cash_delivered: String(invoice1CashAmount) }))}>
+                      <Button type="button" size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => setHandoverForm(f => ({ ...f, cash_delivered: String(invoice1CashAmountWithStamp) }))}>
                         إدراج فاتورة 1
                       </Button>
-                      <Button type="button" size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => setHandoverForm(f => ({ ...f, cash_delivered: String(invoice2CashAmount) }))}>
+                      <Button type="button" size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => setHandoverForm(f => ({ ...f, cash_delivered: String(availableInvoice2CashAmount) }))}>
                         إدراج فاتورة 2
                       </Button>
-                      <Button type="button" size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => setHandoverForm(f => ({ ...f, cash_delivered: String(invoice1CashAmount + invoice2CashAmount) }))}>
+                      <Button type="button" size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => setHandoverForm(f => ({ ...f, cash_delivered: String(invoice1CashAmountWithStamp + availableInvoice2CashAmount) }))}>
                         إدراج المجموع
                       </Button>
                     </div>
@@ -517,14 +517,14 @@ const ManagerTreasury = () => {
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
                       <p className="text-[11px] text-emerald-700">{t('treasury.cash_invoice1')} + Versement Cash</p>
-                      <p className="mt-1 text-lg font-bold text-emerald-600">{invoice1CashAmount.toLocaleString()} {cur}</p>
+                      <p className="mt-1 text-lg font-bold text-emerald-600">{invoice1CashAmountWithStamp.toLocaleString()} {cur}</p>
                     </div>
                     <div className="rounded-xl border border-sky-200 bg-sky-50 p-3">
                       <p className="text-[11px] text-sky-700">{t('treasury.cash_invoice2')}</p>
-                      <p className="mt-1 text-lg font-bold text-sky-600">{invoice2CashAmount.toLocaleString()} {cur}</p>
+                      <p className="mt-1 text-lg font-bold text-sky-600">{availableInvoice2CashAmount.toLocaleString()} {cur}</p>
                     </div>
                   </div>
-                  {deliveredCashAmount > 0 && deliveredCashAmount < invoice1CashAmount && (
+                  {deliveredCashAmount > 0 && deliveredCashAmount < invoice1CashAmountWithStamp && (
                     <p className="text-xs font-medium text-destructive">الكاش المسلم أقل من كاش فاتورة 1 المحدد.</p>
                   )}
                 </div>
