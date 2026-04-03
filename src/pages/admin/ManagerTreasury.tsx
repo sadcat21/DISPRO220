@@ -69,6 +69,17 @@ const ManagerTreasury = () => {
 
   const cur = t('treasury.currency');
   const dateLocale = language === 'ar' ? ar : language === 'fr' ? fr : enUS;
+  const paymentMethodLabels: Record<string, { label: string; icon: any }> = {
+    cash_invoice1: { label: t('treasury.cash_invoice1'), icon: Banknote },
+    cash_invoice2: { label: t('treasury.cash_invoice2'), icon: Coins },
+    check: { label: t('treasury.check'), icon: CreditCard },
+    bank_receipt_cash: { label: 'Versement Cash', icon: Receipt },
+    bank_receipt: { label: 'Versement Doc', icon: Receipt },
+    bank_transfer: { label: t('treasury.virement'), icon: ArrowUpRight },
+    cash: { label: 'Espèces', icon: Banknote },
+    receipt: { label: 'Versement Doc', icon: Receipt },
+    transfer: { label: t('treasury.virement'), icon: ArrowUpRight },
+  };
 
   const getItemTypeLabel = (key: string) => {
     const tKey = `treasury.item.${key}`;
