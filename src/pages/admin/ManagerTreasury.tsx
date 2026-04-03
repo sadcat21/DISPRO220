@@ -672,6 +672,7 @@ const ManagerTreasury = () => {
       )}
 
       <StampDetailsDialog open={stampOpen} onOpenChange={setStampOpen} />
+      <UncollectedDebtsDialog open={uncollectedDebtsOpen} onOpenChange={setUncollectedDebtsOpen} />
 
       {/* Sales & Debts Summary */}
       <Card className="border-muted">
