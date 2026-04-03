@@ -55,19 +55,16 @@ const HandoverItemPickerDialog = ({ open, onOpenChange, paymentMethod, onConfirm
         const { data, error } = await baseQuery().in('invoice_payment_method', ['cash', 'receipt', 'transfer']);
         if (error) throw error;
         orders = (data || []).filter((order: any) => {
-          if (order.invoice_payment_method === 'cash') return true;
-          if (order.invoice_payment_method === 'receipt') {
-            return resolveReceiptBucket(order.document_verification) === 'cash';
-          }
-          if (order.invoice_payment_method === 'transfer') {
-            return isTransferPaidByCash(order.document_verification);
-          }
-          return false;
+          return order.invoice_payment_method === 'cash';
         });
       } else {
-        const { data, error } = await baseQuery().eq('invoice_payment_method', paymentMethod);
+        const invoiceMethod = paymentMethod === 'receipt_cash' ? 'receipt' : paymentMethod;
+        const { data, error } = await baseQuery().eq('invoice_payment_method', invoiceMethod);
         if (error) throw error;
         orders = (data || []).filter((order: any) => {
+          if (paymentMethod === 'receipt_cash') {
+            return resolveReceiptBucket(order.document_verification) === 'cash';
+          }
           if (paymentMethod === 'receipt') {
             return resolveReceiptBucket(order.document_verification) === 'doc';
           }
