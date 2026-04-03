@@ -119,6 +119,7 @@ const ManagerTreasury = () => {
   const [handoverForm, setHandoverForm] = useState({ cash_invoice1: '', cash_invoice2: '', cash_delivered: '', notes: '', delivery_method: 'direct', intermediary_name: '', bank_transfer_reference: '', received_by: '', bank_account_id: '', receipt_image_url: '' });
   const [pickedChecks, setPickedChecks] = useState<PickedItem[]>([]);
   const [pickedCash, setPickedCash] = useState<PickedItem[]>([]);
+  const [pickedReceiptCash, setPickedReceiptCash] = useState<PickedItem[]>([]);
   const [pickedReceipts, setPickedReceipts] = useState<PickedItem[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [coinExchangeOpen, setCoinExchangeOpen] = useState(false);
@@ -135,7 +136,7 @@ const ManagerTreasury = () => {
     },
   });
   const [pickedTransfers, setPickedTransfers] = useState<PickedItem[]>([]);
-  const [pickerType, setPickerType] = useState<'check' | 'receipt' | 'transfer' | 'cash' | null>(null);
+  const [pickerType, setPickerType] = useState<'check' | 'receipt' | 'receipt_cash' | 'transfer' | 'cash' | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [printHandover, setPrintHandover] = useState<string | null>(null);
   const [viewHandover, setViewHandover] = useState<string | null>(null);
