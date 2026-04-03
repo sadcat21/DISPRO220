@@ -506,7 +506,7 @@ const ManagerTreasury = () => {
                       <Button type="button" size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => setHandoverForm(f => ({ ...f, cash_delivered: String(invoice1CashAmountWithStamp) }))}>
                         إدراج فاتورة 1
                       </Button>
-                      <Button type="button" size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => setHandoverForm(f => ({ ...f, cash_delivered: String(availableInvoice2CashAmount) }))}>
+                      <Button type="button" size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => setHandoverForm(f => ({ ...f, cash_delivered: String(invoice1CashAmountWithStamp + availableInvoice2CashAmount) }))}>
                         إدراج فاتورة 2
                       </Button>
                       <Button type="button" size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => setHandoverForm(f => ({ ...f, cash_delivered: String(invoice1CashAmountWithStamp + availableInvoice2CashAmount) }))}>
