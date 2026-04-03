@@ -362,12 +362,15 @@ const ManagerTreasury = () => {
 
   return (
     <div className="p-4 space-y-4 pb-24" dir={dir}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
           <h1 className="text-xl font-bold">{t('treasury.title')}</h1>
-          <Switch checked={showCardDetails} onCheckedChange={setShowCardDetails} />
+          <div className="flex items-center gap-2 rounded-full border border-border bg-muted/40 px-2.5 py-1.5">
+            <span className="text-[11px] font-medium text-muted-foreground">تفاصيل</span>
+            <Switch checked={showCardDetails} onCheckedChange={setShowCardDetails} />
+          </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {!isSettingsHidden && (
             <Button size="sm" variant="ghost" onClick={() => setSettingsOpen(true)}>
               <Settings className="w-4 h-4" />
