@@ -54,7 +54,7 @@ const getNextCollectionDate = (debt: CustomerDebtWithDetails): string | null => 
 
 const CustomerDebts: React.FC = () => {
   const { t, language } = useLanguage();
-  const { role, workerId } = useAuth();
+  const { role, workerId, activeBranch } = useAuth();
   const isAdmin = isAdminRole(role);
   const [activeTab, setActiveTab] = useState<'debts' | 'documents'>('debts');
   const [statusFilter, setStatusFilter] = useState('all');
