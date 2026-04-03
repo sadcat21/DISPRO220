@@ -523,7 +523,12 @@ const ManagerTreasury = () => {
                   )}
                 </div>
                 <PickerSection label="💶 Espèces" items={pickedCash} onOpen={() => setPickerType('cash')} onRemove={(id) => setPickedCash(p => p.filter(i => i.order_id !== id))} currency={cur} />
-                <PickerSection label={`📝 ${t('treasury.checks')}`} items={pickedChecks} onOpen={() => setPickerType('check')} onRemove={(id) => setPickedChecks(p => p.filter(i => i.order_id !== id))} currency={cur} />
+                <div className="rounded-xl border border-blue-200/70 bg-blue-50/40 p-3">
+                  <div className="mb-3">
+                    <p className="text-sm font-semibold text-blue-900">المستندات</p>
+                    <p className="text-[11px] text-blue-700">الشيكات والتحويلات والمستندات البنكية المسلّمة</p>
+                  </div>
+                  <PickerSection label={t('treasury.checks')} items={pickedChecks} onOpen={() => setPickerType('check')} onRemove={(id) => setPickedChecks(p => p.filter(i => i.order_id !== id))} currency={cur} />
                 <div className="rounded-xl border border-purple-200/70 bg-purple-50/50 p-3">
                   <div className="mb-3">
                     <p className="text-sm font-semibold text-purple-900">Versement Doc</p>
