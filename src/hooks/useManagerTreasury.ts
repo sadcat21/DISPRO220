@@ -290,7 +290,7 @@ export const useTreasurySummary = () => {
           summary.cash_invoice1_handed += amount;
         }
 
-        if (item.payment_method === 'cash' && order.invoice_payment_method === 'receipt' && receiptBucket === 'cash') {
+        if ((item.payment_method === 'cash' || item.payment_method === 'receipt_cash') && order.invoice_payment_method === 'receipt' && receiptBucket === 'cash') {
           summary.cash_invoice1_handed -= amount;
           summary.receipt_cash_handed += amount;
         }
