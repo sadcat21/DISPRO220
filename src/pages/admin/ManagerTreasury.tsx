@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Banknote, CreditCard, Receipt, ArrowUpRight, FilePlus, Send, Coins, TrendingUp, AlertCircle, CheckCircle, AlertTriangle, Info, RefreshCw, Printer, Eye, Pencil, Trash2, Settings, Download, Image, Table2, ArrowLeftRight } from 'lucide-react';
+import { Banknote, CreditCard, Receipt, ArrowUpRight, FilePlus, Send, Coins, TrendingUp, AlertCircle, CheckCircle, AlertTriangle, Info, RefreshCw, Printer, Eye, Pencil, Trash2, Settings, Download, Image, Table2 } from 'lucide-react';
 import { generatePDF } from '@/utils/generatePDF';
 import { generateImage } from '@/utils/generateImage';
 import { toast } from 'sonner';
@@ -59,7 +59,6 @@ const ManagerTreasury = () => {
   const { activeBranch, workerId } = useAuth();
   const queryClient = useQueryClient();
   const { data: summary, isLoading: summaryLoading } = useTreasurySummary();
-  const isCoinExchangeHidden = useIsElementHidden('button', 'treasury_coin_exchange');
   const isInvoiceRequestHidden = useIsElementHidden('button', 'treasury_invoice_request');
   const isSettingsHidden = useIsElementHidden('button', 'treasury_settings');
   const { data: entries } = useManagerTreasury();
@@ -112,10 +111,9 @@ const ManagerTreasury = () => {
   const [stampOpen, setStampOpen] = useState(false);
   const [detailsCategory, setDetailsCategory] = useState<'cash_invoice1' | 'cash_invoice2' | 'check' | 'bank_receipt' | 'bank_transfer' | null>(null);
   const [addForm, setAddForm] = useState({ payment_method: 'cash_invoice1', amount: '', customer_name: '', invoice_number: '', invoice_date: '', check_number: '', check_bank: '', check_date: '', receipt_number: '', transfer_reference: '', notes: '' });
-  const [handoverForm, setHandoverForm] = useState({ cash_invoice1: '', cash_invoice2: '', notes: '', delivery_method: 'direct', intermediary_name: '', bank_transfer_reference: '', received_by: '', bank_account_id: '', receipt_image_url: '' });
-  const [unifiedCash, setUnifiedCash] = useState(true);
-  const [unifiedCashAmount, setUnifiedCashAmount] = useState('');
+  const [handoverForm, setHandoverForm] = useState({ cash_invoice1: '', cash_invoice2: '', cash_delivered: '', notes: '', delivery_method: 'direct', intermediary_name: '', bank_transfer_reference: '', received_by: '', bank_account_id: '', receipt_image_url: '' });
   const [pickedChecks, setPickedChecks] = useState<PickedItem[]>([]);
+  const [pickedCash, setPickedCash] = useState<PickedItem[]>([]);
   const [pickedReceipts, setPickedReceipts] = useState<PickedItem[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [coinExchangeOpen, setCoinExchangeOpen] = useState(false);
@@ -132,7 +130,7 @@ const ManagerTreasury = () => {
     },
   });
   const [pickedTransfers, setPickedTransfers] = useState<PickedItem[]>([]);
-  const [pickerType, setPickerType] = useState<'check' | 'receipt' | 'transfer' | null>(null);
+  const [pickerType, setPickerType] = useState<'check' | 'receipt' | 'transfer' | 'cash' | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [printHandover, setPrintHandover] = useState<string | null>(null);
   const [viewHandover, setViewHandover] = useState<string | null>(null);
