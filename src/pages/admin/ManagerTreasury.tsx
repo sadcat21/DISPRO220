@@ -527,7 +527,13 @@ const ManagerTreasury = () => {
                 <PickerSection label={`🧾 ${t('treasury.versement')}`} items={pickedReceipts} onOpen={() => setPickerType('receipt')} onRemove={(id) => setPickedReceipts(p => p.filter(i => i.order_id !== id))} currency={cur} />
                 <PickerSection label={`🏦 ${t('treasury.virement')}`} items={pickedTransfers} onOpen={() => setPickerType('transfer')} onRemove={(id) => setPickedTransfers(p => p.filter(i => i.order_id !== id))} currency={cur} />
                 
-                <PickerSection label="Versement Cash" items={pickedReceiptCash} onOpen={() => setPickerType('receipt_cash')} onRemove={(id) => setPickedReceiptCash(p => p.filter(i => i.order_id !== id))} currency={cur} />
+                <div className="rounded-xl border border-fuchsia-200/70 bg-fuchsia-50/50 p-3">
+                  <div className="mb-3">
+                    <p className="text-sm font-semibold text-fuchsia-900">Versement Cash</p>
+                    <p className="text-[11px] text-fuchsia-700">العمليات التي دفعها العميل نقدًا رغم أن طريقة الدفع Versement</p>
+                  </div>
+                  <PickerSection label="Versement Cash" items={pickedReceiptCash} onOpen={() => setPickerType('receipt_cash')} onRemove={(id) => setPickedReceiptCash(p => p.filter(i => i.order_id !== id))} currency={cur} />
+                </div>
                 {(() => {
                   const cashTotal = deliveredCashAmount;
                   const grandTotal = cashTotal + checksAmount + receiptsAmount + transfersAmount;
