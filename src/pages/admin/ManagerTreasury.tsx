@@ -290,23 +290,18 @@ const ManagerTreasury = () => {
   };
 
   const checksAmount = pickedChecks.reduce((s, i) => s + i.amount, 0);
+  const invoice1CashAmount = pickedCash.reduce((s, i) => s + i.amount, 0);
   const receiptsAmount = pickedReceipts.reduce((s, i) => s + i.amount, 0);
   const transfersAmount = pickedTransfers.reduce((s, i) => s + i.amount, 0);
+  const deliveredCashAmount = Number(handoverForm.cash_delivered || 0);
+  const invoice2CashAmount = Math.max(0, deliveredCashAmount - invoice1CashAmount);
 
   const handleHandover = async () => {
-    // Calculate cash amounts based on unified or split mode
-    let finalCash1 = Number(handoverForm.cash_invoice1 || 0);
-    let finalCash2 = Number(handoverForm.cash_invoice2 || 0);
-    if (unifiedCash) {
-      const totalCash = Number(unifiedCashAmount || 0);
-      const remainingCash1 = (summary?.cash_invoice1 || 0) - (handovers || []).reduce((s: number, h: any) => s + Number(h.cash_invoice1 || 0), 0);
-      if (totalCash <= remainingCash1) {
-        finalCash1 = totalCash;
-        finalCash2 = 0;
-      } else {
-        finalCash1 = remainingCash1;
-        finalCash2 = totalCash - remainingCash1;
-      }
+    const finalCash1 = invoice1CashAmount;
+    const finalCash2 = invoice2CashAmount;
+    if (deliveredCashAmount < finalCash1) {
+      toast.error('الكاش المسلم يجب أن يكون أكبر من أو يساوي كاش فاتورة 1');
+      return;
     }
     const total = finalCash1 + finalCash2 + checksAmount + receiptsAmount + transfersAmount;
     if (total <= 0) {
@@ -335,12 +330,13 @@ const ManagerTreasury = () => {
         receipt_image_url: null,
         received_by: null,
         receiver_name: handoverForm.received_by || null,
-        unified_cash: unifiedCash,
+        unified_cash: false,
       } as any).select('id').single();
 
       if (error) throw error;
 
       const allItems = [
+        ...pickedCash.map(i => ({ handover_id: handover.id, order_id: i.order_id, payment_method: 'cash', amount: i.amount, customer_name: i.customer_name })),
         ...pickedChecks.map(i => ({ handover_id: handover.id, order_id: i.order_id, payment_method: 'check', amount: i.amount, customer_name: i.customer_name })),
         ...pickedReceipts.map(i => ({ handover_id: handover.id, order_id: i.order_id, payment_method: 'receipt', amount: i.amount, customer_name: i.customer_name })),
         ...pickedTransfers.map(i => ({ handover_id: handover.id, order_id: i.order_id, payment_method: 'transfer', amount: i.amount, customer_name: i.customer_name })),
@@ -351,8 +347,8 @@ const ManagerTreasury = () => {
 
       toast.success(t('treasury.handover_success'));
       setHandoverOpen(false);
-      setHandoverForm({ cash_invoice1: '', cash_invoice2: '', notes: '', delivery_method: 'direct', intermediary_name: '', bank_transfer_reference: '', received_by: '', bank_account_id: '', receipt_image_url: '' });
-      setUnifiedCashAmount('');
+      setHandoverForm({ cash_invoice1: '', cash_invoice2: '', cash_delivered: '', notes: '', delivery_method: 'direct', intermediary_name: '', bank_transfer_reference: '', received_by: '', bank_account_id: '', receipt_image_url: '' });
+      setPickedCash([]);
       setPickedChecks([]);
       setPickedReceipts([]);
       setPickedTransfers([]);
