@@ -499,7 +499,7 @@ const ManagerTreasury = () => {
                   </div>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-                      <p className="text-[11px] text-emerald-700">{t('treasury.cash_invoice1')}</p>
+                      <p className="text-[11px] text-emerald-700">{t('treasury.cash_invoice1')} + Versement Cash</p>
                       <p className="mt-1 text-lg font-bold text-emerald-600">{invoice1CashAmount.toLocaleString()} {cur}</p>
                     </div>
                     <div className="rounded-xl border border-sky-200 bg-sky-50 p-3">
