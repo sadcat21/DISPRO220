@@ -296,7 +296,9 @@ const ManagerTreasury = () => {
   };
 
   const checksAmount = pickedChecks.reduce((s, i) => s + i.amount, 0);
-  const invoice1CashAmount = pickedCash.reduce((s, i) => s + i.amount, 0);
+  const pureCashInvoice1Amount = pickedCash.reduce((s, i) => s + i.amount, 0);
+  const receiptCashAmount = pickedReceiptCash.reduce((s, i) => s + i.amount, 0);
+  const invoice1CashAmount = pureCashInvoice1Amount + receiptCashAmount;
   const receiptsAmount = pickedReceipts.reduce((s, i) => s + i.amount, 0);
   const transfersAmount = pickedTransfers.reduce((s, i) => s + i.amount, 0);
   const deliveredCashAmount = Number(handoverForm.cash_delivered || 0);
