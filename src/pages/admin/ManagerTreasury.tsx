@@ -70,14 +70,6 @@ const ManagerTreasury = () => {
   const cur = t('treasury.currency');
   const dateLocale = language === 'ar' ? ar : language === 'fr' ? fr : enUS;
 
-  const paymentMethodLabels: Record<string, { label: string; icon: any }> = {
-    cash_invoice1: { label: t('treasury.cash_invoice1'), icon: Banknote },
-    cash_invoice2: { label: t('treasury.cash_invoice2'), icon: Coins },
-    check: { label: t('treasury.check'), icon: CreditCard },
-    bank_receipt: { label: t('treasury.versement'), icon: Receipt },
-    bank_transfer: { label: t('treasury.virement'), icon: ArrowUpRight },
-  };
-
   const getItemTypeLabel = (key: string) => {
     const tKey = `treasury.item.${key}`;
     const translated = t(tKey);
@@ -110,7 +102,7 @@ const ManagerTreasury = () => {
   const [showCardDetails, setShowCardDetails] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [stampOpen, setStampOpen] = useState(false);
-  const [detailsCategory, setDetailsCategory] = useState<'cash_invoice1' | 'cash_invoice2' | 'check' | 'bank_receipt' | 'bank_transfer' | null>(null);
+  const [detailsCategory, setDetailsCategory] = useState<'cash_invoice1' | 'cash_invoice2' | 'check' | 'bank_receipt_cash' | 'bank_receipt' | 'bank_transfer' | null>(null);
   const [uncollectedDebtsOpen, setUncollectedDebtsOpen] = useState(false);
   const [addForm, setAddForm] = useState({ payment_method: 'cash_invoice1', amount: '', customer_name: '', invoice_number: '', invoice_date: '', check_number: '', check_bank: '', check_date: '', receipt_number: '', transfer_reference: '', notes: '' });
   const [handoverForm, setHandoverForm] = useState({ cash_invoice1: '', cash_invoice2: '', cash_delivered: '', notes: '', delivery_method: 'direct', intermediary_name: '', bank_transfer_reference: '', received_by: '', bank_account_id: '', receipt_image_url: '' });
@@ -628,7 +620,18 @@ const ManagerTreasury = () => {
         />
         <TreasuryCard
           icon={<Receipt className="w-5 h-5 text-purple-500" />}
-          label={`${t('treasury.versement')} (${summary?.receiptCount || 0})`}
+          label={`Versement Cash (${summary?.receiptCashCount || 0})`}
+          total={summary?.receipt_cash || 0}
+          handed={summary?.receipt_cash_handed || 0}
+          colorClass="fuchsia-500"
+          borderClass="border-fuchsia-500/30 bg-fuchsia-500/5"
+          onClick={() => setDetailsCategory('bank_receipt_cash')}
+          currency={cur}
+          showDetails={showCardDetails}
+        />
+        <TreasuryCard
+          icon={<Receipt className="w-5 h-5 text-purple-500" />}
+          label={`Versement Doc (${summary?.receiptCount || 0})`}
           total={summary?.bank_receipt || 0}
           handed={summary?.receipt_handed || 0}
           colorClass="purple-500"
@@ -735,6 +738,7 @@ const ManagerTreasury = () => {
       {(() => {
         const cashAvailableBeforeHandover =
           (summary?.cash_invoice1 || 0) +
+          (summary?.receipt_cash || 0) +
           (summary?.cash_invoice2 || 0) +
           (summary?.debtCashCollected || 0) -
           (summary?.coinExchangeOut || 0);
