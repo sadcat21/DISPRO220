@@ -173,9 +173,9 @@ export const useTreasurySummary = () => {
       const coinExchangeOut = (coinExchangeTasks || []).filter((t: any) => t.status === 'active').reduce((s: number, t: any) => s + Number(t.coin_amount || 0) - Number(t.returned_amount || 0), 0);
 
       // Get debts
-      let dQuery = supabase.from('customer_debts').select('total_amount, paid_amount, remaining_amount, status');
-      if (activeBranch?.id) dQuery = dQuery.eq('branch_id', activeBranch.id);
-      const { data: debts } = await dQuery;
+      const { data: debts } = await supabase
+        .from('customer_debts')
+        .select('total_amount, paid_amount, remaining_amount, status');
 
       const totalDebts = (debts || []).reduce((s: number, d: any) => s + Number(d.total_amount || 0), 0);
       const collectedDebts = (debts || []).reduce((s: number, d: any) => s + Number(d.paid_amount || 0), 0);

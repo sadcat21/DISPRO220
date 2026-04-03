@@ -69,10 +69,7 @@ const CustomerDebts: React.FC = () => {
   const location = useLocation();
   const createDebt = useCreateDebt();
 
-  const { data: debts, isLoading } = useCustomerDebts({
-    status: statusFilter,
-    branchId: activeBranch?.id,
-  });
+  const { data: debts, isLoading } = useCustomerDebts({ status: statusFilter });
   const { data: customers } = useQuery({
     queryKey: ['customer-debts-customers', activeBranch?.id],
     queryFn: async () => {

@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -37,13 +36,11 @@ interface CustomerDebtGroup {
 }
 
 const UncollectedDebtsDialog = ({ open, onOpenChange }: Props) => {
-  const { activeBranch } = useAuth();
-
   const { data: groups, isLoading } = useQuery({
-    queryKey: ['treasury-uncollected-debts', activeBranch?.id],
+    queryKey: ['treasury-uncollected-debts'],
     enabled: open,
     queryFn: async () => {
-      let query = supabase
+      const query = supabase
         .from('customer_debts')
         .select(`
           id,
@@ -59,8 +56,6 @@ const UncollectedDebtsDialog = ({ open, onOpenChange }: Props) => {
         .in('status', ['active', 'partially_paid'])
         .gt('remaining_amount', 0)
         .order('created_at', { ascending: false });
-
-      if (activeBranch?.id) query = query.eq('branch_id', activeBranch.id);
 
       const { data, error } = await query;
       if (error) throw error;
