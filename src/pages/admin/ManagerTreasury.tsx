@@ -591,6 +591,7 @@ const ManagerTreasury = () => {
               paymentMethod={pickerType}
               onConfirm={(items) => {
                 if (pickerType === 'cash') setPickedCash(prev => [...prev, ...items]);
+                else if (pickerType === 'receipt_cash') setPickedReceiptCash(prev => [...prev, ...items]);
                 else if (pickerType === 'check') setPickedChecks(prev => [...prev, ...items]);
                 else if (pickerType === 'receipt') setPickedReceipts(prev => [...prev, ...items]);
                 else if (pickerType === 'transfer') setPickedTransfers(prev => [...prev, ...items]);
