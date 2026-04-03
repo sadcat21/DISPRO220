@@ -46,8 +46,10 @@ export interface TreasurySummary {
   cash_invoice1: number;
   cash_invoice1_count: number;
   cash_invoice1_stamp: number;
+  cash_invoice1_handed: number;
   cash_invoice2: number;
   cash_invoice2_count: number;
+  cash_invoice2_handed: number;
   check: number;
   checkCount: number;
   check_handed: number;
@@ -124,6 +126,30 @@ export const useTreasurySummary = () => {
       if (activeBranch?.id) hQuery = hQuery.eq('branch_id', activeBranch.id);
       const { data: handovers, error: hErr } = await hQuery;
       if (hErr) throw hErr;
+
+      const handoverIds = (handovers || []).map((handover: any) => handover.id).filter(Boolean);
+      let handoverItems: any[] = [];
+      if (handoverIds.length > 0) {
+        const { data: fetchedItems, error: itemsError } = await supabase
+          .from('handover_items')
+          .select('handover_id, order_id, payment_method, amount')
+          .in('handover_id', handoverIds);
+        if (itemsError) throw itemsError;
+        handoverItems = fetchedItems || [];
+      }
+
+      const handedOrderIds = Array.from(new Set(handoverItems.map((item: any) => item.order_id).filter(Boolean)));
+      const handedOrderMap = new Map<string, any>();
+      if (handedOrderIds.length > 0) {
+        const { data: handedOrders, error: handedOrdersError } = await supabase
+          .from('orders')
+          .select('id, payment_type, invoice_payment_method, document_verification')
+          .in('id', handedOrderIds);
+        if (handedOrdersError) throw handedOrdersError;
+        for (const order of handedOrders || []) {
+          handedOrderMap.set(order.id, order);
+        }
+      }
 
       // Get coins from accounting sessions
       let coinQuery = supabase
@@ -226,8 +252,8 @@ export const useTreasurySummary = () => {
       const handedTransfersCount = (handovers || []).reduce((s: number, h: any) => s + Number(h.transfer_count || 0), 0);
 
       const summary: TreasurySummary = {
-        cash_invoice1: 0, cash_invoice1_count: 0, cash_invoice1_stamp: 0,
-        cash_invoice2: 0, cash_invoice2_count: 0,
+        cash_invoice1: 0, cash_invoice1_count: 0, cash_invoice1_stamp: 0, cash_invoice1_handed: (handovers || []).reduce((s: number, h: any) => s + Number(h.cash_invoice1 || 0), 0),
+        cash_invoice2: 0, cash_invoice2_count: 0, cash_invoice2_handed: (handovers || []).reduce((s: number, h: any) => s + Number(h.cash_invoice2 || 0), 0),
         check: 0, checkCount: 0,
         check_handed: handedChecks, check_handed_count: handedChecksCount,
         bank_receipt: 0, receiptCount: 0,
@@ -241,6 +267,24 @@ export const useTreasurySummary = () => {
         totalSales, totalDebts, collectedDebts, uncollectedDebts, debtCashCollected, totalExpenses, totalGiftsValue,
         workerHeldAmount, orderUnpaidAmount,
       };
+
+      for (const item of handoverItems) {
+        const order = handedOrderMap.get(item.order_id);
+        if (!order || order.payment_type !== 'with_invoice') continue;
+        const verification = order.document_verification;
+        const paidByCash = verification && typeof verification === 'object' && verification.paid_by_cash === true;
+        const amount = Number(item.amount || 0);
+
+        if (item.payment_method === 'receipt' && paidByCash) {
+          summary.receipt_handed -= amount;
+          summary.cash_invoice1_handed += amount;
+        }
+
+        if (item.payment_method === 'transfer' && paidByCash) {
+          summary.transfer_handed -= amount;
+          summary.cash_invoice1_handed += amount;
+        }
+      }
 
       (orders || []).forEach((o: any) => {
         const totalAmount = Number(o.total_amount || 0);
