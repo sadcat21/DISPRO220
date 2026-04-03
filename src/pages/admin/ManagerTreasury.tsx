@@ -522,7 +522,7 @@ const ManagerTreasury = () => {
                     <p className="text-xs font-medium text-destructive">الكاش المسلم أقل من كاش فاتورة 1 المحدد.</p>
                   )}
                 </div>
-                <PickerSection label="💶 Espèces" items={pickedCash} onOpen={() => setPickerType('cash')} onRemove={(id) => setPickedCash(p => p.filter(i => i.order_id !== id))} currency={cur} />
+                <PickerSection label="Espèces" items={pickedCash} onOpen={() => setPickerType('cash')} onRemove={(id) => setPickedCash(p => p.filter(i => i.order_id !== id))} currency={cur} />
                 <div className="rounded-xl border border-blue-200/70 bg-blue-50/40 p-3">
                   <div className="mb-3">
                     <p className="text-sm font-semibold text-blue-900">المستندات</p>
