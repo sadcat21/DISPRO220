@@ -719,19 +719,18 @@ const ManagerTreasury = () => {
 
       {/* Remaining Details */}
       {(() => {
-        const cashPhysical = (summary?.cash_invoice1 || 0) + (summary?.cash_invoice2 || 0);
+        const overallRemaining = summary?.remaining || 0;
         const nonCash = (summary?.check || 0) + (summary?.bank_receipt || 0) + (summary?.bank_transfer || 0);
         const nonCashHanded = (summary?.check_handed || 0) + (summary?.receipt_handed || 0) + (summary?.transfer_handed || 0);
-        const cashHandedOver = (summary?.handedOver || 0) - nonCashHanded;
         const nonCashPending = nonCash - nonCashHanded;
-        const physicalRemaining = cashPhysical - cashHandedOver;
+        const physicalRemaining = overallRemaining - nonCashPending;
         const paperMoney = physicalRemaining - (summary?.coins || 0) + (summary?.coinBillsReturned || 0);
         return (
           <div className="space-y-3">
             <Card className="border-primary/30">
               <CardContent className="p-3 text-center">
                 <p className="text-xs text-muted-foreground">{t('treasury.overall_remaining')}</p>
-                <p className="text-base font-bold text-primary truncate">{summary?.remaining?.toLocaleString() || 0} {cur}</p>
+                <p className="text-base font-bold text-primary truncate">{overallRemaining.toLocaleString()} {cur}</p>
               </CardContent>
             </Card>
 
