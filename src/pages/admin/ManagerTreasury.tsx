@@ -481,10 +481,7 @@ const ManagerTreasury = () => {
                 <div className="p-3 rounded-lg bg-muted/50 space-y-3">
                   <div className="flex items-center justify-between">
                     <p className="font-medium text-sm">💵 {t('treasury.cash')}</p>
-                    <div className="flex items-center gap-2">
-                      <Label className="text-xs">{t('treasury.unified_cash') || 'موحد'}</Label>
-                      <Badge variant="outline" className="text-[10px]">حساب تلقائي</Badge>
-                    </div>
+                    <Badge variant="outline" className="text-[10px]">حساب تلقائي</Badge>
                   </div>
                   <div>
                     <Label className="text-xs">الكاش المسلم</Label>
