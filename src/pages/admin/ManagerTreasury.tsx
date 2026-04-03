@@ -701,11 +701,15 @@ const ManagerTreasury = () => {
               <p className="text-[10px] text-muted-foreground">{t('treasury.collected_debts')}</p>
               <p className="text-xs font-bold text-green-500 truncate">{(summary?.collectedDebts || 0).toLocaleString()} {cur}</p>
             </div>
-            <div className="rounded-lg bg-destructive/5 border border-destructive/20 p-2 text-center">
+            <button
+              type="button"
+              className="rounded-lg bg-destructive/5 border border-destructive/20 p-2 text-center transition-shadow hover:shadow-sm"
+              onClick={() => setUncollectedDebtsOpen(true)}
+            >
               <AlertCircle className="w-3 h-3 mx-auto mb-0.5 text-destructive" />
               <p className="text-[10px] text-muted-foreground">{t('treasury.uncollected_debts')}</p>
               <p className="text-xs font-bold text-destructive truncate">{(summary?.uncollectedDebts || 0).toLocaleString()} {cur}</p>
-            </div>
+            </button>
           </div>
         </CardContent>
       </Card>
