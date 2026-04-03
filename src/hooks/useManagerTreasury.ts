@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { StampPriceTier } from '@/types/stamp';
 import { calculateStampAmount } from '@/hooks/useStampTiers';
+import { isTransferPaidByCash, resolveReceiptBucket } from '@/utils/treasuryDocumentClassification';
 
 export interface TreasuryEntry {
   id: string;
@@ -58,6 +59,9 @@ export interface TreasurySummary {
   receiptCount: number;
   receipt_handed: number;
   receipt_handed_count: number;
+  receipt_cash: number;
+  receiptCashCount: number;
+  receipt_cash_handed: number;
   bank_transfer: number;
   transferCount: number;
   transfer_handed: number;
@@ -258,6 +262,7 @@ export const useTreasurySummary = () => {
         check_handed: handedChecks, check_handed_count: handedChecksCount,
         bank_receipt: 0, receiptCount: 0,
         receipt_handed: handedReceipts, receipt_handed_count: handedReceiptsCount,
+        receipt_cash: 0, receiptCashCount: 0, receipt_cash_handed: 0,
         bank_transfer: 0, transferCount: 0,
         transfer_handed: handedTransfers, transfer_handed_count: handedTransfersCount,
         coins: totalCoins - totalCoinsGiven,
@@ -271,18 +276,22 @@ export const useTreasurySummary = () => {
       for (const item of handoverItems) {
         const order = handedOrderMap.get(item.order_id);
         if (!order || order.payment_type !== 'with_invoice') continue;
-        const verification = order.document_verification;
-        const paidByCash = verification && typeof verification === 'object' && verification.paid_by_cash === true;
+        const receiptBucket = resolveReceiptBucket(order.document_verification);
+        const paidTransferByCash = isTransferPaidByCash(order.document_verification);
         const amount = Number(item.amount || 0);
 
-        if (item.payment_method === 'receipt' && paidByCash) {
+        if (item.payment_method === 'receipt' && receiptBucket === 'cash') {
           summary.receipt_handed -= amount;
+          summary.receipt_cash_handed += amount;
+        }
+
+        if (item.payment_method === 'transfer' && paidTransferByCash) {
+          summary.transfer_handed -= amount;
           summary.cash_invoice1_handed += amount;
         }
 
-        if (item.payment_method === 'transfer' && paidByCash) {
-          summary.transfer_handed -= amount;
-          summary.cash_invoice1_handed += amount;
+        if (item.payment_method === 'cash' && order.invoice_payment_method === 'receipt' && receiptBucket === 'cash') {
+          summary.receipt_cash_handed += amount;
         }
       }
 
@@ -302,8 +311,8 @@ export const useTreasurySummary = () => {
         if (paidAmount <= 0) return;
 
         if (o.payment_type === 'with_invoice') {
-          const verification = o.document_verification;
-          const paidByCash = verification && typeof verification === 'object' && verification.paid_by_cash === true;
+          const receiptBucket = resolveReceiptBucket(o.document_verification);
+          const paidTransferByCash = isTransferPaidByCash(o.document_verification);
 
           switch (o.invoice_payment_method) {
             case 'cash': {
@@ -320,20 +329,16 @@ export const useTreasurySummary = () => {
               summary.checkCount++;
               break;
             case 'receipt':
-              if (paidByCash) {
-                summary.cash_invoice1 += paidAmount;
-                summary.cash_invoice1_count++;
-                if (stampTiers?.length) {
-                  const baseAmount = itemsSubtotal > 0 ? itemsSubtotal : paidAmount;
-                  summary.cash_invoice1_stamp += calculateStampAmount(baseAmount, stampTiers as StampPriceTier[]);
-                }
+              if (receiptBucket === 'cash') {
+                summary.receipt_cash += paidAmount;
+                summary.receiptCashCount++;
               } else {
                 summary.bank_receipt += paidAmount;
                 summary.receiptCount++;
               }
               break;
             case 'transfer':
-              if (paidByCash) {
+              if (paidTransferByCash) {
                 summary.cash_invoice1 += paidAmount;
                 summary.cash_invoice1_count++;
                 if (stampTiers?.length) {
@@ -363,7 +368,7 @@ export const useTreasurySummary = () => {
       // Debt cash collections are additional cash received by manager (not invoice-related)
       // Add to total but not to any invoice category
 
-      summary.total = summary.cash_invoice1 + summary.cash_invoice2 + summary.check + summary.bank_receipt + summary.bank_transfer + debtCashCollected - coinExchangeOut;
+      summary.total = summary.cash_invoice1 + summary.receipt_cash + summary.cash_invoice2 + summary.check + summary.bank_receipt + summary.bank_transfer + debtCashCollected - coinExchangeOut;
       summary.handedOver = (handovers || []).reduce((s: number, h: any) => s + Number(h.amount), 0);
       summary.remaining = summary.total - summary.handedOver;
 
