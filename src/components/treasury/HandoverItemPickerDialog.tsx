@@ -18,7 +18,7 @@ export interface PickedItem {
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  paymentMethod: 'check' | 'receipt' | 'transfer';
+  paymentMethod: 'check' | 'receipt' | 'transfer' | 'cash';
   onConfirm: (items: PickedItem[]) => void;
 }
 
