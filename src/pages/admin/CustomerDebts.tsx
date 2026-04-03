@@ -6,11 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Loader2, Banknote, Search, Users, AlertCircle, Calendar, FileCheck } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Loader2, Banknote, Search, Users, AlertCircle, Calendar, FileCheck, Plus } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDate } from '@/utils/formatters';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCustomerDebts } from '@/hooks/useCustomerDebts';
+import { useCustomerDebts, useCreateDebt } from '@/hooks/useCustomerDebts';
 import { useWorkerPermissions } from '@/hooks/usePermissions';
 import { CustomerDebtWithDetails } from '@/types/accounting';
 import DebtDetailsDialog from '@/components/debts/DebtDetailsDialog';
@@ -18,6 +20,9 @@ import PendingDocumentsSection from '@/components/debts/PendingDocumentsSection'
 import PermissionGate from '@/components/auth/PermissionGate';
 import { useIsElementHidden } from '@/hooks/useUIOverrides';
 import { isAdminRole } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 const DAY_INDEX_MAP: Record<string, number> = {
   sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
@@ -58,9 +63,31 @@ const CustomerDebts: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<{ id: string; name: string; debts: CustomerDebtWithDetails[] } | null>(null);
+  const [addDebtOpen, setAddDebtOpen] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [newDebtCustomerId, setNewDebtCustomerId] = useState('');
+  const [newDebtAmount, setNewDebtAmount] = useState('');
+  const [newDebtDueDate, setNewDebtDueDate] = useState('');
+  const [newDebtNotes, setNewDebtNotes] = useState('');
   const location = useLocation();
+  const createDebt = useCreateDebt();
 
   const { data: debts, isLoading } = useCustomerDebts({ status: statusFilter });
+  const { data: customers } = useQuery({
+    queryKey: ['customer-debts-customers', activeBranch?.id],
+    queryFn: async () => {
+      let query = supabase
+        .from('customers')
+        .select('id, name, store_name, phone')
+        .order('name');
+
+      if (activeBranch?.id) query = query.eq('branch_id', activeBranch.id);
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   const customerGroups = useMemo(() => {
     if (!debts) return [];
@@ -106,6 +133,60 @@ const CustomerDebts: React.FC = () => {
   }, [location.state]);
 
   const totalActiveDebts = customerGroups.reduce((sum, g) => sum + g.totalRemaining, 0);
+  const filteredCustomers = useMemo(() => {
+    const term = customerSearch.trim().toLowerCase();
+    if (!customers) return [];
+    if (!term) return customers;
+    return customers.filter((customer) =>
+      (customer.name || '').toLowerCase().includes(term) ||
+      (customer.store_name || '').toLowerCase().includes(term) ||
+      (customer.phone || '').includes(term),
+    );
+  }, [customerSearch, customers]);
+  const selectedDebtCustomer = customers?.find((customer) => customer.id === newDebtCustomerId) || null;
+
+  const resetNewDebtForm = () => {
+    setNewDebtCustomerId('');
+    setNewDebtAmount('');
+    setNewDebtDueDate('');
+    setNewDebtNotes('');
+    setCustomerSearch('');
+  };
+
+  const handleCreateDebt = async () => {
+    const amount = Number(newDebtAmount || 0);
+    if (!newDebtCustomerId) {
+      toast.error('يرجى اختيار العميل');
+      return;
+    }
+    if (!workerId) {
+      toast.error('تعذر تحديد المستخدم الحالي');
+      return;
+    }
+    if (amount <= 0) {
+      toast.error('يرجى إدخال مبلغ صحيح');
+      return;
+    }
+
+    try {
+      await createDebt.mutateAsync({
+        customer_id: newDebtCustomerId,
+        worker_id: workerId,
+        branch_id: activeBranch?.id,
+        total_amount: amount,
+        paid_amount: 0,
+        remaining_amount: amount,
+        collection_type: 'none',
+        due_date: newDebtDueDate || undefined,
+        notes: newDebtNotes || 'دين سابق مضاف يدويًا',
+      });
+      toast.success('تمت إضافة الدين بنجاح');
+      setAddDebtOpen(false);
+      resetNewDebtForm();
+    } catch (error: any) {
+      toast.error(error?.message || 'تعذر إضافة الدين');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -118,10 +199,18 @@ const CustomerDebts: React.FC = () => {
   return (
     <PermissionGate requiredPermissions={['page_customer_debts', 'view_customer_debts', 'collect_debts']}>
       <div className="p-4 space-y-4">
-        <h2 className="text-xl font-bold flex items-center gap-2">
-          <Banknote className="w-5 h-5 text-primary" />
-          {t('debts.title')}
-        </h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <Banknote className="w-5 h-5 text-primary" />
+            {t('debts.title')}
+          </h2>
+          {isAdmin && (
+            <Button size="sm" className="h-9 rounded-full px-3 text-xs sm:text-sm" onClick={() => setAddDebtOpen(true)}>
+              <Plus className="w-4 h-4" />
+              <span>دين جديد</span>
+            </Button>
+          )}
+        </div>
 
         {/* Tabs: Debts vs Pending Documents */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} dir="rtl">
@@ -233,6 +322,65 @@ const CustomerDebts: React.FC = () => {
             customerId={selectedCustomer.id}
           />
         )}
+
+        <Dialog open={addDebtOpen} onOpenChange={(open) => { setAddDebtOpen(open); if (!open) resetNewDebtForm(); }}>
+          <DialogContent dir="rtl" className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>إضافة دين سابق</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">اختيار العميل</label>
+                <Input
+                  value={customerSearch}
+                  onChange={(e) => setCustomerSearch(e.target.value)}
+                  placeholder="ابحث باسم العميل أو الهاتف"
+                />
+                <Select value={newDebtCustomerId} onValueChange={setNewDebtCustomerId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر العميل" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredCustomers.map((customer) => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        {customer.name}{customer.store_name ? ` - ${customer.store_name}` : ''}{customer.phone ? ` - ${customer.phone}` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedDebtCustomer && (
+                  <p className="text-xs text-muted-foreground">
+                    {selectedDebtCustomer.name}{selectedDebtCustomer.store_name ? ` - ${selectedDebtCustomer.store_name}` : ''}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">مبلغ الدين</label>
+                <Input type="number" min="0" value={newDebtAmount} onChange={(e) => setNewDebtAmount(e.target.value)} placeholder="0" />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">تاريخ الاستحقاق</label>
+                <Input type="date" value={newDebtDueDate} onChange={(e) => setNewDebtDueDate(e.target.value)} />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">ملاحظات</label>
+                <Textarea
+                  value={newDebtNotes}
+                  onChange={(e) => setNewDebtNotes(e.target.value)}
+                  placeholder="دين سابق بدون تفاصيل منتجات أو كميات"
+                  className="min-h-[96px]"
+                />
+              </div>
+
+              <Button className="w-full" onClick={handleCreateDebt} disabled={createDebt.isPending}>
+                {createDebt.isPending ? 'جارٍ الإضافة...' : 'حفظ الدين'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </PermissionGate>
   );
