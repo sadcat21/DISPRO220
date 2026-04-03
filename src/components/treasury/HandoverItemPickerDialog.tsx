@@ -38,15 +38,34 @@ const HandoverItemPickerDialog = ({ open, onOpenChange, paymentMethod, onConfirm
     queryKey: ['handover-picker', paymentMethod, activeBranch?.id],
     enabled: open,
     queryFn: async () => {
-      // Get orders with this payment method
-      let oQuery = supabase
-        .from('orders')
-        .select('id, total_amount, partial_amount, payment_status, invoice_payment_method, created_at, customer_id, customers!inner(name)')
-        .eq('status', 'delivered')
-        .eq('payment_type', 'with_invoice')
-        .eq('invoice_payment_method', paymentMethod);
-      if (activeBranch?.id) oQuery = oQuery.eq('branch_id', activeBranch.id);
-      const { data: orders } = await oQuery;
+      const baseQuery = () => {
+        let query = supabase
+          .from('orders')
+          .select('id, total_amount, partial_amount, payment_status, invoice_payment_method, document_verification, created_at, customer_id, customers!inner(name)')
+          .eq('status', 'delivered')
+          .eq('payment_type', 'with_invoice');
+        if (activeBranch?.id) query = query.eq('branch_id', activeBranch.id);
+        return query;
+      };
+
+      let orders: any[] = [];
+      if (paymentMethod === 'cash') {
+        const { data, error } = await baseQuery().in('invoice_payment_method', ['cash', 'receipt', 'transfer']);
+        if (error) throw error;
+        orders = (data || []).filter((order: any) => {
+          if (order.invoice_payment_method === 'cash') return true;
+          const verification = order.document_verification;
+          return verification && typeof verification === 'object' && verification.paid_by_cash === true;
+        });
+      } else {
+        const { data, error } = await baseQuery().eq('invoice_payment_method', paymentMethod);
+        if (error) throw error;
+        orders = (data || []).filter((order: any) => {
+          if (paymentMethod !== 'receipt' && paymentMethod !== 'transfer') return true;
+          const verification = order.document_verification;
+          return !(verification && typeof verification === 'object' && verification.paid_by_cash === true);
+        });
+      }
 
       // Get already handed-over order IDs
       const { data: handedOver } = await supabase
