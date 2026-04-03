@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
+import { isTransferPaidByCash, resolveReceiptBucket } from '@/utils/treasuryDocumentClassification';
 
 export interface PickedItem {
   order_id: string;
@@ -54,16 +55,25 @@ const HandoverItemPickerDialog = ({ open, onOpenChange, paymentMethod, onConfirm
         if (error) throw error;
         orders = (data || []).filter((order: any) => {
           if (order.invoice_payment_method === 'cash') return true;
-          const verification = order.document_verification;
-          return verification && typeof verification === 'object' && verification.paid_by_cash === true;
+          if (order.invoice_payment_method === 'receipt') {
+            return resolveReceiptBucket(order.document_verification) === 'cash';
+          }
+          if (order.invoice_payment_method === 'transfer') {
+            return isTransferPaidByCash(order.document_verification);
+          }
+          return false;
         });
       } else {
         const { data, error } = await baseQuery().eq('invoice_payment_method', paymentMethod);
         if (error) throw error;
         orders = (data || []).filter((order: any) => {
-          if (paymentMethod !== 'receipt' && paymentMethod !== 'transfer') return true;
-          const verification = order.document_verification;
-          return !(verification && typeof verification === 'object' && verification.paid_by_cash === true);
+          if (paymentMethod === 'receipt') {
+            return resolveReceiptBucket(order.document_verification) === 'doc';
+          }
+          if (paymentMethod === 'transfer') {
+            return !isTransferPaidByCash(order.document_verification);
+          }
+          return true;
         });
       }
 
