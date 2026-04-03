@@ -496,6 +496,17 @@ const ManagerTreasury = () => {
                   <div>
                     <Label className="text-xs">الكاش المسلم</Label>
                     <Input type="number" placeholder="0" value={handoverForm.cash_delivered} onChange={e => setHandoverForm(f => ({ ...f, cash_delivered: e.target.value }))} />
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      <Button type="button" size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => setHandoverForm(f => ({ ...f, cash_delivered: String(invoice1CashAmount) }))}>
+                        إدراج فاتورة 1
+                      </Button>
+                      <Button type="button" size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => setHandoverForm(f => ({ ...f, cash_delivered: String(invoice2CashAmount) }))}>
+                        إدراج فاتورة 2
+                      </Button>
+                      <Button type="button" size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => setHandoverForm(f => ({ ...f, cash_delivered: String(invoice1CashAmount + invoice2CashAmount) }))}>
+                        إدراج المجموع
+                      </Button>
+                    </div>
                   </div>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
