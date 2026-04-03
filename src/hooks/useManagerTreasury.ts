@@ -113,7 +113,7 @@ export const useTreasurySummary = () => {
       // Get delivered orders with gift data
       let oQuery = supabase
         .from('orders')
-        .select('id, payment_type, invoice_payment_method, payment_status, total_amount, partial_amount, assigned_worker_id, delivery_date, created_at, order_items(total_price, gift_quantity, unit_price)')
+        .select('id, payment_type, invoice_payment_method, payment_status, total_amount, partial_amount, assigned_worker_id, delivery_date, created_at, document_verification, order_items(total_price, gift_quantity, unit_price)')
         .eq('status', 'delivered');
       if (activeBranch?.id) oQuery = oQuery.eq('branch_id', activeBranch.id);
       const { data: orders, error: oErr } = await oQuery;
@@ -258,6 +258,9 @@ export const useTreasurySummary = () => {
         if (paidAmount <= 0) return;
 
         if (o.payment_type === 'with_invoice') {
+          const verification = o.document_verification;
+          const paidByCash = verification && typeof verification === 'object' && verification.paid_by_cash === true;
+
           switch (o.invoice_payment_method) {
             case 'cash': {
               summary.cash_invoice1 += paidAmount;
@@ -273,12 +276,30 @@ export const useTreasurySummary = () => {
               summary.checkCount++;
               break;
             case 'receipt':
-              summary.bank_receipt += paidAmount;
-              summary.receiptCount++;
+              if (paidByCash) {
+                summary.cash_invoice1 += paidAmount;
+                summary.cash_invoice1_count++;
+                if (stampTiers?.length) {
+                  const baseAmount = itemsSubtotal > 0 ? itemsSubtotal : paidAmount;
+                  summary.cash_invoice1_stamp += calculateStampAmount(baseAmount, stampTiers as StampPriceTier[]);
+                }
+              } else {
+                summary.bank_receipt += paidAmount;
+                summary.receiptCount++;
+              }
               break;
             case 'transfer':
-              summary.bank_transfer += paidAmount;
-              summary.transferCount++;
+              if (paidByCash) {
+                summary.cash_invoice1 += paidAmount;
+                summary.cash_invoice1_count++;
+                if (stampTiers?.length) {
+                  const baseAmount = itemsSubtotal > 0 ? itemsSubtotal : paidAmount;
+                  summary.cash_invoice1_stamp += calculateStampAmount(baseAmount, stampTiers as StampPriceTier[]);
+                }
+              } else {
+                summary.bank_transfer += paidAmount;
+                summary.transferCount++;
+              }
               break;
             default:
               summary.cash_invoice1 += paidAmount;
