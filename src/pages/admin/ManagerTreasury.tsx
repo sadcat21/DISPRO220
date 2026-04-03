@@ -641,7 +641,7 @@ const ManagerTreasury = () => {
         <TreasuryCard
           icon={<Banknote className="w-5 h-5 text-green-500" />}
           label={`${t('treasury.cash_invoice1')} (${summary?.cash_invoice1_count || 0})`}
-          total={summary?.cash_invoice1 || 0}
+          total={(summary?.cash_invoice1 || 0) + (summary?.cash_invoice1_stamp || 0)}
           handed={summary?.cash_invoice1_handed || 0}
           colorClass="green-500"
           borderClass="border-green-500/30 bg-green-500/5"
@@ -791,6 +791,7 @@ const ManagerTreasury = () => {
       {(() => {
         const cashAvailableBeforeHandover =
           (summary?.cash_invoice1 || 0) +
+          (summary?.cash_invoice1_stamp || 0) +
           (summary?.receipt_cash || 0) +
           (summary?.cash_invoice2 || 0) +
           (summary?.debtCashCollected || 0) -
