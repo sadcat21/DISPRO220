@@ -595,7 +595,7 @@ const ManagerTreasury = () => {
           icon={<Banknote className="w-5 h-5 text-green-500" />}
           label={`${t('treasury.cash_invoice1')} (${summary?.cash_invoice1_count || 0})`}
           total={summary?.cash_invoice1 || 0}
-          handed={(handovers || []).reduce((s, h: any) => s + Number(h.cash_invoice1 || 0), 0)}
+          handed={summary?.cash_invoice1_handed || 0}
           colorClass="green-500"
           borderClass="border-green-500/30 bg-green-500/5"
           onClick={() => setDetailsCategory('cash_invoice1')}
@@ -606,7 +606,7 @@ const ManagerTreasury = () => {
           icon={<Banknote className="w-5 h-5 text-emerald-500" />}
           label={`${t('treasury.cash_invoice2')} (${summary?.cash_invoice2_count || 0})`}
           total={summary?.cash_invoice2 || 0}
-          handed={(handovers || []).reduce((s, h: any) => s + Number(h.cash_invoice2 || 0), 0)}
+          handed={summary?.cash_invoice2_handed || 0}
           colorClass="emerald-500"
           borderClass="border-emerald-500/30 bg-emerald-500/5"
           onClick={() => setDetailsCategory('cash_invoice2')}
@@ -649,7 +649,14 @@ const ManagerTreasury = () => {
         <Card className="border-amber-600/30 bg-amber-600/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setStampOpen(true)}>
           <CardContent className="p-3 text-center">
             <p className="text-xs text-muted-foreground leading-tight">{t('treasury.stamp_total')}</p>
-            <p className="text-sm font-bold text-amber-600 truncate">{(summary?.cash_invoice1_stamp || 0).toLocaleString()} {cur}</p>
+            <p className="text-sm font-bold text-amber-600 truncate">{(() => {
+              const totalCash1 = summary?.cash_invoice1 || 0;
+              const remainingCash1 = Math.max(totalCash1 - (summary?.cash_invoice1_handed || 0), 0);
+              const totalStamp = summary?.cash_invoice1_stamp || 0;
+              if (totalCash1 <= 0 || totalStamp <= 0) return `0 ${cur}`;
+              const remainingStamp = totalStamp * (remainingCash1 / totalCash1);
+              return `${remainingStamp.toLocaleString()} ${cur}`;
+            })()}</p>
           </CardContent>
         </Card>
       </div>
