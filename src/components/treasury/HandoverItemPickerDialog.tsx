@@ -26,6 +26,7 @@ const labels: Record<string, string> = {
   check: 'Chèques',
   receipt: 'Versement',
   transfer: 'Virement',
+  cash: 'Espèces',
 };
 
 const HandoverItemPickerDialog = ({ open, onOpenChange, paymentMethod, onConfirm }: Props) => {
