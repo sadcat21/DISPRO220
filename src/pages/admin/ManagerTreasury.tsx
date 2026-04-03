@@ -372,18 +372,15 @@ const ManagerTreasury = () => {
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {!isSettingsHidden && (
-            <Button size="sm" variant="ghost" onClick={() => setSettingsOpen(true)}>
+            <Button size="sm" variant="outline" className="h-9 shrink-0 gap-1.5 rounded-full px-3 text-[11px]" onClick={() => setSettingsOpen(true)}>
               <Settings className="w-4 h-4" />
+              <span>إعدادات</span>
             </Button>
           )}
-          <Button size="sm" variant="ghost" onClick={syncOldSessions} disabled={syncing}>
+          <Button size="sm" variant="outline" className="h-9 shrink-0 gap-1.5 rounded-full px-3 text-[11px]" onClick={syncOldSessions} disabled={syncing}>
             <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+            <span>مزامنة</span>
           </Button>
-          {!isCoinExchangeHidden && (
-            <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => setCoinExchangeOpen(true)} title={t('coin_exchange.title')}>
-              <ArrowLeftRight className="w-4 h-4" />
-            </Button>
-          )}
           {!isInvoiceRequestHidden && (
             <Button size="sm" variant="default" className="h-8 gap-1 px-2" onClick={() => setInvoiceRequestOpen(true)} title="طلب فاتورة">
               <Receipt className="w-4 h-4" />
