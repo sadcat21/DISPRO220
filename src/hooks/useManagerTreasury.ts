@@ -126,7 +126,7 @@ export const useTreasurySummary = () => {
       if (oErr) throw oErr;
 
       // Get handovers
-      let hQuery = supabase.from('manager_handovers').select('amount, cash_invoice1, cash_invoice2, checks_amount, check_count, receipts_amount, receipt_count, transfers_amount, transfer_count');
+      let hQuery = supabase.from('manager_handovers').select('id, amount, cash_invoice1, cash_invoice2, checks_amount, check_count, receipts_amount, receipt_count, transfers_amount, transfer_count');
       if (activeBranch?.id) hQuery = hQuery.eq('branch_id', activeBranch.id);
       const { data: handovers, error: hErr } = await hQuery;
       if (hErr) throw hErr;
