@@ -1,15 +1,18 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useActiveStampTiers, calculateStampAmount } from '@/hooks/useStampTiers';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { Banknote, CreditCard, Receipt, ArrowUpRight, Coins, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
+import { resolveReceiptBucket } from '@/utils/treasuryDocumentClassification';
 
-type PaymentCategory = 'cash_invoice1' | 'cash_invoice2' | 'check' | 'bank_receipt' | 'bank_transfer';
+type PaymentCategory = 'cash_invoice1' | 'cash_invoice2' | 'check' | 'bank_receipt_cash' | 'bank_receipt' | 'bank_transfer';
 
 const categoryConfig: Record<PaymentCategory, { label: string; icon: any; colorClass: string }> = {
   cash_invoice1: { label: 'Espèces Facture 1', icon: Banknote, colorClass: 'text-green-500' },
