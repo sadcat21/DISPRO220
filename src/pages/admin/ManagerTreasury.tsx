@@ -582,7 +582,8 @@ const ManagerTreasury = () => {
               onOpenChange={(open) => !open && setPickerType(null)}
               paymentMethod={pickerType}
               onConfirm={(items) => {
-                if (pickerType === 'check') setPickedChecks(prev => [...prev, ...items]);
+                if (pickerType === 'cash') setPickedCash(prev => [...prev, ...items]);
+                else if (pickerType === 'check') setPickedChecks(prev => [...prev, ...items]);
                 else if (pickerType === 'receipt') setPickedReceipts(prev => [...prev, ...items]);
                 else if (pickerType === 'transfer') setPickedTransfers(prev => [...prev, ...items]);
               }}
