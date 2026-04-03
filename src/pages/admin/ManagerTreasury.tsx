@@ -516,6 +516,7 @@ const ManagerTreasury = () => {
                 <PickerSection label={`🧾 ${t('treasury.versement')}`} items={pickedReceipts} onOpen={() => setPickerType('receipt')} onRemove={(id) => setPickedReceipts(p => p.filter(i => i.order_id !== id))} currency={cur} />
                 <PickerSection label={`🏦 ${t('treasury.virement')}`} items={pickedTransfers} onOpen={() => setPickerType('transfer')} onRemove={(id) => setPickedTransfers(p => p.filter(i => i.order_id !== id))} currency={cur} />
                 
+                <PickerSection label="Versement Cash" items={pickedReceiptCash} onOpen={() => setPickerType('receipt_cash')} onRemove={(id) => setPickedReceiptCash(p => p.filter(i => i.order_id !== id))} currency={cur} />
                 {(() => {
                   const cashTotal = deliveredCashAmount;
                   const grandTotal = cashTotal + checksAmount + receiptsAmount + transfersAmount;
