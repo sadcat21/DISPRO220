@@ -38,9 +38,21 @@ interface Props {
 }
 
 const HandoverPrintView: React.FC<Props> = ({
-  handoverId, handoverDate, cashInvoice1, cashInvoice2,
-  checksAmount, receiptsAmount, transfersAmount, totalAmount, branchName, branchWilaya,
-  deliveryMethod, intermediaryName, bankTransferReference, receivedBy, unifiedCash, onReady
+  handoverId,
+  handoverDate,
+  cashInvoice1,
+  cashInvoice2,
+  checksAmount,
+  receiptsAmount,
+  transfersAmount,
+  totalAmount,
+  branchWilaya,
+  deliveryMethod,
+  intermediaryName,
+  bankTransferReference,
+  receivedBy,
+  unifiedCash,
+  onReady,
 }) => {
   const [items, setItems] = useState<HandoverItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,45 +64,51 @@ const HandoverPrintView: React.FC<Props> = ({
         .select('order_id, payment_method, amount, customer_name, treasury_entry_id')
         .eq('handover_id', handoverId);
 
-      if (!data?.length) { setLoading(false); onReady?.(); return; }
+      if (!data?.length) {
+        setLoading(false);
+        onReady?.();
+        return;
+      }
 
-      // Try to get extra details from manager_treasury entries
-      const treasuryIds = data.filter(d => d.treasury_entry_id).map(d => d.treasury_entry_id);
-      let treasuryMap: Record<string, any> = {};
+      const treasuryIds = data.filter((item) => item.treasury_entry_id).map((item) => item.treasury_entry_id);
+      const treasuryMap: Record<string, any> = {};
       if (treasuryIds.length > 0) {
-        const { data: tEntries } = await supabase
+        const { data: treasuryEntries } = await supabase
           .from('manager_treasury')
           .select('id, invoice_number, invoice_date, check_number, check_date, check_bank, receipt_number, transfer_reference')
           .in('id', treasuryIds);
-        (tEntries || []).forEach(e => { treasuryMap[e.id] = e; });
+        (treasuryEntries || []).forEach((entry) => {
+          treasuryMap[entry.id] = entry;
+        });
       }
 
-      // Get order details for dates and French customer names
-      const orderIds = data.map(d => d.order_id).filter(Boolean);
-      let orderMap: Record<string, any> = {};
+      const orderIds = data.map((item) => item.order_id).filter(Boolean);
+      const orderMap: Record<string, any> = {};
       if (orderIds.length > 0) {
         const { data: orders } = await supabase
           .from('orders')
-          .select('id, created_at, delivery_date, total_amount, customer_id, customers(name_fr, name, store_name_fr, store_name)')
+          .select('id, created_at, delivery_date, customers(name_fr, name, store_name_fr, store_name)')
           .in('id', orderIds);
-        (orders || []).forEach(o => { orderMap[o.id] = o; });
+        (orders || []).forEach((order) => {
+          orderMap[order.id] = order;
+        });
       }
 
-      const enriched: HandoverItem[] = data.map(d => {
-        const t = d.treasury_entry_id ? treasuryMap[d.treasury_entry_id] : null;
-        const order = d.order_id ? orderMap[d.order_id] : null;
+      const enriched: HandoverItem[] = data.map((item) => {
+        const treasuryEntry = item.treasury_entry_id ? treasuryMap[item.treasury_entry_id] : null;
+        const order = item.order_id ? orderMap[item.order_id] : null;
         const customer = order?.customers;
-        const customerNameFr = customer?.name_fr || customer?.name || d.customer_name;
+        const customerName = customer?.name_fr || customer?.name || item.customer_name;
         return {
-          ...d,
-          customer_name: customerNameFr || d.customer_name,
-          invoice_number: t?.invoice_number || undefined,
-          invoice_date: t?.invoice_date || (order ? format(new Date(order.delivery_date || order.created_at), 'dd/MM/yyyy') : undefined),
-          check_number: t?.check_number || undefined,
-          check_date: t?.check_date || undefined,
-          check_bank: t?.check_bank || undefined,
-          receipt_number: t?.receipt_number || undefined,
-          transfer_reference: t?.transfer_reference || undefined,
+          ...item,
+          customer_name: customerName || item.customer_name,
+          invoice_number: treasuryEntry?.invoice_number || undefined,
+          invoice_date: treasuryEntry?.invoice_date || (order ? format(new Date(order.delivery_date || order.created_at), 'dd/MM/yyyy') : undefined),
+          check_number: treasuryEntry?.check_number || undefined,
+          check_date: treasuryEntry?.check_date || undefined,
+          check_bank: treasuryEntry?.check_bank || undefined,
+          receipt_number: treasuryEntry?.receipt_number || undefined,
+          transfer_reference: treasuryEntry?.transfer_reference || undefined,
         };
       });
 
@@ -98,28 +116,94 @@ const HandoverPrintView: React.FC<Props> = ({
       setLoading(false);
       setTimeout(() => onReady?.(), 100);
     };
+
     fetchItems();
-  }, [handoverId]);
+  }, [handoverId, onReady]);
 
-  if (loading) return <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin" /></div>;
+  if (loading) {
+    return (
+      <div className="flex justify-center p-8">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
 
-  const checks = items.filter(i => i.payment_method === 'check');
-  const receipts = items.filter(i => i.payment_method === 'receipt');
-  const transfers = items.filter(i => i.payment_method === 'transfer');
+  const checks = items.filter((item) => item.payment_method === 'check');
+  const receiptDocs = items.filter((item) => item.payment_method === 'receipt');
+  const receiptCash = items.filter((item) => item.payment_method === 'receipt_cash');
+  const cashItems = items.filter((item) => item.payment_method === 'cash');
+  const transfers = items.filter((item) => item.payment_method === 'transfer');
+
+  const cashItemsTotal = cashItems.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const receiptCashTotal = receiptCash.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const stampAmount = Math.max(0, cashInvoice1 - cashItemsTotal - receiptCashTotal);
   const dateStr = format(new Date(handoverDate), 'dd/MM/yyyy');
-  const wilayaFr = branchWilaya ? (ALGERIAN_WILAYAS.find(w => w.name === branchWilaya)?.nameFr || branchWilaya) : '';
+  const wilayaFr = branchWilaya ? ALGERIAN_WILAYAS.find((wilaya) => wilaya.name === branchWilaya)?.nameFr || branchWilaya : '';
+
+  const renderSimpleTable = (
+    title: string,
+    tableItems: HandoverItem[],
+    total: number,
+    extraColumns?: Array<{
+      header: string;
+      cell: (item: HandoverItem) => string;
+      className?: string;
+    }>,
+  ) => {
+    if (tableItems.length === 0) return null;
+
+    return (
+      <div className="mb-4" data-pdf-section>
+        <h3 className="mb-1 text-sm font-bold">{title} ({tableItems.length})</h3>
+        <table className="w-full border-collapse border border-black text-xs">
+          <thead>
+            <tr>
+              <th className="border border-black p-1 text-left">Client</th>
+              <th className="border border-black p-1 text-left">N° Facture</th>
+              <th className="border border-black p-1 text-right">Montant</th>
+              {(extraColumns || []).map((column) => (
+                <th key={column.header} className={`border border-black p-1 text-left ${column.className || ''}`}>
+                  {column.header}
+                </th>
+              ))}
+              <th className="border border-black p-1 text-left">Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tableItems.map((item, index) => (
+              <tr key={`${title}-${index}`}>
+                <td className="border border-black p-1">{item.customer_name || '-'}</td>
+                <td className="border border-black p-1">{item.invoice_number || '-'}</td>
+                <td className="border border-black p-1 text-right">{item.amount.toLocaleString()}</td>
+                {(extraColumns || []).map((column) => (
+                  <td key={column.header} className={`border border-black p-1 ${column.className || ''}`}>
+                    {column.cell(item)}
+                  </td>
+                ))}
+                <td className="border border-black p-1">{item.invoice_date || item.check_date || '-'}</td>
+              </tr>
+            ))}
+            <tr className="font-bold">
+              <td className="border border-black p-1" colSpan={2}>Total {title}</td>
+              <td className="border border-black p-1 text-right">{total.toLocaleString()}</td>
+              <td className="border border-black p-1" colSpan={(extraColumns?.length || 0) + 1}></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    );
+  };
 
   return (
-    <div className="print-handover bg-white text-black p-8 font-sans" style={{ direction: 'ltr', fontSize: '12px', textAlign: 'left', unicodeBidi: 'plaintext' }}>
-
-      <p className="mb-2" data-pdf-section style={{ textAlign: 'left' }}><strong>Date d'envoi:</strong> {dateStr}{wilayaFr ? `  -  Depot ${wilayaFr}` : ''}</p>
+    <div className="print-handover bg-white p-8 font-sans text-black" style={{ direction: 'ltr', fontSize: '12px', textAlign: 'left', unicodeBidi: 'plaintext' }}>
+      <p className="mb-2" data-pdf-section style={{ textAlign: 'left' }}>
+        <strong>Date d'envoi:</strong> {dateStr}{wilayaFr ? `  -  Depot ${wilayaFr}` : ''}
+      </p>
 
       {deliveryMethod && (
         <p className="mb-4" data-pdf-section style={{ textAlign: 'left', margin: '0 0 16px 0', lineHeight: '1.8' }}>
           <span>Mode: </span>
-          <strong>
-            {deliveryMethod === 'direct' ? 'Remise directe' : deliveryMethod === 'bank_transfer' ? 'Virement bancaire' : 'Par intermédiaire'}
-          </strong>
+          <strong>{deliveryMethod === 'direct' ? 'Remise directe' : deliveryMethod === 'bank_transfer' ? 'Virement bancaire' : 'Par intermédiaire'}</strong>
           {receivedBy && (
             <>
               <span style={{ margin: '0 12px' }}>|</span>
@@ -144,115 +228,28 @@ const HandoverPrintView: React.FC<Props> = ({
         </p>
       )}
 
-      {/* Checks Table */}
-      {checks.length > 0 && (
-        <div className="mb-4" data-pdf-section>
-          <h3 className="font-bold text-sm mb-1">CHEQUES ({checks.length})</h3>
-          <table className="w-full border-collapse border border-black text-xs">
-            <thead>
-              <tr>
-                <th className="border border-black p-1 text-left">Client</th>
-                <th className="border border-black p-1 text-left">N° Facture</th>
-                <th className="border border-black p-1 text-right">Montant</th>
-                <th className="border border-black p-1 text-left">N° Chèque</th>
-                <th className="border border-black p-1 text-left">Banque</th>
-                <th className="border border-black p-1 text-left">Date Chèque</th>
-              </tr>
-            </thead>
-            <tbody>
-              {checks.map((item, i) => (
-                <tr key={i}>
-                  <td className="border border-black p-1">{item.customer_name || '-'}</td>
-                  <td className="border border-black p-1">{item.invoice_number || '-'}</td>
-                  <td className="border border-black p-1 text-right">{item.amount.toLocaleString()}</td>
-                  <td className="border border-black p-1">{item.check_number || '-'}</td>
-                  <td className="border border-black p-1">{item.check_bank || '-'}</td>
-                  <td className="border border-black p-1">{item.check_date || '-'}</td>
-                </tr>
-              ))}
-              <tr className="font-bold">
-                <td className="border border-black p-1" colSpan={2}>Total Chèques</td>
-                <td className="border border-black p-1 text-right">{checksAmount.toLocaleString()}</td>
-                <td className="border border-black p-1" colSpan={3}></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      )}
+      {renderSimpleTable('CHEQUES', checks, checksAmount, [
+        { header: 'N° Chèque', cell: (item) => item.check_number || '-' },
+        { header: 'Banque', cell: (item) => item.check_bank || '-' },
+      ])}
 
-      {/* Versement (Bank Receipt) Table */}
-      {receipts.length > 0 && (
-        <div className="mb-4" data-pdf-section>
-          <h3 className="font-bold text-sm mb-1">VERSEMENTS ({receipts.length})</h3>
-          <table className="w-full border-collapse border border-black text-xs">
-            <thead>
-              <tr>
-                <th className="border border-black p-1 text-left">Client</th>
-                <th className="border border-black p-1 text-left">N° Facture</th>
-                <th className="border border-black p-1 text-right">Montant</th>
-                <th className="border border-black p-1 text-left">N° Reçu</th>
-                <th className="border border-black p-1 text-left">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {receipts.map((item, i) => (
-                <tr key={i}>
-                  <td className="border border-black p-1">{item.customer_name || '-'}</td>
-                  <td className="border border-black p-1">{item.invoice_number || '-'}</td>
-                  <td className="border border-black p-1 text-right">{item.amount.toLocaleString()}</td>
-                  <td className="border border-black p-1">{item.receipt_number || '-'}</td>
-                  <td className="border border-black p-1">{item.invoice_date || '-'}</td>
-                </tr>
-              ))}
-              <tr className="font-bold">
-                <td className="border border-black p-1" colSpan={2}>Total Versements</td>
-                <td className="border border-black p-1 text-right">{receiptsAmount.toLocaleString()}</td>
-                <td className="border border-black p-1" colSpan={2}></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      )}
+      {renderSimpleTable('ESPÈCES FACTURE 1', cashItems, cashItemsTotal)}
 
-      {/* Virement (Bank Transfer) Table */}
-      {transfers.length > 0 && (
-        <div className="mb-4" data-pdf-section>
-          <h3 className="font-bold text-sm mb-1">VIREMENTS ({transfers.length})</h3>
-          <table className="w-full border-collapse border border-black text-xs">
-            <thead>
-              <tr>
-                <th className="border border-black p-1 text-left">Client</th>
-                <th className="border border-black p-1 text-left">N° Facture</th>
-                <th className="border border-black p-1 text-right">Montant</th>
-                <th className="border border-black p-1 text-left">Référence</th>
-                <th className="border border-black p-1 text-left">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transfers.map((item, i) => (
-                <tr key={i}>
-                  <td className="border border-black p-1">{item.customer_name || '-'}</td>
-                  <td className="border border-black p-1">{item.invoice_number || '-'}</td>
-                  <td className="border border-black p-1 text-right">{item.amount.toLocaleString()}</td>
-                  <td className="border border-black p-1">{item.transfer_reference || '-'}</td>
-                  <td className="border border-black p-1">{item.invoice_date || '-'}</td>
-                </tr>
-              ))}
-              <tr className="font-bold">
-                <td className="border border-black p-1" colSpan={2}>Total Virements</td>
-                <td className="border border-black p-1 text-right">{transfersAmount.toLocaleString()}</td>
-                <td className="border border-black p-1" colSpan={2}></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      )}
+      {renderSimpleTable('VERSEMENT CASH', receiptCash, receiptCashTotal, [
+        { header: 'N° Reçu', cell: (item) => item.receipt_number || '-' },
+      ])}
 
-      {/* Summary Footer - Separated sections */}
+      {renderSimpleTable('VERSEMENT DOC', receiptDocs, receiptsAmount, [
+        { header: 'N° Reçu', cell: (item) => item.receipt_number || '-' },
+      ])}
+
+      {renderSimpleTable('VIREMENTS', transfers, transfersAmount, [
+        { header: 'Référence', cell: (item) => item.transfer_reference || '-' },
+      ])}
+
       <div className="mt-6 text-sm" data-pdf-section style={{ direction: 'ltr', textAlign: 'left' }}>
-        {/* Section 1: Argent Physique (Cash) */}
-        <div className="border-2 border-black p-3 mb-4">
-          <h3 className="font-bold text-center mb-2 text-base underline" style={{ textAlign: 'center' }}>ARGENT PHYSIQUE (ESPÈCES)</h3>
+        <div className="mb-4 border-2 border-black p-3">
+          <h3 className="mb-2 text-center text-base font-bold underline" style={{ textAlign: 'center' }}>ARGENT PHYSIQUE (ESPÈCES)</h3>
           {unifiedCash ? (
             <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }} className="font-bold">
               <span>Espèces:</span>
@@ -261,11 +258,23 @@ const HandoverPrintView: React.FC<Props> = ({
           ) : (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }}>
-                <span>Argent Factures (F1):</span>
-                <span className="font-bold">{cashInvoice1.toLocaleString()} DA</span>
+                <span>Espèces Facture 1:</span>
+                <span className="font-bold">{cashItemsTotal.toLocaleString()} DA</span>
               </div>
+              {receiptCashTotal > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }}>
+                  <span>Versement Cash:</span>
+                  <span className="font-bold">{receiptCashTotal.toLocaleString()} DA</span>
+                </div>
+              )}
+              {stampAmount > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }}>
+                  <span>Timbre Facture 1:</span>
+                  <span className="font-bold">{stampAmount.toLocaleString()} DA</span>
+                </div>
+              )}
               <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }}>
-                <span>Argent Facture (F2):</span>
+                <span>Espèces Facture 2:</span>
                 <span className="font-bold">{cashInvoice2.toLocaleString()} DA</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid black' }} className="font-bold">
@@ -276,10 +285,9 @@ const HandoverPrintView: React.FC<Props> = ({
           )}
         </div>
 
-        {/* Section 2: Valeurs (Non-cash) */}
         {(checksAmount > 0 || receiptsAmount > 0 || transfersAmount > 0) && (
-          <div className="border-2 border-black p-3 mb-4">
-            <h3 className="font-bold text-center mb-2 text-base underline" style={{ textAlign: 'center' }}>VALEURS EN TRANSIT</h3>
+          <div className="mb-4 border-2 border-black p-3">
+            <h3 className="mb-2 text-center text-base font-bold underline" style={{ textAlign: 'center' }}>VALEURS EN TRANSIT</h3>
             {checksAmount > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }}>
                 <span>Chèques:</span>
@@ -288,7 +296,7 @@ const HandoverPrintView: React.FC<Props> = ({
             )}
             {receiptsAmount > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }}>
-                <span>Versements:</span>
+                <span>Versement Doc:</span>
                 <span className="font-bold">{receiptsAmount.toLocaleString()} DA</span>
               </div>
             )}
@@ -305,7 +313,6 @@ const HandoverPrintView: React.FC<Props> = ({
           </div>
         )}
 
-        {/* Grand Total */}
         <div className="border-2 border-black p-3" style={{ backgroundColor: '#f3f4f6' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr' }} className="text-base font-bold">
             <span>TOTAL GÉNÉRAL:</span>
@@ -314,8 +321,6 @@ const HandoverPrintView: React.FC<Props> = ({
         </div>
       </div>
 
-
-      {/* Signature */}
       <div className="mt-10" data-pdf-section style={{ textAlign: 'left' }}>
         <p className="font-bold underline">Signature:</p>
       </div>
