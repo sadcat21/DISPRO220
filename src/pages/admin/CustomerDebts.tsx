@@ -17,7 +17,6 @@ import { CustomerDebtWithDetails } from '@/types/accounting';
 import DebtDetailsDialog from '@/components/debts/DebtDetailsDialog';
 import PendingDocumentsSection from '@/components/debts/PendingDocumentsSection';
 import PermissionGate from '@/components/auth/PermissionGate';
-import { useIsElementHidden } from '@/hooks/useUIOverrides';
 import { isAdminRole } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
