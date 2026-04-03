@@ -345,6 +345,7 @@ const ManagerTreasury = () => {
 
       const allItems = [
         ...pickedCash.map(i => ({ handover_id: handover.id, order_id: i.order_id, payment_method: 'cash', amount: i.amount, customer_name: i.customer_name })),
+        ...pickedReceiptCash.map(i => ({ handover_id: handover.id, order_id: i.order_id, payment_method: 'receipt_cash', amount: i.amount, customer_name: i.customer_name })),
         ...pickedChecks.map(i => ({ handover_id: handover.id, order_id: i.order_id, payment_method: 'check', amount: i.amount, customer_name: i.customer_name })),
         ...pickedReceipts.map(i => ({ handover_id: handover.id, order_id: i.order_id, payment_method: 'receipt', amount: i.amount, customer_name: i.customer_name })),
         ...pickedTransfers.map(i => ({ handover_id: handover.id, order_id: i.order_id, payment_method: 'transfer', amount: i.amount, customer_name: i.customer_name })),
@@ -357,6 +358,7 @@ const ManagerTreasury = () => {
       setHandoverOpen(false);
       setHandoverForm({ cash_invoice1: '', cash_invoice2: '', cash_delivered: '', notes: '', delivery_method: 'direct', intermediary_name: '', bank_transfer_reference: '', received_by: '', bank_account_id: '', receipt_image_url: '' });
       setPickedCash([]);
+      setPickedReceiptCash([]);
       setPickedChecks([]);
       setPickedReceipts([]);
       setPickedTransfers([]);
