@@ -65,6 +65,17 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
   const isCashInvoice2 = category === 'cash_invoice2';
   const isReceiptCash = category === 'bank_receipt_cash';
   const { data: stampTiers } = useActiveStampTiers();
+  const { data: handedCashInvoice2Amount = 0 } = useQuery({
+    queryKey: ['treasury-handed-cash-invoice2', activeBranch?.id],
+    enabled: open && isCashInvoice2,
+    queryFn: async () => {
+      let query = supabase.from('manager_handovers').select('cash_invoice2');
+      if (activeBranch?.id) query = query.eq('branch_id', activeBranch.id);
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data || []).reduce((sum: number, handover: any) => sum + Number(handover.cash_invoice2 || 0), 0);
+    },
+  });
 
   const { data: customerGroups, isLoading } = useQuery({
     queryKey: ['treasury-details', category, activeBranch?.id, stampTiers?.length],
@@ -118,7 +129,7 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
       const { data, error } = await query;
       if (error) throw error;
 
-      const groupMap = new Map<string, CustomerGroup>();
+      const processedOrders: any[] = [];
 
       (data || []).forEach((o: any) => {
         const receiptBucket = resolveReceiptBucket(o.document_verification);
@@ -183,11 +194,48 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
           debt_amount: debtAmount,
         };
 
+        processedOrders.push({
+          customer_id: customerId,
+          customer_name: customer?.name || 'عميل غير معروف',
+          store_name: customer?.store_name || null,
+          order: processedOrder,
+        });
+      });
+
+      let normalizedOrders = processedOrders;
+      if (isCashInvoice2) {
+        let remainingHanded = handedCashInvoice2Amount;
+        normalizedOrders = processedOrders
+          .sort((a, b) => new Date(a.order.created_at).getTime() - new Date(b.order.created_at).getTime())
+          .flatMap((entry) => {
+            if (remainingHanded <= 0) return [entry];
+            const orderAmount = Number(entry.order.total_amount || 0);
+            if (remainingHanded >= orderAmount) {
+              remainingHanded -= orderAmount;
+              return [];
+            }
+            const adjustedOrder = {
+              ...entry.order,
+              total_amount: Math.max(0, orderAmount - remainingHanded),
+            };
+            remainingHanded = 0;
+            return [{ ...entry, order: adjustedOrder }];
+          });
+      }
+
+      const groupMap = new Map<string, CustomerGroup>();
+
+      normalizedOrders.forEach((entry) => {
+        const customerId = entry.customer_id;
+        const customerName = entry.customer_name;
+        const storeName = entry.store_name;
+        const processedOrder = entry.order as ProcessedOrder;
+
         if (!groupMap.has(customerId)) {
           groupMap.set(customerId, {
             customer_id: customerId,
-            customer_name: customer?.name || 'عميل غير معروف',
-            store_name: customer?.store_name || null,
+            customer_name: customerName,
+            store_name: storeName,
             orders: [],
             total: 0,
             totalStamp: 0,
@@ -197,9 +245,9 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
 
         const group = groupMap.get(customerId)!;
         group.orders.push(processedOrder);
-        group.total += displayAmount;
-        group.totalStamp += stampAmount;
-        group.totalDebt += debtAmount;
+        group.total += Number(processedOrder.total_amount || 0);
+        group.totalStamp += Number(processedOrder.stamp_amount || 0);
+        group.totalDebt += Number(processedOrder.debt_amount || 0);
       });
 
       return Array.from(groupMap.values()).sort((a, b) => b.total - a.total);
