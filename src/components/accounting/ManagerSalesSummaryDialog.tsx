@@ -831,6 +831,8 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
     cashExpenses: language === 'fr' ? 'Dépenses cash' : 'المصاريف النقدية',
     customerSurplus: language === 'fr' ? 'Surplus clients' : 'فائض العملاء',
   };
+  const pendingDocumentsValue = Math.max(0, aggregate.documentsValue - aggregate.receivedDocumentsValue);
+  const documentsSubtitle = `${aggregate.documentsCount} ${labels.documentsCount} • ${labels.docsReceived} ${fmtMoney(aggregate.receivedDocumentsValue)} • ${labels.docsPending} ${fmtMoney(pendingDocumentsValue)}`;
 
   return (
       <div className="flex h-full min-h-0 flex-col overflow-hidden" dir="rtl">
