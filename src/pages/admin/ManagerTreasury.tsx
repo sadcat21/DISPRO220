@@ -1117,9 +1117,7 @@ const ManagerTreasury = () => {
                     <p className="hidden text-[10px] text-muted-foreground mb-1">
                       {gap > 0 ? `⚠️ ${t('treasury.deficit')}` : `💰 ${t('treasury.surplus')}`}
                     </p>
-                    <p className={`text-sm font-bold ${gap > 0 ? 'text-orange-600' : 'text-green-600'}`}>
-                      {Math.abs(gap).toLocaleString()} {cur}
-                    </p>
+                    <MoneyValue value={Math.abs(gap)} currency={cur} className={`text-sm font-bold ${gap > 0 ? 'text-orange-600' : 'text-green-600'}`} />
                     <p className="text-[10px] text-muted-foreground mt-1">
                       {gap > 0
                         ? 'المبلغ المتوقع في الخزينة أكبر من المبلغ الذي تم احتسابه كموجود أو مُسلَّم أو مصروف.'
