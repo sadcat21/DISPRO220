@@ -176,6 +176,14 @@ const emptyCalc = (): SessionCalculations => ({
 
 const fmtMoney = (value: number) => `${value.toLocaleString('ar-DZ')} د.ج`;
 
+const formatGiftDisplay = (giftPieces: number, piecesPerBox: number) => {
+  if (giftPieces <= 0) return '0.00';
+  if (piecesPerBox <= 1) return `0.${giftPieces.toString().padStart(2, '0')}`;
+  const boxes = Math.floor(giftPieces / piecesPerBox);
+  const remainingPieces = giftPieces % piecesPerBox;
+  return `${boxes}.${remainingPieces.toString().padStart(2, '0')}`;
+};
+
 const mergeCalcs = (calcs: SessionCalculations[]): SessionCalculations => {
   const merged = emptyCalc();
 
