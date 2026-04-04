@@ -33,6 +33,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   category: PaymentCategory;
+  handedCashInvoice2Amount?: number;
 }
 
 interface ProcessedOrder {
@@ -56,7 +57,7 @@ interface CustomerGroup {
   totalDebt: number;
 }
 
-const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => {
+const PaymentMethodDetailsDialog = ({ open, onOpenChange, category, handedCashInvoice2Amount: handedCashInvoice2AmountProp = 0 }: Props) => {
   const { activeBranch } = useAuth();
   const queryClient = useQueryClient();
   const config = categoryConfig[category];
@@ -65,7 +66,7 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
   const isCashInvoice2 = category === 'cash_invoice2';
   const isReceiptCash = category === 'bank_receipt_cash';
   const { data: stampTiers } = useActiveStampTiers();
-  const { data: handedCashInvoice2Amount = 0 } = useQuery({
+  const { data: handedCashInvoice2AmountFromQuery = 0 } = useQuery({
     queryKey: ['treasury-handed-cash-invoice2', activeBranch?.id],
     enabled: open && isCashInvoice2,
     queryFn: async () => {
@@ -76,9 +77,10 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
       return (data || []).reduce((sum: number, handover: any) => sum + Number(handover.cash_invoice2 || 0), 0);
     },
   });
+  const handedCashInvoice2Amount = handedCashInvoice2AmountProp || handedCashInvoice2AmountFromQuery;
 
   const { data: customerGroups, isLoading } = useQuery({
-    queryKey: ['treasury-details', category, activeBranch?.id, stampTiers?.length],
+    queryKey: ['treasury-details', category, activeBranch?.id, stampTiers?.length, handedCashInvoice2Amount],
     enabled: open && (isCashInvoice1 ? !!stampTiers : true),
     queryFn: async () => {
       let handedQuery = supabase
