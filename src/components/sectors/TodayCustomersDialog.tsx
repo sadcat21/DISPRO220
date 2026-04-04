@@ -2215,8 +2215,35 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                 <TabsContent value="collected" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
                   <DebtList debts={debtsCollectedToday} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="لا توجد تحصيلات بعد" searchQuery={searchQuery} timeMap={debtCollectionTimeMap} />
                 </TabsContent>
-                <TabsContent value="no-payment" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <DebtList debts={debtsNoPaymentToday} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="لا توجد زيارات بدون دفع" searchQuery={searchQuery} timeMap={debtCollectionTimeMap} />
+                <TabsContent value="no-payment" className="m-0 flex-1 min-h-0">
+                  <Tabs defaultValue="visit-only" className="flex flex-col h-full min-h-0">
+                    <TabsList className="w-full rounded-none border-b shrink-0 h-auto p-0.5 gap-0.5 bg-amber-50">
+                      <TabsTrigger value="visit-only" className="flex-1 gap-1 text-[10px] px-1 py-1 data-[state=active]:bg-amber-200 data-[state=active]:text-amber-800">
+                        <Eye className="w-3 h-3" />
+                        زيارة
+                        {debtsNoPaymentVisitOnly.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-amber-500">{debtsNoPaymentVisitOnly.length}</Badge>}
+                      </TabsTrigger>
+                      <TabsTrigger value="unavailable" className="flex-1 gap-1 text-[10px] px-1 py-1 data-[state=active]:bg-yellow-200 data-[state=active]:text-yellow-800">
+                        <UserX className="w-3 h-3" />
+                        غير متاح
+                        {debtsNoPaymentUnavailable.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-yellow-500">{debtsNoPaymentUnavailable.length}</Badge>}
+                      </TabsTrigger>
+                      <TabsTrigger value="closed" className="flex-1 gap-1 text-[10px] px-1 py-1 data-[state=active]:bg-red-100 data-[state=active]:text-red-700">
+                        <DoorClosed className="w-3 h-3" />
+                        مغلق
+                        {debtsNoPaymentClosed.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-red-500">{debtsNoPaymentClosed.length}</Badge>}
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="visit-only" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
+                      <DebtList debts={debtsNoPaymentVisitOnly} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="لا توجد زيارات بدون تحصيل" searchQuery={searchQuery} timeMap={debtCollectionTimeMap} />
+                    </TabsContent>
+                    <TabsContent value="unavailable" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
+                      <DebtList debts={debtsNoPaymentUnavailable} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="لا يوجد عملاء غير متاحين" searchQuery={searchQuery} />
+                    </TabsContent>
+                    <TabsContent value="closed" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
+                      <DebtList debts={debtsNoPaymentClosed} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="لا يوجد عملاء مغلقين" searchQuery={searchQuery} />
+                    </TabsContent>
+                  </Tabs>
                 </TabsContent>
                 <TabsContent value="all-debts" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
                   <DebtList debts={allDebtsFiltered} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="لا توجد ديون مستحقة" searchQuery={searchQuery} />
