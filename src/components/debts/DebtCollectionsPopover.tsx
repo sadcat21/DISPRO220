@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { format, addDays } from 'date-fns';
 import { toast } from 'sonner';
 import CollectDebtDialog from './CollectDebtDialog';
@@ -51,6 +52,7 @@ const DebtCollectionsPopover: React.FC = () => {
   }, [sectors, language]);
   // -1 = all, null = today (default), 0-5 = specific work day
   const [selectedDayNum, setSelectedDayNum] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Calculate target date based on selected day
   const targetDate = useMemo(() => {
@@ -153,10 +155,10 @@ const DebtCollectionsPopover: React.FC = () => {
             )}
           </button>
         </PopoverTrigger>
-        <PopoverContent align="end" className="w-80 p-0 max-h-[70vh] flex flex-col">
+        <PopoverContent align="end" className="w-[min(96vw,25rem)] max-w-[96vw] p-0 h-[min(82dvh,42rem)] overflow-hidden flex flex-col rounded-[26px]">
           {isAdmin ? (
             <Tabs defaultValue="due" className="flex flex-col h-full">
-              <TabsList className="w-full rounded-none border-b">
+              <TabsList className="w-full rounded-none border-b h-12 px-1">
                 <TabsTrigger value="due" className="flex-1 gap-1">
                   ديون مستحقة
                   {dueDebts.length > 0 && <Badge variant="destructive" className="text-[10px] px-1">{dueDebts.length}</Badge>}
@@ -168,16 +170,35 @@ const DebtCollectionsPopover: React.FC = () => {
               </TabsList>
               <TabsContent value="due" className="m-0 flex-1">
                 {dayButtons}
+                <div className="border-b px-3 py-2">
+                  <Input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="بحث بالاسم أو الهاتف..."
+                    className="h-9 text-xs"
+                    dir="rtl"
+                  />
+                </div>
                 <p className="text-[10px] text-muted-foreground text-center py-1">{selectedDateLabel}</p>
-                <DueDebtsList debts={dueDebts} onSelect={setSelectedDebt} sectorMap={sectorMap} />
+                <DueDebtsList debts={dueDebts} onSelect={setSelectedDebt} sectorMap={sectorMap} searchQuery={searchQuery} />
               </TabsContent>
               <TabsContent value="pending" className="m-0 flex-1">
+                <div className="border-b px-3 py-2">
+                  <Input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="بحث بالاسم أو العامل..."
+                    className="h-9 text-xs"
+                    dir="rtl"
+                  />
+                </div>
                 <PendingCollectionsList
                   collections={pendingCollections}
                   onApprove={handleApprove}
                   onReject={handleReject}
                   isLoading={approveCollection.isPending}
                   sectorMap={sectorMap}
+                  searchQuery={searchQuery}
                 />
               </TabsContent>
             </Tabs>
@@ -185,8 +206,17 @@ const DebtCollectionsPopover: React.FC = () => {
             <>
               <div className="p-3 border-b font-bold text-sm">ديون مستحقة</div>
               {dayButtons}
+              <div className="border-b px-3 py-2">
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="بحث بالاسم أو الهاتف..."
+                  className="h-9 text-xs"
+                  dir="rtl"
+                />
+              </div>
               <p className="text-[10px] text-muted-foreground text-center py-1">{selectedDateLabel}</p>
-              <DueDebtsList debts={dueDebts} onSelect={setSelectedDebt} sectorMap={sectorMap} />
+              <DueDebtsList debts={dueDebts} onSelect={setSelectedDebt} sectorMap={sectorMap} searchQuery={searchQuery} />
             </>
           )}
         </PopoverContent>
@@ -278,25 +308,35 @@ const DebtCollectionsPopover: React.FC = () => {
   );
 };
 
-const DueDebtsList: React.FC<{ debts: DueDebt[]; onSelect: (d: DueDebt) => void; sectorMap?: Map<string, string> }> = ({ debts, onSelect, sectorMap }) => {
-  if (debts.length === 0) {
+const DueDebtsList: React.FC<{ debts: DueDebt[]; onSelect: (d: DueDebt) => void; sectorMap?: Map<string, string>; searchQuery?: string }> = ({ debts, onSelect, sectorMap, searchQuery }) => {
+  const filteredDebts = useMemo(() => {
+    if (!searchQuery?.trim()) return debts;
+    const q = searchQuery.trim().toLowerCase();
+    return debts.filter((debt) =>
+      (debt.customer?.name || '').toLowerCase().includes(q) ||
+      (debt.customer?.store_name || '').toLowerCase().includes(q) ||
+      (debt.customer?.phone || '').includes(q)
+    );
+  }, [debts, searchQuery]);
+
+  if (filteredDebts.length === 0) {
     return <div className="p-6 text-center text-sm text-muted-foreground">لا توجد ديون مستحقة</div>;
   }
 
   return (
-    <ScrollArea className="max-h-[50vh]">
+    <ScrollArea className="h-[calc(82dvh-11rem)]">
       <div className="divide-y">
-        {debts.map(debt => (
+        {filteredDebts.map(debt => (
           <button
             key={debt.id}
             className="w-full p-3 text-right hover:bg-muted/50 transition-colors"
             onClick={() => onSelect(debt)}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <CustomerLabel customer={{ name: debt.customer?.name, store_name: debt.customer?.store_name, customer_type: debt.customer?.customer_type, sector_name: debt.customer?.sector_id && sectorMap ? sectorMap.get(debt.customer.sector_id) : undefined }} compact />
-              <span className="text-destructive font-bold">{Number(debt.remaining_amount).toLocaleString()} DA</span>
+              <span className="text-destructive font-bold whitespace-nowrap">{Number(debt.remaining_amount).toLocaleString()} DA</span>
             </div>
-            <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <Clock className="w-3 h-3" />
               <span>{debt.due_date ? format(new Date(debt.due_date + 'T00:00:00'), 'dd/MM/yyyy') : '—'}</span>
               {debt.customer?.phone && <span>• {debt.customer.phone}</span>}
@@ -314,8 +354,19 @@ const PendingCollectionsList: React.FC<{
   onReject: (id: string) => void;
   isLoading: boolean;
   sectorMap?: Map<string, string>;
-}> = ({ collections, onApprove, onReject, isLoading, sectorMap }) => {
-  if (collections.length === 0) {
+  searchQuery?: string;
+}> = ({ collections, onApprove, onReject, isLoading, sectorMap, searchQuery }) => {
+  const filteredCollections = useMemo(() => {
+    if (!searchQuery?.trim()) return collections;
+    const q = searchQuery.trim().toLowerCase();
+    return collections.filter((collection) =>
+      (collection.debt?.customer?.name || '').toLowerCase().includes(q) ||
+      (collection.debt?.customer?.store_name || '').toLowerCase().includes(q) ||
+      (collection.worker?.full_name || '').toLowerCase().includes(q)
+    );
+  }, [collections, searchQuery]);
+
+  if (filteredCollections.length === 0) {
     return <div className="p-6 text-center text-sm text-muted-foreground">لا توجد تحصيلات في الانتظار</div>;
   }
 
@@ -326,11 +377,11 @@ const PendingCollectionsList: React.FC<{
   };
 
   return (
-    <ScrollArea className="max-h-[50vh]">
+    <ScrollArea className="h-[calc(82dvh-9rem)]">
       <div className="divide-y">
-        {collections.map(c => (
+        {filteredCollections.map(c => (
           <div key={c.id} className="p-3 space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <CustomerLabel customer={{ name: c.debt?.customer?.name, store_name: c.debt?.customer?.store_name, customer_type: c.debt?.customer?.customer_type, sector_name: c.debt?.customer?.sector_id && sectorMap ? sectorMap.get(c.debt.customer.sector_id) : undefined }} compact hideBadges />
               <Badge variant="outline" className="text-xs">{actionLabels[c.action] || c.action}</Badge>
             </div>
