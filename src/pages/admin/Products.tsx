@@ -41,6 +41,7 @@ const Products: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [productName, setProductName] = useState('');
+  const [productCode, setProductCode] = useState('');
   const [piecesPerBox, setPiecesPerBox] = useState<number>(1);
   const [priceSuperGros, setPriceSuperGros] = useState<number>(0);
   const [priceGros, setPriceGros] = useState<number>(0);
@@ -60,6 +61,7 @@ const Products: React.FC = () => {
   // Edit states
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editProductName, setEditProductName] = useState('');
+  const [editProductCode, setEditProductCode] = useState('');
   const [editPiecesPerBox, setEditPiecesPerBox] = useState<number>(1);
   const [editPriceSuperGros, setEditPriceSuperGros] = useState<number>(0);
   const [editPriceGros, setEditPriceGros] = useState<number>(0);
