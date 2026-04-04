@@ -167,11 +167,28 @@ const HandoverPrintView: React.FC<Props> = ({
   const cashItemsWithStamp: HandoverItem[] = (() => {
     if (cashItems.length === 0) return [];
 
+    const exactStampTotal = cashItems.reduce((sum, item) => sum + Number(item.stamp_amount || 0), 0);
+    const useExactStamp = exactStampTotal > 0;
+
+    if (useExactStamp) {
+      return cashItems.map((item) => ({
+        ...item,
+        base_amount: Number(
+          (
+            item.base_amount ??
+            (Number(item.amount || 0) - Number(item.stamp_amount || 0))
+          ).toFixed(2),
+        ),
+        stamp_amount: Number(item.stamp_amount || 0),
+      }));
+    }
+
     if (stampAmount <= 0 || cashItemsTotal <= 0) {
       return cashItems.map((item) => ({
         ...item,
         base_amount: Number(item.amount || 0),
         stamp_amount: 0,
+        stamp_percentage: 0,
       }));
     }
 
@@ -189,10 +206,12 @@ const HandoverPrintView: React.FC<Props> = ({
         ...item,
         base_amount: Math.max(0, Number((itemAmount - itemStamp).toFixed(2))),
         stamp_amount: itemStamp,
+        stamp_percentage: itemAmount > 0 ? Number(((itemStamp / itemAmount) * 100).toFixed(2)) : 0,
       };
     });
   })();
   const cashItemsNetTotal = cashItemsWithStamp.reduce((sum, item) => sum + Number(item.base_amount || 0), 0);
+  const cashItemsStampTotal = cashItemsWithStamp.reduce((sum, item) => sum + Number(item.stamp_amount || 0), 0);
 
   const renderSimpleTable = (
     title: string,
