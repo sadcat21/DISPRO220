@@ -353,29 +353,6 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
           </>
         )}
 
-        {isCashInvoice2 && (
-          <>
-            {grandDebt > 0 && (
-              <div className="mb-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-center">
-                <div className="mb-1 flex items-center justify-center gap-1">
-                  <AlertCircle className="h-4 w-4 text-destructive" />
-                  <p className="text-xs font-medium text-destructive">ديون غير محصلة (Facture 2)</p>
-                </div>
-                <p className="text-lg font-bold text-destructive">{grandDebt.toLocaleString()} د.ج</p>
-              </div>
-            )}
-            {(invoice1DebtAmount || 0) > 0 && (
-              <div className="mb-2 rounded-lg border border-orange-500/30 bg-orange-500/10 p-3 text-center">
-                <div className="mb-1 flex items-center justify-center gap-1">
-                  <AlertCircle className="h-4 w-4 text-orange-600" />
-                  <p className="text-xs font-medium text-orange-700">مبلغ مخصوم لصالح Facture 1 (ديون كاش)</p>
-                </div>
-                <p className="text-lg font-bold text-orange-600">{(invoice1DebtAmount || 0).toLocaleString()} د.ج</p>
-              </div>
-            )}
-          </>
-        )}
-
         {!isCashInvoice1 && !isCashInvoice2 && grandDebt > 0 && (
           <div className="mb-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-center">
             <p className="text-xs font-medium text-destructive">ديون غير محصلة</p>
