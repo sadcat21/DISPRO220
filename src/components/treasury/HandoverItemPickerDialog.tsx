@@ -131,9 +131,17 @@ const HandoverItemPickerDialog = ({ open, onOpenChange, paymentMethod, onConfirm
 
   const selectedItems = (items || []).filter(i => selected.has(i.order_id));
   const totalAmount = selectedItems.reduce((s, i) => s + i.amount, 0);
+  const totalStampAmount = selectedItems.reduce((s, i) => s + Number(i.stamp_amount || 0), 0);
+  const totalWithStamp = totalAmount + totalStampAmount;
 
   const handleConfirm = () => {
-    onConfirm(selectedItems.map(i => ({ order_id: i.order_id, amount: i.amount, customer_name: i.customer_name })));
+    onConfirm(selectedItems.map(i => ({
+      order_id: i.order_id,
+      amount: i.amount,
+      customer_name: i.customer_name,
+      stamp_amount: i.stamp_amount,
+      total_with_stamp: i.total_with_stamp,
+    })));
     setSelected(new Set());
     onOpenChange(false);
   };
