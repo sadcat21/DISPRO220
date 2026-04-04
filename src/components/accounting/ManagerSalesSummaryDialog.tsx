@@ -418,6 +418,33 @@ const fetchWorkerSalesSummary = async (
   const customerPhoneMap = new Map((customers || []).map((c) => [c.id, c.phone || null]));
 
   const agg: Record<string, ProductAgg> = {};
+  let documentsCount = 0;
+  let documentsValue = 0;
+
+  for (const order of orders) {
+    const orderItems = (items || []).filter((entry) => entry.order_id === order.id);
+    const totalAmount = calcOrderTotal(order, orderItems);
+    const paidAmount = getOrderPaidAmount(order, totalAmount);
+    const invoiceMethod = String(order.invoice_payment_method || '').toLowerCase();
+    const paymentStatus = String(order.payment_status || '').toLowerCase();
+    const docVerification = order.document_verification && typeof order.document_verification === 'object'
+      ? order.document_verification
+      : null;
+    const paidByCash = docVerification?.paid_by_cash === true;
+    const isDocumentPayment =
+      paidAmount > 0 &&
+      order.payment_type === 'with_invoice' &&
+      (
+        paymentStatus === 'check' ||
+        invoiceMethod === 'check' ||
+        (!paidByCash && ['receipt', 'versement', 'transfer', 'virement'].includes(invoiceMethod))
+      );
+
+    if (isDocumentPayment) {
+      documentsCount += 1;
+      documentsValue += paidAmount;
+    }
+  }
 
   for (const item of items || []) {
     const customerId = orderCustomerMap.get(item.order_id) || 'unknown';
@@ -431,6 +458,7 @@ const fetchWorkerSalesSummary = async (
         totalAmount: 0,
         piecesPerBox: product?.pieces_per_box || null,
         imageUrl: product?.image_url || null,
+        subtypeQuantities: {},
         warehouseQuantity: warehouseQtyMap.get(item.product_id) || 0,
         workerStockQuantity: workerStockQtyMap.get(item.product_id) || 0,
         workerStockByWorker: workerStockByWorkerMap.get(item.product_id) || {},
@@ -441,6 +469,9 @@ const fetchWorkerSalesSummary = async (
     agg[item.product_id].quantity += Number(item.quantity || 0);
     agg[item.product_id].giftQuantity += Number(item.gift_quantity || 0);
     agg[item.product_id].totalAmount += Number(item.total_price || 0);
+    const subtypeKey = String((item as any).price_subtype || 'retail').toLowerCase();
+    agg[item.product_id].subtypeQuantities = agg[item.product_id].subtypeQuantities || {};
+    agg[item.product_id].subtypeQuantities![subtypeKey] = (agg[item.product_id].subtypeQuantities![subtypeKey] || 0) + Number(item.quantity || 0);
 
     const existing = agg[item.product_id].customers.find((c) => c.customerId === customerId);
     if (existing) {
@@ -471,6 +502,9 @@ const fetchWorkerSalesSummary = async (
     firstOrderTime: createdTimes.length ? new Date(Math.min(...createdTimes)).toISOString() : null,
     lastOrderTime: updatedTimes.length ? new Date(Math.max(...updatedTimes)).toISOString() : null,
     calc,
+    documentsCount,
+    documentsValue,
+    receivedDocumentsValue: 0,
   };
 };
 
