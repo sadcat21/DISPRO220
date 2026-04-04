@@ -93,9 +93,16 @@ const HandoverItemPickerDialog = ({ open, onOpenChange, paymentMethod, onConfirm
           let amount = Number(o.total_amount || 0);
           if (o.payment_status === 'partial') amount = Number(o.partial_amount || 0);
           else if (o.payment_status === 'debt') amount = 0;
+          const itemsSubtotal = (o.order_items || []).reduce((sum: number, item: any) => sum + Number(item.total_price || 0), 0);
+          const stampAmount =
+            paymentMethod === 'cash' && stampTiers?.length
+              ? calculateStampAmount(itemsSubtotal > 0 ? itemsSubtotal : amount, stampTiers)
+              : 0;
           return {
             order_id: o.id,
             amount,
+            stamp_amount: stampAmount,
+            total_with_stamp: amount + stampAmount,
             customer_name: (o.customers as any)?.name || '',
             created_at: o.created_at,
           };
