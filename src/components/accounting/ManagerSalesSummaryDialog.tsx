@@ -919,22 +919,22 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
                   <Tabs defaultValue="snapshot" className="space-y-3">
                     <TabsList className="h-auto w-full justify-start gap-2 overflow-x-auto rounded-none bg-transparent p-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                       <TabsTrigger value="snapshot" className="shrink-0 rounded-full border border-slate-200 bg-slate-100 px-3 text-xs sm:px-4 sm:text-sm data-[state=active]:border-slate-900 data-[state=active]:bg-slate-900 data-[state=active]:text-white">
-                        نظرة عامة
+                        {labels.snapshot}
                       </TabsTrigger>
                       <TabsTrigger value="payments" className="shrink-0 rounded-full border border-slate-200 bg-slate-100 px-3 text-xs sm:px-4 sm:text-sm data-[state=active]:border-slate-900 data-[state=active]:bg-slate-900 data-[state=active]:text-white">
-                        طرق الدفع
+                        {labels.payments}
                       </TabsTrigger>
                       <TabsTrigger value="collections" className="shrink-0 rounded-full border border-slate-200 bg-slate-100 px-3 text-xs sm:px-4 sm:text-sm data-[state=active]:border-slate-900 data-[state=active]:bg-slate-900 data-[state=active]:text-white">
-                        التحصيلات
+                        {labels.collections}
                       </TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="snapshot" className="mt-0 rounded-[22px] border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
-                      <BreakdownRow label="إجمالي النقد (مبيعات + تحصيلات)" value={aggregate.calc.totalPaid + aggregate.calc.debtCollections.total} />
-                      <BreakdownRow label="إجمالي غير نقدي" value={finance.nonCashCollected} />
-                      <BreakdownRow label="في ذمة العمال ولم يسلَّم للمدير" value={finance.workerHeldAmount} />
-                      <BreakdownRow label="المصاريف النقدية" value={aggregate.calc.cashExpenses} />
-                      <BreakdownRow label="فائض العملاء" value={aggregate.calc.customerSurplusCash} />
+                      <BreakdownRow label={labels.cashAndCollections} value={aggregate.calc.totalPaid + aggregate.calc.debtCollections.total} />
+                      <BreakdownRow label={labels.nonCash} value={finance.nonCashCollected} />
+                      <BreakdownRow label={labels.heldNotDelivered} value={finance.workerHeldAmount} />
+                      <BreakdownRow label={labels.cashExpenses} value={aggregate.calc.cashExpenses} />
+                      <BreakdownRow label={labels.customerSurplus} value={aggregate.calc.customerSurplusCash} />
                     </TabsContent>
 
                     <TabsContent value="payments" className="mt-0 rounded-[22px] border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
