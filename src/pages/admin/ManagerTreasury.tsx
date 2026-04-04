@@ -652,14 +652,20 @@ const ManagerTreasury = () => {
                     </div>
                   </div>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-                      <p className="text-[11px] text-emerald-700">{t('treasury.cash_invoice1')} + Versement Cash</p>
-                      <p className="mt-1 text-lg font-bold text-emerald-600">{invoice1CashAmountWithStamp.toLocaleString()} {cur}</p>
-                    </div>
-                    <div className="rounded-xl border border-sky-200 bg-sky-50 p-3">
-                      <p className="text-[11px] text-sky-700">{t('treasury.cash_invoice2')}</p>
-                      <p className="mt-1 text-lg font-bold text-sky-600">{availableInvoice2CashAmount.toLocaleString()} {cur}</p>
-                    </div>
+	                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+	                      <p className="text-[11px] text-emerald-700">{t('treasury.cash_invoice1')} + Versement Cash</p>
+	                      <p className="mt-1 text-lg font-bold text-emerald-600">{invoice1CashAmountWithStamp.toLocaleString()} {cur}</p>
+	                      {pickedCashStampAmount > 0 && (
+	                        <p className="mt-1 text-[11px] text-amber-700">الطابع ضمن Espèces: {pickedCashStampAmount.toLocaleString()} {cur}</p>
+	                      )}
+	                    </div>
+	                    <div className="rounded-xl border border-sky-200 bg-sky-50 p-3">
+	                      <p className="text-[11px] text-sky-700">{t('treasury.cash_invoice2')}</p>
+	                      <p className="mt-1 text-lg font-bold text-sky-600">{availableInvoice2CashAmount.toLocaleString()} {cur}</p>
+	                      {invoice2CashAmount > 0 && (
+	                        <p className="mt-1 text-[11px] text-sky-700">المرسل من فاتورة 2: {invoice2CashAmount.toLocaleString()} {cur}</p>
+	                      )}
+	                    </div>
                   </div>
                   {deliveredCashAmount > 0 && deliveredCashAmount < invoice1CashAmountWithStamp && (
                     <p className="text-xs font-medium text-destructive">الكاش المسلم أقل من كاش فاتورة 1 المحدد.</p>
