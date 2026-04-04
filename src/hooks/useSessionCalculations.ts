@@ -106,27 +106,26 @@ export async function fetchSessionCalculations(params: SessionCalcParams | null)
     orders = ordersData || [];
   }
 
-  let debtsByOrderId: Record<string, { total_amount: number; paid_amount: number; remaining_amount: number | null; status?: string | null }> = {};
+  let debtsByOrderId: Record<string, { id?: string; total_amount: number; paid_amount: number; remaining_amount: number | null; status?: string | null }> = {};
+  const tempDebtIds = new Set<string>();
   if (deliveryOrderIds.length > 0) {
     const { data: debtsData, error: debtsError } = await supabase
       .from('customer_debts')
-      .select('order_id, total_amount, paid_amount, remaining_amount, status')
+      .select('id, order_id, total_amount, paid_amount, remaining_amount, status')
       .eq('worker_id', workerId)
       .in('order_id', deliveryOrderIds);
     ensureNoError(debtsError, 'order debts');
-    debtsByOrderId = Object.fromEntries(
-      (debtsData || [])
-        .filter((debt: any) => !!debt.order_id)
-        .map((debt: any) => [
-          debt.order_id,
-          {
-            total_amount: Number(debt.total_amount || 0),
-            paid_amount: Number(debt.paid_amount || 0),
-            remaining_amount: debt.remaining_amount == null ? null : Number(debt.remaining_amount),
-            status: debt.status || null,
-          },
-        ]),
-    );
+    for (const debt of debtsData || []) {
+      if (!debt.order_id) continue;
+      if (debt.id) tempDebtIds.add(debt.id);
+      debtsByOrderId[debt.order_id] = {
+        id: debt.id,
+        total_amount: Number(debt.total_amount || 0),
+        paid_amount: Number(debt.paid_amount || 0),
+        remaining_amount: debt.remaining_amount == null ? null : Number(debt.remaining_amount),
+        status: debt.status || null,
+      };
+    }
   }
 
   // 2. Fetch debt payments (use exact period timestamps)
@@ -273,8 +272,7 @@ export async function fetchSessionCalculations(params: SessionCalcParams | null)
       const tempDebtPaymentsByOrderId: Record<string, { total: number; cash: number; check: number; transfer: number; receipt: number }> = {};
 
       for (const dp of (debtPayments || [])) {
-        const debtOrderId = (dp as any)?.debt?.order_id;
-        if (!debtOrderId || !deliveryOrderIds.includes(debtOrderId)) continue;
+        if (!dp.debt_id || !tempDebtIds.has(dp.debt_id)) continue;
 
         const amount = Number((dp as any).amount || 0);
         const method = String((dp as any).payment_method || 'cash').toLowerCase();
@@ -460,8 +458,7 @@ export async function fetchSessionCalculations(params: SessionCalcParams | null)
         total: 0, cash: 0, check: 0, transfer: 0, receipt: 0,
       };
       for (const dp of (debtPayments || [])) {
-        const debtOrderId = (dp as any)?.debt?.order_id;
-        if (debtOrderId && deliveryOrderIds.includes(debtOrderId)) continue;
+        if (dp.debt_id && tempDebtIds.has(dp.debt_id)) continue;
 
         const amount = Number(dp.amount || 0);
         debtCollections.total += amount;
