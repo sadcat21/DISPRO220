@@ -47,6 +47,7 @@ interface ProductAgg {
   totalAmount: number;
   piecesPerBox: number | null;
   imageUrl: string | null;
+  subtypeQuantities?: Record<string, number>;
   warehouseQuantity?: number;
   workerStockQuantity?: number;
   workerStockByWorker?: Record<string, number>;
@@ -64,6 +65,9 @@ interface WorkerSummary {
   lastOrderTime: string | null;
   calc: SessionCalculations;
   managerReceivedAmount: number;
+  documentsCount: number;
+  documentsValue: number;
+  receivedDocumentsValue: number;
 }
 
 interface AggregateSummary {
@@ -74,11 +78,15 @@ interface AggregateSummary {
   lastOrderTime: string | null;
   calc: SessionCalculations;
   managerReceivedAmount: number;
+  documentsCount: number;
+  documentsValue: number;
+  receivedDocumentsValue: number;
 }
 
 interface SummaryFinance {
   nonCashCollected: number;
   workerHeldAmount: number;
+  pendingDocumentsValue: number;
 }
 
 const WORK_DAYS = [
