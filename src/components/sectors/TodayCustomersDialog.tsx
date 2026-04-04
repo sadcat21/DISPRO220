@@ -1798,7 +1798,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
           <DialogHeader className="p-3 border-b shrink-0">
             <DialogTitle className="flex items-center gap-2 text-sm">
               <MapPin className="w-4 h-4 text-primary shrink-0" />
-              <span className="truncate">{title}</span>
+              <span className="truncate">{displayTitle}</span>
             </DialogTitle>
           </DialogHeader>
 
