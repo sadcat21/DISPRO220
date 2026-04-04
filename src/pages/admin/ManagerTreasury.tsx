@@ -30,6 +30,7 @@ import TreasurySettingsDialog from '@/components/treasury/TreasurySettingsDialog
 import CoinExchangeDialog from '@/components/treasury/CoinExchangeDialog';
 import InvoiceRequestDialog from '@/components/treasury/InvoiceRequestDialog';
 import { useTreasuryContacts } from '@/hooks/useTreasuryContacts';
+import { isTransferPaidByCash, resolveReceiptBucket } from '@/utils/treasuryDocumentClassification';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useIsElementHidden } from '@/hooks/useUIOverrides';
 
@@ -151,6 +152,118 @@ const ManagerTreasury = () => {
   const [editReceivedBy, setEditReceivedBy] = useState('');
   const printRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
+  const { data: remainingCounts } = useQuery({
+    queryKey: ['treasury-remaining-counts', activeBranch?.id],
+    enabled: !!activeBranch?.id,
+    queryFn: async () => {
+      const [{ data: handovers, error: handoversError }, { data: handedItems, error: handedItemsError }, { data: orders, error: ordersError }] = await Promise.all([
+        supabase
+          .from('manager_handovers')
+          .select('cash_invoice1, cash_invoice2, checks_amount, receipts_amount, transfers_amount')
+          .eq('branch_id', activeBranch!.id),
+        supabase
+          .from('handover_items')
+          .select('order_id, payment_method, handover:manager_handovers!inner(branch_id)')
+          .eq('handover.branch_id', activeBranch!.id),
+        supabase
+          .from('orders')
+          .select('id, total_amount, partial_amount, payment_status, payment_type, invoice_payment_method, document_verification')
+          .eq('status', 'delivered')
+          .eq('branch_id', activeBranch!.id),
+      ]);
+
+      if (handoversError) throw handoversError;
+      if (handedItemsError) throw handedItemsError;
+      if (ordersError) throw ordersError;
+
+      const handedByOrder = new Map<string, Set<string>>();
+      for (const item of handedItems || []) {
+        if (!item.order_id) continue;
+        if (!handedByOrder.has(item.order_id)) handedByOrder.set(item.order_id, new Set());
+        handedByOrder.get(item.order_id)!.add(String(item.payment_method || ''));
+      }
+
+      const buckets = {
+        cash_invoice1: [] as Array<{ id: string; amount: number }>,
+        cash_invoice2: [] as Array<{ id: string; amount: number }>,
+        check: [] as Array<{ id: string; amount: number }>,
+        receipt_cash: [] as Array<{ id: string; amount: number }>,
+        receipt: [] as Array<{ id: string; amount: number }>,
+        transfer: [] as Array<{ id: string; amount: number }>,
+      };
+
+      for (const order of orders || []) {
+        let amount = Number(order.total_amount || 0);
+        if (order.payment_status === 'partial') amount = Number(order.partial_amount || 0);
+        else if (order.payment_status === 'debt') amount = 0;
+        if (amount <= 0) continue;
+
+        const handedMethods = handedByOrder.get(order.id) || new Set<string>();
+        const receiptBucket = resolveReceiptBucket(order.document_verification);
+        const transferByCash = isTransferPaidByCash(order.document_verification);
+
+        if (order.payment_type === 'without_invoice') {
+          buckets.cash_invoice2.push({ id: order.id, amount });
+          continue;
+        }
+
+        switch (order.invoice_payment_method) {
+          case 'cash':
+            if (!handedMethods.has('cash')) buckets.cash_invoice1.push({ id: order.id, amount });
+            break;
+          case 'check':
+            if (!handedMethods.has('check')) buckets.check.push({ id: order.id, amount });
+            break;
+          case 'receipt':
+            if (receiptBucket === 'cash') {
+              if (!handedMethods.has('receipt_cash') && !handedMethods.has('cash') && !handedMethods.has('receipt')) {
+                buckets.receipt_cash.push({ id: order.id, amount });
+              }
+            } else if (!handedMethods.has('receipt')) {
+              buckets.receipt.push({ id: order.id, amount });
+            }
+            break;
+          case 'transfer':
+            if (!transferByCash && !handedMethods.has('transfer')) buckets.transfer.push({ id: order.id, amount });
+            break;
+          default:
+            break;
+        }
+      }
+
+      const applyAmountFallback = (items: Array<{ id: string; amount: number }>, handedAmount: number) => {
+        let remainingHanded = Math.max(0, handedAmount);
+        return items
+          .slice()
+          .sort((a, b) => a.id.localeCompare(b.id))
+          .flatMap((item) => {
+            if (remainingHanded <= 0) return [item];
+            if (remainingHanded >= item.amount) {
+              remainingHanded -= item.amount;
+              return [];
+            }
+            const rest = item.amount - remainingHanded;
+            remainingHanded = 0;
+            return rest > 1 ? [{ ...item, amount: rest }] : [];
+          });
+      };
+
+      const handedCash1 = (handovers || []).reduce((sum, handover: any) => sum + Number(handover.cash_invoice1 || 0), 0);
+      const handedCash2 = (handovers || []).reduce((sum, handover: any) => sum + Number(handover.cash_invoice2 || 0), 0);
+      const handedChecks = (handovers || []).reduce((sum, handover: any) => sum + Number(handover.checks_amount || 0), 0);
+      const handedReceipts = (handovers || []).reduce((sum, handover: any) => sum + Number(handover.receipts_amount || 0), 0);
+      const handedTransfers = (handovers || []).reduce((sum, handover: any) => sum + Number(handover.transfers_amount || 0), 0);
+
+      return {
+        cash_invoice1: applyAmountFallback(buckets.cash_invoice1, handedCash1).length,
+        cash_invoice2: applyAmountFallback(buckets.cash_invoice2, handedCash2).length,
+        check: applyAmountFallback(buckets.check, handedChecks).length,
+        receipt_cash: buckets.receipt_cash.length,
+        receipt: applyAmountFallback(buckets.receipt, handedReceipts).length,
+        transfer: applyAmountFallback(buckets.transfer, handedTransfers).length,
+      };
+    },
+  });
 
   const openEditHandover = async (h: any) => {
     setEditCash1(Number(h.cash_invoice1 ?? 0));
@@ -309,12 +422,12 @@ const ManagerTreasury = () => {
   const deliveredCashAmount = Number(handoverForm.cash_delivered || 0);
   const availableInvoice2CashAmount = Math.max((summary?.cash_invoice2 || 0) - (summary?.cash_invoice2_handed || 0), 0);
   const invoice2CashAmount = Math.max(0, deliveredCashAmount - invoice1CashAmountWithStamp);
-  const remainingCashInvoice1Count = ((summary?.cash_invoice1 || 0) + (summary?.cash_invoice1_stamp || 0) - (summary?.cash_invoice1_handed || 0)) > 0 ? (summary?.cash_invoice1_count || 0) : 0;
-  const remainingCashInvoice2Count = ((summary?.cash_invoice2 || 0) - (summary?.cash_invoice2_handed || 0)) > 0 ? (summary?.cash_invoice2_count || 0) : 0;
-  const remainingChecksCount = ((summary?.check || 0) - (summary?.check_handed || 0)) > 0 ? (summary?.checkCount || 0) : 0;
-  const remainingReceiptCashCount = ((summary?.receipt_cash || 0) - (summary?.receipt_cash_handed || 0)) > 0 ? (summary?.receiptCashCount || 0) : 0;
-  const remainingReceiptDocCount = ((summary?.bank_receipt || 0) - (summary?.receipt_handed || 0)) > 0 ? (summary?.receiptCount || 0) : 0;
-  const remainingTransferCount = ((summary?.bank_transfer || 0) - (summary?.transfer_handed || 0)) > 0 ? (summary?.transferCount || 0) : 0;
+  const remainingCashInvoice1Count = remainingCounts?.cash_invoice1 ?? (((summary?.cash_invoice1 || 0) + (summary?.cash_invoice1_stamp || 0) - (summary?.cash_invoice1_handed || 0)) > 1 ? (summary?.cash_invoice1_count || 0) : 0);
+  const remainingCashInvoice2Count = remainingCounts?.cash_invoice2 ?? (((summary?.cash_invoice2 || 0) - (summary?.cash_invoice2_handed || 0)) > 1 ? (summary?.cash_invoice2_count || 0) : 0);
+  const remainingChecksCount = remainingCounts?.check ?? (((summary?.check || 0) - (summary?.check_handed || 0)) > 1 ? (summary?.checkCount || 0) : 0);
+  const remainingReceiptCashCount = remainingCounts?.receipt_cash ?? (((summary?.receipt_cash || 0) - (summary?.receipt_cash_handed || 0)) > 1 ? (summary?.receiptCashCount || 0) : 0);
+  const remainingReceiptDocCount = remainingCounts?.receipt ?? (((summary?.bank_receipt || 0) - (summary?.receipt_handed || 0)) > 1 ? (summary?.receiptCount || 0) : 0);
+  const remainingTransferCount = remainingCounts?.transfer ?? (((summary?.bank_transfer || 0) - (summary?.transfer_handed || 0)) > 1 ? (summary?.transferCount || 0) : 0);
 
   const handleHandover = async () => {
     const finalCash1 = invoice1CashAmountWithStamp;
