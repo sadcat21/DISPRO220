@@ -926,6 +926,30 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [stockItems, saleItems]);
 
+  const productImageMap = useMemo(() => {
+    const map = new Map<string, string>();
+
+    (allProducts || []).forEach((product) => {
+      if (product?.id && product?.image_url) map.set(product.id, product.image_url);
+    });
+
+    (stockItems || []).forEach((stockItem) => {
+      if (stockItem?.product_id && stockItem?.product?.image_url) {
+        map.set(stockItem.product_id, stockItem.product.image_url);
+      }
+    });
+
+    (orderItems || []).forEach((item: any) => {
+      if (item?.product_id && item?.product?.image_url) {
+        map.set(item.product_id, item.product.image_url);
+      }
+    });
+
+    return map;
+  }, [allProducts, stockItems, orderItems]);
+
+  const getProductImage = useCallback((productId: string) => productImageMap.get(productId) || null, [productImageMap]);
+
   if (isLoadingItems) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
