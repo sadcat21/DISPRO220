@@ -188,7 +188,7 @@ const HandoverItemPickerDialog = ({ open, onOpenChange, paymentMethod, onConfirm
                       {format(new Date(item.created_at), 'dd/MM/yyyy HH:mm')}
                     </p>
                     {paymentMethod === 'cash' && Number(item.stamp_amount || 0) > 0 && (
-                      <p className="mt-0.5 text-[10px] text-amber-600">
+                      <p dir="ltr" className="mt-0.5 text-[10px] text-amber-600">
                         طابع: {Number(item.stamp_amount || 0).toLocaleString()} د.ج
                         {' · '}
                         الإجمالي: {Number(item.total_with_stamp || item.amount).toLocaleString()} د.ج
