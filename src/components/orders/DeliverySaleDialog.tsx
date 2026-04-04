@@ -1102,82 +1102,100 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
                               </div>
                             )}
                           </div>
-                          <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className={`font-medium text-sm truncate block ${isShortage ? 'line-through text-muted-foreground' : ''}`}>{item.productName}</span>
-                            {isShortage && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <PackageX className="w-4 h-4 text-orange-600 dark:text-orange-400 shrink-0" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>{t('stock.product_unavailable_short')}</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
-                          </div>
-                          {isShortage ? (
-                            <span className="text-xs font-semibold text-orange-600 dark:text-orange-400">
-                              {t('stock.product_unavailable_short')}
-                            </span>
-                          ) : (
-                            <>
-                          {(item.giftQuantity > 0 || item.giftPieces > 0) && (
-                                <Badge variant="outline" className="text-[10px] px-1 py-0 border-green-500 text-green-600">
-                                  <Gift className="w-3 h-3 ms-0.5" />
-                                  {item.giftQuantity > 0 && item.giftPieces > 0
-                                    ? `مجاني ${item.giftQuantity}🎁+${item.giftPieces}pcs`
-                                    : item.giftQuantity > 0
-                                      ? `${item.giftQuantity} ${t('common.free')}`
-                                      : `${item.giftPieces}pcs ${t('common.free')}`
-                                  }
-                                </Badge>
-                              )}
-                              {item.unitPrice > 0 && item.quantity > 0 && (
-                                <div className="flex items-center gap-1 flex-wrap">
-                                  <span className="text-xs text-muted-foreground">
-                                    {item.unitPrice.toLocaleString()} {t('common.currency')} × {Math.max(0, item.quantity - item.giftQuantity)} = {item.totalPrice.toLocaleString()} {t('common.currency')}
-                                  </span>
-                                  {unitCount !== null && (
-                                    <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
-                                      {Number.isInteger(unitCount) ? unitCount : unitCount.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                    </span>
+                          <div className="flex-1 min-w-0 space-y-1.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className={`font-semibold text-sm truncate block ${isShortage ? 'line-through text-muted-foreground' : ''}`}>{item.productName}</span>
+                                  {isShortage && (
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <PackageX className="w-4 h-4 text-orange-600 dark:text-orange-400 shrink-0" />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>{t('stock.product_unavailable_short')}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  )}
+                                  {changed && item.originalQuantity > 0 && !isShortage && (
+                                    <Badge variant="secondary" className="text-[10px]">
+                                      {item.originalQuantity} ? {item.quantity}
+                                    </Badge>
+                                  )}
+                                  {!item.originalItemId && !isShortage && (
+                                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 text-[10px]">
+                                      {t('common.new')}
+                                    </Badge>
                                   )}
                                 </div>
-                              )}
-                              {available > 0 && (
-                                <span className="text-xs text-muted-foreground block">
-                                  {t('stock.available')}: {available}
-                                </span>
-                              )}
-                            </>
-                          )}
-                        </div>
-                        {!isShortage && (
-                          <div className="flex items-center gap-1.5">
-                            <div className="flex flex-col items-center min-w-8">
-                              <span className="font-bold text-sm">{Math.max(0, item.quantity - item.giftQuantity)}</span>
-                              {(item.giftQuantity > 0 || item.giftPieces > 0) && (
-                                <span className="text-[9px] text-green-600 dark:text-green-400 leading-none">
-                                  {item.giftQuantity > 0 ? `+${item.giftQuantity}🎁` : ''}
-                                  {item.giftPieces > 0 ? `+${item.giftPieces}pcs` : ''}
-                                </span>
-                              )}
+                              </div>
+                              <span className="font-extrabold text-sm text-primary whitespace-nowrap">
+                                {item.totalPrice.toLocaleString()} {t('common.currency')}
+                              </span>
                             </div>
-                          </div>
-                        )}
-                        {changed && item.originalQuantity > 0 && !isShortage && (
-                          <Badge variant="secondary" className="text-[10px]">
-                            {item.originalQuantity} → {item.quantity}
-                          </Badge>
-                        )}
-                        {!item.originalItemId && !isShortage && (
-                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 text-[10px]">
-                            {t('common.new')}
-                          </Badge>
-                        )}
+
+                            {isShortage ? (
+                              <span className="text-xs font-semibold text-orange-600 dark:text-orange-400">
+                                {t('stock.product_unavailable_short')}
+                              </span>
+                            ) : (
+                              <>
+                                {(item.giftQuantity > 0 || item.giftPieces > 0) && (
+                                  <Badge variant="outline" className="text-[10px] px-1 py-0 border-green-500 text-green-600">
+                                    <Gift className="w-3 h-3 ms-0.5" />
+                                    {item.giftQuantity > 0 && item.giftPieces > 0
+                                      ? `????? ${item.giftQuantity}??+${item.giftPieces}pcs`
+                                      : item.giftQuantity > 0
+                                        ? `${item.giftQuantity} ${t('common.free')}`
+                                        : `${item.giftPieces}pcs ${t('common.free')}`
+                                    }
+                                  </Badge>
+                                )}
+                                {item.unitPrice > 0 && item.quantity > 0 && (
+                                  <div className="flex items-center gap-1 flex-wrap">
+                                    <span className="text-xs text-muted-foreground">
+                                      {item.unitPrice.toLocaleString()} {t('common.currency')} ? {Math.max(0, item.quantity - item.giftQuantity)} = {item.totalPrice.toLocaleString()} {t('common.currency')}
+                                    </span>
+                                    {unitCount !== null && (
+                                      <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+                                        {Number.isInteger(unitCount) ? unitCount : unitCount.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                                {available > 0 && (
+                                  <span className="text-xs text-muted-foreground block">
+                                    {t('stock.available')}: {available}
+                                  </span>
+                                )}
+                              </>
+                            )}
+
+                            {!isShortage && (
+                              <div className="flex items-center justify-between gap-3 pt-1">
+                                <div className="flex flex-col items-start min-w-10">
+                                  <span className="text-[11px] text-muted-foreground">?????? ???????</span>
+                                  <span className="font-bold text-sm">{Math.max(0, item.quantity - item.giftQuantity)}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <Button type="button" variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleUpdateQuantity(item.productId, -1)}>
+                                    <Minus className="w-3.5 h-3.5" />
+                                  </Button>
+                                  <div className="min-w-[42px] rounded-full bg-primary/8 px-2.5 py-1 text-center text-sm font-bold text-primary">
+                                    {Math.max(0, item.quantity - item.giftQuantity)}
+                                  </div>
+                                  <Button type="button" variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleUpdateQuantity(item.productId, 1)}>
+                                    <Plus className="w-3.5 h-3.5" />
+                                  </Button>
+                                  <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-full text-destructive hover:text-destructive" onClick={() => handleRemoveItem(item.productId)}>
+                                    <XCircle className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>                        )}
                       </div>
                     );
                   })}
