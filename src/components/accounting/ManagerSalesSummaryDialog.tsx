@@ -73,6 +73,7 @@ interface AggregateSummary {
   firstOrderTime: string | null;
   lastOrderTime: string | null;
   calc: SessionCalculations;
+  managerReceivedAmount: number;
 }
 
 interface SummaryFinance {
