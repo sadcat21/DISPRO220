@@ -427,6 +427,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
           status,
           notes,
           created_at,
+          worker:workers!debt_collections_worker_id_fkey(id, full_name, username),
           debt:customer_debts!debt_collections_debt_id_fkey(
             id,
             customer_id,
