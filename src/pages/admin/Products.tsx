@@ -576,7 +576,9 @@ const Products: React.FC = () => {
     <div className="p-4 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold">{t('products.title')}</h2>
+        <button type="button" onClick={handleTitleTap} className="text-xl font-bold">
+          {t('products.title')}
+        </button>
         <div className="flex items-center gap-2">
           <Button 
             size="sm" 
