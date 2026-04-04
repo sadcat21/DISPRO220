@@ -462,6 +462,7 @@ const buildAggregateSummary = (workerSummaries: WorkerSummary[], selectedWorkerI
         firstOrderTime: workerSummary.firstOrderTime,
         lastOrderTime: workerSummary.lastOrderTime,
         calc: workerSummary.calc,
+        managerReceivedAmount: workerSummary.managerReceivedAmount,
       };
     }
   }
@@ -476,6 +477,7 @@ const buildAggregateSummary = (workerSummaries: WorkerSummary[], selectedWorkerI
     firstOrderTime: firstTimes.length ? new Date(Math.min(...firstTimes)).toISOString() : null,
     lastOrderTime: lastTimes.length ? new Date(Math.max(...lastTimes)).toISOString() : null,
     calc: mergeCalcs(workerSummaries.map((item) => item.calc)),
+    managerReceivedAmount: workerSummaries.reduce((sum, item) => sum + item.managerReceivedAmount, 0),
   };
 };
 
