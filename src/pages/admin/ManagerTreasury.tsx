@@ -536,26 +536,26 @@ const ManagerTreasury = () => {
             <Switch checked={showCardDetails} onCheckedChange={setShowCardDetails} />
           </div>
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex flex-wrap gap-1.5 pb-1 sm:gap-2">
           {!isSettingsHidden && (
-            <Button size="sm" variant="outline" className="h-9 shrink-0 gap-1.5 rounded-full px-3 text-[11px]" onClick={() => setSettingsOpen(true)}>
+            <Button size="sm" variant="outline" className="h-8 gap-1 rounded-full px-2.5 text-[10px] sm:h-9 sm:px-3 sm:text-[11px]" onClick={() => setSettingsOpen(true)}>
               <Settings className="w-4 h-4" />
               <span>إعدادات</span>
             </Button>
           )}
-          <Button size="sm" variant="outline" className="h-9 shrink-0 gap-1.5 rounded-full px-3 text-[11px]" onClick={syncOldSessions} disabled={syncing}>
+          <Button size="sm" variant="outline" className="h-8 gap-1 rounded-full px-2.5 text-[10px] sm:h-9 sm:px-3 sm:text-[11px]" onClick={syncOldSessions} disabled={syncing}>
             <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
             <span>مزامنة</span>
           </Button>
           {!isInvoiceRequestHidden && (
-            <Button size="sm" variant="default" className="h-9 shrink-0 gap-1.5 rounded-full px-3 text-[11px]" onClick={() => setInvoiceRequestOpen(true)} title="طلب فاتورة">
+            <Button size="sm" variant="default" className="h-8 gap-1 rounded-full px-2.5 text-[10px] sm:h-9 sm:px-3 sm:text-[11px]" onClick={() => setInvoiceRequestOpen(true)} title="طلب فاتورة">
               <Receipt className="w-4 h-4" />
               <span>فاتورة</span>
             </Button>
           )}
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" variant="outline" className="h-9 shrink-0 gap-1.5 rounded-full px-3 text-[11px]"><FilePlus className="w-4 h-4" /><span>إضافة</span></Button>
+              <Button size="sm" variant="outline" className="h-8 gap-1 rounded-full px-2.5 text-[10px] sm:h-9 sm:px-3 sm:text-[11px]"><FilePlus className="w-4 h-4" /><span>إضافة</span></Button>
             </DialogTrigger>
             <DialogContent dir={dir}>
               <DialogHeader><DialogTitle>{t('treasury.add_manual')}</DialogTitle></DialogHeader>
@@ -633,13 +633,13 @@ const ManagerTreasury = () => {
               </div>
             </DialogContent>
           </Dialog>
-          <Button size="sm" variant="outline" className="h-9 shrink-0 gap-1.5 rounded-full px-3 text-[11px]" onClick={() => { setActiveTab('handovers'); setTimeout(() => document.getElementById('handovers-section')?.scrollIntoView({ behavior: 'smooth' }), 100); }}>
+          <Button size="sm" variant="outline" className="h-8 gap-1 rounded-full px-2.5 text-[10px] sm:h-9 sm:px-3 sm:text-[11px]" onClick={() => { setActiveTab('handovers'); setTimeout(() => document.getElementById('handovers-section')?.scrollIntoView({ behavior: 'smooth' }), 100); }}>
             <Table2 className="w-4 h-4" />
             <span>السجل</span>
           </Button>
           <Dialog open={handoverOpen} onOpenChange={setHandoverOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="h-9 shrink-0 gap-1.5 rounded-full px-3 text-[11px]"><Send className="w-4 h-4" /><span>تسليم</span></Button>
+              <Button size="sm" className="h-8 gap-1 rounded-full px-2.5 text-[10px] sm:h-9 sm:px-3 sm:text-[11px]"><Send className="w-4 h-4" /><span>تسليم</span></Button>
             </DialogTrigger>
             <DialogContent dir={dir} className="max-h-[90vh] overflow-y-auto">
               <DialogHeader><DialogTitle>{t('treasury.handover_to_upper')}</DialogTitle></DialogHeader>
