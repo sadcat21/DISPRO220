@@ -3060,12 +3060,7 @@ const CollectedDebtOperationList: React.FC<{
       {filtered.map((operation) => {
         const customer = operation.debt?.customer;
         const collectorName = operation.worker?.full_name || operation.worker?.username || '—';
-        const totalDebt = Number(operation.debt?.total_amount || 0);
-        const currentPaid = Number(operation.debt?.paid_amount || 0);
         const collectedAmount = Number(operation.amount_collected || 0);
-        const debtAfter = Math.max(0, Number(operation.debt?.remaining_amount || 0));
-        const debtBefore = Math.max(0, debtAfter + collectedAmount);
-        const paidBefore = Math.max(0, currentPaid - collectedAmount);
 
         return (
           <Card key={operation.id} className="overflow-hidden">
