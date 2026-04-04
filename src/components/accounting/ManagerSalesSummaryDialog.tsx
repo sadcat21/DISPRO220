@@ -1017,6 +1017,7 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
                     <TabsContent value="snapshot" className="mt-0 rounded-[22px] border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
                       <BreakdownRow label={labels.cashAndCollections} value={aggregate.calc.totalPaid + aggregate.calc.debtCollections.total} />
                       <BreakdownRow label={labels.nonCash} value={finance.nonCashCollected} />
+                      <BreakdownRow label={labels.documents} value={aggregate.documentsValue} />
                       <BreakdownRow label={labels.heldNotDelivered} value={finance.workerHeldAmount} />
                       <BreakdownRow label={labels.cashExpenses} value={aggregate.calc.cashExpenses} />
                       <BreakdownRow label={labels.customerSurplus} value={aggregate.calc.customerSurplusCash} />
