@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchSessionCalculations, SessionCalculations } from '@/hooks/useSessionCalculations';
 import { Banknote, Calendar, ClipboardList, Gift, HandCoins, Package, ShoppingBag, TrendingDown, Wallet } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
   open: boolean;
@@ -62,6 +63,7 @@ interface WorkerSummary {
   firstOrderTime: string | null;
   lastOrderTime: string | null;
   calc: SessionCalculations;
+  managerReceivedAmount: number;
 }
 
 interface AggregateSummary {
