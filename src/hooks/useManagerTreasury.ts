@@ -235,8 +235,9 @@ export const useTreasurySummary = () => {
         return s + paid;
       }, 0);
 
-      // Actual unpaid amount from orders (more accurate than customer_debts table)
-      const orderUnpaidAmount = totalSales - paidFromOrders;
+      // Unpaid should never be negative. Any excess collection is treated elsewhere as surplus, not "negative debt".
+      const rawOrderUnpaidAmount = totalSales - paidFromOrders;
+      const orderUnpaidAmount = Math.max(0, rawOrderUnpaidAmount);
 
       // Calculate total gift value (gifts given without payment)
       const totalGiftsValue = (orders || []).reduce((s: number, o: any) => {
