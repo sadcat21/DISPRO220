@@ -1834,13 +1834,47 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
           <div className="border-b px-2 py-1.5 shrink-0">
             <ScrollArea className="w-full" dir="rtl">
               <div className="flex gap-1.5 pb-1">
+                <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-medium whitespace-nowrap transition-colors shrink-0 ${
+                        selectedCustomDate
+                          ? 'bg-blue-50 text-blue-700 border-blue-200'
+                          : 'bg-background border-border hover:bg-accent text-foreground'
+                      }`}
+                    >
+                      <CalendarIcon className="w-3.5 h-3.5" />
+                      <span>{selectedCustomDate ? format(selectedCustomDate, 'dd/MM') : 'الرزنامة'}</span>
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-popover" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedCustomDate}
+                      onSelect={(date) => {
+                        if (!date) return;
+                        const jsDay = date.getDay();
+                        setSelectedCustomDate(date);
+                        setSelectedDay(JS_DAY_TO_NAME[jsDay] || todayName);
+                        setCalendarOpen(false);
+                      }}
+                      disabled={(date) => date > new Date()}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
                 {Object.entries(DAY_NAMES).map(([key, label]) => {
                   const isSelected = key === selectedDay;
                   const isToday = key === todayName;
                   return (
                     <button
                       key={key}
-                      onClick={() => setSelectedDay(key)}
+                      onClick={() => {
+                        setSelectedCustomDate(undefined);
+                        setSelectedDay(key);
+                      }}
                       className={`px-2.5 py-1 rounded-full border text-[11px] font-medium whitespace-nowrap transition-colors shrink-0
                         ${isSelected
                           ? 'bg-primary text-primary-foreground border-primary'
