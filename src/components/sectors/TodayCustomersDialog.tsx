@@ -1281,6 +1281,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         .eq('customer_id', customer.id)
         .eq('status', 'delivered')
         .gte('updated_at', todayStart)
+        .lte('updated_at', selectedDayBounds.end)
         .order('updated_at', { ascending: false })
         .limit(1);
       if (data && data.length > 0) {
@@ -1302,6 +1303,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         .eq('customer_id', customer.id)
         .eq('created_by', effectiveWorkerId!)
         .gte('created_at', todayStart)
+        .lte('created_at', selectedDayBounds.end)
         .not('status', 'eq', 'cancelled')
         .order('created_at', { ascending: false })
         .limit(1);
@@ -1324,6 +1326,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
       .eq('customer_id', customerId)
       .eq('operation_type', 'direct_sale')
       .gte('created_at', todayStart)
+      .lte('created_at', selectedDayBounds.end)
       .order('created_at', { ascending: false })
       .limit(1);
 
@@ -1357,6 +1360,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
       .eq('customer_id', customerId)
       .eq('status', 'delivered')
       .gte('created_at', todayStart)
+      .lte('created_at', selectedDayBounds.end)
       .order('created_at', { ascending: false })
       .limit(1);
 
