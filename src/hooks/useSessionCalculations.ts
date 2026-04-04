@@ -296,16 +296,16 @@ export async function fetchSessionCalculations(params: SessionCalcParams | null)
         const totalAmount = calcOrderTotal(order);
         totalSales += totalAmount;
 
-        let paidAmount = 0;
+        let directPaidAmount = 0;
         const paymentStatus = order.payment_status || 'pending';
         if (paymentStatus === 'cash' || paymentStatus === 'check') {
-          paidAmount = totalAmount;
+          directPaidAmount = totalAmount;
         } else if (paymentStatus === 'partial') {
-          paidAmount = Number(order.partial_amount || 0);
+          directPaidAmount = Number(order.partial_amount || 0);
         }
 
         const temporaryDebtRecovery = tempDebtPaymentsByOrderId[order.id] || { total: 0, cash: 0, check: 0, transfer: 0, receipt: 0 };
-        paidAmount = Math.min(totalAmount, paidAmount + temporaryDebtRecovery.total);
+        const paidAmount = Math.min(totalAmount, directPaidAmount + temporaryDebtRecovery.total);
 
         const debtAmount = Math.max(0, totalAmount - paidAmount);
         totalPaid += paidAmount;
@@ -370,18 +370,18 @@ export async function fetchSessionCalculations(params: SessionCalcParams | null)
           const paidByCash = docVerification && typeof docVerification === 'object' && docVerification.paid_by_cash === true;
           
           if (paymentStatus === 'check' || invoiceMethod === 'check') {
-            invoice1.check += paidAmount;
+            invoice1.check += directPaidAmount;
           } else if ((invoiceMethod === 'receipt' || invoiceMethod === 'transfer') && paidByCash) {
             // Versement/Virement paid by cash - track separately
-            invoice1.versementCash += paidAmount;
+            invoice1.versementCash += directPaidAmount;
           } else if (invoiceMethod === 'transfer') {
-            invoice1.transfer += paidAmount;
+            invoice1.transfer += directPaidAmount;
           } else if (invoiceMethod === 'receipt') {
-            invoice1.receipt += paidAmount;
+            invoice1.receipt += directPaidAmount;
           } else if (invoiceMethod === 'cash') {
-            invoice1.espaceCash += paidAmount;
+            invoice1.espaceCash += directPaidAmount;
           } else {
-            invoice1.espaceCash += paidAmount;
+            invoice1.espaceCash += directPaidAmount;
           }
 
           if (temporaryDebtRecovery.check > 0) invoice1.check += temporaryDebtRecovery.check;
