@@ -274,6 +274,9 @@ export async function fetchSessionCalculations(params: SessionCalcParams | null)
       for (const dp of (debtPayments || [])) {
         if (!dp.debt_id || !tempDebtIds.has(dp.debt_id)) continue;
 
+        const debtOrderId = (dp as any)?.debt?.order_id;
+        if (!debtOrderId) continue;
+
         const amount = Number((dp as any).amount || 0);
         const method = String((dp as any).payment_method || 'cash').toLowerCase();
         if (!tempDebtPaymentsByOrderId[debtOrderId]) {
