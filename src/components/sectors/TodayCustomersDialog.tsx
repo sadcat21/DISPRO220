@@ -3064,7 +3064,7 @@ const CollectedDebtOperationList: React.FC<{
       {filtered.map((operation) => {
         const customer = operation.debt?.customer;
         const collectorName = operation.worker?.full_name || operation.worker?.username || 'â€”';
-        const debtCreatorName = operation.debt?.worker?.full_name || operation.debt?.worker?.username || 'Ã¢â‚¬â€';
+        const debtCreatorName = operation.debt?.worker?.full_name || operation.debt?.worker?.username || '—';
         const collectedAmount = Number(operation.amount_collected || 0);
         const sector = customer?.sector_id ? sectors?.find((s) => s.id === customer.sector_id) : null;
         const zone = (customer as any)?.zone_id ? allZones?.find((z) => z.id === (customer as any).zone_id) : null;
@@ -3093,8 +3093,10 @@ const CollectedDebtOperationList: React.FC<{
                     <span className="rounded-full bg-muted px-2 py-0.5">{operation.payment_method || 'cash'}</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                    <span>Ø¹Ø§Ù…Ù„ Ø§Ù„ØªØ­ØµÙŠÙ„: <span className="font-semibold text-foreground">{collectorName}</span></span>
-                    <span>â€¢</span>
+                    <span>عامل التحصيل: <span className="font-semibold text-foreground">{collectorName}</span></span>
+                    <span>•</span>
+                    <span>منشئ الدين: <span className="font-semibold text-foreground">{debtCreatorName}</span></span>
+                    <span>•</span>
                     <span>
                       Ø§Ù„Ù…ÙˆØ¹Ø¯ Ø§Ù„Ù‚Ø§Ø¯Ù…:{' '}
                       <span className="font-semibold text-foreground">
@@ -3196,6 +3198,7 @@ const DebtList: React.FC<{ debts: DueDebt[]; onCollect: (d: DueDebt) => void; on
 };
 
 export default TodayCustomersDialog;
+
 
 
 
