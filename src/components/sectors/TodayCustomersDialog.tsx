@@ -2553,17 +2553,36 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void; onCancelOr
                 const unitPrice = normalizedItem.unitPrice;
                 const itemTotal = normalizedItem.totalPrice;
                 const giftQty = normalizedItem.giftQuantity;
+                const productImage = item?.product?.image_url || item?.image_url || null;
 
                 return (
-                  <div key={idx} className="px-3 py-2 space-y-0.5">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm">{productName}</span>
-                      <span className="font-bold text-sm">{Number(itemTotal || 0).toLocaleString()} DA</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span>الكمية: {quantity}</span>
-                      <span>السعر: {Number(unitPrice || 0).toLocaleString()} DA</span>
-                      {giftQty > 0 && <span className="text-emerald-600">🎁 عرض: {giftQty}</span>}
+                  <div key={idx} className="px-3 py-2">
+                    <div className="flex items-start gap-3">
+                      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border bg-muted/40">
+                        {productImage ? (
+                          <img
+                            src={productImage}
+                            alt={productName}
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
+                            لا صورة
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="font-medium text-sm leading-5">{productName}</span>
+                          <span className="font-bold text-sm whitespace-nowrap">{Number(itemTotal || 0).toLocaleString()} DA</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                          <span>الكمية: {quantity}</span>
+                          <span>السعر: {Number(unitPrice || 0).toLocaleString()} DA</span>
+                          {giftQty > 0 && <span className="text-emerald-600">هدية: {giftQty}</span>}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
