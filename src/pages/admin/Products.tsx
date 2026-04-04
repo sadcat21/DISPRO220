@@ -993,14 +993,17 @@ const Products: React.FC = () => {
                   <div className="space-y-1">
                     <Label className="text-[11px] text-muted-foreground">سعر السبر غرو</Label>
                     <Input type="number" min={0} step="0.01" value={editPriceSuperGros} onChange={(e) => setEditPriceSuperGros(parseFloat(e.target.value) || 0)} className="text-right h-9" onFocus={(e) => e.target.select()} />
+                    <p className="text-[10px] text-muted-foreground">قبل TVA 19%: <span dir="ltr" className="font-medium">{formatPrice(getNetPriceBeforeVat(editPriceSuperGros))} DA</span></p>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-[11px] text-muted-foreground">سعر الغرو</Label>
                     <Input type="number" min={0} step="0.01" value={editPriceGros} onChange={(e) => setEditPriceGros(parseFloat(e.target.value) || 0)} className="text-right h-9" onFocus={(e) => e.target.select()} />
+                    <p className="text-[10px] text-muted-foreground">قبل TVA 19%: <span dir="ltr" className="font-medium">{formatPrice(getNetPriceBeforeVat(editPriceGros))} DA</span></p>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-[11px] text-muted-foreground">سعر التجزئة</Label>
                     <Input type="number" min={0} step="0.01" value={editPriceRetail} onChange={(e) => setEditPriceRetail(parseFloat(e.target.value) || 0)} className="text-right h-9" onFocus={(e) => e.target.select()} />
+                    <p className="text-[10px] text-muted-foreground">قبل TVA 19%: <span dir="ltr" className="font-medium">{formatPrice(getNetPriceBeforeVat(editPriceRetail))} DA</span></p>
                   </div>
                 </div>
               </div>
