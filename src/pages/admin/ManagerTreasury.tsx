@@ -990,7 +990,7 @@ const ManagerTreasury = () => {
       {/* Treasury Budget / Gap Analysis */}
       {(() => {
         const totalSales = summary?.totalSales || 0;
-        const orderUnpaidAmount = summary?.orderUnpaidAmount || 0;
+        const unpaidAmount = summary?.uncollectedDebts || 0;
         const debtCashCollected = summary?.debtCashCollected || 0;
         const totalInTreasury = summary?.total || 0;
         const handedOver = summary?.handedOver || 0;
@@ -998,7 +998,7 @@ const ManagerTreasury = () => {
         const workerHeldAmount = summary?.workerHeldAmount || 0;
         
         const coinExchangeOut = summary?.coinExchangeOut || 0;
-        const expectedInTreasury = totalSales - orderUnpaidAmount + debtCashCollected;
+        const expectedInTreasury = totalSales - unpaidAmount + debtCashCollected;
         const netInTreasury = totalInTreasury - handedOver - totalExpenses;
         const accountedFor = netInTreasury + handedOver + totalExpenses + workerHeldAmount + coinExchangeOut;
         const gap = expectedInTreasury - accountedFor;
@@ -1022,7 +1022,7 @@ const ManagerTreasury = () => {
                 </div>
                 <div className="flex items-center justify-between rounded-lg bg-background p-2">
                   <span className="text-[10px] text-muted-foreground">{t('treasury.unpaid')}</span>
-                  <span className="text-xs font-bold text-orange-500">−{orderUnpaidAmount.toLocaleString()} {cur}</span>
+                  <span className="text-xs font-bold text-orange-500">−{unpaidAmount.toLocaleString()} {cur}</span>
                 </div>
                 {debtCashCollected > 0 && (
                   <div className="flex items-center justify-between rounded-lg bg-background p-2">
