@@ -2230,7 +2230,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                   <TabsTrigger value="collected" className="flex-1 gap-1 text-[10px] px-1 py-1.5 data-[state=active]:bg-green-100 data-[state=active]:text-green-700">
                     <Check className="w-3 h-3" />
                     تم التحصيل
-                    {debtsCollectedToday.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-green-500">{debtsCollectedToday.length}</Badge>}
+                    {collectedDebtOperations.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-green-500">{collectedDebtOperations.length}</Badge>}
                   </TabsTrigger>
                   <TabsTrigger value="no-payment" className="flex-1 gap-1 text-[10px] px-1 py-1.5 data-[state=active]:bg-amber-100 data-[state=active]:text-amber-700">
                     <X className="w-3 h-3" />
@@ -2248,7 +2248,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                   <DebtList debts={debtsToCollectToday} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="لا توجد ديون مستحقة اليوم ✓" searchQuery={searchQuery} />
                 </TabsContent>
                 <TabsContent value="collected" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <DebtList debts={debtsCollectedToday} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="لا توجد تحصيلات بعد" searchQuery={searchQuery} timeMap={debtCollectionTimeMap} />
+                  <CollectedDebtOperationList operations={collectedDebtOperations} emptyMessage="لا توجد تحصيلات بعد" searchQuery={searchQuery} onOpenDetails={handleCollectedOperationClick} />
                 </TabsContent>
                 <TabsContent value="no-payment" className="m-0 flex-1 min-h-0">
                   <Tabs defaultValue="visit-only" className="flex flex-col h-full min-h-0">
