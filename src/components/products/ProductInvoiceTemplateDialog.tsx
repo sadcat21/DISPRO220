@@ -180,27 +180,30 @@ const ProductInvoiceTemplateDialog: React.FC<Props> = ({ open, onOpenChange, pro
             @page { size: A4 portrait; margin: 12mm; }
             * { box-sizing: border-box; }
             body { margin: 0; padding: 0; font-family: "Times New Roman", Georgia, serif; background: #fff; color: #111; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .invoice-root { width: 100%; max-width: 980px; margin: 0 auto; }
+            .invoice-root { width: 100%; max-width: 980px; margin: 0 auto; padding: 6mm 2mm 0; }
             table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #222; padding: 5px 6px; font-size: 12px; vertical-align: top; }
+            th, td { border: 1px solid #222; padding: 5px 6px; font-size: 11px; vertical-align: top; }
             th { background: #f4f4f4; }
-            .top-row { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; }
-            .client-box { border: 2px solid #444; border-radius: 6px; padding: 10px 12px; min-width: 360px; }
-            .brand { font-size: 26px; font-style: italic; font-weight: 700; }
-            .tagline { color: #304bbf; font-style: italic; font-weight: 600; margin-top: 2px; }
-            .meta { font-size: 12px; line-height: 1.55; }
-            .footer-grid { display:grid; grid-template-columns: 1fr 260px; gap: 20px; margin-top: 16px; }
+            .top-row { display:flex; justify-content:space-between; gap:18px; align-items:flex-start; }
+            .brand-left { width: 39%; }
+            .client-box { width: 58%; border: 2px solid #444; border-radius: 6px; padding: 10px 12px; }
+            .brand { font-size: 25px; font-style: italic; font-weight: 700; letter-spacing: -0.2px; }
+            .tagline { color: #304bbf; font-style: italic; font-weight: 600; margin-top: 2px; font-size: 13px; }
+            .meta { font-size: 11px; line-height: 1.5; }
+            .invoice-meta { margin-top: 16px; font-size: 12px; }
+            .footer-grid { display:grid; grid-template-columns: 1fr 255px; gap: 18px; margin-top: 12px; align-items:end; }
             .totals-box { border: 2px solid #444; padding: 8px 12px; }
-            .totals-box .row { display:flex; justify-content:space-between; margin: 8px 0; font-size: 13px; }
+            .totals-box .row { display:flex; justify-content:space-between; margin: 6px 0; font-size: 12px; }
             .muted { color:#555; }
             .invoice-table td:nth-child(1) { width: 32px; text-align: center; }
             .invoice-table td:nth-child(2) { width: 52px; text-align: center; }
-            .invoice-table td:nth-child(4) { width: 54px; text-align: center; }
-            .invoice-table td:nth-child(5) { width: 58px; text-align: center; }
+            .invoice-table td:nth-child(3) { width: auto; }
+            .invoice-table td:nth-child(4) { width: 56px; text-align: center; }
+            .invoice-table td:nth-child(5) { width: 60px; text-align: center; }
             .invoice-table td:nth-child(6),
-            .invoice-table td:nth-child(7),
-            .invoice-table td:nth-child(8) { width: 88px; text-align: right; }
-            .invoice-table tbody tr { height: 24px; }
+            .invoice-table td:nth-child(7) { width: 94px; text-align: right; }
+            .invoice-table td:nth-child(8) { width: 62px; text-align: center; }
+            .invoice-table tbody tr { height: 23px; }
             .ltr { direction: ltr; unicode-bidi: embed; white-space: nowrap; }
             @media print {
               body { padding: 0; }
@@ -211,19 +214,19 @@ const ProductInvoiceTemplateDialog: React.FC<Props> = ({ open, onOpenChange, pro
         <body>
           <div class="invoice-root">
             <div class="top-row">
-              <div>
+              <div class="brand-left">
                 <div class="brand">${escapeHtml(COMPANY_NAME)}</div>
                 <div class="tagline">${escapeHtml(COMPANY_TAGLINE)}</div>
-                <div class="meta" style="margin-top:12px;">
+                <div class="meta" style="margin-top:10px;">
                   <div>Tel LOT N° 90 LOTIS 440 BELGADI Bir El Djir Oran</div>
                   <div>Tel : Mobile</div>
                   <div>RC : 19811230057-00731 &nbsp;&nbsp; NIF : 001931130205729 &nbsp;&nbsp; AI : 3103404924</div>
                   <div style="margin-top:6px;">Compte bancaire : BNA &nbsp; R.I.B : 00100957300000149786 &nbsp; NIS : 001931300506846</div>
                 </div>
-                <div style="margin-top:18px; font-size:13px;">
+                <div class="invoice-meta">
                   <div><strong>Facture N° :</strong> <span class="ltr">${escapeHtml(invoiceNumber)}</span></div>
-                  <div style="margin-top:6px;">${escapeHtml(cityLine)}</div>
-                  <div style="margin-top:14px;">${escapeHtml(depot)}</div>
+                  <div style="margin-top:4px;">${escapeHtml(cityLine)}</div>
+                  <div style="margin-top:16px; font-size: 11px;">${escapeHtml(depot)}</div>
                 </div>
               </div>
               <div class="client-box">
@@ -235,17 +238,10 @@ const ProductInvoiceTemplateDialog: React.FC<Props> = ({ open, onOpenChange, pro
               </div>
             </div>
 
-            <table class="invoice-table" style="margin-top:16px;">
+            <table class="invoice-table" style="margin-top:14px;">
               <thead>
                 <tr>
-                  <th>N°</th>
-                  <th>Code</th>
-                  <th>Désignation</th>
-                  <th>Qté</th>
-                  <th>Unité</th>
-                  <th>PU HT</th>
-                  <th>Montant HT</th>
-                  <th>TVA (%)</th>
+                  ${invoiceHeaders.map((header) => `<th>${header}</th>`).join('')}
                 </tr>
               </thead>
               <tbody>
