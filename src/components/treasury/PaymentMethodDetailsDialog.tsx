@@ -57,6 +57,12 @@ interface CustomerGroup {
   totalDebt: number;
 }
 
+const MoneyValue = ({ value, className = '' }: { value: number; className?: string }) => (
+  <bdi dir="ltr" className={`inline-block whitespace-nowrap tabular-nums ${className}`.trim()}>
+    {value.toLocaleString()} DA
+  </bdi>
+);
+
 const PaymentMethodDetailsDialog = ({ open, onOpenChange, category, handedCashInvoice2Amount: handedCashInvoice2AmountProp = 0 }: Props) => {
   const { activeBranch } = useAuth();
   const queryClient = useQueryClient();
