@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { ALGERIAN_WILAYAS } from '@/data/algerianWilayas';
+import { StampPriceTier } from '@/types/stamp';
+import { calculateStampAmount } from '@/hooks/useStampTiers';
 
 interface HandoverItem {
   order_id: string;
@@ -11,6 +13,7 @@ interface HandoverItem {
   customer_name: string | null;
   base_amount?: number;
   stamp_amount?: number;
+  stamp_percentage?: number;
   invoice_number?: string;
   invoice_date?: string;
   check_number?: string;
