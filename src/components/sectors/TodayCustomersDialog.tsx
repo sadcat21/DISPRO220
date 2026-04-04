@@ -1064,13 +1064,53 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     if (hasSpecificWorker) return dueDebts.filter(d => d.worker_id === effectiveWorkerId);
     return dueDebts;
   }, [dueDebts, effectiveWorkerId, hasSpecificWorker]);
-  const debtsToCollectToday = useMemo(() => debtCustomers.filter(d => !collectedDebtIds.has(d.id) && !noPaymentDebtIds.has(d.id)), [debtCustomers, collectedDebtIds, noPaymentDebtIds]);
-  const debtsCollectedToday = useMemo(() => debtCustomers.filter(d => collectedDebtIds.has(d.id)), [debtCustomers, collectedDebtIds]);
-  const debtsNoPaymentToday = useMemo(() => debtCustomers.filter(d => noPaymentDebtIds.has(d.id)), [debtCustomers, noPaymentDebtIds]);
   const allDebtsFiltered = useMemo(() => {
     if (hasSpecificWorker) return allDebts.filter(d => d.worker_id === effectiveWorkerId);
     return allDebts;
   }, [allDebts, effectiveWorkerId, hasSpecificWorker]);
+  const debtClosedCustomerIds = useMemo(() => new Set(
+    todayVisits
+      .filter((v: any) => v.operation_type === 'visit' && String(v.notes || '').includes('(تحصيل دين)') && String(v.notes || '').includes('مغلق'))
+      .map((v: any) => v.customer_id)
+  ), [todayVisits]);
+  const debtUnavailableCustomerIds = useMemo(() => new Set(
+    todayVisits
+      .filter((v: any) => v.operation_type === 'visit' && String(v.notes || '').includes('(تحصيل دين)') && String(v.notes || '').includes('غير متاح'))
+      .map((v: any) => v.customer_id)
+  ), [todayVisits]);
+  const debtsToCollectToday = useMemo(
+    () => debtCustomers.filter(d =>
+      !collectedDebtIds.has(d.id) &&
+      !noPaymentDebtIds.has(d.id) &&
+      !debtClosedCustomerIds.has(d.customer_id) &&
+      !debtUnavailableCustomerIds.has(d.customer_id)
+    ),
+    [debtCustomers, collectedDebtIds, noPaymentDebtIds, debtClosedCustomerIds, debtUnavailableCustomerIds]
+  );
+  const debtsCollectedToday = useMemo(
+    () => allDebtsFiltered.filter(d => collectedDebtIds.has(d.id)),
+    [allDebtsFiltered, collectedDebtIds]
+  );
+  const debtsNoPaymentVisitOnly = useMemo(
+    () => allDebtsFiltered.filter(d => noPaymentDebtIds.has(d.id) && !debtClosedCustomerIds.has(d.customer_id) && !debtUnavailableCustomerIds.has(d.customer_id)),
+    [allDebtsFiltered, noPaymentDebtIds, debtClosedCustomerIds, debtUnavailableCustomerIds]
+  );
+  const debtsNoPaymentClosed = useMemo(
+    () => allDebtsFiltered.filter(d => debtClosedCustomerIds.has(d.customer_id)),
+    [allDebtsFiltered, debtClosedCustomerIds]
+  );
+  const debtsNoPaymentUnavailable = useMemo(
+    () => allDebtsFiltered.filter(d => debtUnavailableCustomerIds.has(d.customer_id)),
+    [allDebtsFiltered, debtUnavailableCustomerIds]
+  );
+  const debtsNoPaymentToday = useMemo(
+    () => {
+      const byId = new Map<string, any>();
+      [...debtsNoPaymentVisitOnly, ...debtsNoPaymentClosed, ...debtsNoPaymentUnavailable].forEach((debt) => byId.set(debt.id, debt));
+      return Array.from(byId.values());
+    },
+    [debtsNoPaymentVisitOnly, debtsNoPaymentClosed, debtsNoPaymentUnavailable]
+  );
 
   // Fetch sales worker visits for Prévente sectors to know which customers were visited
   const preventeDeliverySectors = useMemo(() => todayDeliverySectors.filter(s => (s as any).sector_type !== 'cash_van'), [todayDeliverySectors]);
