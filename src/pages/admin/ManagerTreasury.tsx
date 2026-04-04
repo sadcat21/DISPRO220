@@ -779,7 +779,7 @@ const ManagerTreasury = () => {
         />
         <TreasuryCard
           icon={<Banknote className="w-5 h-5 text-emerald-500" />}
-          label={`${t('treasury.cash_invoice2')} (${remainingCashInvoice2Count})`}
+          label={t('treasury.cash_invoice2')}
           total={summary?.cash_invoice2 || 0}
           handed={summary?.cash_invoice2_handed || 0}
           colorClass="emerald-500"
@@ -787,6 +787,7 @@ const ManagerTreasury = () => {
           onClick={() => setDetailsCategory('cash_invoice2')}
           currency={cur}
           showDetails={showCardDetails}
+          badgeText={cashInvoice2Badge}
         />
         <TreasuryCard
           icon={<CreditCard className="w-5 h-5 text-blue-500" />}
