@@ -1794,8 +1794,8 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-[95vw] sm:max-w-md p-0 gap-0 max-h-[85vh] flex flex-col" dir="rtl">
-          <DialogHeader className="p-3 border-b shrink-0">
+        <DialogContent className="w-[calc(100vw-10px)] max-w-[calc(100vw-10px)] sm:max-w-md p-0 gap-0 max-h-[88dvh] flex flex-col overflow-hidden" dir="rtl">
+          <DialogHeader className="px-2.5 py-2.5 border-b shrink-0">
             <DialogTitle className="flex items-center gap-2 text-sm">
               <MapPin className="w-4 h-4 text-primary shrink-0" />
               <span className="truncate">{displayTitle}</span>
@@ -1804,16 +1804,16 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
 
           {/* Admin worker picker strip */}
           {isAdmin && !targetWorkerId && workersList.length > 0 && (
-            <div className="border-b px-2 py-1.5 shrink-0">
+            <div className="border-b px-1.5 py-1 shrink-0">
               <ScrollArea className="w-full" dir="rtl">
-                <div className="flex gap-1.5 pb-1">
+                <div className="flex gap-1 pb-1">
                   {workersList.filter(w => availableWorkerIdsForSelectedDay.has(w.id)).map(w => {
                     const isSelected = w.id === selectedAdminWorkerId;
                     return (
                       <button
                         key={w.id}
                         onClick={() => setSelectedAdminWorkerId(isSelected ? null : w.id)}
-                        className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-medium whitespace-nowrap transition-colors shrink-0
+                        className={`flex items-center gap-1 px-2 py-1 rounded-full border text-[10px] font-medium whitespace-nowrap transition-colors shrink-0
                           ${isSelected
                             ? 'bg-primary text-primary-foreground border-primary'
                             : 'bg-background border-border hover:bg-accent text-foreground'}
@@ -1831,13 +1831,13 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
           )}
 
           {/* Day picker strip */}
-          <div className="border-b px-2 py-1.5 shrink-0">
+          <div className="border-b px-1.5 py-1 shrink-0">
             <ScrollArea className="w-full" dir="rtl">
-              <div className="flex gap-1.5 pb-1">
+              <div className="flex gap-1 pb-1">
                 <button
                   type="button"
                   onClick={() => setCalendarOpen(true)}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-medium whitespace-nowrap transition-colors shrink-0 ${
+                  className={`flex items-center gap-1 px-2 py-1 rounded-full border text-[10px] font-medium whitespace-nowrap transition-colors shrink-0 ${
                     selectedCustomDate
                       ? 'bg-red-500 text-white border-red-500 hover:bg-red-600'
                       : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
@@ -1856,7 +1856,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                         setSelectedCustomDate(undefined);
                         setSelectedDay(key);
                       }}
-                      className={`px-2.5 py-1 rounded-full border text-[11px] font-medium whitespace-nowrap transition-colors shrink-0
+                      className={`px-2 py-1 rounded-full border text-[10px] font-medium whitespace-nowrap transition-colors shrink-0
                         ${isSelected
                           ? 'bg-primary text-primary-foreground border-primary'
                           : 'bg-background border-border hover:bg-accent text-foreground'}
