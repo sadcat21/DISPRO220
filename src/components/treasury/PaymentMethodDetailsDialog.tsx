@@ -260,32 +260,6 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
     },
   });
 
-  const { data: invoice1DebtAmount } = useQuery({
-    queryKey: ['invoice1-debt-for-invoice2', activeBranch?.id],
-    enabled: open && isCashInvoice2,
-    queryFn: async () => {
-      let query = supabase
-        .from('orders')
-        .select('total_amount, payment_status, partial_amount')
-        .eq('status', 'delivered')
-        .eq('payment_type', 'with_invoice')
-        .eq('invoice_payment_method', 'cash')
-        .in('payment_status', ['debt', 'partial']);
-
-      if (activeBranch?.id) query = query.eq('branch_id', activeBranch.id);
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      return (data || []).reduce((sum: number, o: any) => {
-        const total = Number(o.total_amount || 0);
-        if (o.payment_status === 'debt') return sum + total;
-        if (o.payment_status === 'partial') return sum + (total - Number(o.partial_amount || 0));
-        return sum;
-      }, 0);
-    },
-  });
-
   const moveGroupToReceiptDoc = async (group: CustomerGroup) => {
     try {
       const orderIds = group.orders.map((order) => order.id);
