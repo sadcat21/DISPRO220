@@ -496,14 +496,15 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   // the DirectSaleDialog tracks each sale as a 'direct_sale' visit, which is the most reliable marker.
   // Also fetch from receipts as a secondary source.
   const { data: todayDirectSales = [] } = useQuery({
-    queryKey: ['today-direct-sales-dialog', effectiveWorkerId, todayStart],
+    queryKey: ['today-direct-sales-dialog', effectiveWorkerId, todayStart, selectedDayBounds.end],
     queryFn: async () => {
       // 1. Get direct-sale visit tracking entries (most reliable marker)
       let vtQuery = supabase
         .from('visit_tracking')
         .select('customer_id, created_at, operation_id')
         .eq('operation_type', 'direct_sale')
-        .gte('created_at', todayStart);
+        .gte('created_at', todayStart)
+        .lte('created_at', selectedDayBounds.end);
       if (!isAdmin || hasSpecificWorker) {
         vtQuery = vtQuery.eq('worker_id', effectiveWorkerId!);
       }
@@ -522,7 +523,8 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         .from('receipts')
         .select('customer_id, order_id, items, total_amount, customer_name, created_at')
         .eq('receipt_type', 'direct_sale')
-        .gte('created_at', todayStart);
+        .gte('created_at', todayStart)
+        .lte('created_at', selectedDayBounds.end);
       if (!isAdmin || hasSpecificWorker) {
         rQuery = rQuery.eq('worker_id', effectiveWorkerId!);
       }
