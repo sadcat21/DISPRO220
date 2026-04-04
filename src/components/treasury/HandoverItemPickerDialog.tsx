@@ -195,7 +195,7 @@ const HandoverItemPickerDialog = ({ open, onOpenChange, paymentMethod, onConfirm
                       </p>
                     )}
                   </div>
-                  <p className="text-sm font-bold text-primary whitespace-nowrap">
+                  <p dir="ltr" className="text-sm font-bold text-primary whitespace-nowrap">
                     {item.amount.toLocaleString()} د.ج
                   </p>
                 </div>
