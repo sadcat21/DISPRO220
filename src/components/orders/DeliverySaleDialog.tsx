@@ -1077,6 +1077,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
                       : item.pricingUnit === 'unit' && item.piecesPerBox > 1
                         ? item.piecesPerBox
                         : null;
+                    const productImage = getProductImage(item.productId);
                     return (
                       <div
                         key={item.productId}
