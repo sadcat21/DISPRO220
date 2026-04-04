@@ -344,6 +344,10 @@ const CollectedDebtOperationDialog: React.FC<Props> = ({ open, onOpenChange, col
                     <div className="text-xs text-muted-foreground">منشئ الدين</div>
                     <div className="font-bold">{debtCreatorName}</div>
                   </div>
+                  <div className="rounded-xl bg-muted/40 p-2">
+                    <div className="text-xs text-muted-foreground">منشئ الدين</div>
+                    <div className="font-bold">{debtCreatorName}</div>
+                  </div>
                 <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${collection.status === 'approved' ? 'bg-green-100 text-green-700' : collection.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
                   {collection.status === 'approved' ? 'Ù…Ø¹ØªÙ…Ø¯' : collection.status === 'rejected' ? 'Ù…Ø±ÙÙˆØ¶' : 'Ù…Ø¹Ù„Ù‘Ù‚'}
                 </span>
