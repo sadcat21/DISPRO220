@@ -9,6 +9,8 @@ interface HandoverItem {
   payment_method: string;
   amount: number;
   customer_name: string | null;
+  base_amount?: number;
+  stamp_amount?: number;
   invoice_number?: string;
   invoice_date?: string;
   check_number?: string;
