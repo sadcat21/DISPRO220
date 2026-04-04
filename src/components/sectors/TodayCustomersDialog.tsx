@@ -2294,6 +2294,30 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         initialCustomerId={directSaleCustomerId || undefined}
       />
 
+      <Dialog open={calendarOpen} onOpenChange={setCalendarOpen}>
+        <DialogContent className="w-auto max-w-[92vw] p-0 overflow-hidden" dir="rtl">
+          <DialogHeader className="px-4 pt-4 pb-2">
+            <DialogTitle className="text-sm">اختيار تاريخ مخصص</DialogTitle>
+          </DialogHeader>
+          <div className="px-3 pb-3">
+            <Calendar
+              mode="single"
+              selected={selectedCustomDate ?? new Date(selectedDayBounds.dateKey)}
+              onSelect={(date) => {
+                if (!date) return;
+                const jsDay = date.getDay();
+                setSelectedCustomDate(date);
+                setSelectedDay(JS_DAY_TO_NAME[jsDay] || todayName);
+                setCalendarOpen(false);
+              }}
+              disabled={(date) => date > new Date()}
+              initialFocus
+              className="pointer-events-auto"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {selectedDebt && (
         <VisitNoPaymentDialog
           open={showVisitNoPayment}
