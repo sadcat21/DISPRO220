@@ -1196,6 +1196,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
                               </div>
                             )}
                           </div>
+                        </div>
                       </div>
                     );
                   })}
