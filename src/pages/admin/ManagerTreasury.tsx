@@ -826,7 +826,7 @@ const ManagerTreasury = () => {
               const totalCash1 = summary?.cash_invoice1 || 0;
               const remainingCash1 = Math.max(totalCash1 - (summary?.cash_invoice1_handed || 0), 0);
               const totalStamp = summary?.cash_invoice1_stamp || 0;
-              if (totalCash1 <= 0 || totalStamp <= 0) return `0 ${cur}`;
+              if (totalCash1 <= 0 || totalStamp <= 0 || (remainingCounts && remainingCounts.cash_invoice1 === 0)) return `0 ${cur}`;
               const remainingStamp = totalStamp * (remainingCash1 / totalCash1);
               return `${remainingStamp.toLocaleString()} ${cur}`;
             })()}</p>
