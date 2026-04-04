@@ -3064,6 +3064,7 @@ const CollectedDebtOperationList: React.FC<{
       {filtered.map((operation) => {
         const customer = operation.debt?.customer;
         const collectorName = operation.worker?.full_name || operation.worker?.username || '—';
+        const debtCreatorName = operation.debt?.worker?.full_name || operation.debt?.worker?.username || 'â€”';
         const collectedAmount = Number(operation.amount_collected || 0);
         const sector = customer?.sector_id ? sectors?.find((s) => s.id === customer.sector_id) : null;
         const zone = (customer as any)?.zone_id ? allZones?.find((z) => z.id === (customer as any).zone_id) : null;
