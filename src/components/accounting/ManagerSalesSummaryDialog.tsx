@@ -519,6 +519,7 @@ const BreakdownRow: React.FC<{ label: string; value: number }> = ({ label, value
 );
 
 export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, workers = [] }) => {
+  const { language } = useLanguage();
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>('all');
   const today = new Date();
   const todayDateString = today.toISOString().slice(0, 10);
