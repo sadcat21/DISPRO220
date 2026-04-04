@@ -3106,23 +3106,25 @@ const CollectedDebtOperationList: React.FC<{
                 </div>
               </div>
 
-              <div className="mt-2 grid grid-cols-3 gap-2 text-center text-[11px]">
-                <div className="rounded-xl bg-orange-50 px-2 py-2">
-                  <div className="text-orange-600">قبل</div>
-                  <div className="mt-1 font-bold text-orange-700" dir="ltr">{debtBefore.toLocaleString()} DA</div>
+              <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-2xl border border-orange-100 bg-orange-50 px-2 py-2.5 shadow-sm">
+                  <div className="text-[11px] font-bold text-orange-600">قبل</div>
+                  <div className="mt-1 text-sm font-black text-orange-700" dir="ltr">{debtBefore.toLocaleString()} DA</div>
                 </div>
-                <div className="rounded-xl bg-slate-50 px-2 py-2">
-                  <div className="text-slate-500">الإجمالي</div>
-                  <div className="mt-1 font-bold text-slate-700" dir="ltr">{totalDebt.toLocaleString()} DA</div>
+                <div className="rounded-2xl border border-slate-100 bg-slate-50 px-2 py-2.5 shadow-sm">
+                  <div className="text-[11px] font-bold text-slate-600">الإجمالي</div>
+                  <div className="mt-1 text-sm font-black text-slate-800" dir="ltr">{totalDebt.toLocaleString()} DA</div>
                 </div>
-                <div className="rounded-xl bg-emerald-50 px-2 py-2">
-                  <div className="text-emerald-600">بعد</div>
-                  <div className="mt-1 font-bold text-emerald-700" dir="ltr">{debtAfter.toLocaleString()} DA</div>
+                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-2 py-2.5 shadow-sm">
+                  <div className="text-[11px] font-bold text-emerald-600">بعد</div>
+                  <div className="mt-1 text-sm font-black text-emerald-700" dir="ltr">{debtAfter.toLocaleString()} DA</div>
                 </div>
               </div>
 
-              <div className="mt-2 text-[11px] text-muted-foreground">
-                المدفوع قبل هذه العملية: <span className="font-semibold" dir="ltr">{paidBefore.toLocaleString()} DA</span>
+              <div className="mt-2 rounded-xl bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
+                المدفوع قبل هذه العملية:
+                {' '}
+                <span className="font-bold text-foreground" dir="ltr">{paidBefore.toLocaleString()} DA</span>
               </div>
             </button>
           </Card>
