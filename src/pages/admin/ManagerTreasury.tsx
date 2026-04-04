@@ -34,8 +34,8 @@ import { isTransferPaidByCash, resolveReceiptBucket } from '@/utils/treasuryDocu
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useIsElementHidden } from '@/hooks/useUIOverrides';
 
-const TreasuryCard = ({ icon, label, total, handed, colorClass, borderClass, onClick, currency, showDetails }: {
-  icon: React.ReactNode; label: string; total: number; handed: number; colorClass: string; borderClass: string; onClick: () => void; currency: string; showDetails: boolean;
+const TreasuryCard = ({ icon, label, total, handed, colorClass, borderClass, onClick, currency, showDetails, badgeText }: {
+  icon: React.ReactNode; label: string; total: number; handed: number; colorClass: string; borderClass: string; onClick: () => void; currency: string; showDetails: boolean; badgeText?: string;
 }) => {
   const { t } = useLanguage();
   const remaining = total - handed;
@@ -44,6 +44,7 @@ const TreasuryCard = ({ icon, label, total, handed, colorClass, borderClass, onC
       <CardContent className="p-3 text-center space-y-1">
         <div className="mx-auto mb-1">{icon}</div>
         <p className="text-xs text-muted-foreground">{label}</p>
+        {badgeText && <p className="text-[10px] font-medium text-muted-foreground">{badgeText}</p>}
         <p className={`text-lg font-bold text-${colorClass} truncate`}>{remaining.toLocaleString()} {currency}</p>
         {showDetails && (
           <div className="flex justify-between text-[10px] px-1">
