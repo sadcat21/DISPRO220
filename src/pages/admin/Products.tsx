@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import StampTiersDialog from '@/components/products/StampTiersDialog';
 import PricingGroupsTab from '@/components/products/PricingGroupsTab';
 import GroupPriceUpdateDialog from '@/components/products/GroupPriceUpdateDialog';
+import ProductInvoiceTemplateDialog from '@/components/products/ProductInvoiceTemplateDialog';
 
 interface ProductGroup {
   id: string;
@@ -81,6 +82,8 @@ const Products: React.FC = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [showStampPriceDialog, setShowStampPriceDialog] = useState(false);
   const [activeTab, setActiveTab] = useState('products');
+  const [invoiceTemplateOpen, setInvoiceTemplateOpen] = useState(false);
+  const [titleTapCount, setTitleTapCount] = useState(0);
   
   // Group price update states
   const [showGroupUpdateDialog, setShowGroupUpdateDialog] = useState(false);
@@ -89,6 +92,28 @@ const Products: React.FC = () => {
   const [originalPrices, setOriginalPrices] = useState<Record<string, number>>({});
   const addImageInputRef = useRef<HTMLInputElement>(null);
   const editImageInputRef = useRef<HTMLInputElement>(null);
+  const titleTapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleTitleTap = () => {
+    const nextCount = titleTapCount + 1;
+    setTitleTapCount(nextCount);
+
+    if (titleTapTimeoutRef.current) {
+      clearTimeout(titleTapTimeoutRef.current);
+    }
+
+    if (nextCount >= 3) {
+      setInvoiceTemplateOpen(true);
+      setTitleTapCount(0);
+      titleTapTimeoutRef.current = null;
+      return;
+    }
+
+    titleTapTimeoutRef.current = setTimeout(() => {
+      setTitleTapCount(0);
+      titleTapTimeoutRef.current = null;
+    }, 900);
+  };
 
   const uploadProductImage = async (file: File, productId: string): Promise<string | null> => {
     const ext = file.name.split('.').pop();
@@ -126,6 +151,12 @@ const Products: React.FC = () => {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (titleTapTimeoutRef.current) clearTimeout(titleTapTimeoutRef.current);
+    };
   }, []);
 
   const fetchProducts = async () => {
