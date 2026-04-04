@@ -224,15 +224,21 @@ const CustomerDebts: React.FC = () => {
 
           <TabsContent value="debts" className="space-y-4 mt-4">
             {/* Summary Card */}
-            <Card className="bg-destructive/10 border-destructive/30">
-              <CardContent className="p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">{t('debts.total_debts')}</p>
-                  <p className="text-2xl font-bold text-destructive">{totalActiveDebts.toLocaleString()} DA</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-muted-foreground" />
-                  <span className="text-lg font-bold">{customerGroups.length}</span>
+            <Card className="overflow-hidden rounded-[26px] border border-red-200 bg-white shadow-sm">
+              <CardContent className="p-0">
+                <div className="border-b border-red-100 bg-red-50/70 px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0 text-right">
+                      <p className="text-sm font-semibold text-slate-500">{t('debts.total_debts')}</p>
+                      <p className="mt-1 text-2xl font-black text-destructive" dir="ltr">
+                        {totalActiveDebts.toLocaleString()} DA
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2 rounded-full bg-white px-3 py-2 ring-1 ring-red-100">
+                      <Users className="w-4 h-4 text-slate-500" />
+                      <span className="text-base font-extrabold text-slate-900">{customerGroups.length}</span>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -267,35 +273,36 @@ const CustomerDebts: React.FC = () => {
                 {customerGroups.map(group => (
                   <Card
                     key={group.id}
-                    className="cursor-pointer hover:shadow-md transition-shadow active:scale-[0.99]"
+                    className="cursor-pointer overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm transition-all hover:border-red-200 hover:shadow-md active:scale-[0.99]"
                     onClick={() => setSelectedCustomer({ id: group.id, name: group.name, debts: group.debts })}
                   >
-                    <CardContent className="p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <p className="font-bold">{group.name}</p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                            {group.phone && <span>{group.phone}</span>}
-                            {group.wilaya && <span>• {group.wilaya}</span>}
-                            <span>• {group.debts.length} {group.debts.length === 1 ? t('debts.debt_count_singular') : t('debts.debt_count_plural')}</span>
-                          </div>
-                          {group.nextDueDate && (
-                            <div className="flex items-center gap-1 text-xs mt-1">
-                              <Calendar className="w-3 h-3 text-muted-foreground" />
-                              <span className="text-muted-foreground">{t('debts.next_due')}:</span>
-                              <span className={new Date(group.nextDueDate + (group.nextDueDate.includes('T') ? '' : 'T00:00:00')) < new Date() ? 'text-destructive font-medium' : 'text-primary font-medium'}>
-                                {group.nextDueDate.includes('T')
-                                  ? formatDate(new Date(group.nextDueDate), 'EEEE dd/MM/yyyy HH:mm', language)
-                                  : formatDate(new Date(group.nextDueDate + 'T00:00:00'), 'EEEE dd/MM/yyyy', language)
-                                }
-                              </span>
+                    <CardContent className="p-4">
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1 text-right">
+                            <p className="truncate text-xl font-black text-slate-900">{group.name}</p>
+                            <div className="mt-1 flex flex-wrap items-center justify-end gap-2 text-xs text-muted-foreground">
+                              {group.wilaya && <span>{group.wilaya}</span>}
+                              {group.phone && <span>• {group.phone}</span>}
+                              <span>• {group.debts.length} {group.debts.length === 1 ? t('debts.debt_count_singular') : t('debts.debt_count_plural')}</span>
                             </div>
-                          )}
+                          </div>
+                          <div className="shrink-0 rounded-full border border-red-100 bg-red-50 px-4 py-2 text-center">
+                            <p className="text-lg font-black text-destructive" dir="ltr">{group.totalRemaining.toLocaleString()} DA</p>
+                          </div>
                         </div>
-                        <div className="text-left">
-                          <p className="text-lg font-bold text-destructive">{group.totalRemaining.toLocaleString()}</p>
-                          <p className="text-xs text-muted-foreground">DA</p>
-                        </div>
+                        {group.nextDueDate && (
+                          <div className="flex flex-wrap items-center justify-end gap-1 text-xs">
+                            <span className={new Date(group.nextDueDate + (group.nextDueDate.includes('T') ? '' : 'T00:00:00')) < new Date() ? 'font-medium text-destructive' : 'font-medium text-primary'}>
+                              {group.nextDueDate.includes('T')
+                                ? formatDate(new Date(group.nextDueDate), 'EEEE dd/MM/yyyy HH:mm', language)
+                                : formatDate(new Date(group.nextDueDate + 'T00:00:00'), 'EEEE dd/MM/yyyy', language)
+                              }
+                            </span>
+                            <span className="text-muted-foreground">{t('debts.next_due')}:</span>
+                            <Calendar className="w-3 h-3 text-muted-foreground" />
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
