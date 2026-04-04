@@ -64,6 +64,12 @@ const HandoverPrintView: React.FC<Props> = ({
 
   useEffect(() => {
     const fetchItems = async () => {
+      const { data: stampTiers } = await supabase
+        .from('stamp_price_tiers')
+        .select('*')
+        .eq('is_active', true)
+        .order('min_amount', { ascending: true });
+
       const { data } = await supabase
         .from('handover_items')
         .select('order_id, payment_method, amount, customer_name, treasury_entry_id')
@@ -92,7 +98,7 @@ const HandoverPrintView: React.FC<Props> = ({
       if (orderIds.length > 0) {
         const { data: orders } = await supabase
           .from('orders')
-          .select('id, created_at, delivery_date, customers(name_fr, name, store_name_fr, store_name)')
+          .select('id, created_at, delivery_date, total_amount, order_items(total_price), customers(name_fr, name, store_name_fr, store_name)')
           .in('id', orderIds);
         (orders || []).forEach((order) => {
           orderMap[order.id] = order;
@@ -104,9 +110,23 @@ const HandoverPrintView: React.FC<Props> = ({
         const order = item.order_id ? orderMap[item.order_id] : null;
         const customer = order?.customers;
         const customerName = customer?.name_fr || customer?.name || item.customer_name;
+        const itemsSubtotal = (order?.order_items || []).reduce((sum: number, orderItem: any) => sum + Number(orderItem.total_price || 0), 0);
+        const stampBaseAmount = itemsSubtotal > 0 ? itemsSubtotal : Number(order?.total_amount || item.amount || 0);
+        const activeTiers = (stampTiers || []) as StampPriceTier[];
+        const matchedTier = item.payment_method === 'cash'
+          ? activeTiers.find((tier) => stampBaseAmount >= tier.min_amount && (tier.max_amount === null || stampBaseAmount <= tier.max_amount))
+          : null;
+        const exactStampAmount = item.payment_method === 'cash' && matchedTier
+          ? Number(calculateStampAmount(stampBaseAmount, activeTiers).toFixed(2))
+          : 0;
         return {
           ...item,
           customer_name: customerName || item.customer_name,
+          base_amount: item.payment_method === 'cash'
+            ? Number((Number(item.amount || 0) - exactStampAmount).toFixed(2))
+            : undefined,
+          stamp_amount: item.payment_method === 'cash' ? exactStampAmount : undefined,
+          stamp_percentage: item.payment_method === 'cash' ? Number(matchedTier?.percentage || 0) : undefined,
           invoice_number: treasuryEntry?.invoice_number || undefined,
           invoice_date: treasuryEntry?.invoice_date || (order ? format(new Date(order.delivery_date || order.created_at), 'dd/MM/yyyy') : undefined),
           check_number: treasuryEntry?.check_number || undefined,
