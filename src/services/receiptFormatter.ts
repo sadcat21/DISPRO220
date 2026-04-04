@@ -203,6 +203,7 @@ export interface ReceiptData {
   classicLayout?: boolean;
   // Logo options
   showLogo?: boolean;
+  showCompanyName?: boolean;
   replaceNameWithLogo?: boolean;
   companyLogoUrl?: string;
   receiptTitleOverride?: string;
@@ -247,18 +248,22 @@ export function formatReceiptForPrint(data: ReceiptData): Uint8Array {
     addText('*** LOGO ***');
     add(NORMAL_SIZE);
     add(BOLD_OFF);
-  } else if (data.showLogo) {
+  } else if (data.showLogo && data.showCompanyName) {
     // Logo icons on both sides of company name
     add(BOLD_ON);
     add(DOUBLE_HEIGHT);
     addText(`* ${data.companyName || 'Laser Food'} *`);
     add(NORMAL_SIZE);
     add(BOLD_OFF);
-  } else {
+  } else if (data.showCompanyName) {
     add(BOLD_ON);
     add(DOUBLE_HEIGHT);
     addText(data.companyName || 'Laser Food');
     add(NORMAL_SIZE);
+    add(BOLD_OFF);
+  } else if (data.showLogo) {
+    add(BOLD_ON);
+    addText('*** LOGO ***');
     add(BOLD_OFF);
   }
 
@@ -548,10 +553,16 @@ export function formatReceiptForPreview(data: ReceiptData): string {
     if (data.showLogo && data.replaceNameWithLogo) {
       return logoLarge;
     }
-    if (data.showLogo) {
+    if (data.showLogo && data.showCompanyName) {
       return `<div style="display:flex;align-items:center;justify-content:center;gap:6px;">${logoIcon}<span style="font-size:16px;font-weight:bold;letter-spacing:1px;">${companyName}</span>${logoIcon}</div>`;
     }
-    return `<div style="font-size:16px;font-weight:bold;letter-spacing:1px;">${companyName}</div>`;
+    if (data.showCompanyName) {
+      return `<div style="font-size:16px;font-weight:bold;letter-spacing:1px;">${companyName}</div>`;
+    }
+    if (data.showLogo) {
+      return logoLarge;
+    }
+    return '';
   }
 
   // ── Items ──
