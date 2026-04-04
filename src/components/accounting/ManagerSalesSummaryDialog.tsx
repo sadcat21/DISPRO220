@@ -187,6 +187,16 @@ const formatGiftDisplay = (giftPieces: number, piecesPerBox: number) => {
   return `${boxes}.${remainingPieces.toString().padStart(2, '0')}`;
 };
 
+const SETTLEMENT_ITEM_TYPES = new Set([
+  'physical_cash',
+  'invoice1_check',
+  'invoice1_transfer',
+  'invoice1_receipt',
+  'debt_collections_check',
+  'debt_collections_transfer',
+  'debt_collections_receipt',
+]);
+
 const mergeCalcs = (calcs: SessionCalculations[]): SessionCalculations => {
   const merged = emptyCalc();
 
