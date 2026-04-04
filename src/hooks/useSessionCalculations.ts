@@ -106,6 +106,29 @@ export async function fetchSessionCalculations(params: SessionCalcParams | null)
     orders = ordersData || [];
   }
 
+  let debtsByOrderId: Record<string, { total_amount: number; paid_amount: number; remaining_amount: number | null; status?: string | null }> = {};
+  if (deliveryOrderIds.length > 0) {
+    const { data: debtsData, error: debtsError } = await supabase
+      .from('customer_debts')
+      .select('order_id, total_amount, paid_amount, remaining_amount, status')
+      .eq('worker_id', workerId)
+      .in('order_id', deliveryOrderIds);
+    ensureNoError(debtsError, 'order debts');
+    debtsByOrderId = Object.fromEntries(
+      (debtsData || [])
+        .filter((debt: any) => !!debt.order_id)
+        .map((debt: any) => [
+          debt.order_id,
+          {
+            total_amount: Number(debt.total_amount || 0),
+            paid_amount: Number(debt.paid_amount || 0),
+            remaining_amount: debt.remaining_amount == null ? null : Number(debt.remaining_amount),
+            status: debt.status || null,
+          },
+        ]),
+    );
+  }
+
   // 2. Fetch debt payments (use exact period timestamps)
   const { data: debtPayments, error: debtPaymentsError } = await supabase
     .from('debt_payments')
@@ -263,7 +286,15 @@ export async function fetchSessionCalculations(params: SessionCalcParams | null)
           paidAmount = Number(order.partial_amount || 0);
         }
 
-        const debtAmount = totalAmount - paidAmount;
+        const linkedDebt = debtsByOrderId[order.id];
+        const debtAmount = linkedDebt
+          ? Math.max(
+              0,
+              linkedDebt.remaining_amount == null
+                ? linkedDebt.total_amount - linkedDebt.paid_amount
+                : linkedDebt.remaining_amount,
+            )
+          : Math.max(0, totalAmount - paidAmount);
         totalPaid += paidAmount;
         newDebts += debtAmount;
 
