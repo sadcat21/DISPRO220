@@ -3059,6 +3059,7 @@ const CollectedDebtOperationList: React.FC<{
     <div className="space-y-2 p-2">
       {filtered.map((operation) => {
         const customer = operation.debt?.customer;
+        const collectorName = operation.worker?.full_name || operation.worker?.username || '—';
         const totalDebt = Number(operation.debt?.total_amount || 0);
         const currentPaid = Number(operation.debt?.paid_amount || 0);
         const collectedAmount = Number(operation.amount_collected || 0);
@@ -3087,6 +3088,16 @@ const CollectedDebtOperationList: React.FC<{
                     </span>
                     {customer?.phone && <span>• {customer.phone}</span>}
                     <span className="rounded-full bg-muted px-2 py-0.5">{operation.payment_method || 'cash'}</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                    <span>عامل التحصيل: <span className="font-semibold text-foreground">{collectorName}</span></span>
+                    <span>•</span>
+                    <span>
+                      الموعد القادم:{' '}
+                      <span className="font-semibold text-foreground">
+                        {operation.next_due_date ? format(new Date(operation.next_due_date), 'dd/MM/yyyy HH:mm') : 'غير محدد'}
+                      </span>
+                    </span>
                   </div>
                 </div>
                 <div className="rounded-2xl border border-green-100 bg-green-50/80 px-3 py-2 text-left" dir="ltr">
