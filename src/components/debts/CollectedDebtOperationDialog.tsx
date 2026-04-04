@@ -44,6 +44,11 @@ export interface TodayDebtCollectionOperation {
     collection_type?: string | null;
     collection_days?: string[] | null;
     collection_amount?: number | null;
+    worker?: {
+      id: string;
+      full_name?: string | null;
+      username?: string | null;
+    } | null;
     customer?: {
       id: string;
       name: string;
