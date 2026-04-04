@@ -47,7 +47,7 @@ const HandoverItemPickerDialog = ({ open, onOpenChange, paymentMethod, onConfirm
       const baseQuery = () => {
         let query = supabase
           .from('orders')
-          .select('id, total_amount, partial_amount, payment_status, invoice_payment_method, document_verification, created_at, customer_id, customers!inner(name)')
+          .select('id, total_amount, partial_amount, payment_status, invoice_payment_method, document_verification, created_at, customer_id, customers!inner(name), order_items(total_price)')
           .eq('status', 'delivered')
           .eq('payment_type', 'with_invoice');
         if (activeBranch?.id) query = query.eq('branch_id', activeBranch.id);
