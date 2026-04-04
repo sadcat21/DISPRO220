@@ -18,7 +18,18 @@ export interface CustomerDebt {
 }
 
 export interface CustomerDebtWithDetails extends CustomerDebt {
-  customer?: { id: string; name: string; phone: string | null; wilaya: string | null; latitude?: number | null; longitude?: number | null };
+  customer?: {
+    id: string;
+    name: string;
+    store_name?: string | null;
+    phone: string | null;
+    wilaya: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+    customer_type?: string | null;
+    sector_id?: string | null;
+    zone_id?: string | null;
+  };
   worker?: { id: string; full_name: string; username: string };
 }
 
