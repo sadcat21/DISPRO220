@@ -14,6 +14,7 @@ import { formatDate } from '@/utils/formatters';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCustomerDebts, useCreateDebt } from '@/hooks/useCustomerDebts';
 import { CustomerDebtWithDetails } from '@/types/accounting';
+import CustomerLabel from '@/components/customers/CustomerLabel';
 import DebtDetailsDialog from '@/components/debts/DebtDetailsDialog';
 import PendingDocumentsSection from '@/components/debts/PendingDocumentsSection';
 import PermissionGate from '@/components/auth/PermissionGate';
@@ -21,6 +22,8 @@ import { isAdminRole } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useSectors } from '@/hooks/useSectors';
+import { getLocalizedName } from '@/utils/sectorName';
 
 const DAY_INDEX_MAP: Record<string, number> = {
   sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
@@ -55,6 +58,7 @@ const getNextCollectionDate = (debt: CustomerDebtWithDetails): string | null => 
 const CustomerDebts: React.FC = () => {
   const { t, language } = useLanguage();
   const { role, workerId, activeBranch } = useAuth();
+  const { sectors } = useSectors();
   const isAdmin = isAdminRole(role);
   const [activeTab, setActiveTab] = useState<'debts' | 'documents'>('debts');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -81,6 +85,17 @@ const CustomerDebts: React.FC = () => {
       if (activeBranch?.id) query = query.eq('branch_id', activeBranch.id);
 
       const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+  });
+  const { data: allZones = [] } = useQuery({
+    queryKey: ['customer-debts-zones'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('zones')
+        .select('id, name, name_fr, sector_id')
+        .order('name');
       if (error) throw error;
       return data || [];
     },
@@ -280,7 +295,20 @@ const CustomerDebts: React.FC = () => {
                       <div className="flex flex-col gap-3">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1 text-right">
-                            <p className="truncate text-xl font-black text-slate-900">{group.name}</p>
+                            <CustomerLabel
+                              customer={{
+                                name: group.debts[0]?.customer?.name,
+                                store_name: group.debts[0]?.customer?.store_name,
+                                customer_type: group.debts[0]?.customer?.customer_type,
+                                sector_name: group.debts[0]?.customer?.sector_id
+                                  ? getLocalizedName(sectors.find((s) => s.id === group.debts[0]?.customer?.sector_id) || null as any, language)
+                                  : undefined,
+                                zone_name: group.debts[0]?.customer?.zone_id
+                                  ? getLocalizedName(allZones.find((z) => z.id === group.debts[0]?.customer?.zone_id) || null as any, language)
+                                  : undefined,
+                              }}
+                              className="items-end"
+                            />
                             <div className="mt-1 flex flex-wrap items-center justify-end gap-2 text-xs text-muted-foreground">
                               {group.wilaya && <span>{group.wilaya}</span>}
                               {group.phone && <span>• {group.phone}</span>}
