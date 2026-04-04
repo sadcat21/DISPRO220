@@ -185,12 +185,12 @@ const ManagerTreasury = () => {
       }
 
       const buckets = {
-        cash_invoice1: [] as Array<{ id: string; amount: number }>,
-        cash_invoice2: [] as Array<{ id: string; amount: number }>,
-        check: [] as Array<{ id: string; amount: number }>,
-        receipt_cash: [] as Array<{ id: string; amount: number }>,
-        receipt: [] as Array<{ id: string; amount: number }>,
-        transfer: [] as Array<{ id: string; amount: number }>,
+        cash_invoice1: [] as Array<{ id: string; amount: number; customerId: string | null }>,
+        cash_invoice2: [] as Array<{ id: string; amount: number; customerId: string | null }>,
+        check: [] as Array<{ id: string; amount: number; customerId: string | null }>,
+        receipt_cash: [] as Array<{ id: string; amount: number; customerId: string | null }>,
+        receipt: [] as Array<{ id: string; amount: number; customerId: string | null }>,
+        transfer: [] as Array<{ id: string; amount: number; customerId: string | null }>,
       };
 
       for (const order of orders || []) {
@@ -204,35 +204,35 @@ const ManagerTreasury = () => {
         const transferByCash = isTransferPaidByCash(order.document_verification);
 
         if (order.payment_type === 'without_invoice') {
-          buckets.cash_invoice2.push({ id: order.id, amount });
+          buckets.cash_invoice2.push({ id: order.id, amount, customerId: order.customer_id || null });
           continue;
         }
 
         switch (order.invoice_payment_method) {
           case 'cash':
-            if (!handedMethods.has('cash')) buckets.cash_invoice1.push({ id: order.id, amount });
+            if (!handedMethods.has('cash')) buckets.cash_invoice1.push({ id: order.id, amount, customerId: order.customer_id || null });
             break;
           case 'check':
-            if (!handedMethods.has('check')) buckets.check.push({ id: order.id, amount });
+            if (!handedMethods.has('check')) buckets.check.push({ id: order.id, amount, customerId: order.customer_id || null });
             break;
           case 'receipt':
             if (receiptBucket === 'cash') {
               if (!handedMethods.has('receipt_cash') && !handedMethods.has('cash') && !handedMethods.has('receipt')) {
-                buckets.receipt_cash.push({ id: order.id, amount });
+                buckets.receipt_cash.push({ id: order.id, amount, customerId: order.customer_id || null });
               }
             } else if (!handedMethods.has('receipt')) {
-              buckets.receipt.push({ id: order.id, amount });
+              buckets.receipt.push({ id: order.id, amount, customerId: order.customer_id || null });
             }
             break;
           case 'transfer':
-            if (!transferByCash && !handedMethods.has('transfer')) buckets.transfer.push({ id: order.id, amount });
+            if (!transferByCash && !handedMethods.has('transfer')) buckets.transfer.push({ id: order.id, amount, customerId: order.customer_id || null });
             break;
           default:
             break;
         }
       }
 
-      const applyAmountFallback = (items: Array<{ id: string; amount: number }>, handedAmount: number) => {
+      const applyAmountFallback = (items: Array<{ id: string; amount: number; customerId: string | null }>, handedAmount: number) => {
         let remainingHanded = Math.max(0, handedAmount);
         return items
           .slice()
@@ -250,14 +250,25 @@ const ManagerTreasury = () => {
       };
 
       const handedCash2 = (handovers || []).reduce((sum, handover: any) => sum + Number(handover.cash_invoice2 || 0), 0);
+      const countSummary = (items: Array<{ id: string; amount: number; customerId: string | null }>) => ({
+        operations: items.length,
+        clients: new Set(items.map((item) => item.customerId).filter(Boolean)).size,
+      });
+
+      const cashInvoice1Items = buckets.cash_invoice1;
+      const cashInvoice2Items = applyAmountFallback(buckets.cash_invoice2, handedCash2);
+      const checkItems = buckets.check;
+      const receiptCashItems = buckets.receipt_cash;
+      const receiptDocItems = buckets.receipt;
+      const transferItems = buckets.transfer;
 
       return {
-        cash_invoice1: buckets.cash_invoice1.length,
-        cash_invoice2: applyAmountFallback(buckets.cash_invoice2, handedCash2).length,
-        check: buckets.check.length,
-        receipt_cash: buckets.receipt_cash.length,
-        receipt: buckets.receipt.length,
-        transfer: buckets.transfer.length,
+        cash_invoice1: countSummary(cashInvoice1Items),
+        cash_invoice2: countSummary(cashInvoice2Items),
+        check: countSummary(checkItems),
+        receipt_cash: countSummary(receiptCashItems),
+        receipt: countSummary(receiptDocItems),
+        transfer: countSummary(transferItems),
       };
     },
   });
@@ -419,12 +430,13 @@ const ManagerTreasury = () => {
   const deliveredCashAmount = Number(handoverForm.cash_delivered || 0);
   const availableInvoice2CashAmount = Math.max((summary?.cash_invoice2 || 0) - (summary?.cash_invoice2_handed || 0), 0);
   const invoice2CashAmount = Math.max(0, deliveredCashAmount - invoice1CashAmountWithStamp);
-  const remainingCashInvoice1Count = remainingCounts?.cash_invoice1 ?? (((summary?.cash_invoice1 || 0) + (summary?.cash_invoice1_stamp || 0) - (summary?.cash_invoice1_handed || 0)) > 1 ? (summary?.cash_invoice1_count || 0) : 0);
-  const remainingCashInvoice2Count = remainingCounts?.cash_invoice2 ?? (((summary?.cash_invoice2 || 0) - (summary?.cash_invoice2_handed || 0)) > 1 ? (summary?.cash_invoice2_count || 0) : 0);
-  const remainingChecksCount = remainingCounts?.check ?? (((summary?.check || 0) - (summary?.check_handed || 0)) > 1 ? (summary?.checkCount || 0) : 0);
-  const remainingReceiptCashCount = remainingCounts?.receipt_cash ?? (((summary?.receipt_cash || 0) - (summary?.receipt_cash_handed || 0)) > 1 ? (summary?.receiptCashCount || 0) : 0);
-  const remainingReceiptDocCount = remainingCounts?.receipt ?? (((summary?.bank_receipt || 0) - (summary?.receipt_handed || 0)) > 1 ? (summary?.receiptCount || 0) : 0);
-  const remainingTransferCount = remainingCounts?.transfer ?? (((summary?.bank_transfer || 0) - (summary?.transfer_handed || 0)) > 1 ? (summary?.transferCount || 0) : 0);
+  const remainingCashInvoice1Count = remainingCounts?.cash_invoice1?.operations ?? (((summary?.cash_invoice1 || 0) + (summary?.cash_invoice1_stamp || 0) - (summary?.cash_invoice1_handed || 0)) > 1 ? (summary?.cash_invoice1_count || 0) : 0);
+  const remainingCashInvoice2Count = remainingCounts?.cash_invoice2?.operations ?? (((summary?.cash_invoice2 || 0) - (summary?.cash_invoice2_handed || 0)) > 1 ? (summary?.cash_invoice2_count || 0) : 0);
+  const remainingChecksCount = remainingCounts?.check?.operations ?? (((summary?.check || 0) - (summary?.check_handed || 0)) > 1 ? (summary?.checkCount || 0) : 0);
+  const remainingReceiptCashCount = remainingCounts?.receipt_cash?.operations ?? (((summary?.receipt_cash || 0) - (summary?.receipt_cash_handed || 0)) > 1 ? (summary?.receiptCashCount || 0) : 0);
+  const remainingReceiptDocCount = remainingCounts?.receipt?.operations ?? (((summary?.bank_receipt || 0) - (summary?.receipt_handed || 0)) > 1 ? (summary?.receiptCount || 0) : 0);
+  const remainingTransferCount = remainingCounts?.transfer?.operations ?? (((summary?.bank_transfer || 0) - (summary?.transfer_handed || 0)) > 1 ? (summary?.transferCount || 0) : 0);
+  const cashInvoice2Badge = remainingCounts?.cash_invoice2 ? `عميل ${remainingCounts.cash_invoice2.clients} - عملية ${remainingCounts.cash_invoice2.operations}` : undefined;
 
   const handleHandover = async () => {
     const finalCash1 = invoice1CashAmountWithStamp;
