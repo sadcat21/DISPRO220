@@ -336,13 +336,11 @@ const DueDebtsList: React.FC<{ debts: DueDebt[]; onSelect: (d: DueDebt) => void;
               <div className="min-w-0">
                 <CustomerLabel customer={{ name: debt.customer?.name, store_name: debt.customer?.store_name, customer_type: debt.customer?.customer_type, sector_name: debt.customer?.sector_id && sectorMap ? sectorMap.get(debt.customer.sector_id) : undefined }} compact />
               </div>
-              <div className="flex items-center justify-end">
-                <span
-                  className="inline-flex max-w-full items-center rounded-full bg-red-50 px-3 py-1 text-sm font-extrabold text-destructive ring-1 ring-red-100"
-                  dir="ltr"
-                >
+              <div className="rounded-2xl border border-red-100 bg-red-50/80 px-3 py-2 text-right">
+                <div className="text-[11px] font-medium text-red-500">المتبقي</div>
+                <div className="mt-1 text-base font-black text-destructive" dir="ltr">
                   {Number(debt.remaining_amount).toLocaleString()} DA
-                </span>
+                </div>
               </div>
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
