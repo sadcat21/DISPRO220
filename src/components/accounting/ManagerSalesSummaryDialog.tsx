@@ -885,7 +885,7 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
           <div className="flex min-h-[280px] flex-col items-center justify-center gap-3 px-4 text-slate-500 sm:min-h-[320px]">
             <ClipboardList className="h-10 w-10 opacity-40" />
             <p className="text-center">
-              {workerButtons.length > 0 ? 'لا توجد مبيعات في هذه الفترة للعمال المحددين' : 'لا يوجد عمال متاحون لهذا الفرع حاليًا'}
+              {workerButtons.length > 0 ? labels.noSales : labels.noWorkers}
             </p>
           </div>
         ) : (
@@ -893,10 +893,10 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
             <div className="px-3 pt-2 sm:px-4">
               <TabsList className="grid h-11 grid-cols-2 rounded-2xl bg-slate-100 p-1">
                 <TabsTrigger value="overview" className="rounded-2xl text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                  الملخص
+                  {labels.overview}
                 </TabsTrigger>
                 <TabsTrigger value="products" className="rounded-2xl text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                  المنتجات
+                  {labels.products}
                 </TabsTrigger>
               </TabsList>
             </div>
