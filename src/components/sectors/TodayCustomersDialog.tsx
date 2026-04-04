@@ -3101,26 +3101,7 @@ const CollectedDebtOperationList: React.FC<{
                 </div>
               </div>
 
-              <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-                <div className="rounded-2xl border border-orange-100 bg-orange-50 px-2 py-2.5 shadow-sm">
-                  <div className="text-[11px] font-bold text-orange-600">قبل</div>
-                  <div className="mt-1 text-sm font-black text-orange-700" dir="ltr">{debtBefore.toLocaleString()} DA</div>
-                </div>
-                <div className="rounded-2xl border border-slate-100 bg-slate-50 px-2 py-2.5 shadow-sm">
-                  <div className="text-[11px] font-bold text-slate-600">الإجمالي</div>
-                  <div className="mt-1 text-sm font-black text-slate-800" dir="ltr">{totalDebt.toLocaleString()} DA</div>
-                </div>
-                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-2 py-2.5 shadow-sm">
-                  <div className="text-[11px] font-bold text-emerald-600">بعد</div>
-                  <div className="mt-1 text-sm font-black text-emerald-700" dir="ltr">{debtAfter.toLocaleString()} DA</div>
-                </div>
-              </div>
-
-              <div className="mt-2 rounded-xl bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
-                المدفوع قبل هذه العملية:
-                {' '}
-                <span className="font-bold text-foreground" dir="ltr">{paidBefore.toLocaleString()} DA</span>
-              </div>
+              
             </button>
           </Card>
         );
@@ -3207,3 +3188,4 @@ const DebtList: React.FC<{ debts: DueDebt[]; onCollect: (d: DueDebt) => void; on
 };
 
 export default TodayCustomersDialog;
+
