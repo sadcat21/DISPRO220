@@ -73,6 +73,11 @@ interface AggregateSummary {
   calc: SessionCalculations;
 }
 
+interface SummaryFinance {
+  nonCashCollected: number;
+  workerHeldAmount: number;
+}
+
 const WORK_DAYS = [
   { key: 'saturday', label: 'السبت', jsDay: 6 },
   { key: 'sunday', label: 'الأحد', jsDay: 0 },
@@ -86,6 +91,13 @@ const calcOrderTotal = (order: any, items: any[]) => {
   const storedTotal = Number(order?.total_amount || 0);
   if (storedTotal > 0) return storedTotal;
   return items.reduce((sum, item) => sum + Number(item.total_price || 0), 0);
+};
+
+const getOrderPaidAmount = (order: any, totalAmount: number) => {
+  const paymentStatus = String(order?.payment_status || 'pending').toLowerCase();
+  if (paymentStatus === 'debt') return 0;
+  if (paymentStatus === 'partial') return Number(order?.partial_amount || 0);
+  return totalAmount;
 };
 
 const buildCalcFromOrders = (orders: any[], items: any[]): SessionCalculations => {
