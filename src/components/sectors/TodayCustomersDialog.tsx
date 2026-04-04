@@ -3036,7 +3036,10 @@ const CollectedDebtOperationList: React.FC<{
   emptyMessage: string;
   searchQuery?: string;
   onOpenDetails: (operation: TodayDebtCollectionOperation) => void;
-}> = ({ operations, emptyMessage, searchQuery, onOpenDetails }) => {
+  sectors?: any[];
+  allZones?: any[];
+}> = ({ operations, emptyMessage, searchQuery, onOpenDetails, sectors, allZones }) => {
+  const { language } = useLanguage();
   const filtered = useMemo(() => {
     let list = operations;
     if (searchQuery?.trim()) {
