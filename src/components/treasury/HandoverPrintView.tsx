@@ -225,6 +225,47 @@ const HandoverPrintView: React.FC<Props> = ({
     );
   };
 
+  const renderCashInvoice1Table = () => {
+    if (cashItemsWithStamp.length === 0) return null;
+
+    return (
+      <div className="mb-4" data-pdf-section>
+        <h3 className="mb-1 text-sm font-bold">ESPÈCES FACTURE 1 ({cashItemsWithStamp.length})</h3>
+        <table className="w-full border-collapse border border-black text-xs">
+          <thead>
+            <tr>
+              <th className="border border-black p-1 text-left">Client</th>
+              <th className="border border-black p-1 text-left">NÂ° Facture</th>
+              <th className="border border-black p-1 text-right">Montant HT</th>
+              <th className="border border-black p-1 text-right">Timbre</th>
+              <th className="border border-black p-1 text-right">Montant TTC</th>
+              <th className="border border-black p-1 text-left">Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {cashItemsWithStamp.map((item, index) => (
+              <tr key={`cash-invoice1-${index}`}>
+                <td className="border border-black p-1">{item.customer_name || '-'}</td>
+                <td className="border border-black p-1">{item.invoice_number || '-'}</td>
+                <td className="border border-black p-1 text-right">{Number(item.base_amount || 0).toLocaleString()}</td>
+                <td className="border border-black p-1 text-right">{Number(item.stamp_amount || 0).toLocaleString()}</td>
+                <td className="border border-black p-1 text-right">{Number(item.amount || 0).toLocaleString()}</td>
+                <td className="border border-black p-1">{item.invoice_date || item.check_date || '-'}</td>
+              </tr>
+            ))}
+            <tr className="font-bold">
+              <td className="border border-black p-1" colSpan={2}>Total ESPÈCES FACTURE 1</td>
+              <td className="border border-black p-1 text-right">{cashItemsNetTotal.toLocaleString()}</td>
+              <td className="border border-black p-1 text-right">{stampAmount.toLocaleString()}</td>
+              <td className="border border-black p-1 text-right">{cashItemsTotal.toLocaleString()}</td>
+              <td className="border border-black p-1"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   return (
     <div className="print-handover bg-white p-8 font-sans text-black" style={{ direction: 'ltr', fontSize: '12px', textAlign: 'left', unicodeBidi: 'plaintext' }}>
       <p className="mb-2" data-pdf-section style={{ textAlign: 'left' }}>
