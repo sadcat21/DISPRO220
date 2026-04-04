@@ -34,6 +34,10 @@ const getNetPriceBeforeVat = (grossPrice: number) => {
 const formatPrice = (value: number) =>
   value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
+const isMissingProductCodeColumnError = (error: any) =>
+  typeof error?.message === 'string' &&
+  error.message.includes("Could not find the 'product_code' column of 'products' in the schema cache");
+
 const Products: React.FC = () => {
   const { workerId } = useAuth();
   const { t } = useLanguage();
