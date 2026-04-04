@@ -25,6 +25,7 @@ interface PrintSettings {
   thankYouMessage: string;
   useClassicLayout: boolean;
   showLogo: boolean;
+  showCompanyName: boolean;
   replaceNameWithLogo: boolean;
 }
 
@@ -34,6 +35,7 @@ const DEFAULT_SETTINGS: PrintSettings = {
   thankYouMessage: 'Merci pour votre confiance',
   useClassicLayout: false,
   showLogo: true,
+  showCompanyName: false,
   replaceNameWithLogo: false,
 };
 
@@ -88,6 +90,7 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
   const [showThankYouMessage, setShowThankYouMessage] = useState(false);
   const [thankYouMessage, setThankYouMessage] = useState('Merci pour votre confiance');
   const [showLogo, setShowLogo] = useState(true);
+  const [showCompanyName, setShowCompanyName] = useState(false);
   const [replaceNameWithLogo, setReplaceNameWithLogo] = useState(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
 
@@ -119,6 +122,7 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
           setShowThankYouMessage(s.showThankYouMessage ?? false);
           setThankYouMessage(s.thankYouMessage || 'Merci pour votre confiance');
           setShowLogo(s.showLogo ?? true);
+          setShowCompanyName(s.showCompanyName ?? false);
           setReplaceNameWithLogo(s.replaceNameWithLogo ?? false);
         }
       } catch { /* use defaults */ }
@@ -134,6 +138,7 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
       thankYouMessage,
       useClassicLayout,
       showLogo,
+      showCompanyName,
       replaceNameWithLogo,
       ...partial,
     };
@@ -156,6 +161,7 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
   const handleThankYouToggle = (v: boolean) => { setShowThankYouMessage(v); saveSettings({ showThankYouMessage: v }); };
   const handleThankYouMessageChange = (v: string) => { setThankYouMessage(v); saveSettings({ thankYouMessage: v }); };
   const handleLogoToggle = (v: boolean) => { setShowLogo(v); saveSettings({ showLogo: v }); };
+  const handleCompanyNameToggle = (v: boolean) => { setShowCompanyName(v); saveSettings({ showCompanyName: v }); };
   const handleReplaceNameToggle = (v: boolean) => { setReplaceNameWithLogo(v); saveSettings({ replaceNameWithLogo: v }); };
 
   const advancedOptions: AdvancedReceiptOptions = {
@@ -201,6 +207,7 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
     advancedOptions,
     classicLayout: useClassicLayout,
     showLogo,
+    showCompanyName,
     replaceNameWithLogo,
     receiptTitleOverride: receiptData.receiptTitleOverride,
     hidePaymentDetails: receiptData.hidePaymentDetails,
