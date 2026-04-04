@@ -576,13 +576,14 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
 
   // Today's direct sale visit tracking (for "بدون بيع")
   const { data: todayDirectSaleVisits = [] } = useQuery({
-    queryKey: ['today-direct-sale-visits-dialog', effectiveWorkerId, todayStart],
+    queryKey: ['today-direct-sale-visits-dialog', effectiveWorkerId, todayStart, selectedDayBounds.end],
     queryFn: async () => {
       const { data } = await supabase
         .from('visit_tracking')
         .select('customer_id, notes')
         .eq('worker_id', effectiveWorkerId!)
         .gte('created_at', todayStart)
+        .lte('created_at', selectedDayBounds.end)
         .or('notes.ilike.%بدون بيع%,notes.ilike.%مغلق (بيع مباشر)%,notes.ilike.%غير متاح (بيع مباشر)%');
       return data || [];
     },
