@@ -1121,7 +1121,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
                                   )}
                                   {changed && item.originalQuantity > 0 && !isShortage && (
                                     <Badge variant="secondary" className="text-[10px]">
-                                      {item.originalQuantity} ? {item.quantity}
+                                      {item.originalQuantity} → {item.quantity}
                                     </Badge>
                                   )}
                                   {!item.originalItemId && !isShortage && (
@@ -1146,7 +1146,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
                                   <Badge variant="outline" className="text-[10px] px-1 py-0 border-green-500 text-green-600">
                                     <Gift className="w-3 h-3 ms-0.5" />
                                     {item.giftQuantity > 0 && item.giftPieces > 0
-                                      ? `????? ${item.giftQuantity}??+${item.giftPieces}pcs`
+                                      ? `مجاني ${item.giftQuantity}🎁+${item.giftPieces}pcs`
                                       : item.giftQuantity > 0
                                         ? `${item.giftQuantity} ${t('common.free')}`
                                         : `${item.giftPieces}pcs ${t('common.free')}`
@@ -1156,7 +1156,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
                                 {item.unitPrice > 0 && item.quantity > 0 && (
                                   <div className="flex items-center gap-1 flex-wrap">
                                     <span className="text-xs text-muted-foreground">
-                                      {item.unitPrice.toLocaleString()} {t('common.currency')} ? {Math.max(0, item.quantity - item.giftQuantity)} = {item.totalPrice.toLocaleString()} {t('common.currency')}
+                                      {item.unitPrice.toLocaleString()} {t('common.currency')} × {Math.max(0, item.quantity - item.giftQuantity)} = {item.totalPrice.toLocaleString()} {t('common.currency')}
                                     </span>
                                     {unitCount !== null && (
                                       <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
@@ -1176,7 +1176,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
                             {!isShortage && (
                               <div className="flex items-center justify-between gap-3 pt-1">
                                 <div className="flex flex-col items-start min-w-10">
-                                  <span className="text-[11px] text-muted-foreground">?????? ???????</span>
+                                  <span className="text-[11px] text-muted-foreground">الكمية الحالية</span>
                                   <span className="font-bold text-sm">{Math.max(0, item.quantity - item.giftQuantity)}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
@@ -1195,7 +1195,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
                                 </div>
                               </div>
                             )}
-                          </div>                        )}
+                          </div>
                       </div>
                     );
                   })}
