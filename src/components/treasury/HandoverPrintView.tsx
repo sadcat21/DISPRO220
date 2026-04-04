@@ -141,6 +141,35 @@ const HandoverPrintView: React.FC<Props> = ({
   const stampAmount = Math.max(0, cashInvoice1 - cashItemsTotal - receiptCashTotal);
   const dateStr = format(new Date(handoverDate), 'dd/MM/yyyy');
   const wilayaFr = branchWilaya ? ALGERIAN_WILAYAS.find((wilaya) => wilaya.name === branchWilaya)?.nameFr || branchWilaya : '';
+  const cashItemsWithStamp: HandoverItem[] = (() => {
+    if (cashItems.length === 0) return [];
+
+    if (stampAmount <= 0 || cashItemsTotal <= 0) {
+      return cashItems.map((item) => ({
+        ...item,
+        base_amount: Number(item.amount || 0),
+        stamp_amount: 0,
+      }));
+    }
+
+    let distributedStamp = 0;
+    return cashItems.map((item, index) => {
+      const itemAmount = Number(item.amount || 0);
+      const isLast = index === cashItems.length - 1;
+      const itemStamp = isLast
+        ? Math.max(0, Number((stampAmount - distributedStamp).toFixed(2)))
+        : Number(((stampAmount * itemAmount) / cashItemsTotal).toFixed(2));
+
+      distributedStamp += itemStamp;
+
+      return {
+        ...item,
+        base_amount: Math.max(0, Number((itemAmount - itemStamp).toFixed(2))),
+        stamp_amount: itemStamp,
+      };
+    });
+  })();
+  const cashItemsNetTotal = cashItemsWithStamp.reduce((sum, item) => sum + Number(item.base_amount || 0), 0);
 
   const renderSimpleTable = (
     title: string,
