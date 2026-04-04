@@ -29,6 +29,14 @@ const formatMoney = (value: number) =>
 
 const getNetPriceBeforeVat = (grossPrice: number) => (grossPrice > 0 ? grossPrice / (1 + VAT_RATE) : 0);
 
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
 const getPricingUnitLabel = (product: Product) => {
   if (product.pricing_unit === 'kg') return 'kg';
   if (product.pricing_unit === 'unit') return 'pcs';
@@ -125,20 +133,55 @@ const ProductInvoiceTemplateDialog: React.FC<Props> = ({ open, onOpenChange, pro
   };
 
   const handlePrint = () => {
-    const html = printRef.current?.innerHTML;
-    if (!html) return;
     const win = window.open('', '_blank', 'width=1100,height=900');
     if (!win) return;
+
+    const rowsHtml = lineRows
+      .map(
+        (row) => `
+          <tr>
+            <td>${row.index}</td>
+            <td dir="ltr">${escapeHtml(row.product.product_code || '-')}</td>
+            <td>${escapeHtml(row.product.name)}</td>
+            <td dir="ltr">${row.quantity}</td>
+            <td>${escapeHtml(row.unitLabel)}</td>
+            <td dir="ltr">${formatMoney(row.netUnitPrice)}</td>
+            <td dir="ltr">${formatMoney(row.totalHt)}</td>
+            <td dir="ltr">19</td>
+          </tr>
+        `,
+      )
+      .join('');
+
+    const blankRowsHtml = Array.from({ length: Math.max(0, 14 - lineRows.length) })
+      .map(
+        () => `
+          <tr>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+          </tr>
+        `,
+      )
+      .join('');
+
     win.document.write(`
       <html lang="fr">
         <head>
           <title>Facture</title>
           <style>
-            body { margin: 0; padding: 24px; font-family: "Times New Roman", Georgia, serif; background: #fff; color: #111; }
+            @page { size: A4 portrait; margin: 12mm; }
+            * { box-sizing: border-box; }
+            body { margin: 0; padding: 0; font-family: "Times New Roman", Georgia, serif; background: #fff; color: #111; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .invoice-root { width: 100%; max-width: 980px; margin: 0 auto; }
             table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #222; padding: 6px 8px; font-size: 12px; }
-            th { background: #f8f8f8; }
+            th, td { border: 1px solid #222; padding: 5px 6px; font-size: 12px; vertical-align: top; }
+            th { background: #f4f4f4; }
             .top-row { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; }
             .client-box { border: 2px solid #444; border-radius: 6px; padding: 10px 12px; min-width: 360px; }
             .brand { font-size: 26px; font-style: italic; font-weight: 700; }
@@ -148,10 +191,87 @@ const ProductInvoiceTemplateDialog: React.FC<Props> = ({ open, onOpenChange, pro
             .totals-box { border: 2px solid #444; padding: 8px 12px; }
             .totals-box .row { display:flex; justify-content:space-between; margin: 8px 0; font-size: 13px; }
             .muted { color:#555; }
-            @media print { body { padding: 0; } }
+            .invoice-table td:nth-child(1) { width: 32px; text-align: center; }
+            .invoice-table td:nth-child(2) { width: 52px; text-align: center; }
+            .invoice-table td:nth-child(4) { width: 54px; text-align: center; }
+            .invoice-table td:nth-child(5) { width: 58px; text-align: center; }
+            .invoice-table td:nth-child(6),
+            .invoice-table td:nth-child(7),
+            .invoice-table td:nth-child(8) { width: 88px; text-align: right; }
+            .invoice-table tbody tr { height: 24px; }
+            .ltr { direction: ltr; unicode-bidi: embed; white-space: nowrap; }
+            @media print {
+              body { padding: 0; }
+              .invoice-root { max-width: none; }
+            }
           </style>
         </head>
-        <body>${html}</body>
+        <body>
+          <div class="invoice-root">
+            <div class="top-row">
+              <div>
+                <div class="brand">${escapeHtml(COMPANY_NAME)}</div>
+                <div class="tagline">${escapeHtml(COMPANY_TAGLINE)}</div>
+                <div class="meta" style="margin-top:12px;">
+                  <div>Tel LOT N° 90 LOTIS 440 BELGADI Bir El Djir Oran</div>
+                  <div>Tel : Mobile</div>
+                  <div>RC : 19811230057-00731 &nbsp;&nbsp; NIF : 001931130205729 &nbsp;&nbsp; AI : 3103404924</div>
+                  <div style="margin-top:6px;">Compte bancaire : BNA &nbsp; R.I.B : 00100957300000149786 &nbsp; NIS : 001931300506846</div>
+                </div>
+                <div style="margin-top:18px; font-size:13px;">
+                  <div><strong>Facture N° :</strong> <span class="ltr">${escapeHtml(invoiceNumber)}</span></div>
+                  <div style="margin-top:6px;">${escapeHtml(cityLine)}</div>
+                  <div style="margin-top:14px;">${escapeHtml(depot)}</div>
+                </div>
+              </div>
+              <div class="client-box">
+                <div style="font-size:13px; font-weight:700;">Client: ${escapeHtml(clientName)}</div>
+                <div>${escapeHtml(clientAddress)}</div>
+                <div>${escapeHtml(clientRc)}</div>
+                <div style="margin-top:10px;">${escapeHtml(clientActivity)}</div>
+                <div style="font-weight:700;">${escapeHtml(paymentMethod)}</div>
+              </div>
+            </div>
+
+            <table class="invoice-table" style="margin-top:16px;">
+              <thead>
+                <tr>
+                  <th>N°</th>
+                  <th>Code</th>
+                  <th>Désignation</th>
+                  <th>Qté</th>
+                  <th>Unité</th>
+                  <th>PU HT</th>
+                  <th>Montant HT</th>
+                  <th>TVA (%)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rowsHtml}
+                ${blankRowsHtml}
+              </tbody>
+            </table>
+
+            <div class="footer-grid">
+              <div style="font-size:11px; line-height:1.7;">
+                <div style="margin-bottom:8px; font-weight:700;">Arrêter la présente facture à la somme de :</div>
+                <div class="ltr">${formatMoney(totals.totalNet)} DA</div>
+                <div style="margin-top:12px; color:#444;">PAIEMENT A TERME</div>
+              </div>
+              <div class="totals-box">
+                <div class="row"><span>Total H.T</span><span class="ltr"><strong>${formatMoney(totals.totalHt)} DA</strong></span></div>
+                <div class="row"><span>Net H.T</span><span class="ltr"><strong>${formatMoney(totals.totalHt)} DA</strong></span></div>
+                <div class="row"><span>Total T.V.A</span><span class="ltr"><strong>${formatMoney(totals.totalVat)} DA</strong></span></div>
+                <div class="row" style="border-top:1px solid #444; padding-top:8px; margin-top:10px; font-size:14px;">
+                  <span><strong>Total Net</strong></span>
+                  <span class="ltr"><strong>${formatMoney(totals.totalNet)} DA</strong></span>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top:18px; font-size:10px; color:#666;">Page 1/1</div>
+          </div>
+        </body>
       </html>
     `);
     win.document.close();
