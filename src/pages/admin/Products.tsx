@@ -174,6 +174,7 @@ const Products: React.FC = () => {
     try {
       const { data: insertedProduct, error } = await supabase.from('products').insert({
         name: productName.trim(),
+        product_code: productCode.trim() || null,
         pieces_per_box: piecesPerBox,
         pricing_unit: pricingUnit,
         weight_per_box: pricingUnit === 'kg' ? weightPerBox : null,
@@ -200,6 +201,7 @@ const Products: React.FC = () => {
       toast.success(t('products.added'));
       setShowAddDialog(false);
       setProductName('');
+      setProductCode('');
       setPiecesPerBox(1);
       setPriceSuperGros(0);
       setPriceGros(0);
