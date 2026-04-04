@@ -91,6 +91,10 @@ const CollectedDebtOperationDialog: React.FC<Props> = ({ open, onOpenChange, col
                   <div className="rounded-xl bg-muted/40 p-2">
                     <div className="text-xs text-muted-foreground">منشئ الدين</div>
                     <div className="font-bold">{debtCreatorName}</div>
+                  <div className="rounded-xl bg-muted/40 p-2">
+                    <div className="text-xs text-muted-foreground">منشئ الدين</div>
+                    <div className="font-bold">{debtCreatorName}</div>
+                  </div>
                   </div>
     setNextDueDate(collection.next_due_date ? String(collection.next_due_date).slice(0, 10) : '');
   }, [collection]);
@@ -295,6 +299,7 @@ const CollectedDebtOperationDialog: React.FC<Props> = ({ open, onOpenChange, col
     debtTotalAmount: beforeAfter.total,
     debtPaidBefore: Math.max(0, beforeAfter.total - beforeAfter.before),
     collectorName: collection.worker?.full_name || collection.worker?.username || user?.full_name || '',
+                <span>• منشئ الدين: {debtCreatorName}</span>
     nextCollectionDate: collection.next_due_date ? String(collection.next_due_date).slice(0, 10) : null,
     nextCollectionTime: collection.next_due_date && String(collection.next_due_date).includes('T')
       ? String(collection.next_due_date).slice(11, 16)
