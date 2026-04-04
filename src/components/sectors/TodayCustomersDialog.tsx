@@ -1866,7 +1866,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                   </PopoverContent>
                 </Popover>
                 {Object.entries(DAY_NAMES).map(([key, label]) => {
-                  const isSelected = key === selectedDay;
+                  const isSelected = key === selectedDay && !selectedCustomDate;
                   const isToday = key === todayName;
                   return (
                     <button
