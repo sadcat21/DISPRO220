@@ -305,7 +305,7 @@ const HandoverPrintView: React.FC<Props> = ({
         { header: 'Banque', cell: (item) => item.check_bank || '-' },
       ])}
 
-      {renderSimpleTable('ESPÈCES FACTURE 1', cashItems, cashItemsTotal)}
+      {renderCashInvoice1Table()}
 
       {renderSimpleTable('VERSEMENT CASH', receiptCash, receiptCashTotal, [
         { header: 'N° Reçu', cell: (item) => item.receipt_number || '-' },
