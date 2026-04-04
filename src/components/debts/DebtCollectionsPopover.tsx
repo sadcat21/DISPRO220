@@ -332,9 +332,18 @@ const DueDebtsList: React.FC<{ debts: DueDebt[]; onSelect: (d: DueDebt) => void;
             className="w-full p-3 text-right hover:bg-muted/50 transition-colors"
             onClick={() => onSelect(debt)}
           >
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <CustomerLabel customer={{ name: debt.customer?.name, store_name: debt.customer?.store_name, customer_type: debt.customer?.customer_type, sector_name: debt.customer?.sector_id && sectorMap ? sectorMap.get(debt.customer.sector_id) : undefined }} compact />
-              <span className="text-destructive font-bold whitespace-nowrap">{Number(debt.remaining_amount).toLocaleString()} DA</span>
+            <div className="flex flex-col gap-2">
+              <div className="min-w-0">
+                <CustomerLabel customer={{ name: debt.customer?.name, store_name: debt.customer?.store_name, customer_type: debt.customer?.customer_type, sector_name: debt.customer?.sector_id && sectorMap ? sectorMap.get(debt.customer.sector_id) : undefined }} compact />
+              </div>
+              <div className="flex items-center justify-end">
+                <span
+                  className="inline-flex max-w-full items-center rounded-full bg-red-50 px-3 py-1 text-sm font-extrabold text-destructive ring-1 ring-red-100"
+                  dir="ltr"
+                >
+                  {Number(debt.remaining_amount).toLocaleString()} DA
+                </span>
+              </div>
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <Clock className="w-3 h-3" />
