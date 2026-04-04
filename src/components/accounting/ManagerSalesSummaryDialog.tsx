@@ -565,7 +565,7 @@ const getDayButtonClass = (isSelected: boolean, isToday: boolean) => {
   return 'h-9 shrink-0 rounded-full border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 hover:border-red-200 hover:bg-red-50';
 };
 
-const StatCard: React.FC<{ label: string; value: string; icon: React.ReactNode; tone?: string }> = ({ label, value, icon, tone = '' }) => (
+const StatCard: React.FC<{ label: string; value: string; icon: React.ReactNode; tone?: string; subtitle?: string }> = ({ label, value, icon, tone = '', subtitle }) => (
   <div className="group relative overflow-hidden rounded-[22px] border border-slate-200 bg-white p-3 sm:rounded-[26px] sm:p-4 shadow-[0_10px_30px_-18px_rgba(15,23,42,0.35)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_35px_-20px_rgba(15,23,42,0.4)]">
     <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-slate-100 via-slate-200 to-slate-100" />
     <div className="mb-3 flex items-center gap-2.5 sm:mb-5 sm:gap-3">
@@ -577,6 +577,7 @@ const StatCard: React.FC<{ label: string; value: string; icon: React.ReactNode; 
     <div className="text-right text-2xl font-black tracking-tight text-slate-700 sm:text-[2rem]">
       {value}
     </div>
+    {subtitle ? <div className="mt-2 text-right text-[11px] leading-5 text-slate-500">{subtitle}</div> : null}
   </div>
 );
 
