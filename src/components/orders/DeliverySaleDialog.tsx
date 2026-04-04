@@ -1087,7 +1087,22 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
                           changed ? 'bg-primary/5 border-primary/25 shadow-sm' : 'bg-background/90 border-border/70'
                         }`}
                       >
-                        <div className="flex-1 min-w-0">
+                        <div className="flex items-start gap-3">
+                          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl border bg-muted/30">
+                            {productImage ? (
+                              <img
+                                src={productImage}
+                                alt={item.productName}
+                                className="h-full w-full object-cover"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
+                                لا صورة
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
                             <span className={`font-medium text-sm truncate block ${isShortage ? 'line-through text-muted-foreground' : ''}`}>{item.productName}</span>
                             {isShortage && (
