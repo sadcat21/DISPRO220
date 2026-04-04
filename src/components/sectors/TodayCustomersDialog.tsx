@@ -2249,7 +2249,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                   <DebtList debts={debtsToCollectToday} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="لا توجد ديون مستحقة اليوم ✓" searchQuery={searchQuery} />
                 </TabsContent>
                 <TabsContent value="collected" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CollectedDebtOperationList operations={collectedDebtOperations} emptyMessage="لا توجد تحصيلات بعد" searchQuery={searchQuery} onOpenDetails={handleCollectedOperationClick} />
+                  <CollectedDebtOperationList operations={collectedDebtOperations} emptyMessage="لا توجد تحصيلات بعد" searchQuery={searchQuery} onOpenDetails={handleCollectedOperationClick} sectors={sectors} allZones={allZones} />
                 </TabsContent>
                 <TabsContent value="no-payment" className="m-0 flex-1 min-h-0">
                   <Tabs defaultValue="visit-only" className="flex flex-col h-full min-h-0">
