@@ -873,14 +873,16 @@ const ManagerTreasury = () => {
         <Card className="border-amber-600/30 bg-amber-600/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setStampOpen(true)}>
           <CardContent className="p-3 text-center">
             <p className="text-xs text-muted-foreground leading-tight">{t('treasury.stamp_total')}</p>
-            <p className="text-sm font-bold text-amber-600 truncate">{(() => {
+            {(() => {
               const totalCash1 = summary?.cash_invoice1 || 0;
               const remainingCash1 = Math.max(totalCash1 - (summary?.cash_invoice1_handed || 0), 0);
               const totalStamp = summary?.cash_invoice1_stamp || 0;
-              if (totalCash1 <= 0 || totalStamp <= 0 || (remainingCounts && remainingCounts.cash_invoice1 === 0)) return `0 ${cur}`;
+              if (totalCash1 <= 0 || totalStamp <= 0 || (remainingCounts && remainingCounts.cash_invoice1 === 0)) {
+                return <MoneyValue value={0} currency={cur} className="text-sm font-bold text-amber-600" />;
+              }
               const remainingStamp = totalStamp * (remainingCash1 / totalCash1);
-              return `${remainingStamp.toLocaleString()} ${cur}`;
-            })()}</p>
+              return <MoneyValue value={remainingStamp} currency={cur} className="text-sm font-bold text-amber-600" />;
+            })()}
           </CardContent>
         </Card>
       </div>
