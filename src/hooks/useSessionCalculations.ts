@@ -67,6 +67,11 @@ export async function fetchSessionCalculations(params: SessionCalcParams | null)
   if (!params) return getEmptyCalculations();
 
   const { workerId, periodStart, periodEnd } = params;
+  const ensureNoError = (error: any, context: string) => {
+    if (error) {
+      throw new Error(error.message || `Failed to load ${context}`);
+    }
+  };
   const toTimestampTz = (v: string, isEnd: boolean) => {
     if (v.includes('+') || v.includes('Z')) return v;
     if (v.includes('T')) return v + ':00+01:00';
@@ -77,7 +82,7 @@ export async function fetchSessionCalculations(params: SessionCalcParams | null)
   const periodEndTz = toTimestampTz(periodEnd, true);
 
   // 1. Fetch delivered orders using stock_movements (reliable delivery timestamp)
-  const { data: stockMovements } = await supabase
+  const { data: stockMovements, error: stockMovementsError } = await supabase
     .from('stock_movements')
     .select('order_id')
     .eq('worker_id', workerId)
@@ -85,30 +90,33 @@ export async function fetchSessionCalculations(params: SessionCalcParams | null)
     .eq('status', 'approved')
     .gte('created_at', periodStartTz)
     .lte('created_at', periodEndTz);
+  ensureNoError(stockMovementsError, 'stock movements');
 
   const deliveryOrderIds = Array.from(new Set((stockMovements || []).map((m: any) => m.order_id).filter(Boolean)));
 
   let orders: any[] = [];
   if (deliveryOrderIds.length > 0) {
-    const { data: ordersData } = await supabase
+    const { data: ordersData, error: ordersError } = await supabase
       .from('orders')
       .select('id, total_amount, payment_status, payment_type, invoice_payment_method, partial_amount, customer_id, document_verification, customer:customers(name, store_name, phone, address, sector:sectors(name)), updated_at, notes, order_items(quantity, unit_price, total_price, gift_quantity, gift_offer_id, product_id, pieces_per_box, product:products(name, price_gros, price_super_gros, price_retail, price_invoice, pricing_unit, weight_per_box, pieces_per_box))')
       .in('id', deliveryOrderIds)
       .eq('assigned_worker_id', workerId)
       .eq('status', 'delivered');
+    ensureNoError(ordersError, 'orders');
     orders = ordersData || [];
   }
 
   // 2. Fetch debt payments (use exact period timestamps)
-  const { data: debtPayments } = await supabase
+  const { data: debtPayments, error: debtPaymentsError } = await supabase
     .from('debt_payments')
     .select('amount, payment_method')
     .eq('worker_id', workerId)
     .gte('collected_at', periodStartTz)
     .lte('collected_at', periodEndTz);
+  ensureNoError(debtPaymentsError, 'debt payments');
 
   // 2b. Fetch collected pending documents (use exact timestamps)
-  const { data: collectedDocuments } = await supabase
+  const { data: collectedDocuments, error: collectedDocumentsError } = await supabase
     .from('document_collections')
     .select('status, action, collection_date, created_at, order:orders!document_collections_order_id_fkey(total_amount, invoice_payment_method)')
     .eq('worker_id', workerId)
@@ -116,25 +124,38 @@ export async function fetchSessionCalculations(params: SessionCalcParams | null)
     .neq('status', 'rejected')
     .gte('created_at', periodStartTz)
     .lte('created_at', periodEndTz);
+  ensureNoError(collectedDocumentsError, 'collected documents');
 
   // 3. Fetch expenses
-  const { data: expenseData } = await supabase
+  const { data: expenseData, error: expensesError } = await supabase
     .from('expenses')
     .select('amount, payment_method, category:expense_categories(name)')
     .eq('worker_id', workerId)
     .in('status', ['approved', 'pending'])
     .gte('expense_date', periodStart)
     .lte('expense_date', periodEnd);
+  ensureNoError(expensesError, 'expenses');
+
+  // 4. Fetch promos / free gifts during the same period
+  const { data: promosData, error: promosError } = await supabase
+    .from('promos')
+    .select('product_id, worker_id, vente_quantity, gratuite_quantity, notes, promo_date, customer_id, customer:customers(name, store_name, phone, address, sector:sectors(name)), product:products(name, pieces_per_box)')
+    .eq('worker_id', workerId)
+    .gt('gratuite_quantity', 0)
+    .gte('promo_date', periodStartTz)
+    .lte('promo_date', periodEndTz);
+  ensureNoError(promosError, 'promos');
 
       // 4b. Fetch active offers to determine gift_quantity_unit per product
       const promoProductIds = [...new Set((promosData || []).map(p => p.product_id))];
       let offerUnitMap: Record<string, string> = {}; // productId -> gift_quantity_unit
       if (promoProductIds.length > 0) {
-        const { data: productOffers } = await supabase
+        const { data: productOffers, error: productOffersError } = await supabase
           .from('product_offers')
           .select('id, product_id, gift_quantity_unit')
           .in('product_id', promoProductIds)
           .eq('is_active', true);
+        ensureNoError(productOffersError, 'product offers');
         (productOffers || []).forEach(o => {
           // Use last active offer's unit for each product
           offerUnitMap[o.product_id] = o.gift_quantity_unit || 'piece';
@@ -154,10 +175,11 @@ export async function fetchSessionCalculations(params: SessionCalcParams | null)
       let offerNamesMap: Record<string, string> = {};
       let offerDescMap: Record<string, string> = {};
       if (giftOfferIds.size > 0) {
-        const { data: offers } = await supabase
+        const { data: offers, error: offersError } = await supabase
           .from('product_offers')
           .select('id, name, min_quantity, min_quantity_unit, gift_quantity, gift_quantity_unit, tiers:product_offer_tiers(min_quantity, min_quantity_unit, gift_quantity, gift_quantity_unit, tier_order)')
           .in('id', Array.from(giftOfferIds));
+        ensureNoError(offersError, 'gift offers');
         (offers || []).forEach((o: any) => {
           offerNamesMap[o.id] = o.name;
           // Build description from tiers or fallback to offer-level values
@@ -421,13 +443,14 @@ export async function fetchSessionCalculations(params: SessionCalcParams | null)
       }, 0) || 0;
 
       // Customer surplus (overpayments recorded as cash)
-      const { data: customerSurplusData } = await supabase
+      const { data: customerSurplusData, error: customerSurplusError } = await supabase
         .from('manager_treasury')
         .select('amount')
         .eq('source_type', 'customer_surplus')
         .eq('manager_id', workerId)
         .gte('created_at', periodStartTz)
         .lte('created_at', periodEndTz);
+      ensureNoError(customerSurplusError, 'customer surplus');
 
       const customerSurplusCash = (customerSurplusData || []).reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
