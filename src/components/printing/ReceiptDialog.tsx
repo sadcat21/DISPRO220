@@ -311,6 +311,10 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({ open, onOpenChange, recei
                 <Label className="text-xs">طباعة اللوقو</Label>
                 <Switch checked={showLogo} onCheckedChange={handleLogoToggle} />
               </div>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">إظهار اسم الشركة</Label>
+                <Switch checked={showCompanyName} onCheckedChange={handleCompanyNameToggle} />
+              </div>
               {showLogo && (
                 <div className="flex items-center justify-between">
                   <Label className="text-xs">استبدال اسم الشركة باللوقو</Label>
