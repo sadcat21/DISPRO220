@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -88,6 +88,10 @@ const CollectedDebtOperationDialog: React.FC<Props> = ({ open, onOpenChange, col
     setAmount(String(Number(collection.amount_collected || 0)));
     setPaymentMethod(collection.payment_method || 'cash');
     setNotes(collection.notes || '');
+                  <div className="rounded-xl bg-muted/40 p-2">
+                    <div className="text-xs text-muted-foreground">منشئ الدين</div>
+                    <div className="font-bold">{debtCreatorName}</div>
+                  </div>
     setNextDueDate(collection.next_due_date ? String(collection.next_due_date).slice(0, 10) : '');
   }, [collection]);
 
@@ -116,6 +120,7 @@ const CollectedDebtOperationDialog: React.FC<Props> = ({ open, onOpenChange, col
         .select('id, amount, payment_method, notes, created_at')
         .eq('debt_id', collection.debt_id)
         .eq('worker_id', collection.worker_id)
+                <span>• منشئ الدين: {debtCreatorName}</span>
         .order('created_at', { ascending: true });
       if (error) throw error;
       return data || [];
@@ -158,10 +163,10 @@ const CollectedDebtOperationDialog: React.FC<Props> = ({ open, onOpenChange, col
 
   const editMutation = useMutation({
     mutationFn: async () => {
-      if (!collection?.debt) throw new Error('لا توجد بيانات كافية');
+      if (!collection?.debt) throw new Error('Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª ÙƒØ§ÙÙŠØ©');
       const nextAmount = Number(amount || 0);
-      if (!nextAmount || nextAmount <= 0) throw new Error('أدخل مبلغ تحصيل صحيح');
-      if (nextAmount > beforeAfter.before) throw new Error('المبلغ أكبر من الدين قبل التحصيل');
+      if (!nextAmount || nextAmount <= 0) throw new Error('Ø£Ø¯Ø®Ù„ Ù…Ø¨Ù„Øº ØªØ­ØµÙŠÙ„ ØµØ­ÙŠØ­');
+      if (nextAmount > beforeAfter.before) throw new Error('Ø§Ù„Ù…Ø¨Ù„Øº Ø£ÙƒØ¨Ø± Ù…Ù† Ø§Ù„Ø¯ÙŠÙ† Ù‚Ø¨Ù„ Ø§Ù„ØªØ­ØµÙŠÙ„');
 
       const total = Number(collection.debt.total_amount || 0);
       const paidBeforeThisCollection = Math.max(0, total - beforeAfter.before);
@@ -216,17 +221,17 @@ const CollectedDebtOperationDialog: React.FC<Props> = ({ open, onOpenChange, col
     },
     onSuccess: async () => {
       await refreshDebtQueries();
-      toast.success('تم تعديل التحصيل');
+      toast.success('ØªÙ… ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„ØªØ­ØµÙŠÙ„');
       setEditMode(false);
     },
     onError: (error: any) => {
-      toast.error(error?.message || 'فشل تعديل التحصيل');
+      toast.error(error?.message || 'ÙØ´Ù„ ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„ØªØ­ØµÙŠÙ„');
     },
   });
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
-      if (!collection?.debt) throw new Error('لا توجد بيانات كافية');
+      if (!collection?.debt) throw new Error('Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª ÙƒØ§ÙÙŠØ©');
       const currentPaid = Number(collection.debt.paid_amount || 0);
       const nextPaid = Math.max(0, currentPaid - Number(collection.amount_collected || 0));
       const total = Number(collection.debt.total_amount || 0);
@@ -257,24 +262,24 @@ const CollectedDebtOperationDialog: React.FC<Props> = ({ open, onOpenChange, col
     },
     onSuccess: async () => {
       await refreshDebtQueries();
-      toast.success('تم إلغاء التحصيل');
+      toast.success('ØªÙ… Ø¥Ù„ØºØ§Ø¡ Ø§Ù„ØªØ­ØµÙŠÙ„');
       onOpenChange(false);
     },
     onError: (error: any) => {
-      toast.error(error?.message || 'فشل إلغاء التحصيل');
+      toast.error(error?.message || 'ÙØ´Ù„ Ø¥Ù„ØºØ§Ø¡ Ø§Ù„ØªØ­ØµÙŠÙ„');
     },
   });
 
   if (!collection?.debt) return null;
 
   const customer = collection.debt.customer;
-  const debtCreatorName = collection.debt.worker?.full_name || collection.debt.worker?.username || '—';
+  const debtCreatorName = collection.debt.worker?.full_name || collection.debt.worker?.username || 'â€”';
   const receiptData = {
     receiptType: 'debt_payment' as const,
     orderId: null,
     debtId: collection.debt_id,
     customerId: collection.debt.customer_id,
-    customerName: customer?.store_name || customer?.name || '—',
+    customerName: customer?.store_name || customer?.name || 'â€”',
     customerPhone: customer?.phone || null,
     workerId: collection.worker_id,
     workerName: workerPrintInfo?.printName || user?.full_name || '',
@@ -302,7 +307,7 @@ const CollectedDebtOperationDialog: React.FC<Props> = ({ open, onOpenChange, col
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-[95vw] sm:max-w-md p-4 gap-3 max-h-[85vh] overflow-y-auto" dir="rtl">
           <DialogHeader className="pb-0">
-            <DialogTitle className="text-base">تفاصيل التحصيل</DialogTitle>
+            <DialogTitle className="text-base">ØªÙØ§ØµÙŠÙ„ Ø§Ù„ØªØ­ØµÙŠÙ„</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-3">
@@ -325,62 +330,62 @@ const CollectedDebtOperationDialog: React.FC<Props> = ({ open, onOpenChange, col
                   <CalendarClock className="w-3.5 h-3.5" />
                   {format(new Date(collection.created_at), 'dd/MM/yyyy HH:mm')}
                 </span>
-                <span>• عامل التحصيل: {collection.worker?.full_name || collection.worker?.username || '—'}</span>
+                <span>â€¢ Ø¹Ø§Ù…Ù„ Ø§Ù„ØªØ­ØµÙŠÙ„: {collection.worker?.full_name || collection.worker?.username || 'â€”'}</span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5">
                   {collection.payment_method || 'cash'}
                 </span>
                 <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${collection.status === 'approved' ? 'bg-green-100 text-green-700' : collection.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
-                  {collection.status === 'approved' ? 'معتمد' : collection.status === 'rejected' ? 'مرفوض' : 'معلّق'}
+                  {collection.status === 'approved' ? 'Ù…Ø¹ØªÙ…Ø¯' : collection.status === 'rejected' ? 'Ù…Ø±ÙÙˆØ¶' : 'Ù…Ø¹Ù„Ù‘Ù‚'}
                 </span>
               </div>
             </Card>
 
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <Card className="p-3 text-center">
-                <div className="text-xs text-muted-foreground">الدين الإجمالي</div>
+                <div className="text-xs text-muted-foreground">Ø§Ù„Ø¯ÙŠÙ† Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ</div>
                 <div className="mt-1 text-base font-black">{beforeAfter.total.toLocaleString()} DA</div>
               </Card>
               <Card className="p-3 text-center border-orange-200 bg-orange-50/50">
-                <div className="text-xs text-orange-700">قبل التحصيل</div>
+                <div className="text-xs text-orange-700">Ù‚Ø¨Ù„ Ø§Ù„ØªØ­ØµÙŠÙ„</div>
                 <div className="mt-1 text-base font-black text-orange-700">{beforeAfter.before.toLocaleString()} DA</div>
               </Card>
               <Card className="p-3 text-center border-green-200 bg-green-50/50">
-                <div className="text-xs text-green-700">بعد التحصيل</div>
+                <div className="text-xs text-green-700">Ø¨Ø¹Ø¯ Ø§Ù„ØªØ­ØµÙŠÙ„</div>
                 <div className="mt-1 text-base font-black text-green-700">{beforeAfter.after.toLocaleString()} DA</div>
               </Card>
             </div>
 
             {!editMode ? (
               <Card className="p-3 space-y-2">
-                <div className="text-sm font-semibold">معلومات العملية</div>
+                <div className="text-sm font-semibold">Ù…Ø¹Ù„ÙˆÙ…Ø§Øª Ø§Ù„Ø¹Ù…Ù„ÙŠØ©</div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div className="rounded-xl bg-muted/40 p-2">
-                    <div className="text-xs text-muted-foreground">المبلغ المحصل</div>
+                    <div className="text-xs text-muted-foreground">Ø§Ù„Ù…Ø¨Ù„Øº Ø§Ù„Ù…Ø­ØµÙ„</div>
                     <div className="font-bold">{Number(collection.amount_collected || 0).toLocaleString()} DA</div>
                   </div>
                   <div className="rounded-xl bg-muted/40 p-2">
-                    <div className="text-xs text-muted-foreground">طريقة الدفع</div>
+                    <div className="text-xs text-muted-foreground">Ø·Ø±ÙŠÙ‚Ø© Ø§Ù„Ø¯ÙØ¹</div>
                     <div className="font-bold">{collection.payment_method || 'cash'}</div>
                   </div>
                   <div className="rounded-xl bg-muted/40 p-2 col-span-2">
-                    <div className="text-xs text-muted-foreground">الموعد القادم</div>
-                    <div className="font-bold">{collection.next_due_date ? format(new Date(collection.next_due_date), 'dd/MM/yyyy HH:mm') : 'غير محدد'}</div>
+                    <div className="text-xs text-muted-foreground">Ø§Ù„Ù…ÙˆØ¹Ø¯ Ø§Ù„Ù‚Ø§Ø¯Ù…</div>
+                    <div className="font-bold">{collection.next_due_date ? format(new Date(collection.next_due_date), 'dd/MM/yyyy HH:mm') : 'ØºÙŠØ± Ù…Ø­Ø¯Ø¯'}</div>
                   </div>
                   <div className="rounded-xl bg-muted/40 p-2 col-span-2">
-                    <div className="text-xs text-muted-foreground">ملاحظات</div>
-                    <div className="font-medium">{collection.notes || '—'}</div>
+                    <div className="text-xs text-muted-foreground">Ù…Ù„Ø§Ø­Ø¸Ø§Øª</div>
+                    <div className="font-medium">{collection.notes || 'â€”'}</div>
                   </div>
                 </div>
               </Card>
             ) : (
               <Card className="p-3 space-y-3">
-                <div className="text-sm font-semibold">تعديل التحصيل</div>
+                <div className="text-sm font-semibold">ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„ØªØ­ØµÙŠÙ„</div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">مبلغ التحصيل</Label>
+                  <Label className="text-xs">Ù…Ø¨Ù„Øº Ø§Ù„ØªØ­ØµÙŠÙ„</Label>
                   <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} min={0} max={beforeAfter.before} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">طريقة الدفع</Label>
+                  <Label className="text-xs">Ø·Ø±ÙŠÙ‚Ø© Ø§Ù„Ø¯ÙØ¹</Label>
                   <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -392,21 +397,21 @@ const CollectedDebtOperationDialog: React.FC<Props> = ({ open, onOpenChange, col
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">التاريخ القادم</Label>
+                  <Label className="text-xs">Ø§Ù„ØªØ§Ø±ÙŠØ® Ø§Ù„Ù‚Ø§Ø¯Ù…</Label>
                   <Input type="date" value={nextDueDate} onChange={(e) => setNextDueDate(e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">ملاحظات</Label>
+                  <Label className="text-xs">Ù…Ù„Ø§Ø­Ø¸Ø§Øª</Label>
                   <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
                 </div>
                 <div className="flex gap-2">
                   <Button className="flex-1" onClick={() => editMutation.mutate()} disabled={editMutation.isPending}>
                     {editMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                    حفظ
+                    Ø­ÙØ¸
                   </Button>
                   <Button type="button" variant="outline" className="flex-1" onClick={() => setEditMode(false)}>
                     <RotateCcw className="w-4 h-4" />
-                    تراجع
+                    ØªØ±Ø§Ø¬Ø¹
                   </Button>
                 </div>
               </Card>
@@ -415,15 +420,15 @@ const CollectedDebtOperationDialog: React.FC<Props> = ({ open, onOpenChange, col
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <Button variant="outline" className="gap-2" onClick={() => setEditMode((prev) => !prev)}>
                 <Pencil className="w-4 h-4" />
-                {editMode ? 'إلغاء التعديل' : 'تعديل التحصيل'}
+                {editMode ? 'Ø¥Ù„ØºØ§Ø¡ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„' : 'ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„ØªØ­ØµÙŠÙ„'}
               </Button>
               <Button variant="outline" className="gap-2" onClick={() => setShowReceiptDialog(true)}>
                 <Printer className="w-4 h-4" />
-                طباعة الوصل
+                Ø·Ø¨Ø§Ø¹Ø© Ø§Ù„ÙˆØµÙ„
               </Button>
               <Button variant="destructive" className="gap-2" onClick={() => cancelMutation.mutate()} disabled={cancelMutation.isPending || editMutation.isPending}>
                 {cancelMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                إلغاء التحصيل
+                Ø¥Ù„ØºØ§Ø¡ Ø§Ù„ØªØ­ØµÙŠÙ„
               </Button>
             </div>
           </div>
