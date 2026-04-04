@@ -1313,7 +1313,7 @@ export const translations: Translations = {
   'treasury.receipt': { ar: 'وصل', fr: 'Reçu', en: 'Receipt' },
   'treasury.cash_f1': { ar: 'كاش ف1', fr: 'Esp. F1', en: 'Cash I1' },
   'treasury.cash_f2': { ar: 'كاش ف2', fr: 'Esp. F2', en: 'Cash I2' },
-  'treasury.currency': { ar: 'د.ج', fr: 'DA', en: 'DZD' },
+  'treasury.currency': { ar: 'DA', fr: 'DA', en: 'DZD' },
 
   // Treasury Settings & Delivery
   'treasury.settings_title': { ar: 'إعدادات الخزينة', fr: 'Paramètres de trésorerie', en: 'Treasury Settings' },
