@@ -1044,7 +1044,7 @@ const ManagerTreasury = () => {
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between rounded-lg bg-background p-2">
                   <span className="text-[10px] text-muted-foreground">{t('treasury.total_sales')}</span>
-                  <span className="text-xs font-bold">{totalSales.toLocaleString()} {cur}</span>
+                  <MoneyValue value={totalSales} currency={cur} className="text-xs font-bold" />
                 </div>
                 <div className="flex items-center justify-between rounded-lg bg-background p-2">
                   <span className="text-[10px] text-muted-foreground">{t('treasury.unpaid')}</span>
