@@ -208,6 +208,18 @@ const HandoverItemPickerDialog = ({ open, onOpenChange, paymentMethod, onConfirm
                   <span className="text-muted-foreground">المجموع ({selected.size} عنصر)</span>
                   <span className="font-bold text-primary">{totalAmount.toLocaleString()} د.ج</span>
                 </div>
+                {paymentMethod === 'cash' && totalStampAmount > 0 && (
+                  <>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">الطابع</span>
+                      <span className="font-bold text-amber-600">{totalStampAmount.toLocaleString()} د.ج</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">الإجمالي مع الطابع</span>
+                      <span className="font-bold text-green-600">{totalWithStamp.toLocaleString()} د.ج</span>
+                    </div>
+                  </>
+                )}
                 <Button onClick={handleConfirm} className="w-full gap-2">
                   <Check className="w-4 h-4" />
                   تأكيد الاختيار
