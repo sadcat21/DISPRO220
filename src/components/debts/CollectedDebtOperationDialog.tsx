@@ -44,6 +44,11 @@ export interface TodayDebtCollectionOperation {
     collection_type?: string | null;
     collection_days?: string[] | null;
     collection_amount?: number | null;
+    worker?: {
+      id: string;
+      full_name?: string | null;
+      username?: string | null;
+    } | null;
     customer?: {
       id: string;
       name: string;
@@ -263,6 +268,7 @@ const CollectedDebtOperationDialog: React.FC<Props> = ({ open, onOpenChange, col
   if (!collection?.debt) return null;
 
   const customer = collection.debt.customer;
+  const debtCreatorName = collection.debt.worker?.full_name || collection.debt.worker?.username || '—';
   const receiptData = {
     receiptType: 'debt_payment' as const,
     orderId: null,
@@ -283,7 +289,7 @@ const CollectedDebtOperationDialog: React.FC<Props> = ({ open, onOpenChange, col
     notes: collection.notes || null,
     debtTotalAmount: beforeAfter.total,
     debtPaidBefore: Math.max(0, beforeAfter.total - beforeAfter.before),
-    collectorName: user?.full_name || '',
+    collectorName: collection.worker?.full_name || collection.worker?.username || user?.full_name || '',
     nextCollectionDate: collection.next_due_date ? String(collection.next_due_date).slice(0, 10) : null,
     nextCollectionTime: collection.next_due_date && String(collection.next_due_date).includes('T')
       ? String(collection.next_due_date).slice(11, 16)
@@ -319,6 +325,8 @@ const CollectedDebtOperationDialog: React.FC<Props> = ({ open, onOpenChange, col
                   <CalendarClock className="w-3.5 h-3.5" />
                   {format(new Date(collection.created_at), 'dd/MM/yyyy HH:mm')}
                 </span>
+                <span>• عامل التحصيل: {collection.worker?.full_name || collection.worker?.username || '—'}</span>
+                <span>• منشئ الدين: {debtCreatorName}</span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5">
                   {collection.payment_method || 'cash'}
                 </span>
@@ -354,6 +362,10 @@ const CollectedDebtOperationDialog: React.FC<Props> = ({ open, onOpenChange, col
                   <div className="rounded-xl bg-muted/40 p-2">
                     <div className="text-xs text-muted-foreground">طريقة الدفع</div>
                     <div className="font-bold">{collection.payment_method || 'cash'}</div>
+                  </div>
+                  <div className="rounded-xl bg-muted/40 p-2">
+                    <div className="text-xs text-muted-foreground">منشئ الدين</div>
+                    <div className="font-bold">{debtCreatorName}</div>
                   </div>
                   <div className="rounded-xl bg-muted/40 p-2 col-span-2">
                     <div className="text-xs text-muted-foreground">الموعد القادم</div>

@@ -438,6 +438,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
             collection_type,
             collection_days,
             collection_amount,
+            worker:workers!customer_debts_worker_id_fkey(id, full_name, username),
             customer:customers(id, name, store_name, phone, customer_type, latitude, longitude, sector_id)
           )
         `)
@@ -3063,6 +3064,7 @@ const CollectedDebtOperationList: React.FC<{
       {filtered.map((operation) => {
         const customer = operation.debt?.customer;
         const collectorName = operation.worker?.full_name || operation.worker?.username || '—';
+        const debtCreatorName = operation.debt?.worker?.full_name || operation.debt?.worker?.username || '—';
         const collectedAmount = Number(operation.amount_collected || 0);
         const sector = customer?.sector_id ? sectors?.find((s) => s.id === customer.sector_id) : null;
         const zone = (customer as any)?.zone_id ? allZones?.find((z) => z.id === (customer as any).zone_id) : null;
@@ -3092,6 +3094,8 @@ const CollectedDebtOperationList: React.FC<{
                   </div>
                   <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                     <span>عامل التحصيل: <span className="font-semibold text-foreground">{collectorName}</span></span>
+                    <span>•</span>
+                    <span>منشئ الدين: <span className="font-semibold text-foreground">{debtCreatorName}</span></span>
                     <span>•</span>
                     <span>
                       الموعد القادم:{' '}
