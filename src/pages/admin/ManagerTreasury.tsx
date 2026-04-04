@@ -1017,7 +1017,7 @@ const ManagerTreasury = () => {
                 <p className="text-[11px] font-medium text-muted-foreground">🏦 {t('treasury.non_physical_pending')}</p>
                 <MoneyValue value={nonCashPending} currency={cur} className="text-sm font-bold" />
                 <p className="text-[10px] text-muted-foreground mt-1">{t('treasury.non_cash_details')}</p>
-                {nonCashHanded > 0 && <p className="text-[10px] text-green-500 mt-0.5">{t('treasury.handed')}: {nonCashHanded.toLocaleString()} {cur}</p>}
+                {nonCashHanded > 0 && <p className="text-[10px] text-green-500 mt-0.5">{t('treasury.handed')}: <MoneyValue value={nonCashHanded} currency={cur} /></p>}
               </CardContent>
             </Card>
           </div>
