@@ -176,7 +176,7 @@ const Products: React.FC = () => {
 
     setIsSaving(true);
     try {
-      const { data: insertedProduct, error } = await supabase.from('products').insert({
+      const payload = {
         name: productName.trim(),
         product_code: productCode.trim() || null,
         pieces_per_box: piecesPerBox,
@@ -190,7 +190,20 @@ const Products: React.FC = () => {
         allow_unit_sale: allowUnitSale,
         sort_order: productSortOrder,
         created_by: workerId,
-      }).select('id').single();
+      };
+
+      let { data: insertedProduct, error } = await supabase.from('products').insert(payload).select('id').single();
+
+      if (error && isMissingProductCodeColumnError(error)) {
+        const fallbackPayload = { ...payload };
+        delete (fallbackPayload as any).product_code;
+        const fallbackResult = await supabase.from('products').insert(fallbackPayload).select('id').single();
+        insertedProduct = fallbackResult.data;
+        error = fallbackResult.error;
+        if (!fallbackResult.error && productCode.trim()) {
+          toast.warning('تم حفظ المنتج بدون CODE لأن عمود product_code لم يُطبّق بعد في قاعدة البيانات.');
+        }
+      }
 
       if (error) throw error;
 
