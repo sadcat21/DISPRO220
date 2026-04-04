@@ -1839,6 +1839,11 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                   <PopoverTrigger asChild>
                     <button
                       type="button"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setCalendarOpen((current) => !current);
+                      }}
                       className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-medium whitespace-nowrap transition-colors shrink-0 ${
                         selectedCustomDate
                           ? 'bg-red-500 text-white border-red-500 hover:bg-red-600'
