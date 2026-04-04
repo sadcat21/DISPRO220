@@ -447,22 +447,37 @@ const Products: React.FC = () => {
 
     setIsUpdating(true);
     try {
-      const { error } = await supabase
+      const payload = {
+        name: editProductName.trim(),
+        product_code: editProductCode.trim() || null,
+        pieces_per_box: editPiecesPerBox,
+        pricing_unit: editPricingUnit,
+        weight_per_box: editPricingUnit === 'kg' ? editWeightPerBox : null,
+        price_super_gros: editPriceSuperGros,
+        price_gros: editPriceGros,
+        price_invoice: editPriceInvoice,
+        price_retail: editPriceRetail,
+        price_no_invoice: editPriceNoInvoice,
+        allow_unit_sale: editAllowUnitSale,
+      };
+
+      let { error } = await supabase
         .from('products')
-        .update({
-          name: editProductName.trim(),
-          product_code: editProductCode.trim() || null,
-          pieces_per_box: editPiecesPerBox,
-          pricing_unit: editPricingUnit,
-          weight_per_box: editPricingUnit === 'kg' ? editWeightPerBox : null,
-          price_super_gros: editPriceSuperGros,
-          price_gros: editPriceGros,
-          price_invoice: editPriceInvoice,
-          price_retail: editPriceRetail,
-          price_no_invoice: editPriceNoInvoice,
-          allow_unit_sale: editAllowUnitSale,
-        })
+        .update(payload)
         .eq('id', editingProduct.id);
+
+      if (error && isMissingProductCodeColumnError(error)) {
+        const fallbackPayload = { ...payload };
+        delete (fallbackPayload as any).product_code;
+        const fallbackResult = await supabase
+          .from('products')
+          .update(fallbackPayload)
+          .eq('id', editingProduct.id);
+        error = fallbackResult.error;
+        if (!fallbackResult.error && editProductCode.trim()) {
+          toast.warning('تم حفظ التعديلات بدون CODE لأن عمود product_code لم يُطبّق بعد في قاعدة البيانات.');
+        }
+      }
 
       if (error) throw error;
 
