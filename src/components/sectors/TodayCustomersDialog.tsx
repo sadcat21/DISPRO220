@@ -3030,6 +3030,96 @@ const CustomerList: React.FC<{
   );
 };
 
+const CollectedDebtOperationList: React.FC<{
+  operations: TodayDebtCollectionOperation[];
+  emptyMessage: string;
+  searchQuery?: string;
+  onOpenDetails: (operation: TodayDebtCollectionOperation) => void;
+}> = ({ operations, emptyMessage, searchQuery, onOpenDetails }) => {
+  const filtered = useMemo(() => {
+    let list = operations;
+    if (searchQuery?.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      list = list.filter((operation) => {
+        const customer = operation.debt?.customer;
+        return (customer?.name || '').toLowerCase().includes(q) ||
+          (customer?.store_name || '').toLowerCase().includes(q) ||
+          (customer?.phone || '').includes(q);
+      });
+    }
+    return [...list].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [operations, searchQuery]);
+
+  if (filtered.length === 0) {
+    return <div className="p-6 text-center text-sm text-muted-foreground">{searchQuery?.trim() ? 'لا توجد نتائج' : emptyMessage}</div>;
+  }
+
+  return (
+    <div className="space-y-2 p-2">
+      {filtered.map((operation) => {
+        const customer = operation.debt?.customer;
+        const totalDebt = Number(operation.debt?.total_amount || 0);
+        const currentPaid = Number(operation.debt?.paid_amount || 0);
+        const collectedAmount = Number(operation.amount_collected || 0);
+        const debtAfter = Math.max(0, Number(operation.debt?.remaining_amount || 0));
+        const debtBefore = Math.max(0, debtAfter + collectedAmount);
+        const paidBefore = Math.max(0, currentPaid - collectedAmount);
+
+        return (
+          <Card key={operation.id} className="overflow-hidden">
+            <button className="w-full p-3 text-right" onClick={() => onOpenDetails(operation)}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1 space-y-1">
+                  <CustomerLabel
+                    customer={{
+                      name: customer?.name,
+                      store_name: customer?.store_name,
+                      customer_type: customer?.customer_type,
+                    }}
+                    compact
+                    hideBadges
+                  />
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {format(new Date(operation.created_at), 'dd/MM/yyyy HH:mm')}
+                    </span>
+                    {customer?.phone && <span>• {customer.phone}</span>}
+                    <span className="rounded-full bg-muted px-2 py-0.5">{operation.payment_method || 'cash'}</span>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-green-100 bg-green-50/80 px-3 py-2 text-left" dir="ltr">
+                  <div className="text-[11px] font-medium text-green-600">المحصل</div>
+                  <div className="mt-1 text-base font-black text-green-700">{collectedAmount.toLocaleString()} DA</div>
+                </div>
+              </div>
+
+              <div className="mt-2 grid grid-cols-3 gap-2 text-center text-[11px]">
+                <div className="rounded-xl bg-orange-50 px-2 py-2">
+                  <div className="text-orange-600">قبل</div>
+                  <div className="mt-1 font-bold text-orange-700" dir="ltr">{debtBefore.toLocaleString()} DA</div>
+                </div>
+                <div className="rounded-xl bg-slate-50 px-2 py-2">
+                  <div className="text-slate-500">الإجمالي</div>
+                  <div className="mt-1 font-bold text-slate-700" dir="ltr">{totalDebt.toLocaleString()} DA</div>
+                </div>
+                <div className="rounded-xl bg-emerald-50 px-2 py-2">
+                  <div className="text-emerald-600">بعد</div>
+                  <div className="mt-1 font-bold text-emerald-700" dir="ltr">{debtAfter.toLocaleString()} DA</div>
+                </div>
+              </div>
+
+              <div className="mt-2 text-[11px] text-muted-foreground">
+                المدفوع قبل هذه العملية: <span className="font-semibold" dir="ltr">{paidBefore.toLocaleString()} DA</span>
+              </div>
+            </button>
+          </Card>
+        );
+      })}
+    </div>
+  );
+};
+
 // Reusable DebtList component
 const DebtList: React.FC<{ debts: DueDebt[]; onCollect: (d: DueDebt) => void; onVisitNoPayment: (d: DueDebt) => void; onClosed: (d: DueDebt) => void; onUnavailable: (d: DueDebt) => void; onDebtRefused?: (d: DueDebt) => void; emptyMessage: string; searchQuery?: string; timeMap?: Map<string, string> }> = ({ debts, onCollect, onVisitNoPayment, onClosed, onUnavailable, onDebtRefused, emptyMessage, searchQuery, timeMap }) => {
   const filtered = useMemo(() => {
