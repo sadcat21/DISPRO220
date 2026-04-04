@@ -311,6 +311,7 @@ const getSummaryFinance = (calc: SessionCalculations): SummaryFinance => {
   return {
     nonCashCollected,
     workerHeldAmount: calc.physicalCash + nonCashCollected,
+    pendingDocumentsValue: Math.max(0, nonCashCollected),
   };
 };
 
