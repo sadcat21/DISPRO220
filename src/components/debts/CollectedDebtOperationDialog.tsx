@@ -268,6 +268,7 @@ const CollectedDebtOperationDialog: React.FC<Props> = ({ open, onOpenChange, col
   if (!collection?.debt) return null;
 
   const customer = collection.debt.customer;
+  const debtCreatorName = collection.debt.worker?.full_name || collection.debt.worker?.username || '—';
   const receiptData = {
     receiptType: 'debt_payment' as const,
     orderId: null,
