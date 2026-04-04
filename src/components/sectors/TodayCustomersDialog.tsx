@@ -1782,6 +1782,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   const dayLabel = DAY_NAMES[selectedDay] || selectedDay;
   const selectedDateCaption = selectedCustomDate ? format(selectedCustomDate, 'dd/MM/yyyy') : null;
   const titleDayPart = `${dayLabel}${selectedDateCaption ? ` (${selectedDateCaption})` : ''}`;
+  const calendarButtonLabel = format(new Date(selectedDayBounds.dateKey), 'dd/MM');
   const sectorSuffix = todaySectorNames ? ` — ${todaySectorNames}` : '';
   const title = effectiveWorkerName
     ? `عملاء اليوم — ${dayLabel} — ${effectiveWorkerName}${sectorSuffix}`
