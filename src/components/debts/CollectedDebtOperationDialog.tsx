@@ -29,6 +29,11 @@ export interface TodayDebtCollectionOperation {
   status: 'pending' | 'approved' | 'rejected';
   notes: string | null;
   created_at: string;
+  worker?: {
+    id: string;
+    full_name?: string | null;
+    username?: string | null;
+  } | null;
   debt?: {
     id: string;
     customer_id: string;
