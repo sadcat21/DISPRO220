@@ -531,6 +531,18 @@ const Products: React.FC = () => {
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label>CODE</Label>
+                <Input
+                  value={productCode}
+                  onChange={(e) => setProductCode(e.target.value)}
+                  placeholder="AROMA-125"
+                  className="text-left [direction:ltr]"
+                  dir="ltr"
+                />
+                <p className="text-xs text-muted-foreground">سيظهر هذا الكود لاحقًا في الفواتير.</p>
+              </div>
+
               {/* Sort Order */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
@@ -649,14 +661,17 @@ const Products: React.FC = () => {
                     <div className="space-y-1">
                       <Label className="text-[11px] text-muted-foreground">{t('products.price_super_gros')}</Label>
                       <Input type="number" min={0} step="0.01" value={priceSuperGros} onChange={(e) => setPriceSuperGros(parseFloat(e.target.value) || 0)} className="text-right h-9" onFocus={(e) => e.target.select()} />
+                      <p className="text-[10px] text-muted-foreground">قبل TVA 19%: <span dir="ltr" className="font-medium">{formatPrice(getNetPriceBeforeVat(priceSuperGros))} DA</span></p>
                     </div>
                     <div className="space-y-1">
                       <Label className="text-[11px] text-muted-foreground">{t('products.price_gros')}</Label>
                       <Input type="number" min={0} step="0.01" value={priceGros} onChange={(e) => setPriceGros(parseFloat(e.target.value) || 0)} className="text-right h-9" onFocus={(e) => e.target.select()} />
+                      <p className="text-[10px] text-muted-foreground">قبل TVA 19%: <span dir="ltr" className="font-medium">{formatPrice(getNetPriceBeforeVat(priceGros))} DA</span></p>
                     </div>
                     <div className="space-y-1">
                       <Label className="text-[11px] text-muted-foreground">{t('products.price_retail')}</Label>
                       <Input type="number" min={0} step="0.01" value={priceRetail} onChange={(e) => setPriceRetail(parseFloat(e.target.value) || 0)} className="text-right h-9" onFocus={(e) => e.target.select()} />
+                      <p className="text-[10px] text-muted-foreground">قبل TVA 19%: <span dir="ltr" className="font-medium">{formatPrice(getNetPriceBeforeVat(priceRetail))} DA</span></p>
                     </div>
                   </div>
                 </div>
@@ -665,6 +680,7 @@ const Products: React.FC = () => {
                 <div className="border rounded-lg p-3 space-y-2 bg-muted/20">
                   <Label className="text-sm font-bold text-primary block">{t('products.invoice1_title')}</Label>
                   <Input type="number" min={0} step="0.01" value={priceInvoice} onChange={(e) => setPriceInvoice(parseFloat(e.target.value) || 0)} className="text-right h-9" onFocus={(e) => e.target.select()} />
+                  <p className="text-[10px] text-muted-foreground">قبل TVA 19%: <span dir="ltr" className="font-medium">{formatPrice(getNetPriceBeforeVat(priceInvoice))} DA</span></p>
                 </div>
 
 
