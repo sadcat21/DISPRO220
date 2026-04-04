@@ -1053,8 +1053,20 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
               )}
 
               {/* Current Items */}
-              <section className="space-y-3">
-                <Label className="text-base font-semibold">{t('nav.products')}</Label>
+              <section ref={productsSectionRef} className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <Label className="text-base font-semibold">{t('nav.products')}</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1.5 border-primary/25 text-primary hover:bg-primary/5"
+                    onClick={() => productsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    تعديل المنتجات والكميات
+                  </Button>
+                </div>
                 <div className="space-y-2 bg-muted/50 rounded-lg p-3">
                   {saleItems.map((item) => {
                     const available = getAvailable(item.productId);
