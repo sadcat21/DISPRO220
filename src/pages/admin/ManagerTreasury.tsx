@@ -309,6 +309,12 @@ const ManagerTreasury = () => {
   const deliveredCashAmount = Number(handoverForm.cash_delivered || 0);
   const availableInvoice2CashAmount = Math.max((summary?.cash_invoice2 || 0) - (summary?.cash_invoice2_handed || 0), 0);
   const invoice2CashAmount = Math.max(0, deliveredCashAmount - invoice1CashAmountWithStamp);
+  const remainingCashInvoice1Count = ((summary?.cash_invoice1 || 0) + (summary?.cash_invoice1_stamp || 0) - (summary?.cash_invoice1_handed || 0)) > 0 ? (summary?.cash_invoice1_count || 0) : 0;
+  const remainingCashInvoice2Count = ((summary?.cash_invoice2 || 0) - (summary?.cash_invoice2_handed || 0)) > 0 ? (summary?.cash_invoice2_count || 0) : 0;
+  const remainingChecksCount = ((summary?.check || 0) - (summary?.check_handed || 0)) > 0 ? (summary?.checkCount || 0) : 0;
+  const remainingReceiptCashCount = ((summary?.receipt_cash || 0) - (summary?.receipt_cash_handed || 0)) > 0 ? (summary?.receiptCashCount || 0) : 0;
+  const remainingReceiptDocCount = ((summary?.bank_receipt || 0) - (summary?.receipt_handed || 0)) > 0 ? (summary?.receiptCount || 0) : 0;
+  const remainingTransferCount = ((summary?.bank_transfer || 0) - (summary?.transfer_handed || 0)) > 0 ? (summary?.transferCount || 0) : 0;
 
   const handleHandover = async () => {
     const finalCash1 = invoice1CashAmountWithStamp;
@@ -640,7 +646,7 @@ const ManagerTreasury = () => {
       <div className="grid grid-cols-2 gap-3">
         <TreasuryCard
           icon={<Banknote className="w-5 h-5 text-green-500" />}
-          label={`${t('treasury.cash_invoice1')} (${summary?.cash_invoice1_count || 0})`}
+          label={`${t('treasury.cash_invoice1')} (${remainingCashInvoice1Count})`}
           total={(summary?.cash_invoice1 || 0) + (summary?.cash_invoice1_stamp || 0)}
           handed={summary?.cash_invoice1_handed || 0}
           colorClass="green-500"
@@ -651,7 +657,7 @@ const ManagerTreasury = () => {
         />
         <TreasuryCard
           icon={<Banknote className="w-5 h-5 text-emerald-500" />}
-          label={`${t('treasury.cash_invoice2')} (${summary?.cash_invoice2_count || 0})`}
+          label={`${t('treasury.cash_invoice2')} (${remainingCashInvoice2Count})`}
           total={summary?.cash_invoice2 || 0}
           handed={summary?.cash_invoice2_handed || 0}
           colorClass="emerald-500"
@@ -662,7 +668,7 @@ const ManagerTreasury = () => {
         />
         <TreasuryCard
           icon={<CreditCard className="w-5 h-5 text-blue-500" />}
-          label={`${t('treasury.checks')} (${summary?.checkCount || 0})`}
+          label={`${t('treasury.checks')} (${remainingChecksCount})`}
           total={summary?.check || 0}
           handed={summary?.check_handed || 0}
           colorClass="blue-500"
@@ -673,7 +679,7 @@ const ManagerTreasury = () => {
         />
         <TreasuryCard
           icon={<Receipt className="w-5 h-5 text-purple-500" />}
-          label={`Versement Cash (${summary?.receiptCashCount || 0})`}
+          label={`Versement Cash (${remainingReceiptCashCount})`}
           total={summary?.receipt_cash || 0}
           handed={summary?.receipt_cash_handed || 0}
           colorClass="fuchsia-500"
@@ -684,7 +690,7 @@ const ManagerTreasury = () => {
         />
         <TreasuryCard
           icon={<Receipt className="w-5 h-5 text-purple-500" />}
-          label={`Versement Doc (${summary?.receiptCount || 0})`}
+          label={`Versement Doc (${remainingReceiptDocCount})`}
           total={summary?.bank_receipt || 0}
           handed={summary?.receipt_handed || 0}
           colorClass="purple-500"
@@ -695,7 +701,7 @@ const ManagerTreasury = () => {
         />
         <TreasuryCard
           icon={<ArrowUpRight className="w-5 h-5 text-orange-500" />}
-          label={`${t('treasury.virement')} (${summary?.transferCount || 0})`}
+          label={`${t('treasury.virement')} (${remainingTransferCount})`}
           total={summary?.bank_transfer || 0}
           handed={summary?.transfer_handed || 0}
           colorClass="orange-500"
