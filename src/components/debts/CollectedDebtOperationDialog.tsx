@@ -283,7 +283,7 @@ const CollectedDebtOperationDialog: React.FC<Props> = ({ open, onOpenChange, col
     notes: collection.notes || null,
     debtTotalAmount: beforeAfter.total,
     debtPaidBefore: Math.max(0, beforeAfter.total - beforeAfter.before),
-    collectorName: user?.full_name || '',
+    collectorName: collection.worker?.full_name || collection.worker?.username || user?.full_name || '',
     nextCollectionDate: collection.next_due_date ? String(collection.next_due_date).slice(0, 10) : null,
     nextCollectionTime: collection.next_due_date && String(collection.next_due_date).includes('T')
       ? String(collection.next_due_date).slice(11, 16)
@@ -319,6 +319,7 @@ const CollectedDebtOperationDialog: React.FC<Props> = ({ open, onOpenChange, col
                   <CalendarClock className="w-3.5 h-3.5" />
                   {format(new Date(collection.created_at), 'dd/MM/yyyy HH:mm')}
                 </span>
+                <span>• عامل التحصيل: {collection.worker?.full_name || collection.worker?.username || '—'}</span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5">
                   {collection.payment_method || 'cash'}
                 </span>
