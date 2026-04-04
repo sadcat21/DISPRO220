@@ -905,15 +905,15 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
               <ScrollArea className="h-full">
                 <div className="space-y-3 px-3 py-3 sm:px-4 sm:py-4">
                   <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-4">
-                    <StatCard label="إجمالي المبيعات" value={fmtMoney(aggregate.calc.totalSales)} icon={<ShoppingBag className="h-4 w-4" />} tone="text-emerald-600" />
-                    <StatCard label="المبلغ المقبوض" value={fmtMoney(aggregate.calc.totalPaid)} icon={<Banknote className="h-4 w-4" />} tone="text-blue-600" />
-                    <StatCard label="ديون جديدة" value={fmtMoney(aggregate.calc.newDebts)} icon={<TrendingDown className="h-4 w-4" />} tone="text-red-600" />
-                    <StatCard label="ديون محصلة" value={fmtMoney(aggregate.calc.debtCollections.total)} icon={<HandCoins className="h-4 w-4" />} tone="text-orange-600" />
-                    <StatCard label="النقد الفعلي" value={fmtMoney(aggregate.calc.physicalCash)} icon={<Banknote className="h-4 w-4" />} tone="text-green-700" />
-                    <StatCard label="في ذمة العمال" value={fmtMoney(finance.workerHeldAmount)} icon={<Wallet className="h-4 w-4" />} tone="text-sky-700" />
-                    <StatCard label="المصاريف" value={fmtMoney(aggregate.calc.expenses)} icon={<Wallet className="h-4 w-4" />} tone="text-amber-700" />
-                    <StatCard label="العروض (صندوق.قطعة)" value={giftsDisplay.text} icon={<Gift className="h-4 w-4" />} tone="text-fuchsia-600" />
-                    <StatCard label="الطلبيات / الكميات" value={`${aggregate.orderCount} / ${totalQuantity}`} icon={<Package className="h-4 w-4" />} tone="text-violet-600" />
+                    <StatCard label={labels.totalSales} value={fmtMoney(aggregate.calc.totalSales)} icon={<ShoppingBag className="h-4 w-4" />} tone="text-emerald-600" />
+                    <StatCard label={labels.managerReceived} value={fmtMoney(aggregate.managerReceivedAmount)} icon={<Banknote className="h-4 w-4" />} tone="text-blue-600" />
+                    <StatCard label={labels.newDebts} value={fmtMoney(aggregate.calc.newDebts)} icon={<TrendingDown className="h-4 w-4" />} tone="text-red-600" />
+                    <StatCard label={labels.collectedDebts} value={fmtMoney(aggregate.calc.debtCollections.total)} icon={<HandCoins className="h-4 w-4" />} tone="text-orange-600" />
+                    <StatCard label={labels.actualCash} value={fmtMoney(aggregate.calc.physicalCash)} icon={<Banknote className="h-4 w-4" />} tone="text-green-700" />
+                    <StatCard label={labels.workersHeld} value={fmtMoney(finance.workerHeldAmount)} icon={<Wallet className="h-4 w-4" />} tone="text-sky-700" />
+                    <StatCard label={labels.expenses} value={fmtMoney(aggregate.calc.expenses)} icon={<Wallet className="h-4 w-4" />} tone="text-amber-700" />
+                    <StatCard label={labels.gifts} value={giftsDisplay.text} icon={<Gift className="h-4 w-4" />} tone="text-fuchsia-600" />
+                    <StatCard label={labels.ordersQty} value={`${aggregate.orderCount} / ${totalQuantity}`} icon={<Package className="h-4 w-4" />} tone="text-violet-600" />
                   </div>
 
                   <Tabs defaultValue="snapshot" className="space-y-3">
