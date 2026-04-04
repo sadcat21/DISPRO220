@@ -1216,6 +1216,12 @@ const Products: React.FC = () => {
         open={showStampPriceDialog} 
         onOpenChange={setShowStampPriceDialog} 
       />
+
+      <ProductInvoiceTemplateDialog
+        open={invoiceTemplateOpen}
+        onOpenChange={setInvoiceTemplateOpen}
+        products={sortedProducts}
+      />
     </div>
   );
 };
