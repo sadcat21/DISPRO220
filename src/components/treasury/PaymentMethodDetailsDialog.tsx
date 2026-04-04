@@ -161,7 +161,13 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
         }
 
         let displayAmount = totalAmount;
-        if (!isCashInvoice1 && !isCashInvoice2) {
+        if (isCashInvoice2) {
+          if (o.payment_status === 'partial') {
+            displayAmount = Number(o.partial_amount || 0);
+          } else if (isDebt) {
+            displayAmount = 0;
+          }
+        } else if (!isCashInvoice1 && !isCashInvoice2) {
           if (o.payment_status === 'partial') {
             displayAmount = Number(o.partial_amount || 0);
           } else if (isDebt) {
@@ -169,7 +175,7 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
           }
         }
 
-        if (!isCashInvoice1 && !isCashInvoice2 && displayAmount <= 0) return;
+        if (!isCashInvoice1 && displayAmount <= 0) return;
 
         let stampAmount = 0;
         let stampPercentage = 0;
@@ -190,8 +196,8 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
           stamp_amount: stampAmount,
           stamp_percentage: stampPercentage,
           created_at: o.created_at,
-          is_debt: isDebt || o.payment_status === 'partial',
-          debt_amount: debtAmount,
+          is_debt: isCashInvoice2 ? false : isDebt || o.payment_status === 'partial',
+          debt_amount: isCashInvoice2 ? 0 : debtAmount,
         };
 
         processedOrders.push({
