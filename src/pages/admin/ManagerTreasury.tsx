@@ -44,7 +44,7 @@ const TreasuryCard = ({ icon, label, total, handed, colorClass, borderClass, onC
       <CardContent className="p-3 text-center space-y-1">
         <div className="mx-auto mb-1">{icon}</div>
         <p className="text-xs text-muted-foreground">{label}</p>
-        {badgeText && <p className="text-[10px] font-medium text-muted-foreground">{badgeText}</p>}
+        {badgeText && <p dir="rtl" className="text-[10px] font-medium text-muted-foreground">{badgeText}</p>}
         <p className={`text-lg font-bold text-${colorClass} truncate`}>{remaining.toLocaleString()} {currency}</p>
         {showDetails && (
           <div className="flex justify-between text-[10px] px-1">
