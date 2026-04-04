@@ -651,7 +651,7 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
     : (workerButtons.find((worker) => worker.id === selectedWorkerId)?.full_name || 'عامل محدد');
   const timingSummary = periodFrom && periodTo
     ? (periodFrom === periodTo ? periodFrom : `${periodFrom} - ${periodTo}`)
-    : 'من آخر محاسبة';
+    : todayDateString;
 
   return (
       <div className="flex h-full min-h-0 flex-col overflow-hidden" dir="rtl">
