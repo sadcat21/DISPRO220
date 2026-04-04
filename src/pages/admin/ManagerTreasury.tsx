@@ -895,23 +895,23 @@ const ManagerTreasury = () => {
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-lg bg-green-500/5 border border-green-500/20 p-2 text-center">
               <p className="text-[10px] text-muted-foreground">{t('treasury.sales_value')}</p>
-              <p className="text-sm font-bold text-green-600 truncate">{(summary?.totalSales || 0).toLocaleString()} {cur}</p>
+              <MoneyValue value={summary?.totalSales || 0} currency={cur} className="text-sm font-bold text-green-600" />
             </div>
             <div className="rounded-lg bg-muted/50 p-2 text-center">
               <p className="text-[10px] text-muted-foreground">{t('treasury.received_treasury')}</p>
-              <p className="text-sm font-bold truncate">{summary?.total?.toLocaleString() || 0} {cur}</p>
+              <MoneyValue value={summary?.total || 0} currency={cur} className="text-sm font-bold" />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div className="rounded-lg bg-orange-500/5 border border-orange-500/20 p-2 text-center">
               <AlertCircle className="w-3 h-3 mx-auto mb-0.5 text-orange-500" />
               <p className="text-[10px] text-muted-foreground">{t('treasury.total_debts')}</p>
-              <p className="text-xs font-bold text-orange-500 truncate">{(summary?.totalDebts || 0).toLocaleString()} {cur}</p>
+              <MoneyValue value={summary?.totalDebts || 0} currency={cur} className="text-xs font-bold text-orange-500" />
             </div>
             <div className="rounded-lg bg-green-500/5 border border-green-500/20 p-2 text-center">
               <CheckCircle className="w-3 h-3 mx-auto mb-0.5 text-green-500" />
               <p className="text-[10px] text-muted-foreground">{t('treasury.collected_debts')}</p>
-              <p className="text-xs font-bold text-green-500 truncate">{(summary?.collectedDebts || 0).toLocaleString()} {cur}</p>
+              <MoneyValue value={summary?.collectedDebts || 0} currency={cur} className="text-xs font-bold text-green-500" />
             </div>
             <button
               type="button"
@@ -920,7 +920,7 @@ const ManagerTreasury = () => {
             >
               <AlertCircle className="w-3 h-3 mx-auto mb-0.5 text-destructive" />
               <p className="text-[10px] text-muted-foreground">{t('treasury.uncollected_debts')}</p>
-              <p className="text-xs font-bold text-destructive truncate">{(summary?.uncollectedDebts || 0).toLocaleString()} {cur}</p>
+              <MoneyValue value={summary?.uncollectedDebts || 0} currency={cur} className="text-xs font-bold text-destructive" />
             </button>
           </div>
         </CardContent>
@@ -931,13 +931,13 @@ const ManagerTreasury = () => {
         <Card>
           <CardContent className="p-3 text-center">
             <p className="text-xs text-muted-foreground">{t('treasury.total')}</p>
-            <p className="text-sm font-bold truncate">{summary?.total?.toLocaleString() || 0} {cur}</p>
+            <MoneyValue value={summary?.total || 0} currency={cur} className="text-sm font-bold" />
           </CardContent>
         </Card>
         <Card className="border-destructive/30">
           <CardContent className="p-3 text-center">
             <p className="text-xs text-muted-foreground">{t('treasury.handed_over')}</p>
-            <p className="text-sm font-bold text-destructive truncate">{summary?.handedOver?.toLocaleString() || 0} {cur}</p>
+            <MoneyValue value={summary?.handedOver || 0} currency={cur} className="text-sm font-bold text-destructive" />
           </CardContent>
         </Card>
       </div>
@@ -966,7 +966,7 @@ const ManagerTreasury = () => {
             <Card className="border-primary/30">
               <CardContent className="p-3 text-center">
                 <p className="text-xs text-muted-foreground">{t('treasury.overall_remaining')}</p>
-                <p className="text-base font-bold text-primary truncate">{overallRemaining.toLocaleString()} {cur}</p>
+                <MoneyValue value={overallRemaining} currency={cur} className="text-base font-bold text-primary" />
               </CardContent>
             </Card>
 
@@ -974,7 +974,7 @@ const ManagerTreasury = () => {
               <CardContent className="p-3 space-y-2">
                 <div className="text-center">
                   <p className="text-[11px] font-medium text-muted-foreground">💵 {t('treasury.cash_remaining_after_handover')}</p>
-                  <p className={`text-sm font-bold truncate ${hasCashDeficit ? 'text-destructive' : ''}`}>{physicalRemaining.toLocaleString()} {cur}</p>
+                  <MoneyValue value={physicalRemaining} currency={cur} className={`text-sm font-bold ${hasCashDeficit ? 'text-destructive' : ''}`} />
                 </div>
                 {hasCashDeficit && (
                   <p className="text-[10px] text-center text-destructive">
@@ -988,12 +988,12 @@ const ManagerTreasury = () => {
                       <div className="rounded-lg bg-muted/50 p-2 text-center">
                         <Banknote className="w-3.5 h-3.5 mx-auto mb-0.5 text-muted-foreground" />
                         <p className="text-[10px] text-muted-foreground">{t('treasury.paper_money')}</p>
-                        <p className={`text-xs font-bold truncate ${paperMoney < 0 ? 'text-destructive' : ''}`}>{paperMoney.toLocaleString()} {cur}</p>
+                        <MoneyValue value={paperMoney} currency={cur} className={`text-xs font-bold ${paperMoney < 0 ? 'text-destructive' : ''}`} />
                       </div>
                       <div className="rounded-lg bg-muted/50 p-2 text-center">
                         <Coins className="w-3.5 h-3.5 mx-auto mb-0.5 text-amber-500" />
                         <p className="text-[10px] text-muted-foreground">{t('treasury.coins_from_remaining')}</p>
-                        <p className="text-xs font-bold text-amber-500 truncate">{(summary?.coins || 0).toLocaleString()} {cur}</p>
+                        <MoneyValue value={summary?.coins || 0} currency={cur} className="text-xs font-bold text-amber-500" />
                       </div>
                     </div>
                   </>
@@ -1004,7 +1004,7 @@ const ManagerTreasury = () => {
             <Card className="border-blue-500/20">
               <CardContent className="p-3 text-center">
                 <p className="text-[11px] font-medium text-muted-foreground">🏦 {t('treasury.non_physical_pending')}</p>
-                <p className="text-sm font-bold truncate">{nonCashPending.toLocaleString()} {cur}</p>
+                <MoneyValue value={nonCashPending} currency={cur} className="text-sm font-bold" />
                 <p className="text-[10px] text-muted-foreground mt-1">{t('treasury.non_cash_details')}</p>
                 {nonCashHanded > 0 && <p className="text-[10px] text-green-500 mt-0.5">{t('treasury.handed')}: {nonCashHanded.toLocaleString()} {cur}</p>}
               </CardContent>
