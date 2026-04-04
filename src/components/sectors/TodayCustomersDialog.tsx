@@ -2066,11 +2066,11 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                     <div className="p-2 border-b">
                       <Button variant="outline" size="sm" className="w-full gap-2 text-blue-700 border-blue-300 hover:bg-blue-50" onClick={() => setShowOrdersSummary(true)}>
                         <ClipboardList className="w-4 h-4" />
-                        ????? ????????
+                        تجميع الطلبيات
                       </Button>
                     </div>
                   )}
-                  <CustomerList noOrderStreakMap={noOrderStreakMap} customers={salesWithOrders} emptyMessage="?? ???? ?????? ???" onCustomerClick={handleShowOrderDetails} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={orderTimeMap} distanceMap={customerDistanceMap} />
+                  <CustomerList noOrderStreakMap={noOrderStreakMap} customers={salesWithOrders} emptyMessage="لا توجد طلبيات بعد" onCustomerClick={handleShowOrderDetails} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={orderTimeMap} distanceMap={customerDistanceMap} />
                 </TabsContent>
               </Tabs>
             </TabsContent>
