@@ -3064,10 +3064,12 @@ const CollectedDebtOperationList: React.FC<{
         const customer = operation.debt?.customer;
         const collectorName = operation.worker?.full_name || operation.worker?.username || '—';
         const collectedAmount = Number(operation.amount_collected || 0);
+        const sector = customer?.sector_id ? sectors?.find((s) => s.id === customer.sector_id) : null;
+        const zone = (customer as any)?.zone_id ? allZones?.find((z) => z.id === (customer as any).zone_id) : null;
 
         return (
           <Card key={operation.id} className="overflow-hidden">
-            <button className="w-full p-3 text-right" onClick={() => onOpenDetails(operation)}>
+            <button className="w-full p-3 text-right hover:bg-muted/20 transition-colors" onClick={() => onOpenDetails(operation)}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1 space-y-1">
                   <CustomerLabel
@@ -3191,6 +3193,7 @@ const DebtList: React.FC<{ debts: DueDebt[]; onCollect: (d: DueDebt) => void; on
 };
 
 export default TodayCustomersDialog;
+
 
 
 
