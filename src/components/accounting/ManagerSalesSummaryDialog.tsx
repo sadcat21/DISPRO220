@@ -115,13 +115,8 @@ const buildCalcFromOrders = (orders: any[], items: any[]): SessionCalculations =
     const totalAmount = calcOrderTotal(order, orderItems);
     calc.totalSales += totalAmount;
 
-    let paidAmount = 0;
+    const paidAmount = getOrderPaidAmount(order, totalAmount);
     const paymentStatus = String(order.payment_status || 'pending').toLowerCase();
-    if (paymentStatus === 'cash' || paymentStatus === 'check' || paymentStatus === 'paid') {
-      paidAmount = totalAmount;
-    } else if (paymentStatus === 'partial') {
-      paidAmount = Number(order.partial_amount || 0);
-    }
 
     const debtAmount = Math.max(0, totalAmount - paidAmount);
     calc.totalPaid += paidAmount;
