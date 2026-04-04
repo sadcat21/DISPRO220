@@ -57,6 +57,12 @@ const TreasuryCard = ({ icon, label, total, handed, colorClass, borderClass, onC
   );
 };
 
+const MoneyValue = ({ value, currency, className = '' }: { value: number; currency: string; className?: string }) => (
+  <span dir="ltr" className={`inline-block whitespace-nowrap ${className}`.trim()}>
+    {value.toLocaleString()} {currency}
+  </span>
+);
+
 const ManagerTreasury = () => {
   const { t, language, dir } = useLanguage();
   const { activeBranch, workerId } = useAuth();
