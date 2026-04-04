@@ -203,21 +203,31 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     return activeBranch.id;
   }, [activeBranch?.id, isAdmin, hasSpecificWorker]);
 
-  const todayStart = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d.toISOString();
-  }, []);
-  const todayDateStr = useMemo(() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  }, []);
-
   // Compute the actual date for the selectedDay in the current Saturday-based week
   const NAME_TO_JS_DAY: Record<string, number> = {
     saturday: 6, sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4,
   };
   const selectedDayBounds = useMemo(() => {
+    if (selectedCustomDate) {
+      const customStart = new Date(selectedCustomDate);
+      customStart.setHours(0, 0, 0, 0);
+      const customEnd = new Date(selectedCustomDate);
+      customEnd.setHours(23, 59, 59, 999);
+
+      const customJsDay = selectedCustomDate.getDay();
+      const daysFromSaturday = customJsDay === 6 ? 0 : customJsDay + 1;
+      const weekStart = new Date(selectedCustomDate);
+      weekStart.setDate(selectedCustomDate.getDate() - daysFromSaturday);
+      weekStart.setHours(0, 0, 0, 0);
+
+      return {
+        start: customStart.toISOString(),
+        end: customEnd.toISOString(),
+        weekStart: weekStart.toISOString(),
+        dateKey: toLocalDateKey(selectedCustomDate),
+      };
+    }
+
     const now = new Date();
     const currentJsDay = now.getDay();
     const targetJsDay = NAME_TO_JS_DAY[selectedDay] ?? currentJsDay;
@@ -244,7 +254,10 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
       weekStart: weekStart.toISOString(),
       dateKey: toLocalDateKey(targetDate),
     };
-  }, [selectedDay]);
+  }, [selectedCustomDate, selectedDay]);
+
+  const todayStart = selectedDayBounds.start;
+  const todayDateStr = selectedDayBounds.dateKey;
 
   // Sub-dialog states
   const [showDeliveryDialog, setShowDeliveryDialog] = useState(false);
