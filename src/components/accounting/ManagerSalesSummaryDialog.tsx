@@ -325,7 +325,7 @@ const fetchWorkerSalesSummary = async (
   const baseQuery = () =>
     supabase
       .from('orders')
-      .select('id, status, payment_type, created_at, updated_at, customer_id')
+      .select('id, status, payment_type, payment_status, partial_amount, invoice_payment_method, document_verification, total_amount, created_at, updated_at, customer_id')
       .in('status', ['delivered', 'completed', 'confirmed'])
       .or(`assigned_worker_id.eq.${workerId},created_by.eq.${workerId}`);
 
@@ -364,7 +364,7 @@ const fetchWorkerSalesSummary = async (
 
   const { data: items, error: itemsError } = await supabase
     .from('order_items')
-    .select('order_id, product_id, quantity, gift_quantity, unit_price, total_price, product:products(name, pieces_per_box, image_url)')
+    .select('order_id, product_id, quantity, gift_quantity, unit_price, total_price, price_subtype, product:products(name, pieces_per_box, image_url)')
     .in('order_id', orderIds);
 
   if (itemsError) throw itemsError;
