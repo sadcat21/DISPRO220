@@ -2227,7 +2227,8 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                   .update({ operation_type: 'visit', notes: 'تم إلغاء البيع المباشر' })
                   .eq('operation_type', 'direct_sale')
                   .eq('customer_id', cancelledCustomerId)
-                  .gte('created_at', todayStart);
+                  .gte('created_at', todayStart)
+                  .lte('created_at', selectedDayBounds.end);
 
                 if (wId || effectiveWorkerId) {
                   vtUpdate = vtUpdate.eq('worker_id', wId || effectiveWorkerId);
