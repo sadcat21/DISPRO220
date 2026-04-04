@@ -147,6 +147,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
   const [newProductId, setNewProductId] = useState('');
   const [initialized, setInitialized] = useState(false);
   const [partialDeliveryAction, setPartialDeliveryAction] = useState<'none' | 'create_order' | 'deliver_only'>('none');
+  const productsSectionRef = useRef<HTMLElement | null>(null);
 
   // Fetch products for adding
   useEffect(() => {
