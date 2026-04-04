@@ -46,6 +46,8 @@ const getPricingUnitLabel = (product: Product) => {
 const getInvoiceGrossPrice = (product: Product) =>
   Number(product.price_invoice || product.price_gros || product.price_retail || product.price_super_gros || 0);
 
+const invoiceHeaders = ['N°', 'Code', 'Désignation', 'Qté', 'Unité', 'PU HT', 'Montant HT', 'TVA (%)'];
+
 const createLine = (productId = ''): InvoiceLine => ({
   id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
   productId,
