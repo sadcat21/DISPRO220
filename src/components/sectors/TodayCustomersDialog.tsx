@@ -1846,7 +1846,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                       }`}
                     >
                       <CalendarIcon className="w-3.5 h-3.5" />
-                      <span>{selectedCustomDate ? format(selectedCustomDate, 'dd/MM') : 'الرزنامة'}</span>
+                      <span dir="ltr">{calendarButtonLabel}</span>
                     </button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0 bg-popover" align="start">
