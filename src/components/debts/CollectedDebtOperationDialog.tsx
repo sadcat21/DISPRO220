@@ -300,6 +300,7 @@ const CollectedDebtOperationDialog: React.FC<Props> = ({ open, onOpenChange, col
     debtPaidBefore: Math.max(0, beforeAfter.total - beforeAfter.before),
     collectorName: collection.worker?.full_name || collection.worker?.username || user?.full_name || '',
                 <span>• منشئ الدين: {debtCreatorName}</span>
+                <span>• منشئ الدين: {debtCreatorName}</span>
     nextCollectionDate: collection.next_due_date ? String(collection.next_due_date).slice(0, 10) : null,
     nextCollectionTime: collection.next_due_date && String(collection.next_due_date).includes('T')
       ? String(collection.next_due_date).slice(11, 16)
@@ -339,6 +340,10 @@ const CollectedDebtOperationDialog: React.FC<Props> = ({ open, onOpenChange, col
                 <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5">
                   {collection.payment_method || 'cash'}
                 </span>
+                  <div className="rounded-xl bg-muted/40 p-2">
+                    <div className="text-xs text-muted-foreground">منشئ الدين</div>
+                    <div className="font-bold">{debtCreatorName}</div>
+                  </div>
                 <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${collection.status === 'approved' ? 'bg-green-100 text-green-700' : collection.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
                   {collection.status === 'approved' ? 'Ù…Ø¹ØªÙ…Ø¯' : collection.status === 'rejected' ? 'Ù…Ø±ÙÙˆØ¶' : 'Ù…Ø¹Ù„Ù‘Ù‚'}
                 </span>
