@@ -195,6 +195,20 @@ const formatGiftDisplay = (giftPieces: number, piecesPerBox: number) => {
   return `${boxes}.${remainingPieces.toString().padStart(2, '0')}`;
 };
 
+const subtypeAbbrMap: Record<string, string> = {
+  retail: 'D',
+  gros: 'G',
+  super_gros: 'SG',
+  invoice: 'F1',
+};
+
+const subtypeColorMap: Record<string, string> = {
+  retail: 'bg-blue-100 text-blue-700 border-blue-200',
+  gros: 'bg-green-100 text-green-700 border-green-200',
+  super_gros: 'bg-purple-100 text-purple-700 border-purple-200',
+  invoice: 'bg-orange-100 text-orange-700 border-orange-200',
+};
+
 const SETTLEMENT_ITEM_TYPES = new Set([
   'physical_cash',
   'invoice1_check',
