@@ -185,6 +185,7 @@ const SalesDetailsSummary: React.FC<SalesDetailsSummaryProps> = ({ workerId, per
             total_amount: 0,
             order_count: 0,
             has_debt: false,
+            pricing_subtypes: [],
           };
         }
         const orderItems = itemsByOrder[o.id] || [];
@@ -210,6 +211,26 @@ const SalesDetailsSummary: React.FC<SalesDetailsSummaryProps> = ({ workerId, per
         if (['credit', 'partial'].includes(order.payment_status)) {
           customerMap[custId].has_debt = true;
         }
+
+        const subtypeSet = new Set(customerMap[custId].pricing_subtypes);
+        for (const item of orderItems) {
+          subtypeSet.add(
+            inferPricingSubtype({
+              itemPaymentType: item.payment_type || order.payment_type,
+              unitPrice: Number(item.unit_price || 0),
+              explicitSubtype: item.price_subtype || order.price_subtype || null,
+              fallbackSubtype: custDefaultSubtype || 'gros',
+              product: item.catalog_product,
+              pricingUnit: item.pricing_unit,
+              weightPerBox: item.weight_per_box,
+              piecesPerBox: item.pieces_per_box,
+            }),
+          );
+        }
+        if (orderItems.length === 0) {
+          subtypeSet.add(order.payment_type === 'with_invoice' ? 'invoice' : (order.price_subtype || custDefaultSubtype || 'gros'));
+        }
+        customerMap[custId].pricing_subtypes = Array.from(subtypeSet);
       }
 
       return Object.values(customerMap).sort((a, b) => b.total_amount - a.total_amount);
