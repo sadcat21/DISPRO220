@@ -384,10 +384,10 @@ const HandoverPrintView: React.FC<Props> = ({
                   <span className="font-bold">{receiptCashTotal.toLocaleString()} DA</span>
                 </div>
               )}
-              {stampAmount > 0 && (
+              {cashItemsStampTotal > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }}>
                   <span>Timbre Facture 1:</span>
-                  <span className="font-bold">{stampAmount.toLocaleString()} DA</span>
+                  <span className="font-bold">{cashItemsStampTotal.toLocaleString()} DA</span>
                 </div>
               )}
               <div style={{ display: 'flex', justifyContent: 'space-between', direction: 'ltr', marginBottom: '4px' }}>
