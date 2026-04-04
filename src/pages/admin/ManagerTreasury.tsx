@@ -782,6 +782,7 @@ const ManagerTreasury = () => {
           onClick={() => setDetailsCategory('cash_invoice1')}
           currency={cur}
           showDetails={showCardDetails}
+          badgeText={cashInvoice1Badge}
         />
         <TreasuryCard
           icon={<Banknote className="w-5 h-5 text-emerald-500" />}
@@ -805,6 +806,7 @@ const ManagerTreasury = () => {
           onClick={() => setDetailsCategory('check')}
           currency={cur}
           showDetails={showCardDetails}
+          badgeText={checksBadge}
         />
         <TreasuryCard
           icon={<Receipt className="w-5 h-5 text-purple-500" />}
@@ -816,6 +818,7 @@ const ManagerTreasury = () => {
           onClick={() => setDetailsCategory('bank_receipt_cash')}
           currency={cur}
           showDetails={showCardDetails}
+          badgeText={receiptCashBadge}
         />
         <TreasuryCard
           icon={<Receipt className="w-5 h-5 text-purple-500" />}
@@ -827,6 +830,7 @@ const ManagerTreasury = () => {
           onClick={() => setDetailsCategory('bank_receipt')}
           currency={cur}
           showDetails={showCardDetails}
+          badgeText={receiptDocBadge}
         />
         <TreasuryCard
           icon={<ArrowUpRight className="w-5 h-5 text-orange-500" />}
@@ -838,6 +842,7 @@ const ManagerTreasury = () => {
           onClick={() => setDetailsCategory('bank_transfer')}
           currency={cur}
           showDetails={showCardDetails}
+          badgeText={transferBadge}
         />
         <Card className="border-amber-600/30 bg-amber-600/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setStampOpen(true)}>
           <CardContent className="p-3 text-center">
