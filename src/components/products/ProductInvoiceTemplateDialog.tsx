@@ -396,26 +396,30 @@ const ProductInvoiceTemplateDialog: React.FC<Props> = ({ open, onOpenChange, pro
             </div>
           </ScrollArea>
 
-          <ScrollArea className="bg-[#f7f5f1] px-6 py-5">
-            <div ref={printRef} className="invoice-root mx-auto max-w-[980px] bg-white p-6 text-left text-[#111]" style={{ fontFamily: '"Times New Roman", Georgia, serif' }}>
-              <div className="mb-5 flex items-start justify-between gap-5">
-                <div>
-                  <div className="text-[24px] font-bold italic tracking-tight">{COMPANY_NAME}</div>
-                  <div className="mt-1 text-[14px] font-semibold italic text-[#3348b5]">{COMPANY_TAGLINE}</div>
-                  <div className="mt-3 text-[11px] leading-5 text-[#222]">
+          <ScrollArea className="bg-[#f1efea] px-6 py-5">
+            <div
+              ref={printRef}
+              className="invoice-root mx-auto w-full max-w-[980px] bg-white px-5 pb-4 pt-6 text-left text-[#111] shadow-[0_8px_30px_rgba(0,0,0,0.08)]"
+              style={{ fontFamily: '"Times New Roman", Georgia, serif' }}
+            >
+              <div className="mb-4 flex items-start justify-between gap-[18px]">
+                <div className="w-[39%]">
+                  <div className="text-[25px] font-bold italic leading-none tracking-[-0.2px]">{COMPANY_NAME}</div>
+                  <div className="mt-1 text-[13px] font-semibold italic text-[#3348b5]">{COMPANY_TAGLINE}</div>
+                  <div className="mt-[10px] text-[11px] leading-[1.5] text-[#222]">
                     <div>Tel LOT N° 90 LOTIS 440 BELGADI Bir El Djir Oran</div>
                     <div>Tel : Mobile</div>
                     <div>RC : 19811230057-00731 &nbsp;&nbsp; NIF : 001931130205729 &nbsp;&nbsp; AI : 3103404924</div>
                     <div className="mt-2">Compte bancaire : BNA &nbsp; R.I.B : 00100957300000149786 &nbsp; NIS : 001931300506846</div>
                   </div>
-                  <div className="mt-5 text-[13px]">
+                  <div className="mt-4 text-[12px]">
                     <div className="font-semibold">Facture N° : <span dir="ltr">{invoiceNumber}</span></div>
-                    <div className="mt-2">{cityLine}</div>
-                    <div className="mt-4">{depot}</div>
+                    <div className="mt-1">{cityLine}</div>
+                    <div className="mt-4 text-[11px]">{depot}</div>
                   </div>
                 </div>
 
-                <div className="min-w-[365px] rounded-[6px] border-2 border-[#5a5a5a] px-4 py-3 text-[11px] leading-5">
+                <div className="w-[58%] rounded-[6px] border-2 border-[#5a5a5a] px-4 py-3 text-[11px] leading-5">
                   <div className="text-[13px] font-bold">Client: {clientName}</div>
                   <div>{clientAddress}</div>
                   <div>{clientRc}</div>
@@ -424,11 +428,11 @@ const ProductInvoiceTemplateDialog: React.FC<Props> = ({ open, onOpenChange, pro
                 </div>
               </div>
 
-              <table className="w-full border-collapse">
+              <table className="invoice-table mt-[14px] w-full border-collapse">
                 <thead>
-                  <tr className="bg-[#f5f5f5]">
-                    {['N°', 'Code', 'Désignation', 'Qté', 'Unité', 'PU HT', 'Montant HT', 'TVA (%)'].map((header) => (
-                      <th key={header} className="border border-[#333] px-2 py-2 text-[11px] font-bold">
+                  <tr className="bg-[#f4f4f4]">
+                    {invoiceHeaders.map((header) => (
+                      <th key={header} className="border border-[#333] px-[6px] py-[5px] text-[11px] font-bold">
                         {header}
                       </th>
                     ))}
@@ -437,28 +441,28 @@ const ProductInvoiceTemplateDialog: React.FC<Props> = ({ open, onOpenChange, pro
                 <tbody>
                   {lineRows.map((row) => (
                     <tr key={row.id}>
-                      <td className="border border-[#333] px-2 py-1.5 text-[11px]">{row.index}</td>
-                      <td className="border border-[#333] px-2 py-1.5 text-[11px]" dir="ltr">{row.product.product_code || '-'}</td>
-                      <td className="border border-[#333] px-2 py-1.5 text-[11px]">{row.product.name}</td>
-                      <td className="border border-[#333] px-2 py-1.5 text-[11px]" dir="ltr">{row.quantity}</td>
-                      <td className="border border-[#333] px-2 py-1.5 text-[11px]">{row.unitLabel}</td>
-                      <td className="border border-[#333] px-2 py-1.5 text-[11px]" dir="ltr">{formatMoney(row.netUnitPrice)}</td>
-                      <td className="border border-[#333] px-2 py-1.5 text-[11px]" dir="ltr">{formatMoney(row.totalHt)}</td>
-                      <td className="border border-[#333] px-2 py-1.5 text-[11px]" dir="ltr">19</td>
+                      <td className="w-[32px] border border-[#333] px-[6px] py-[5px] text-center text-[11px]">{row.index}</td>
+                      <td className="w-[52px] border border-[#333] px-[6px] py-[5px] text-center text-[11px]" dir="ltr">{row.product.product_code || '-'}</td>
+                      <td className="border border-[#333] px-[6px] py-[5px] text-[11px]">{row.product.name}</td>
+                      <td className="w-[56px] border border-[#333] px-[6px] py-[5px] text-center text-[11px]" dir="ltr">{row.quantity}</td>
+                      <td className="w-[60px] border border-[#333] px-[6px] py-[5px] text-center text-[11px]">{row.unitLabel}</td>
+                      <td className="w-[94px] border border-[#333] px-[6px] py-[5px] text-right text-[11px]" dir="ltr">{formatMoney(row.netUnitPrice)}</td>
+                      <td className="w-[94px] border border-[#333] px-[6px] py-[5px] text-right text-[11px]" dir="ltr">{formatMoney(row.totalHt)}</td>
+                      <td className="w-[62px] border border-[#333] px-[6px] py-[5px] text-center text-[11px]" dir="ltr">19</td>
                     </tr>
                   ))}
                   {Array.from({ length: Math.max(0, 14 - lineRows.length) }).map((_, index) => (
                     <tr key={`blank-${index}`}>
                       {Array.from({ length: 8 }).map((__, cellIndex) => (
-                        <td key={cellIndex} className="h-[30px] border border-[#333] px-2 py-1.5 text-[11px]">&nbsp;</td>
+                        <td key={cellIndex} className="h-[23px] border border-[#333] px-[6px] py-[5px] text-[11px]">&nbsp;</td>
                       ))}
                     </tr>
                   ))}
                 </tbody>
               </table>
 
-              <div className="mt-5 grid grid-cols-[1fr_260px] gap-5">
-                <div className="text-[11px] leading-5">
+              <div className="mt-3 grid grid-cols-[1fr_255px] gap-[18px]">
+                <div className="text-[11px] leading-[1.7]">
                   <div className="mb-2 font-semibold">Arrêter la présente facture à la somme de :</div>
                   <div className="text-[#333]">
                     {formatMoney(totals.totalNet)} DA
@@ -466,19 +470,19 @@ const ProductInvoiceTemplateDialog: React.FC<Props> = ({ open, onOpenChange, pro
                   <div className="mt-3 text-[#444]">PAIEMENT A TERME</div>
                 </div>
                 <div className="border-2 border-[#4b4b4b] px-3 py-2 text-[12px]">
-                  <div className="flex items-center justify-between py-1">
+                  <div className="flex items-center justify-between py-1.5">
                     <span>Total H.T</span>
                     <span dir="ltr" className="font-semibold">{formatMoney(totals.totalHt)} DA</span>
                   </div>
-                  <div className="flex items-center justify-between py-1">
+                  <div className="flex items-center justify-between py-1.5">
                     <span>Net H.T</span>
                     <span dir="ltr" className="font-semibold">{formatMoney(totals.totalHt)} DA</span>
                   </div>
-                  <div className="flex items-center justify-between py-1">
+                  <div className="flex items-center justify-between py-1.5">
                     <span>Total T.V.A</span>
                     <span dir="ltr" className="font-semibold">{formatMoney(totals.totalVat)} DA</span>
                   </div>
-                  <div className="mt-1 flex items-center justify-between border-t pt-2 text-[13px] font-bold">
+                  <div className="mt-2 flex items-center justify-between border-t pt-2 text-[13px] font-bold">
                     <span>Total Net</span>
                     <span dir="ltr">{formatMoney(totals.totalNet)} DA</span>
                   </div>
