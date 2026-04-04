@@ -403,7 +403,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     refetchInterval: 10000,
   });
 
-  const { data: dueDebts = [] } = useDueDebts(undefined);
+  const { data: dueDebts = [] } = useDueDebts(todayDateStr);
   const { data: allDebts = [] } = useDueDebts('__all__');
 
   const { data: todayCollections = [] } = useQuery({
