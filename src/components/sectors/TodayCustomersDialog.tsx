@@ -43,8 +43,8 @@ import WorkerSalesSummaryDialog from '@/components/accounting/WorkerSalesSummary
 import { isAdminRole } from '@/lib/utils';
 
 const DAY_NAMES: Record<string, string> = {
-  saturday: 'Ø§Ù„Ø³Ø¨Øª', sunday: 'Ø§Ù„Ø£Ø­Ø¯', monday: 'Ø§Ù„Ø¥Ø«Ù†ÙŠÙ†',
-  tuesday: 'Ø§Ù„Ø«Ù„Ø§Ø«Ø§Ø¡', wednesday: 'Ø§Ù„Ø£Ø±Ø¨Ø¹Ø§Ø¡', thursday: 'Ø§Ù„Ø®Ù…ÙŠØ³',
+  saturday: 'السبت', sunday: 'الأحد', monday: 'الإثنين',
+  tuesday: 'الثلاثاء', wednesday: 'الأربعاء', thursday: 'الخميس',
 };
 const JS_DAY_TO_NAME: Record<number, string> = {
   6: 'saturday', 0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday', 4: 'thursday',
@@ -70,7 +70,7 @@ const toNullableNumber = (value: unknown): number | null => {
 
 const normalizeSaleItem = (item: any) => ({
   productId: item?.product_id || item?.productId || item?.product?.id || '',
-  productName: item?.product?.name || item?.product_name || item?.productName || 'â€”',
+  productName: item?.product?.name || item?.product_name || item?.productName || '—',
   quantity: toSafeNumber(item?.quantity),
   unitPrice: toSafeNumber(item?.unit_price ?? item?.unitPrice),
   totalPrice: toSafeNumber(item?.total_price ?? item?.totalPrice),
@@ -122,7 +122,7 @@ const resolveOrderPayment = (order: any, isOrderRequest: boolean) => {
 // Generate next work days (Sat-Thu, skip Friday) starting from tomorrow
 const getNextWorkDays = (): { date: Date; label: string }[] => {
   const days: { date: Date; label: string }[] = [];
-  const dayLabels = ['Ø§Ù„Ø£Ø­Ø¯', 'Ø§Ù„Ø§Ø«Ù†ÙŠÙ†', 'Ø§Ù„Ø«Ù„Ø§Ø«Ø§Ø¡', 'Ø§Ù„Ø£Ø±Ø¨Ø¹Ø§Ø¡', 'Ø§Ù„Ø®Ù…ÙŠØ³', 'Ø§Ù„Ø¬Ù…Ø¹Ø©', 'Ø§Ù„Ø³Ø¨Øª'];
+  const dayLabels = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
   let current = addDays(new Date(), 1);
   while (days.length < 6) {
     if (!isFriday(current)) {
@@ -438,7 +438,6 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
             collection_type,
             collection_days,
             collection_amount,
-            worker:workers!customer_debts_worker_id_fkey(id, full_name, username),
             customer:customers(id, name, store_name, phone, customer_type, latitude, longitude, sector_id)
           )
         `)
@@ -521,7 +520,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     enabled: !!effectiveWorkerId && open,
   });
 
-  // Today's direct sales â€” detect via visit_tracking (operation_type='direct_sale') since
+  // Today's direct sales — detect via visit_tracking (operation_type='direct_sale') since
   // the DirectSaleDialog tracks each sale as a 'direct_sale' visit, which is the most reliable marker.
   // Also fetch from receipts as a secondary source.
   const { data: todayDirectSales = [] } = useQuery({
@@ -603,7 +602,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     refetchInterval: 10000,
   });
 
-  // Today's direct sale visit tracking (for "Ø¨Ø¯ÙˆÙ† Ø¨ÙŠØ¹")
+  // Today's direct sale visit tracking (for "بدون بيع")
   const { data: todayDirectSaleVisits = [] } = useQuery({
     queryKey: ['today-direct-sale-visits-dialog', effectiveWorkerId, todayStart, selectedDayBounds.end],
     queryFn: async () => {
@@ -613,7 +612,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         .eq('worker_id', effectiveWorkerId!)
         .gte('created_at', todayStart)
         .lte('created_at', selectedDayBounds.end)
-        .or('notes.ilike.%Ø¨Ø¯ÙˆÙ† Ø¨ÙŠØ¹%,notes.ilike.%Ù…ØºÙ„Ù‚ (Ø¨ÙŠØ¹ Ù…Ø¨Ø§Ø´Ø±)%,notes.ilike.%ØºÙŠØ± Ù…ØªØ§Ø­ (Ø¨ÙŠØ¹ Ù…Ø¨Ø§Ø´Ø±)%');
+        .or('notes.ilike.%بدون بيع%,notes.ilike.%مغلق (بيع مباشر)%,notes.ilike.%غير متاح (بيع مباشر)%');
       return data || [];
     },
     enabled: !!effectiveWorkerId && open,
@@ -917,10 +916,10 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
 
   // Sub-categorize salesVisitedNoOrder based on visit notes
   const closedCustomerIds = useMemo(() => new Set(
-    todayVisits.filter(v => v.operation_type === 'visit' && v.notes && /Ù…ØºÙ„Ù‚/.test(v.notes)).map(v => v.customer_id).filter(Boolean)
+    todayVisits.filter(v => v.operation_type === 'visit' && v.notes && /مغلق/.test(v.notes)).map(v => v.customer_id).filter(Boolean)
   ), [todayVisits]);
   const unavailableCustomerIds = useMemo(() => new Set(
-    todayVisits.filter(v => v.operation_type === 'visit' && v.notes && /ØºÙŠØ± Ù…ØªØ§Ø­/.test(v.notes)).map(v => v.customer_id).filter(Boolean)
+    todayVisits.filter(v => v.operation_type === 'visit' && v.notes && /غير متاح/.test(v.notes)).map(v => v.customer_id).filter(Boolean)
   ), [todayVisits]);
   const salesVisitedOnly = useMemo(() => salesVisitedNoOrder.filter(c => !closedCustomerIds.has(c.id) && !unavailableCustomerIds.has(c.id)), [salesVisitedNoOrder, closedCustomerIds, unavailableCustomerIds]);
   const salesClosed = useMemo(() => salesVisitedNoOrder.filter(c => closedCustomerIds.has(c.id)), [salesVisitedNoOrder, closedCustomerIds]);
@@ -1008,7 +1007,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   const deliveryVisitedCustomerIds = useMemo(() => new Set(todayVisits.filter(v => v.operation_type === 'delivery_visit').map(v => v.customer_id).filter(Boolean)), [todayVisits]);
 
   // Customers whose ALL assigned orders have postpone_count > 0 (rescheduled to today)
-  // These should appear in the "Ù…Ø¤Ø¬Ù„Ø©" tab, not in "Ø¨Ø¯ÙˆÙ† ØªÙˆØµÙŠÙ„"
+  // These should appear in the "مؤجلة" tab, not in "بدون توصيل"
   const onlyPostponedCustomerIds = useMemo(() => {
     const custOrders = new Map<string, { total: number; postponed: number }>();
     assignedOrders.forEach(o => {
@@ -1031,10 +1030,10 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
 
   // Sub-categorize deliveryNotReceived based on delivery_visit notes
   const deliveryClosedCustomerIds = useMemo(() => new Set(
-    todayVisits.filter(v => v.operation_type === 'delivery_visit' && v.notes && /Ù…ØºÙ„Ù‚/.test(v.notes)).map(v => v.customer_id).filter(Boolean)
+    todayVisits.filter(v => v.operation_type === 'delivery_visit' && v.notes && /مغلق/.test(v.notes)).map(v => v.customer_id).filter(Boolean)
   ), [todayVisits]);
   const deliveryUnavailableCustomerIds = useMemo(() => new Set(
-    todayVisits.filter(v => v.operation_type === 'delivery_visit' && v.notes && /ØºÙŠØ± Ù…ØªØ§Ø­/.test(v.notes)).map(v => v.customer_id).filter(Boolean)
+    todayVisits.filter(v => v.operation_type === 'delivery_visit' && v.notes && /غير متاح/.test(v.notes)).map(v => v.customer_id).filter(Boolean)
   ), [todayVisits]);
   const deliveryNotReceivedVisitOnly = useMemo(() => deliveryNotReceived.filter(c => !deliveryClosedCustomerIds.has(c.id) && !deliveryUnavailableCustomerIds.has(c.id)), [deliveryNotReceived, deliveryClosedCustomerIds, deliveryUnavailableCustomerIds]);
   const deliveryNotReceivedClosed = useMemo(() => deliveryNotReceived.filter(c => deliveryClosedCustomerIds.has(c.id)), [deliveryNotReceived, deliveryClosedCustomerIds]);
@@ -1100,12 +1099,12 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   }, [allDebts, effectiveWorkerId, hasSpecificWorker]);
   const debtClosedCustomerIds = useMemo(() => new Set(
     todayVisits
-      .filter((v: any) => v.operation_type === 'visit' && String(v.notes || '').includes('(ØªØ­ØµÙŠÙ„ Ø¯ÙŠÙ†)') && String(v.notes || '').includes('Ù…ØºÙ„Ù‚'))
+      .filter((v: any) => v.operation_type === 'visit' && String(v.notes || '').includes('(تحصيل دين)') && String(v.notes || '').includes('مغلق'))
       .map((v: any) => v.customer_id)
   ), [todayVisits]);
   const debtUnavailableCustomerIds = useMemo(() => new Set(
     todayVisits
-      .filter((v: any) => v.operation_type === 'visit' && String(v.notes || '').includes('(ØªØ­ØµÙŠÙ„ Ø¯ÙŠÙ†)') && String(v.notes || '').includes('ØºÙŠØ± Ù…ØªØ§Ø­'))
+      .filter((v: any) => v.operation_type === 'visit' && String(v.notes || '').includes('(تحصيل دين)') && String(v.notes || '').includes('غير متاح'))
       .map((v: any) => v.customer_id)
   ), [todayVisits]);
   const debtsToCollectToday = useMemo(
@@ -1144,7 +1143,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     [debtsNoPaymentVisitOnly, debtsNoPaymentClosed, debtsNoPaymentUnavailable]
   );
 
-  // Fetch sales worker visits for PrÃ©vente sectors to know which customers were visited
+  // Fetch sales worker visits for Prévente sectors to know which customers were visited
   const preventeDeliverySectors = useMemo(() => todayDeliverySectors.filter(s => (s as any).sector_type !== 'cash_van'), [todayDeliverySectors]);
   const salesWorkerIds = useMemo(() => {
     const preventeSectorIds = new Set(preventeDeliverySectors.map(s => s.id));
@@ -1206,7 +1205,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     refetchInterval: 10000,
   });
 
-  // Customers ordered by sales reps in PrÃ©vente sectors for selected day
+  // Customers ordered by sales reps in Prévente sectors for selected day
   const salesWorkerOrderedCustomerIds = useMemo(() => {
     const ids = new Set<string>();
     (salesRepStatuses as any[]).forEach((row) => {
@@ -1215,7 +1214,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     return ids;
   }, [salesRepStatuses]);
 
-  // Sales rep visit status map for PrÃ©vente customers (used for badges)
+  // Sales rep visit status map for Prévente customers (used for badges)
   // Status: 'ordered' | 'visited' | 'closed' | 'unavailable' | 'not_visited'
   const salesRepStatusMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -1237,8 +1236,8 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   }, [salesRepStatuses, customers, preventeDeliverySectors]);
 
   // Direct sale customers:
-  // 1. Cash Van sectors (today delivery) â†’ ALL customers
-  // 2. PrÃ©vente sectors (today delivery) â†’ ALL customers EXCEPT those with pending delivery orders or already ordered by sales rep
+  // 1. Cash Van sectors (today delivery) → ALL customers
+  // 2. Prévente sectors (today delivery) → ALL customers EXCEPT those with pending delivery orders or already ordered by sales rep
   const directSaleCustomers = useMemo(() => {
     const cashVanSectorIds = new Set(todayDeliverySectors.filter(s => (s as any).sector_type === 'cash_van').map(s => s.id));
     const preventeSectorIds = new Set(preventeDeliverySectors.map(s => s.id));
@@ -1279,10 +1278,10 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
 
   // Sub-categorize directSaleNoSale based on visit notes
   const directSaleClosedCustomerIds = useMemo(() => new Set(
-    todayDirectSaleVisits.filter(v => v.notes && /Ù…ØºÙ„Ù‚/.test(v.notes)).map(v => v.customer_id).filter(Boolean)
+    todayDirectSaleVisits.filter(v => v.notes && /مغلق/.test(v.notes)).map(v => v.customer_id).filter(Boolean)
   ), [todayDirectSaleVisits]);
   const directSaleUnavailableCustomerIds = useMemo(() => new Set(
-    todayDirectSaleVisits.filter(v => v.notes && /ØºÙŠØ± Ù…ØªØ§Ø­/.test(v.notes)).map(v => v.customer_id).filter(Boolean)
+    todayDirectSaleVisits.filter(v => v.notes && /غير متاح/.test(v.notes)).map(v => v.customer_id).filter(Boolean)
   ), [todayDirectSaleVisits]);
   const directSaleNoSaleVisitOnly = useMemo(() => directSaleNoSale.filter(c => !directSaleClosedCustomerIds.has(c.id) && !directSaleUnavailableCustomerIds.has(c.id)), [directSaleNoSale, directSaleClosedCustomerIds, directSaleUnavailableCustomerIds]);
   const directSaleNoSaleClosed = useMemo(() => directSaleNoSale.filter(c => directSaleClosedCustomerIds.has(c.id)), [directSaleNoSale, directSaleClosedCustomerIds]);
@@ -1304,13 +1303,13 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
       const distanceKm = calculateDistance(position.coords.latitude, position.coords.longitude, customer.latitude, customer.longitude);
       const distanceMeters = distanceKm * 1000;
       if (distanceMeters > threshold) {
-        const formattedDistance = distanceMeters >= 1000 ? `${(distanceMeters / 1000).toFixed(1)} ÙƒÙ…` : `${Math.round(distanceMeters)} Ù…ØªØ±`;
-        toast.error(`ðŸ“ Ø£Ù†Øª Ø¨Ø¹ÙŠØ¯ Ø¹Ù† Ø§Ù„Ø¹Ù…ÙŠÙ„ Ø¨Ù…Ø³Ø§ÙØ© ${formattedDistance}`, { description: `ÙŠØ¬Ø¨ Ø£Ù† ØªÙƒÙˆÙ† Ø¹Ù„Ù‰ Ø¨ÙØ¹Ø¯ ${threshold} Ù…ØªØ± Ø£Ùˆ Ø£Ù‚Ù„` });
+        const formattedDistance = distanceMeters >= 1000 ? `${(distanceMeters / 1000).toFixed(1)} كم` : `${Math.round(distanceMeters)} متر`;
+        toast.error(`📍 أنت بعيد عن العميل بمسافة ${formattedDistance}`, { description: `يجب أن تكون على بُعد ${threshold} متر أو أقل` });
         return false;
       }
       return true;
     } catch {
-      toast.error('ØªØ¹Ø°Ø± ØªØ­Ø¯ÙŠØ¯ Ù…ÙˆÙ‚Ø¹Ùƒ. ÙŠØ±Ø¬Ù‰ ØªÙØ¹ÙŠÙ„ Ø®Ø¯Ù…Ø© Ø§Ù„Ù…ÙˆÙ‚Ø¹.');
+      toast.error('تعذر تحديد موقعك. يرجى تفعيل خدمة الموقع.');
       return false;
     } finally {
       setCheckingLocationFor(null);
@@ -1335,10 +1334,10 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         setPendingDeliveryOrder(data[0] as OrderWithDetails);
         setShowDeliveryDialog(true);
       } else {
-        toast.error('Ù„Ø§ ØªÙˆØ¬Ø¯ Ø·Ù„Ø¨ÙŠØ© Ù…Ø¹ÙŠÙ†Ø© Ù„Ù‡Ø°Ø§ Ø§Ù„Ø¹Ù…ÙŠÙ„');
+        toast.error('لا توجد طلبية معينة لهذا العميل');
       }
     } catch {
-      toast.error('Ø®Ø·Ø£ ÙÙŠ Ø¬Ù„Ø¨ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø·Ù„Ø¨ÙŠØ©');
+      toast.error('خطأ في جلب بيانات الطلبية');
     } finally {
       setLoadingDeliveryFor(null);
     }
@@ -1359,10 +1358,10 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         const hydratedItems = await hydrateOrderItems(data[0]);
         setOrderDetailsDialog({ ...data[0], items: hydratedItems });
       } else {
-        toast.error('Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ ØªÙØ§ØµÙŠÙ„ Ø§Ù„Ø·Ù„Ø¨ÙŠØ©');
+        toast.error('لم يتم العثور على تفاصيل الطلبية');
       }
     } catch {
-      toast.error('Ø®Ø·Ø£ ÙÙŠ Ø¬Ù„Ø¨ Ø§Ù„ØªÙØ§ØµÙŠÙ„');
+      toast.error('خطأ في جلب التفاصيل');
     }
   };
 
@@ -1382,10 +1381,10 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         const hydratedItems = await hydrateOrderItems(data[0]);
         setOrderDetailsDialog({ ...data[0], items: hydratedItems, _isOrderRequest: true });
       } else {
-        toast.error('Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ ØªÙØ§ØµÙŠÙ„ Ø§Ù„Ø·Ù„Ø¨ÙŠØ©');
+        toast.error('لم يتم العثور على تفاصيل الطلبية');
       }
     } catch {
-      toast.error('Ø®Ø·Ø£ ÙÙŠ Ø¬Ù„Ø¨ Ø§Ù„ØªÙØ§ØµÙŠÙ„');
+      toast.error('خطأ في جلب التفاصيل');
     }
   };
 
@@ -1462,9 +1461,9 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         return;
       }
 
-      toast.error('Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ ØªÙØ§ØµÙŠÙ„ Ø§Ù„Ø¨ÙŠØ¹ Ø§Ù„Ù…Ø¨Ø§Ø´Ø±');
+      toast.error('لم يتم العثور على تفاصيل البيع المباشر');
     } catch {
-      toast.error('Ø®Ø·Ø£ ÙÙŠ Ø¬Ù„Ø¨ ØªÙØ§ØµÙŠÙ„ Ø§Ù„Ø¨ÙŠØ¹ Ø§Ù„Ù…Ø¨Ø§Ø´Ø±');
+      toast.error('خطأ في جلب تفاصيل البيع المباشر');
     }
   };
 
@@ -1507,7 +1506,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
       receiptType: (isDirectSale ? 'direct_sale' : 'delivery') as any,
       orderId: order.id || null,
       customerId: customer?.id || '',
-      customerName: customer?.store_name || customer?.name || order.customer_name || 'â€”',
+      customerName: customer?.store_name || customer?.name || order.customer_name || '—',
       customerPhone: customer?.phone || null,
       workerId: user?.id || '',
       workerName: user?.full_name || '',
@@ -1553,9 +1552,9 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         setPrintReceiptData(buildReceiptDataFromOrder({ ...data[0], items: hydratedItems }, false));
         setShowPrintReceipt(true);
       } else {
-        toast.error('Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ø§Ù„Ø·Ù„Ø¨ÙŠØ©');
+        toast.error('لم يتم العثور على الطلبية');
       }
-    } catch { toast.error('Ø®Ø·Ø£ ÙÙŠ Ø¬Ù„Ø¨ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª'); }
+    } catch { toast.error('خطأ في جلب البيانات'); }
   };
 
   const handlePrintDirectSale = async (customer: any) => {
@@ -1574,9 +1573,9 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         return;
       }
 
-      toast.error('Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø¨ÙŠØ¹ Ø§Ù„Ù…Ø¨Ø§Ø´Ø± Ù„Ù„Ø·Ø¨Ø§Ø¹Ø©');
+      toast.error('لم يتم العثور على بيانات البيع المباشر للطباعة');
     } catch {
-      toast.error('Ø®Ø·Ø£ ÙÙŠ Ø¬Ù„Ø¨ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø¨ÙŠØ¹ Ø§Ù„Ù…Ø¨Ø§Ø´Ø±');
+      toast.error('خطأ في جلب بيانات البيع المباشر');
     }
   };
 
@@ -1602,7 +1601,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
           receiptType: 'delivery' as any,
           orderId: order.id || null,
           customerId: cust?.id || '',
-          customerName: cust?.store_name || cust?.name || 'â€”',
+          customerName: cust?.store_name || cust?.name || '—',
           customerPhone: cust?.phone || null,
           workerId: user?.id || '',
           workerName: user?.full_name || '',
@@ -1633,111 +1632,111 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         });
         setShowPrintReceipt(true);
       } else {
-        toast.error('Ù„Ø§ ØªÙˆØ¬Ø¯ Ø·Ù„Ø¨ÙŠØ© Ù„Ù‡Ø°Ø§ Ø§Ù„Ø¹Ù…ÙŠÙ„');
+        toast.error('لا توجد طلبية لهذا العميل');
       }
-    } catch { toast.error('Ø®Ø·Ø£ ÙÙŠ Ø¬Ù„Ø¨ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø·Ø¨Ø§Ø¹Ø©'); }
+    } catch { toast.error('خطأ في جلب بيانات الطباعة'); }
   };
 
   const handleDeliveryVisitWithoutDelivery = async (customer: any) => {
     const allowed = await checkLocationBeforeAction(customer);
     if (!allowed) return;
     try {
-      await trackVisit({ customerId: customer.id, operationType: 'delivery_visit', notes: `Ø²ÙŠØ§Ø±Ø© ØªÙˆØµÙŠÙ„ Ø¨Ø¯ÙˆÙ† ØªØ³Ù„ÙŠÙ… - ${customer.store_name || customer.name}` });
-      toast.success(`ØªÙ… ØªØ³Ø¬ÙŠÙ„ Ø²ÙŠØ§Ø±Ø© Ø¨Ø¯ÙˆÙ† ØªØ³Ù„ÙŠÙ… Ù„Ù€ ${customer.store_name || customer.name}`);
-    } catch { toast.error('ÙØ´Ù„ ÙÙŠ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø²ÙŠØ§Ø±Ø©'); }
+      await trackVisit({ customerId: customer.id, operationType: 'delivery_visit', notes: `زيارة توصيل بدون تسليم - ${customer.store_name || customer.name}` });
+      toast.success(`تم تسجيل زيارة بدون تسليم لـ ${customer.store_name || customer.name}`);
+    } catch { toast.error('فشل في تسجيل الزيارة'); }
   };
 
   const handleDeliveryClosedVisit = async (customer: any) => {
     const allowed = await checkLocationBeforeAction(customer);
     if (!allowed) return;
     try {
-      await trackVisit({ customerId: customer.id, operationType: 'delivery_visit', notes: `Ù…ØºÙ„Ù‚ (ØªÙˆØµÙŠÙ„) - ${customer.store_name || customer.name}` });
-      toast.success(`ØªÙ… ØªØ³Ø¬ÙŠÙ„ "${customer.store_name || customer.name}" ÙƒÙ…ØºÙ„Ù‚`);
-    } catch { toast.error('ÙØ´Ù„ ÙÙŠ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø­Ø§Ù„Ø©'); }
+      await trackVisit({ customerId: customer.id, operationType: 'delivery_visit', notes: `مغلق (توصيل) - ${customer.store_name || customer.name}` });
+      toast.success(`تم تسجيل "${customer.store_name || customer.name}" كمغلق`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
   };
 
   const handleDeliveryUnavailableVisit = async (customer: any) => {
     const allowed = await checkLocationBeforeAction(customer);
     if (!allowed) return;
     try {
-      await trackVisit({ customerId: customer.id, operationType: 'delivery_visit', notes: `ØºÙŠØ± Ù…ØªØ§Ø­ (ØªÙˆØµÙŠÙ„) - ${customer.store_name || customer.name}` });
-      toast.success(`ØªÙ… ØªØ³Ø¬ÙŠÙ„ "${customer.store_name || customer.name}" ÙƒØºÙŠØ± Ù…ØªØ§Ø­`);
-    } catch { toast.error('ÙØ´Ù„ ÙÙŠ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø­Ø§Ù„Ø©'); }
+      await trackVisit({ customerId: customer.id, operationType: 'delivery_visit', notes: `غير متاح (توصيل) - ${customer.store_name || customer.name}` });
+      toast.success(`تم تسجيل "${customer.store_name || customer.name}" كغير متاح`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
   };
 
   const handleVisitWithoutOrder = async (customer: any) => {
     const allowed = await checkLocationBeforeAction(customer);
     if (!allowed) return;
     try {
-      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `Ø²ÙŠØ§Ø±Ø© Ø¨Ø¯ÙˆÙ† Ø·Ù„Ø¨ÙŠØ© - ${customer.name}` });
-      toast.success(`ØªÙ… ØªØ³Ø¬ÙŠÙ„ Ø²ÙŠØ§Ø±Ø© ${customer.name} Ø¨Ù†Ø¬Ø§Ø­`);
-    } catch { toast.error('ÙØ´Ù„ ÙÙŠ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø²ÙŠØ§Ø±Ø©'); }
+      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `زيارة بدون طلبية - ${customer.name}` });
+      toast.success(`تم تسجيل زيارة ${customer.name} بنجاح`);
+    } catch { toast.error('فشل في تسجيل الزيارة'); }
   };
 
   const handleCustomerClosed = async (customer: any) => {
     const allowed = await checkLocationBeforeAction(customer);
     if (!allowed) return;
     try {
-      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `Ù…ØºÙ„Ù‚ - ${customer.store_name || customer.name}` });
-      toast.success(`ØªÙ… ØªØ³Ø¬ÙŠÙ„ "${customer.store_name || customer.name}" ÙƒÙ…ØºÙ„Ù‚`);
-    } catch { toast.error('ÙØ´Ù„ ÙÙŠ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø­Ø§Ù„Ø©'); }
+      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `مغلق - ${customer.store_name || customer.name}` });
+      toast.success(`تم تسجيل "${customer.store_name || customer.name}" كمغلق`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
   };
 
   const handleCustomerUnavailable = async (customer: any) => {
     const allowed = await checkLocationBeforeAction(customer);
     if (!allowed) return;
     try {
-      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `ØºÙŠØ± Ù…ØªØ§Ø­ - ${customer.store_name || customer.name}` });
-      toast.success(`ØªÙ… ØªØ³Ø¬ÙŠÙ„ "${customer.store_name || customer.name}" ÙƒØºÙŠØ± Ù…ØªØ§Ø­`);
-    } catch { toast.error('ÙØ´Ù„ ÙÙŠ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø­Ø§Ù„Ø©'); }
+      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `غير متاح - ${customer.store_name || customer.name}` });
+      toast.success(`تم تسجيل "${customer.store_name || customer.name}" كغير متاح`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
   };
 
   const handleDirectSaleClosed = async (customer: any) => {
     const allowed = await checkLocationBeforeAction(customer);
     if (!allowed) return;
     try {
-      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `Ù…ØºÙ„Ù‚ (Ø¨ÙŠØ¹ Ù…Ø¨Ø§Ø´Ø±) - ${customer.store_name || customer.name}` });
-      toast.success(`ØªÙ… ØªØ³Ø¬ÙŠÙ„ "${customer.store_name || customer.name}" ÙƒÙ…ØºÙ„Ù‚`);
-    } catch { toast.error('ÙØ´Ù„ ÙÙŠ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø­Ø§Ù„Ø©'); }
+      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `مغلق (بيع مباشر) - ${customer.store_name || customer.name}` });
+      toast.success(`تم تسجيل "${customer.store_name || customer.name}" كمغلق`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
   };
 
   const handleDirectSaleUnavailable = async (customer: any) => {
     const allowed = await checkLocationBeforeAction(customer);
     if (!allowed) return;
     try {
-      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `ØºÙŠØ± Ù…ØªØ§Ø­ (Ø¨ÙŠØ¹ Ù…Ø¨Ø§Ø´Ø±) - ${customer.store_name || customer.name}` });
-      toast.success(`ØªÙ… ØªØ³Ø¬ÙŠÙ„ "${customer.store_name || customer.name}" ÙƒØºÙŠØ± Ù…ØªØ§Ø­`);
-    } catch { toast.error('ÙØ´Ù„ ÙÙŠ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø­Ø§Ù„Ø©'); }
+      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `غير متاح (بيع مباشر) - ${customer.store_name || customer.name}` });
+      toast.success(`تم تسجيل "${customer.store_name || customer.name}" كغير متاح`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
   };
 
   const handleDirectSaleNoSale = async (customer: any) => {
     const allowed = await checkLocationBeforeAction(customer);
     if (!allowed) return;
     try {
-      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `Ø¨Ø¯ÙˆÙ† Ø¨ÙŠØ¹ - ${customer.store_name || customer.name}` });
-      toast.success(`ØªÙ… ØªØ³Ø¬ÙŠÙ„ "${customer.store_name || customer.name}" Ø¨Ø¯ÙˆÙ† Ø¨ÙŠØ¹`);
-    } catch { toast.error('ÙØ´Ù„ ÙÙŠ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø­Ø§Ù„Ø©'); }
+      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `بدون بيع - ${customer.store_name || customer.name}` });
+      toast.success(`تم تسجيل "${customer.store_name || customer.name}" بدون بيع`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
   };
 
   const handleDeliveryDebtRefused = async (customer: any) => {
     const allowed = await checkLocationBeforeAction(customer);
     if (!allowed) return;
     try {
-      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `Ø±ÙØ¶ Ø§Ù„Ø¯ÙŠÙ† (ØªÙˆØµÙŠÙ„) - ${customer.store_name || customer.name}` });
-      toast.success(`ØªÙ… ØªØ³Ø¬ÙŠÙ„ Ø±ÙØ¶ Ø§Ù„Ø¯ÙŠÙ† Ù„Ù€ "${customer.store_name || customer.name}"`);
-    } catch { toast.error('ÙØ´Ù„ ÙÙŠ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø­Ø§Ù„Ø©'); }
+      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `رفض الدين (توصيل) - ${customer.store_name || customer.name}` });
+      toast.success(`تم تسجيل رفض الدين لـ "${customer.store_name || customer.name}"`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
   };
 
   const handleBulkPostpone = async (newDate: Date) => {
     const customerIds = deliveryNotDone.map(c => c.id);
-    if (customerIds.length === 0) { toast.info('Ù„Ø§ ØªÙˆØ¬Ø¯ Ø·Ù„Ø¨ÙŠØ§Øª Ù„Ù„ØªØ£Ø¬ÙŠÙ„'); return; }
+    if (customerIds.length === 0) { toast.info('لا توجد طلبيات للتأجيل'); return; }
     const dateStr = format(newDate, 'yyyy-MM-dd');
     try {
       // Find all orders for these customers that are not yet delivered
       const orderIds = assignedOrders
         .filter(o => customerIds.includes(o.customer_id) && ['pending', 'assigned', 'in_progress'].includes(o.status))
         .map(o => o.id);
-      if (orderIds.length === 0) { toast.info('Ù„Ø§ ØªÙˆØ¬Ø¯ Ø·Ù„Ø¨ÙŠØ§Øª Ù„Ù„ØªØ£Ø¬ÙŠÙ„'); return; }
+      if (orderIds.length === 0) { toast.info('لا توجد طلبيات للتأجيل'); return; }
       const { error } = await supabase
         .from('orders')
         .update({ delivery_date: dateStr })
@@ -1746,10 +1745,10 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['assigned-orders'] });
       queryClient.invalidateQueries({ queryKey: ['today-cust-assigned-orders-full'] });
-      toast.success(`ØªÙ… ØªØ£Ø¬ÙŠÙ„ ${orderIds.length} Ø·Ù„Ø¨ÙŠØ© Ø¥Ù„Ù‰ ${format(newDate, 'dd/MM/yyyy')}`);
+      toast.success(`تم تأجيل ${orderIds.length} طلبية إلى ${format(newDate, 'dd/MM/yyyy')}`);
       setShowBulkPostpone(false);
     } catch {
-      toast.error('ÙØ´Ù„ ÙÙŠ ØªØ£Ø¬ÙŠÙ„ Ø§Ù„Ø·Ù„Ø¨ÙŠØ§Øª');
+      toast.error('فشل في تأجيل الطلبيات');
     }
   };
 
@@ -1757,7 +1756,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     if (!postponeCustomer) return;
     const customerOrders = assignedOrders
       .filter(o => o.customer_id === postponeCustomer.id && ['pending', 'assigned', 'in_progress'].includes(o.status));
-    if (customerOrders.length === 0) { toast.info('Ù„Ø§ ØªÙˆØ¬Ø¯ Ø·Ù„Ø¨ÙŠØ§Øª Ù„Ù‡Ø°Ø§ Ø§Ù„Ø¹Ù…ÙŠÙ„'); return; }
+    if (customerOrders.length === 0) { toast.info('لا توجد طلبيات لهذا العميل'); return; }
     const dateStr = format(newDate, 'yyyy-MM-dd');
     try {
       // Increment postpone_count and optionally reassign worker
@@ -1776,10 +1775,10 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['assigned-orders'] });
       queryClient.invalidateQueries({ queryKey: ['today-cust-assigned-orders-full'] });
-      toast.success(`ØªÙ… ØªØ£Ø¬ÙŠÙ„ Ø·Ù„Ø¨ÙŠØ© ${postponeCustomer.name} Ø¥Ù„Ù‰ ${format(newDate, 'dd/MM/yyyy')}`);
+      toast.success(`تم تأجيل طلبية ${postponeCustomer.name} إلى ${format(newDate, 'dd/MM/yyyy')}`);
       setPostponeCustomer(null);
     } catch {
-      toast.error('ÙØ´Ù„ ÙÙŠ ØªØ£Ø¬ÙŠÙ„ Ø§Ù„Ø·Ù„Ø¨ÙŠØ©');
+      toast.error('فشل في تأجيل الطلبية');
     }
   };
 
@@ -1787,9 +1786,9 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     const allowed = await checkLocationBeforeAction(customer);
     if (!allowed) return;
     try {
-      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `Ø±ÙØ¶ Ø§Ù„Ø¯ÙŠÙ† (Ø¨ÙŠØ¹ Ù…Ø¨Ø§Ø´Ø±) - ${customer.store_name || customer.name}` });
-      toast.success(`ØªÙ… ØªØ³Ø¬ÙŠÙ„ Ø±ÙØ¶ Ø§Ù„Ø¯ÙŠÙ† Ù„Ù€ "${customer.store_name || customer.name}"`);
-    } catch { toast.error('ÙØ´Ù„ ÙÙŠ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø­Ø§Ù„Ø©'); }
+      await trackVisit({ customerId: customer.id, operationType: 'visit', notes: `رفض الدين (بيع مباشر) - ${customer.store_name || customer.name}` });
+      toast.success(`تم تسجيل رفض الدين لـ "${customer.store_name || customer.name}"`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
   };
 
   const handleDebtDebtRefused = async (debt: any) => {
@@ -1798,9 +1797,9 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     const allowed = await checkLocationBeforeAction(customerObj);
     if (!allowed) return;
     try {
-      await trackVisit({ customerId: debt.customer_id, operationType: 'visit', notes: `Ø±ÙØ¶ Ø§Ù„Ø¯ÙŠÙ† (ØªØ­ØµÙŠÙ„ Ø¯ÙŠÙ†) - ${customer?.store_name || customer?.name}` });
-      toast.success(`ØªÙ… ØªØ³Ø¬ÙŠÙ„ Ø±ÙØ¶ Ø§Ù„Ø¯ÙŠÙ† Ù„Ù€ "${customer?.store_name || customer?.name}"`);
-    } catch { toast.error('ÙØ´Ù„ ÙÙŠ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø­Ø§Ù„Ø©'); }
+      await trackVisit({ customerId: debt.customer_id, operationType: 'visit', notes: `رفض الدين (تحصيل دين) - ${customer?.store_name || customer?.name}` });
+      toast.success(`تم تسجيل رفض الدين لـ "${customer?.store_name || customer?.name}"`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
   };
 
   const handleDirectSaleClick = (customer: any) => {
@@ -1814,9 +1813,9 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     const allowed = await checkLocationBeforeAction(customerObj);
     if (!allowed) return;
     try {
-      await trackVisit({ customerId: debt.customer_id, operationType: 'visit', notes: `Ù…ØºÙ„Ù‚ (ØªØ­ØµÙŠÙ„ Ø¯ÙŠÙ†) - ${customer?.store_name || customer?.name}` });
-      toast.success(`ØªÙ… ØªØ³Ø¬ÙŠÙ„ "${customer?.store_name || customer?.name}" ÙƒÙ…ØºÙ„Ù‚`);
-    } catch { toast.error('ÙØ´Ù„ ÙÙŠ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø­Ø§Ù„Ø©'); }
+      await trackVisit({ customerId: debt.customer_id, operationType: 'visit', notes: `مغلق (تحصيل دين) - ${customer?.store_name || customer?.name}` });
+      toast.success(`تم تسجيل "${customer?.store_name || customer?.name}" كمغلق`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
   };
 
   const handleDebtCustomerUnavailable = async (debt: any) => {
@@ -1825,9 +1824,9 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     const allowed = await checkLocationBeforeAction(customerObj);
     if (!allowed) return;
     try {
-      await trackVisit({ customerId: debt.customer_id, operationType: 'visit', notes: `ØºÙŠØ± Ù…ØªØ§Ø­ (ØªØ­ØµÙŠÙ„ Ø¯ÙŠÙ†) - ${customer?.store_name || customer?.name}` });
-      toast.success(`ØªÙ… ØªØ³Ø¬ÙŠÙ„ "${customer?.store_name || customer?.name}" ÙƒØºÙŠØ± Ù…ØªØ§Ø­`);
-    } catch { toast.error('ÙØ´Ù„ ÙÙŠ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø­Ø§Ù„Ø©'); }
+      await trackVisit({ customerId: debt.customer_id, operationType: 'visit', notes: `غير متاح (تحصيل دين) - ${customer?.store_name || customer?.name}` });
+      toast.success(`تم تسجيل "${customer?.store_name || customer?.name}" كغير متاح`);
+    } catch { toast.error('فشل في تسجيل الحالة'); }
   };
 
   const handleSalesCustomerClick = (customer: any) => {
@@ -1859,12 +1858,12 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   const selectedDateCaption = selectedCustomDate ? format(selectedCustomDate, 'dd/MM/yyyy') : null;
   const titleDayPart = `${dayLabel}${selectedDateCaption ? ` (${selectedDateCaption})` : ''}`;
   const calendarButtonLabel = format(new Date(selectedDayBounds.dateKey), 'dd/MM');
-  const sectorSuffix = todaySectorNames ? ` â€” ${todaySectorNames}` : '';
+  const sectorSuffix = todaySectorNames ? ` — ${todaySectorNames}` : '';
   const title = effectiveWorkerName
-    ? `Ø¹Ù…Ù„Ø§Ø¡ Ø§Ù„ÙŠÙˆÙ… â€” ${dayLabel} â€” ${effectiveWorkerName}${sectorSuffix}`
+    ? `عملاء اليوم — ${dayLabel} — ${effectiveWorkerName}${sectorSuffix}`
     : selectedAdminWorkerId && isAdmin
-    ? `Ø¹Ù…Ù„Ø§Ø¡ Ø§Ù„ÙŠÙˆÙ… â€” ${dayLabel} â€” ${workersList.find(w => w.id === selectedAdminWorkerId)?.full_name || ''}${sectorSuffix}`
-    : `Ø¹Ù…Ù„Ø§Ø¡ Ø§Ù„ÙŠÙˆÙ… â€” ${dayLabel}${sectorSuffix}`;
+    ? `عملاء اليوم — ${dayLabel} — ${workersList.find(w => w.id === selectedAdminWorkerId)?.full_name || ''}${sectorSuffix}`
+    : `عملاء اليوم — ${dayLabel}${sectorSuffix}`;
 
   const displayTitle = selectedDateCaption ? title.replace(dayLabel, titleDayPart) : title;
 
@@ -1940,7 +1939,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                       `}
                     >
                       {label}
-                      {isToday && !isSelected && <span className="mr-0.5 text-[9px] text-primary">â—</span>}
+                      {isToday && !isSelected && <span className="mr-0.5 text-[9px] text-primary">●</span>}
                     </button>
                   );
                 })}
@@ -1953,7 +1952,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
             <div className="relative">
               <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
               <Input
-                placeholder="Ø¨Ø­Ø« Ø¨Ø§Ù„Ø§Ø³Ù… Ø£Ùˆ Ø§Ù„Ù‡Ø§ØªÙ..."
+                placeholder="بحث بالاسم أو الهاتف..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="h-8 text-xs pr-8"
@@ -1965,7 +1964,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
               <div className="flex items-center gap-1 min-w-0 flex-1 overflow-hidden">
                 <MapPin className="w-3 h-3 shrink-0 text-muted-foreground" />
                 <span className="text-[10px] text-muted-foreground truncate" dir="rtl">
-                  {workerAddress || (sortByDistance ? 'Ø¬Ø§Ø±Ù ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ù…ÙˆÙ‚Ø¹...' : 'ÙØ¹Ù‘Ù„ Ø§Ù„ØªØ±ØªÙŠØ¨ Ù„Ø¹Ø±Ø¶ Ù…ÙˆÙ‚Ø¹Ùƒ')}
+                  {workerAddress || (sortByDistance ? 'جارٍ تحديد الموقع...' : 'فعّل الترتيب لعرض موقعك')}
                 </span>
               </div>
             </div>
@@ -1975,22 +1974,22 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
             <TabsList className="w-full rounded-none border-b shrink-0">
               <TabsTrigger value="delivery" className="flex-1 gap-1 text-xs">
                 <Truck className="w-3.5 h-3.5" />
-                ØªÙˆØµÙŠÙ„
+                توصيل
                 {deliveryCustomers.length > 0 && <Badge variant="secondary" className="text-[10px] px-1">{deliveryCustomers.length}</Badge>}
               </TabsTrigger>
               <TabsTrigger value="sales" className="flex-1 gap-1 text-xs">
                 <ShoppingCart className="w-3.5 h-3.5" />
-                Ø·Ù„Ø¨Ø§Øª
+                طلبات
                 {salesCustomers.length > 0 && <Badge variant="secondary" className="text-[10px] px-1">{salesCustomers.length}</Badge>}
               </TabsTrigger>
               <TabsTrigger value="direct-sale" className="flex-1 gap-1 text-xs">
                 <ShoppingBag className="w-3.5 h-3.5" />
-                Ø¨ÙŠØ¹ Ù…Ø¨Ø§Ø´Ø±
+                بيع مباشر
                 {directSaleCustomers.length > 0 && <Badge className="text-[10px] px-1 bg-emerald-500">{directSaleCustomers.length}</Badge>}
               </TabsTrigger>
               <TabsTrigger value="debts" className="flex-1 gap-1 text-xs">
                 <Landmark className="w-3.5 h-3.5" />
-                Ø¯ÙŠÙˆÙ†
+                ديون
                 {debtCustomers.length > 0 && <Badge variant="destructive" className="text-[10px] px-1">{debtCustomers.length}</Badge>}
               </TabsTrigger>
             </TabsList>
@@ -2001,22 +2000,22 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                 <TabsList className="w-full rounded-none border-b shrink-0 h-auto p-0.5 gap-0.5">
                   <TabsTrigger value="not-delivered" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-orange-100 data-[state=active]:text-orange-700">
                     <Truck className="w-3 h-3" />
-                    Ø¨Ø¯ÙˆÙ† ØªÙˆØµÙŠÙ„
+                    بدون توصيل
                     {deliveryNotDone.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-orange-500">{deliveryNotDone.length}</Badge>}
                   </TabsTrigger>
                   <TabsTrigger value="not-received" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-amber-100 data-[state=active]:text-amber-700">
                     <PackageX className="w-3 h-3" />
-                    Ø¨Ø¯ÙˆÙ† ØªØ³Ù„ÙŠÙ…
+                    بدون تسليم
                     {deliveryNotReceived.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-amber-500">{deliveryNotReceived.length}</Badge>}
                   </TabsTrigger>
                   <TabsTrigger value="received" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-green-100 data-[state=active]:text-green-700">
                     <PackageCheck className="w-3 h-3" />
-                    ØªÙ… Ø§Ù„Ø§Ø³ØªÙ„Ø§Ù…
+                    تم الاستلام
                     {deliveryReceived.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-green-500">{deliveryReceived.length}</Badge>}
                   </TabsTrigger>
                   <TabsTrigger value="postponed" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700">
                     <CalendarClock className="w-3 h-3" />
-                    Ù…Ø¤Ø¬Ù„Ø©
+                    مؤجلة
                     {deliveryPostponed.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-purple-500">{deliveryPostponed.length}</Badge>}
                   </TabsTrigger>
                 </TabsList>
@@ -2031,39 +2030,39 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                         onClick={() => setShowBulkPostpone(true)}
                       >
                         <CalendarClock className="w-4 h-4" />
-                        ØªØ£Ø¬ÙŠÙ„ Ø¬Ù…Ø§Ø¹ÙŠ ({deliveryNotDone.length} Ø¹Ù…ÙŠÙ„)
+                        تأجيل جماعي ({deliveryNotDone.length} عميل)
                       </Button>
                     </div>
                   )}
-                  <CustomerList noOrderStreakMap={noOrderStreakMap} customers={deliveryNotDone} emptyMessage="ØªÙ… ØªÙˆØµÙŠÙ„ Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡ âœ“" onCustomerClick={handleDeliveryCustomerClick} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} onClosed={handleDeliveryClosedVisit} onUnavailable={handleDeliveryUnavailableVisit} onDebtRefused={handleDeliveryDebtRefused} onPostpone={(c) => setPostponeCustomer(c)} onPrint={handleQuickPrintTempReceipt} showVisitButton visitButtonLabel="Ø¨Ø¯ÙˆÙ† ØªØ³Ù„ÙŠÙ…" showActionButtons showPrintButton checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} postponedBadgeIds={rescheduledToTodayIds} postponeCountMap={postponeCountMap} />
+                  <CustomerList noOrderStreakMap={noOrderStreakMap} customers={deliveryNotDone} emptyMessage="تم توصيل جميع العملاء ✓" onCustomerClick={handleDeliveryCustomerClick} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} onClosed={handleDeliveryClosedVisit} onUnavailable={handleDeliveryUnavailableVisit} onDebtRefused={handleDeliveryDebtRefused} onPostpone={(c) => setPostponeCustomer(c)} onPrint={handleQuickPrintTempReceipt} showVisitButton visitButtonLabel="بدون تسليم" showActionButtons showPrintButton checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} postponedBadgeIds={rescheduledToTodayIds} postponeCountMap={postponeCountMap} />
                 </TabsContent>
                 <TabsContent value="not-received" className="m-0 flex-1 min-h-0">
                   <Tabs defaultValue="visit-only" className="flex flex-col h-full min-h-0">
                     <TabsList className="w-full rounded-none border-b shrink-0 h-auto p-0.5 gap-0.5 bg-amber-50">
                       <TabsTrigger value="visit-only" className="flex-1 gap-1 text-[10px] px-1 py-1 data-[state=active]:bg-amber-200 data-[state=active]:text-amber-800">
                         <PackageX className="w-3 h-3" />
-                        Ø²ÙŠØ§Ø±Ø©
+                        زيارة
                         {deliveryNotReceivedVisitOnly.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-amber-500">{deliveryNotReceivedVisitOnly.length}</Badge>}
                       </TabsTrigger>
                       <TabsTrigger value="unavailable" className="flex-1 gap-1 text-[10px] px-1 py-1 data-[state=active]:bg-yellow-200 data-[state=active]:text-yellow-800">
                         <UserX className="w-3 h-3" />
-                        ØºÙŠØ± Ù…ØªØ§Ø­
+                        غير متاح
                         {deliveryNotReceivedUnavailable.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-yellow-500">{deliveryNotReceivedUnavailable.length}</Badge>}
                       </TabsTrigger>
                       <TabsTrigger value="closed" className="flex-1 gap-1 text-[10px] px-1 py-1 data-[state=active]:bg-red-100 data-[state=active]:text-red-700">
                         <DoorClosed className="w-3 h-3" />
-                        Ù…ØºÙ„Ù‚
+                        مغلق
                         {deliveryNotReceivedClosed.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-red-500">{deliveryNotReceivedClosed.length}</Badge>}
                       </TabsTrigger>
                     </TabsList>
                     <TabsContent value="visit-only" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
-                      <CustomerList noOrderStreakMap={noOrderStreakMap} customers={deliveryNotReceivedVisitOnly} emptyMessage="Ù„Ø§ ØªÙˆØ¬Ø¯ Ø²ÙŠØ§Ø±Ø§Øª Ø¨Ø¯ÙˆÙ† ØªØ³Ù„ÙŠÙ…" onCustomerClick={handleDeliveryCustomerClick} showActionButtons onClosed={handleDeliveryClosedVisit} onUnavailable={handleDeliveryUnavailableVisit} onDebtRefused={handleDeliveryDebtRefused} onPrint={handleQuickPrintTempReceipt} showPrintButton checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
+                      <CustomerList noOrderStreakMap={noOrderStreakMap} customers={deliveryNotReceivedVisitOnly} emptyMessage="لا توجد زيارات بدون تسليم" onCustomerClick={handleDeliveryCustomerClick} showActionButtons onClosed={handleDeliveryClosedVisit} onUnavailable={handleDeliveryUnavailableVisit} onDebtRefused={handleDeliveryDebtRefused} onPrint={handleQuickPrintTempReceipt} showPrintButton checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
                     </TabsContent>
                     <TabsContent value="unavailable" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
-                      <CustomerList noOrderStreakMap={noOrderStreakMap} customers={deliveryNotReceivedUnavailable} emptyMessage="Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø¹Ù…Ù„Ø§Ø¡ ØºÙŠØ± Ù…ØªØ§Ø­ÙŠÙ†" onCustomerClick={handleDeliveryCustomerClick} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
+                      <CustomerList noOrderStreakMap={noOrderStreakMap} customers={deliveryNotReceivedUnavailable} emptyMessage="لا يوجد عملاء غير متاحين" onCustomerClick={handleDeliveryCustomerClick} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
                     </TabsContent>
                     <TabsContent value="closed" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
-                      <CustomerList noOrderStreakMap={noOrderStreakMap} customers={deliveryNotReceivedClosed} emptyMessage="Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø¹Ù…Ù„Ø§Ø¡ Ù…ØºÙ„Ù‚ÙŠÙ†" onCustomerClick={handleDeliveryCustomerClick} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
+                      <CustomerList noOrderStreakMap={noOrderStreakMap} customers={deliveryNotReceivedClosed} emptyMessage="لا يوجد عملاء مغلقين" onCustomerClick={handleDeliveryCustomerClick} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
                     </TabsContent>
                   </Tabs>
                 </TabsContent>
@@ -2072,14 +2071,14 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                     <div className="p-2 border-b">
                       <Button variant="outline" size="sm" className="w-full gap-2 text-emerald-700 border-emerald-300 hover:bg-emerald-50" onClick={() => setShowSalesSummary(true)}>
                         <ShoppingBag className="w-4 h-4" />
-                        ØªØ¬Ù…ÙŠØ¹ Ø§Ù„Ù…Ø¨ÙŠØ¹Ø§Øª
+                        تجميع المبيعات
                       </Button>
                     </div>
                   )}
-                  <CustomerList noOrderStreakMap={noOrderStreakMap} customers={deliveryReceived} emptyMessage="Ù„Ø§ ØªÙˆØ¬Ø¯ ØªÙˆØµÙŠÙ„Ø§Øª Ø¨Ø¹Ø¯" onCustomerClick={handleShowDeliveredOrderDetails} showPrintButton onPrint={handlePrintDeliveredOrder} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} deliveryTimeMap={customerDeliveryTimeMap} timeMap={customerDeliveryTimeMap} distanceMap={customerDistanceMap} />
+                  <CustomerList noOrderStreakMap={noOrderStreakMap} customers={deliveryReceived} emptyMessage="لا توجد توصيلات بعد" onCustomerClick={handleShowDeliveredOrderDetails} showPrintButton onPrint={handlePrintDeliveredOrder} checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} deliveryTimeMap={customerDeliveryTimeMap} timeMap={customerDeliveryTimeMap} distanceMap={customerDistanceMap} />
                 </TabsContent>
                 <TabsContent value="postponed" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList noOrderStreakMap={noOrderStreakMap} customers={deliveryPostponed} emptyMessage="Ù„Ø§ ØªÙˆØ¬Ø¯ Ø·Ù„Ø¨ÙŠØ§Øª Ù…Ø¤Ø¬Ù„Ø©" onCustomerClick={handleDeliveryCustomerClick} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} onClosed={handleDeliveryClosedVisit} onUnavailable={handleDeliveryUnavailableVisit} onDebtRefused={handleDeliveryDebtRefused} onPostpone={(c) => setPostponeCustomer(c)} onPrint={handleQuickPrintTempReceipt} showVisitButton visitButtonLabel="Ø¨Ø¯ÙˆÙ† ØªØ³Ù„ÙŠÙ…" showActionButtons showPrintButton checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} postponedBadgeIds={postponedCustomerIds} postponeCountMap={postponeCountMap} />
+                  <CustomerList noOrderStreakMap={noOrderStreakMap} customers={deliveryPostponed} emptyMessage="لا توجد طلبيات مؤجلة" onCustomerClick={handleDeliveryCustomerClick} onVisitWithoutOrder={handleDeliveryVisitWithoutDelivery} onClosed={handleDeliveryClosedVisit} onUnavailable={handleDeliveryUnavailableVisit} onDebtRefused={handleDeliveryDebtRefused} onPostpone={(c) => setPostponeCustomer(c)} onPrint={handleQuickPrintTempReceipt} showVisitButton visitButtonLabel="بدون تسليم" showActionButtons showPrintButton checkingLocationFor={checkingLocationFor} loadingFor={loadingDeliveryFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} postponedBadgeIds={postponedCustomerIds} postponeCountMap={postponeCountMap} />
                 </TabsContent>
               </Tabs>
             </TabsContent>
@@ -2090,51 +2089,51 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                 <TabsList className="w-full rounded-none border-b shrink-0 h-auto p-0.5 gap-0.5">
                   <TabsTrigger value="not-visited" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-orange-100 data-[state=active]:text-orange-700">
                     <EyeOff className="w-3 h-3" />
-                    Ø¨Ø¯ÙˆÙ† Ø²ÙŠØ§Ø±Ø©
+                    بدون زيارة
                     {salesNotVisited.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-orange-500">{salesNotVisited.length}</Badge>}
                   </TabsTrigger>
                   <TabsTrigger value="visited-no-order" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-amber-100 data-[state=active]:text-amber-700">
                     <Eye className="w-3 h-3" />
-                    Ø¨Ø¯ÙˆÙ† Ø·Ù„Ø¨ÙŠØ©
+                    بدون طلبية
                     {salesVisitedNoOrder.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-amber-500">{salesVisitedNoOrder.length}</Badge>}
                   </TabsTrigger>
                   <TabsTrigger value="with-orders" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-green-100 data-[state=active]:text-green-700">
                     <CheckCircle className="w-3 h-3" />
-                    ØªÙ… Ø§Ù„Ø·Ù„Ø¨
+                    تم الطلب
                     {salesWithOrders.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-green-500">{salesWithOrders.length}</Badge>}
                   </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="not-visited" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList noOrderStreakMap={noOrderStreakMap} customers={salesNotVisited} emptyMessage="ØªÙ…Øª Ø²ÙŠØ§Ø±Ø© Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡ âœ“" onCustomerClick={handleSalesCustomerClick} onVisitWithoutOrder={handleVisitWithoutOrder} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} showVisitButton showActionButtons checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} />
+                  <CustomerList noOrderStreakMap={noOrderStreakMap} customers={salesNotVisited} emptyMessage="تمت زيارة جميع العملاء ✓" onCustomerClick={handleSalesCustomerClick} onVisitWithoutOrder={handleVisitWithoutOrder} onClosed={handleCustomerClosed} onUnavailable={handleCustomerUnavailable} showVisitButton showActionButtons checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} />
                 </TabsContent>
                 <TabsContent value="visited-no-order" className="m-0 flex-1 min-h-0">
                   <Tabs defaultValue="visit-only" className="flex flex-col h-full min-h-0">
                     <TabsList className="w-full rounded-none border-b shrink-0 h-auto p-0.5 gap-0.5 bg-amber-50">
                       <TabsTrigger value="visit-only" className="flex-1 gap-1 text-[10px] px-1 py-1 data-[state=active]:bg-amber-200 data-[state=active]:text-amber-800">
                         <Eye className="w-3 h-3" />
-                        Ø²ÙŠØ§Ø±Ø©
+                        زيارة
                         {salesVisitedOnly.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-amber-500">{salesVisitedOnly.length}</Badge>}
                       </TabsTrigger>
                       <TabsTrigger value="unavailable" className="flex-1 gap-1 text-[10px] px-1 py-1 data-[state=active]:bg-yellow-200 data-[state=active]:text-yellow-800">
                         <UserX className="w-3 h-3" />
-                        ØºÙŠØ± Ù…ØªØ§Ø­
+                        غير متاح
                         {salesUnavailable.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-yellow-500">{salesUnavailable.length}</Badge>}
                       </TabsTrigger>
                       <TabsTrigger value="closed" className="flex-1 gap-1 text-[10px] px-1 py-1 data-[state=active]:bg-red-100 data-[state=active]:text-red-700">
                         <DoorClosed className="w-3 h-3" />
-                        Ù…ØºÙ„Ù‚
+                        مغلق
                         {salesClosed.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-red-500">{salesClosed.length}</Badge>}
                       </TabsTrigger>
                     </TabsList>
                     <TabsContent value="visit-only" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
-                      <CustomerList noOrderStreakMap={noOrderStreakMap} customers={salesVisitedOnly} emptyMessage="Ù„Ø§ ØªÙˆØ¬Ø¯ Ø²ÙŠØ§Ø±Ø§Øª Ø¨Ø¯ÙˆÙ† Ø·Ù„Ø¨ÙŠØ§Øª" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
+                      <CustomerList noOrderStreakMap={noOrderStreakMap} customers={salesVisitedOnly} emptyMessage="لا توجد زيارات بدون طلبيات" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
                     </TabsContent>
                     <TabsContent value="unavailable" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
-                      <CustomerList noOrderStreakMap={noOrderStreakMap} customers={salesUnavailable} emptyMessage="Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø¹Ù…Ù„Ø§Ø¡ ØºÙŠØ± Ù…ØªØ§Ø­ÙŠÙ†" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
+                      <CustomerList noOrderStreakMap={noOrderStreakMap} customers={salesUnavailable} emptyMessage="لا يوجد عملاء غير متاحين" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
                     </TabsContent>
                     <TabsContent value="closed" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
-                      <CustomerList noOrderStreakMap={noOrderStreakMap} customers={salesClosed} emptyMessage="Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø¹Ù…Ù„Ø§Ø¡ Ù…ØºÙ„Ù‚ÙŠÙ†" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
+                      <CustomerList noOrderStreakMap={noOrderStreakMap} customers={salesClosed} emptyMessage="لا يوجد عملاء مغلقين" onCustomerClick={handleSalesCustomerClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
                     </TabsContent>
                   </Tabs>
                 </TabsContent>
@@ -2143,11 +2142,11 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                     <div className="p-2 border-b">
                       <Button variant="outline" size="sm" className="w-full gap-2 text-blue-700 border-blue-300 hover:bg-blue-50" onClick={() => setShowOrdersSummary(true)}>
                         <ClipboardList className="w-4 h-4" />
-                        ØªØ¬Ù…ÙŠØ¹ Ø§Ù„Ø·Ù„Ø¨ÙŠØ§Øª
+                        تجميع الطلبيات
                       </Button>
                     </div>
                   )}
-                  <CustomerList noOrderStreakMap={noOrderStreakMap} customers={salesWithOrders} emptyMessage="Ù„Ø§ ØªÙˆØ¬Ø¯ Ø·Ù„Ø¨ÙŠØ§Øª Ø¨Ø¹Ø¯" onCustomerClick={handleShowOrderDetails} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={orderTimeMap} distanceMap={customerDistanceMap} />
+                  <CustomerList noOrderStreakMap={noOrderStreakMap} customers={salesWithOrders} emptyMessage="لا توجد طلبيات بعد" onCustomerClick={handleShowOrderDetails} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={orderTimeMap} distanceMap={customerDistanceMap} />
                 </TabsContent>
               </Tabs>
             </TabsContent>
@@ -2158,62 +2157,62 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                 <TabsList className="w-full rounded-none border-b shrink-0 h-auto p-0.5 gap-0.5">
                   <TabsTrigger value="pending" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-orange-100 data-[state=active]:text-orange-700">
                     <ShoppingBag className="w-3 h-3" />
-                    Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡
+                    العملاء
                     {directSalePending.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-orange-500">{directSalePending.length}</Badge>}
                   </TabsTrigger>
                   <TabsTrigger value="sold" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-green-100 data-[state=active]:text-green-700">
                     <CheckCircle className="w-3 h-3" />
-                    ØªÙ… Ø§Ù„Ø¨ÙŠØ¹
+                    تم البيع
                     {directSaleSold.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-green-500">{directSaleSold.length}</Badge>}
                   </TabsTrigger>
                   <TabsTrigger value="no-sale" className="flex-1 gap-1 text-[10px] px-1.5 py-1.5 data-[state=active]:bg-amber-100 data-[state=active]:text-amber-700">
                     <XCircle className="w-3 h-3" />
-                    Ø¨Ø¯ÙˆÙ† Ø¨ÙŠØ¹
+                    بدون بيع
                     {directSaleNoSale.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-amber-500">{directSaleNoSale.length}</Badge>}
                   </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="pending" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CustomerList noOrderStreakMap={noOrderStreakMap} customers={directSalePending} emptyMessage="Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…Ø­Ù„Ø§Øª Ù…ØªØ§Ø­Ø© Ù„Ù„Ø¨ÙŠØ¹ Ø§Ù„Ù…Ø¨Ø§Ø´Ø±" onCustomerClick={handleDirectSaleClick} onClosed={handleDirectSaleClosed} onUnavailable={handleDirectSaleUnavailable} onDebtRefused={handleDirectSaleDebtRefused} onNoSale={handleDirectSaleNoSale} showActionButtons showNoSaleButton checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} salesRepStatusMap={salesRepStatusMap} />
+                  <CustomerList noOrderStreakMap={noOrderStreakMap} customers={directSalePending} emptyMessage="لا توجد محلات متاحة للبيع المباشر" onCustomerClick={handleDirectSaleClick} onClosed={handleDirectSaleClosed} onUnavailable={handleDirectSaleUnavailable} onDebtRefused={handleDirectSaleDebtRefused} onNoSale={handleDirectSaleNoSale} showActionButtons showNoSaleButton checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} salesRepStatusMap={salesRepStatusMap} />
                 </TabsContent>
                 <TabsContent value="sold" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
                   {isAdmin && effectiveWorkerId && (
                     <div className="p-2 border-b">
                       <Button variant="outline" size="sm" className="w-full gap-2 text-emerald-700 border-emerald-300 hover:bg-emerald-50" onClick={() => setShowSalesSummary(true)}>
                         <ShoppingBag className="w-4 h-4" />
-                        ØªØ¬Ù…ÙŠØ¹ Ø§Ù„Ù…Ø¨ÙŠØ¹Ø§Øª
+                        تجميع المبيعات
                       </Button>
                     </div>
                   )}
-                  <CustomerList noOrderStreakMap={noOrderStreakMap} customers={directSaleSold} emptyMessage="Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…Ø¨ÙŠØ¹Ø§Øª Ø¨Ø¹Ø¯" onCustomerClick={handleShowDirectSaleDetails} showPrintButton onPrint={handlePrintDirectSale} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={directSaleTimeMap} distanceMap={customerDistanceMap} />
+                  <CustomerList noOrderStreakMap={noOrderStreakMap} customers={directSaleSold} emptyMessage="لا توجد مبيعات بعد" onCustomerClick={handleShowDirectSaleDetails} showPrintButton onPrint={handlePrintDirectSale} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={directSaleTimeMap} distanceMap={customerDistanceMap} />
                 </TabsContent>
                 <TabsContent value="no-sale" className="m-0 flex-1 min-h-0">
                   <Tabs defaultValue="visit-only" className="flex flex-col h-full min-h-0">
                     <TabsList className="w-full rounded-none border-b shrink-0 h-auto p-0.5 gap-0.5 bg-amber-50">
                       <TabsTrigger value="visit-only" className="flex-1 gap-1 text-[10px] px-1 py-1 data-[state=active]:bg-amber-200 data-[state=active]:text-amber-800">
                         <XCircle className="w-3 h-3" />
-                        Ø¨Ø¯ÙˆÙ† Ø¨ÙŠØ¹
+                        بدون بيع
                         {directSaleNoSaleVisitOnly.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-amber-500">{directSaleNoSaleVisitOnly.length}</Badge>}
                       </TabsTrigger>
                       <TabsTrigger value="unavailable" className="flex-1 gap-1 text-[10px] px-1 py-1 data-[state=active]:bg-yellow-200 data-[state=active]:text-yellow-800">
                         <UserX className="w-3 h-3" />
-                        ØºÙŠØ± Ù…ØªØ§Ø­
+                        غير متاح
                         {directSaleNoSaleUnavailable.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-yellow-500">{directSaleNoSaleUnavailable.length}</Badge>}
                       </TabsTrigger>
                       <TabsTrigger value="closed" className="flex-1 gap-1 text-[10px] px-1 py-1 data-[state=active]:bg-red-100 data-[state=active]:text-red-700">
                         <DoorClosed className="w-3 h-3" />
-                        Ù…ØºÙ„Ù‚
+                        مغلق
                         {directSaleNoSaleClosed.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-red-500">{directSaleNoSaleClosed.length}</Badge>}
                       </TabsTrigger>
                     </TabsList>
                     <TabsContent value="visit-only" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
-                      <CustomerList noOrderStreakMap={noOrderStreakMap} customers={directSaleNoSaleVisitOnly} emptyMessage="Ù„Ø§ ØªÙˆØ¬Ø¯ Ø²ÙŠØ§Ø±Ø§Øª Ø¨Ø¯ÙˆÙ† Ø¨ÙŠØ¹" onCustomerClick={handleDirectSaleClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
+                      <CustomerList noOrderStreakMap={noOrderStreakMap} customers={directSaleNoSaleVisitOnly} emptyMessage="لا توجد زيارات بدون بيع" onCustomerClick={handleDirectSaleClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
                     </TabsContent>
                     <TabsContent value="unavailable" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
-                      <CustomerList noOrderStreakMap={noOrderStreakMap} customers={directSaleNoSaleUnavailable} emptyMessage="Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø¹Ù…Ù„Ø§Ø¡ ØºÙŠØ± Ù…ØªØ§Ø­ÙŠÙ†" onCustomerClick={handleDirectSaleClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
+                      <CustomerList noOrderStreakMap={noOrderStreakMap} customers={directSaleNoSaleUnavailable} emptyMessage="لا يوجد عملاء غير متاحين" onCustomerClick={handleDirectSaleClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
                     </TabsContent>
                     <TabsContent value="closed" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
-                      <CustomerList noOrderStreakMap={noOrderStreakMap} customers={directSaleNoSaleClosed} emptyMessage="Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø¹Ù…Ù„Ø§Ø¡ Ù…ØºÙ„Ù‚ÙŠÙ†" onCustomerClick={handleDirectSaleClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
+                      <CustomerList noOrderStreakMap={noOrderStreakMap} customers={directSaleNoSaleClosed} emptyMessage="لا يوجد عملاء مغلقين" onCustomerClick={handleDirectSaleClick} checkingLocationFor={checkingLocationFor} searchQuery={searchQuery} sectors={sectors} allZones={allZones} workerPosition={workerPosition} sortByDistance={sortByDistance} timeMap={visitTimeMap} distanceMap={customerDistanceMap} />
                     </TabsContent>
                   </Tabs>
                 </TabsContent>
@@ -2226,64 +2225,64 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                 <TabsList className="w-full rounded-none border-b shrink-0 h-auto p-0.5 gap-0.5">
                   <TabsTrigger value="today-collection" className="flex-1 gap-1 text-[10px] px-1 py-1.5 data-[state=active]:bg-orange-100 data-[state=active]:text-orange-700">
                     <Clock className="w-3 h-3" />
-                    ØªØ­ØµÙŠÙ„ Ø§Ù„ÙŠÙˆÙ…
+                    تحصيل اليوم
                     {debtsToCollectToday.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-orange-500">{debtsToCollectToday.length}</Badge>}
                   </TabsTrigger>
                   <TabsTrigger value="collected" className="flex-1 gap-1 text-[10px] px-1 py-1.5 data-[state=active]:bg-green-100 data-[state=active]:text-green-700">
                     <Check className="w-3 h-3" />
-                    ØªÙ… Ø§Ù„ØªØ­ØµÙŠÙ„
+                    تم التحصيل
                     {collectedDebtOperations.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-green-500">{collectedDebtOperations.length}</Badge>}
                   </TabsTrigger>
                   <TabsTrigger value="no-payment" className="flex-1 gap-1 text-[10px] px-1 py-1.5 data-[state=active]:bg-amber-100 data-[state=active]:text-amber-700">
                     <X className="w-3 h-3" />
-                    Ø¨Ø¯ÙˆÙ† ØªØ­ØµÙŠÙ„
+                    بدون تحصيل
                     {debtsNoPaymentToday.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-amber-500">{debtsNoPaymentToday.length}</Badge>}
                   </TabsTrigger>
                   <TabsTrigger value="all-debts" className="flex-1 gap-1 text-[10px] px-1 py-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                     <Landmark className="w-3 h-3" />
-                    Ø§Ù„ÙƒÙ„
+                    الكل
                     {allDebtsFiltered.length > 0 && <Badge variant="secondary" className="text-[9px] px-1 h-4">{allDebtsFiltered.length}</Badge>}
                   </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="today-collection" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <DebtList debts={debtsToCollectToday} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¯ÙŠÙˆÙ† Ù…Ø³ØªØ­Ù‚Ø© Ø§Ù„ÙŠÙˆÙ… âœ“" searchQuery={searchQuery} />
+                  <DebtList debts={debtsToCollectToday} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="لا توجد ديون مستحقة اليوم ✓" searchQuery={searchQuery} />
                 </TabsContent>
                 <TabsContent value="collected" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <CollectedDebtOperationList operations={collectedDebtOperations} emptyMessage="Ù„Ø§ ØªÙˆØ¬Ø¯ ØªØ­ØµÙŠÙ„Ø§Øª Ø¨Ø¹Ø¯" searchQuery={searchQuery} onOpenDetails={handleCollectedOperationClick} sectors={sectors} allZones={allZones} />
+                  <CollectedDebtOperationList operations={collectedDebtOperations} emptyMessage="لا توجد تحصيلات بعد" searchQuery={searchQuery} onOpenDetails={handleCollectedOperationClick} sectors={sectors} allZones={allZones} />
                 </TabsContent>
                 <TabsContent value="no-payment" className="m-0 flex-1 min-h-0">
                   <Tabs defaultValue="visit-only" className="flex flex-col h-full min-h-0">
                     <TabsList className="w-full rounded-none border-b shrink-0 h-auto p-0.5 gap-0.5 bg-amber-50">
                       <TabsTrigger value="visit-only" className="flex-1 gap-1 text-[10px] px-1 py-1 data-[state=active]:bg-amber-200 data-[state=active]:text-amber-800">
                         <Eye className="w-3 h-3" />
-                        Ø²ÙŠØ§Ø±Ø©
+                        زيارة
                         {debtsNoPaymentVisitOnly.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-amber-500">{debtsNoPaymentVisitOnly.length}</Badge>}
                       </TabsTrigger>
                       <TabsTrigger value="unavailable" className="flex-1 gap-1 text-[10px] px-1 py-1 data-[state=active]:bg-yellow-200 data-[state=active]:text-yellow-800">
                         <UserX className="w-3 h-3" />
-                        ØºÙŠØ± Ù…ØªØ§Ø­
+                        غير متاح
                         {debtsNoPaymentUnavailable.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-yellow-500">{debtsNoPaymentUnavailable.length}</Badge>}
                       </TabsTrigger>
                       <TabsTrigger value="closed" className="flex-1 gap-1 text-[10px] px-1 py-1 data-[state=active]:bg-red-100 data-[state=active]:text-red-700">
                         <DoorClosed className="w-3 h-3" />
-                        Ù…ØºÙ„Ù‚
+                        مغلق
                         {debtsNoPaymentClosed.length > 0 && <Badge className="text-[9px] px-1 h-4 bg-red-500">{debtsNoPaymentClosed.length}</Badge>}
                       </TabsTrigger>
                     </TabsList>
                     <TabsContent value="visit-only" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
-                      <DebtList debts={debtsNoPaymentVisitOnly} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="Ù„Ø§ ØªÙˆØ¬Ø¯ Ø²ÙŠØ§Ø±Ø§Øª Ø¨Ø¯ÙˆÙ† ØªØ­ØµÙŠÙ„" searchQuery={searchQuery} timeMap={debtCollectionTimeMap} />
+                      <DebtList debts={debtsNoPaymentVisitOnly} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="لا توجد زيارات بدون تحصيل" searchQuery={searchQuery} timeMap={debtCollectionTimeMap} />
                     </TabsContent>
                     <TabsContent value="unavailable" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
-                      <DebtList debts={debtsNoPaymentUnavailable} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø¹Ù…Ù„Ø§Ø¡ ØºÙŠØ± Ù…ØªØ§Ø­ÙŠÙ†" searchQuery={searchQuery} />
+                      <DebtList debts={debtsNoPaymentUnavailable} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="لا يوجد عملاء غير متاحين" searchQuery={searchQuery} />
                     </TabsContent>
                     <TabsContent value="closed" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '50vh' }}>
-                      <DebtList debts={debtsNoPaymentClosed} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø¹Ù…Ù„Ø§Ø¡ Ù…ØºÙ„Ù‚ÙŠÙ†" searchQuery={searchQuery} />
+                      <DebtList debts={debtsNoPaymentClosed} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="لا يوجد عملاء مغلقين" searchQuery={searchQuery} />
                     </TabsContent>
                   </Tabs>
                 </TabsContent>
                 <TabsContent value="all-debts" className="m-0 flex-1 min-h-0" style={{ overflow: 'auto', maxHeight: '55vh' }}>
-                  <DebtList debts={allDebtsFiltered} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¯ÙŠÙˆÙ† Ù…Ø³ØªØ­Ù‚Ø©" searchQuery={searchQuery} />
+                  <DebtList debts={allDebtsFiltered} onCollect={handleDebtClick} onVisitNoPayment={handleVisitNoPayment} onClosed={handleDebtCustomerClosed} onUnavailable={handleDebtCustomerUnavailable} onDebtRefused={handleDebtDebtRefused} emptyMessage="لا توجد ديون مستحقة" searchQuery={searchQuery} />
                 </TabsContent>
               </Tabs>
             </TabsContent>
@@ -2313,7 +2312,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                 .update({ status: 'cancelled' })
                 .eq('id', orderId);
               if (error) throw error;
-              toast.success('ØªÙ… Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø·Ù„Ø¨ÙŠØ© Ø¨Ù†Ø¬Ø§Ø­');
+              toast.success('تم إلغاء الطلبية بنجاح');
               queryClient.invalidateQueries({ queryKey: ['today-orders-dialog'] });
               queryClient.invalidateQueries({ queryKey: ['today-cust-assigned-orders-full'] });
               queryClient.invalidateQueries({ queryKey: ['my-worker-stock'] });
@@ -2322,7 +2321,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
               queryClient.invalidateQueries({ queryKey: ['today-direct-sales-dialog'] });
               setOrderDetailsDialog(null);
             } catch {
-              toast.error('ÙØ´Ù„ ÙÙŠ Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø·Ù„Ø¨ÙŠØ©');
+              toast.error('فشل في إلغاء الطلبية');
             }
           }}
           onCancelDirectSale={async (saleOrder: any) => {
@@ -2347,7 +2346,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
               if (cancelledCustomerId) {
                 let vtUpdate = supabase
                   .from('visit_tracking')
-                  .update({ operation_type: 'visit', notes: 'ØªÙ… Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø¨ÙŠØ¹ Ø§Ù„Ù…Ø¨Ø§Ø´Ø±' })
+                  .update({ operation_type: 'visit', notes: 'تم إلغاء البيع المباشر' })
                   .eq('operation_type', 'direct_sale')
                   .eq('customer_id', cancelledCustomerId)
                   .gte('created_at', todayStart)
@@ -2360,7 +2359,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                 await vtUpdate;
               }
 
-              toast.success('ØªÙ… Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø¨ÙŠØ¹ Ø§Ù„Ù…Ø¨Ø§Ø´Ø± ÙˆØ¥Ø±Ø¬Ø§Ø¹ Ø§Ù„Ù…Ø®Ø²ÙˆÙ† Ø¨Ù†Ø¬Ø§Ø­');
+              toast.success('تم إلغاء البيع المباشر وإرجاع المخزون بنجاح');
               queryClient.invalidateQueries({ queryKey: ['today-orders-dialog'] });
               queryClient.invalidateQueries({ queryKey: ['today-cust-assigned-orders-full'] });
               queryClient.invalidateQueries({ queryKey: ['my-worker-stock'] });
@@ -2370,7 +2369,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
               queryClient.invalidateQueries({ queryKey: ['today-direct-sale-visits-dialog'] });
               setOrderDetailsDialog(null);
             } catch {
-              toast.error('ÙØ´Ù„ ÙÙŠ Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø¨ÙŠØ¹ Ø§Ù„Ù…Ø¨Ø§Ø´Ø±');
+              toast.error('فشل في إلغاء البيع المباشر');
             }
           }}
         />
@@ -2401,7 +2400,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
       <Dialog open={calendarOpen} onOpenChange={setCalendarOpen}>
         <DialogContent className="w-auto max-w-[92vw] p-0 overflow-hidden" dir="rtl">
           <DialogHeader className="px-4 pt-4 pb-2">
-            <DialogTitle className="text-sm">Ø§Ø®ØªÙŠØ§Ø± ØªØ§Ø±ÙŠØ® Ù…Ø®ØµØµ</DialogTitle>
+            <DialogTitle className="text-sm">اختيار تاريخ مخصص</DialogTitle>
           </DialogHeader>
           <div className="px-3 pb-3">
             <Calendar
@@ -2477,10 +2476,10 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CalendarClock className="w-5 h-5 text-amber-600" />
-              ØªØ£Ø¬ÙŠÙ„ Ø¬Ù…Ø§Ø¹ÙŠ ({deliveryNotDone.length} Ø¹Ù…ÙŠÙ„)
+              تأجيل جماعي ({deliveryNotDone.length} عميل)
             </DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">Ø§Ø®ØªØ± ÙŠÙˆÙ… Ø§Ù„ØªÙˆØµÙŠÙ„ Ø§Ù„Ø¬Ø¯ÙŠØ¯ Ù„Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø·Ù„Ø¨ÙŠØ§Øª:</p>
+          <p className="text-sm text-muted-foreground">اختر يوم التوصيل الجديد لجميع الطلبيات:</p>
           <div className="grid grid-cols-2 gap-2">
             {getNextWorkDays().map(({ date, label }) => (
               <Button
@@ -2501,25 +2500,25 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CalendarClock className="w-5 h-5 text-amber-600" />
-              ØªØ£Ø¬ÙŠÙ„ ØªÙˆØµÙŠÙ„ {postponeCustomer?.name}
+              تأجيل توصيل {postponeCustomer?.name}
             </DialogTitle>
           </DialogHeader>
           {/* Worker reassignment */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Ø¹Ø§Ù…Ù„ Ø§Ù„ØªÙˆØµÙŠÙ„:</Label>
+            <Label className="text-xs font-medium">عامل التوصيل:</Label>
             <Select value={postponeWorkerId || '_same'} onValueChange={(v) => setPostponeWorkerId(v === '_same' ? null : v)}>
               <SelectTrigger className="h-9 text-sm">
-                <SelectValue placeholder="Ù†ÙØ³ Ø§Ù„Ø¹Ø§Ù…Ù„ Ø§Ù„Ø­Ø§Ù„ÙŠ" />
+                <SelectValue placeholder="نفس العامل الحالي" />
               </SelectTrigger>
               <SelectContent dir="rtl">
-                <SelectItem value="_same">Ù†ÙØ³ Ø§Ù„Ø¹Ø§Ù…Ù„ Ø§Ù„Ø­Ø§Ù„ÙŠ</SelectItem>
+                <SelectItem value="_same">نفس العامل الحالي</SelectItem>
                 {workersList.map(w => (
                   <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <p className="text-sm text-muted-foreground">Ø§Ø®ØªØ± ÙŠÙˆÙ… Ø§Ù„ØªÙˆØµÙŠÙ„ Ø§Ù„Ø¬Ø¯ÙŠØ¯:</p>
+          <p className="text-sm text-muted-foreground">اختر يوم التوصيل الجديد:</p>
           <div className="grid grid-cols-2 gap-2">
             {getNextWorkDays().map(({ date, label }) => (
               <Button
@@ -2603,7 +2602,7 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void; onCancelOr
     receiptType: (isDirectSale ? 'direct_sale' : 'delivery') as any,
     orderId: order.id || null,
     customerId: customer?.id || '',
-    customerName: customer?.store_name || customer?.name || order.customer_name || 'â€”',
+    customerName: customer?.store_name || customer?.name || order.customer_name || '—',
     customerPhone: customer?.phone || null,
     workerId: user?.id || '',
     workerName: user?.full_name || '',
@@ -2634,7 +2633,7 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void; onCancelOr
       <DialogContent className="max-w-[95vw] sm:max-w-sm p-4 gap-3 max-h-[80vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-base">
-            {isDirectSale ? 'ðŸ›’ ØªÙØ§ØµÙŠÙ„ Ø§Ù„Ø¨ÙŠØ¹ Ø§Ù„Ù…Ø¨Ø§Ø´Ø±' : 'ðŸ“¦ ØªÙØ§ØµÙŠÙ„ Ø§Ù„Ø·Ù„Ø¨ÙŠØ©'}
+            {isDirectSale ? '🛒 تفاصيل البيع المباشر' : '📦 تفاصيل الطلبية'}
           </DialogTitle>
         </DialogHeader>
 
@@ -2652,14 +2651,14 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void; onCancelOr
             )}
             {order.created_at && (
               <p className="text-xs text-muted-foreground">
-                Ø§Ù„ØªØ§Ø±ÙŠØ®: {format(new Date(order.created_at), 'dd/MM/yyyy HH:mm')}
+                التاريخ: {format(new Date(order.created_at), 'dd/MM/yyyy HH:mm')}
               </p>
             )}
           </div>
 
           {/* Items */}
           <div className="border rounded-lg overflow-hidden">
-            <div className="bg-muted/30 px-3 py-2 text-xs font-bold border-b">Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª</div>
+            <div className="bg-muted/30 px-3 py-2 text-xs font-bold border-b">المنتجات</div>
             <div className="divide-y">
               {items.map((item: any, idx: number) => {
                 const normalizedItem = normalizeSaleItem(item);
@@ -2683,7 +2682,7 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void; onCancelOr
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
-                            Ù„Ø§ ØµÙˆØ±Ø©
+                            لا صورة
                           </div>
                         )}
                       </div>
@@ -2693,9 +2692,9 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void; onCancelOr
                           <span className="font-bold text-sm whitespace-nowrap">{Number(itemTotal || 0).toLocaleString()} DA</span>
                         </div>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-                          <span>Ø§Ù„ÙƒÙ…ÙŠØ©: {quantity}</span>
-                          <span>Ø§Ù„Ø³Ø¹Ø±: {Number(unitPrice || 0).toLocaleString()} DA</span>
-                          {giftQty > 0 && <span className="text-emerald-600">Ù‡Ø¯ÙŠØ©: {giftQty}</span>}
+                          <span>الكمية: {quantity}</span>
+                          <span>السعر: {Number(unitPrice || 0).toLocaleString()} DA</span>
+                          {giftQty > 0 && <span className="text-emerald-600">هدية: {giftQty}</span>}
                         </div>
                       </div>
                     </div>
@@ -2707,7 +2706,7 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void; onCancelOr
 
           {/* Total */}
           <div className="bg-primary/5 rounded-lg p-3 flex items-center justify-between">
-            <span className="font-bold">Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹</span>
+            <span className="font-bold">المجموع</span>
             <span className="font-bold text-lg text-primary">{Number(totalAmount || 0).toLocaleString()} DA</span>
           </div>
 
@@ -2715,11 +2714,11 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void; onCancelOr
           {remainingAmount > 0 && (
             <div className="bg-muted/30 rounded-lg p-3 space-y-1.5">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Ø§Ù„Ù…Ø¨Ù„Øº Ø§Ù„Ù…Ø¯ÙÙˆØ¹</span>
+                <span className="text-muted-foreground">المبلغ المدفوع</span>
                 <span className="font-bold text-emerald-600">{paidAmount.toLocaleString()} DA</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Ø§Ù„Ù…ØªØ¨Ù‚ÙŠ (Ø¯ÙŠÙ†)</span>
+                <span className="text-muted-foreground">المتبقي (دين)</span>
                 <span className="font-bold text-destructive">{remainingAmount.toLocaleString()} DA</span>
               </div>
             </div>
@@ -2727,7 +2726,7 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void; onCancelOr
 
           {!isDirectSale && order.notes && (
             <div className="text-xs text-muted-foreground bg-muted/30 rounded p-2">
-              Ù…Ù„Ø§Ø­Ø¸Ø§Øª: {order.notes}
+              ملاحظات: {order.notes}
             </div>
           )}
 
@@ -2735,12 +2734,12 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void; onCancelOr
           {order.id && (
             <Button className="w-full gap-2" variant="default" onClick={() => setShowModifyDialog(true)}>
               <Pencil className="w-4 h-4" />
-              ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ø·Ù„Ø¨ÙŠØ©
+              تعديل الطلبية
             </Button>
           )}
           <Button className="w-full gap-2" variant="outline" onClick={handlePrint}>
             <Printer className="w-4 h-4" />
-            Ø·Ø¨Ø§Ø¹Ø© Ø§Ù„ÙˆØµÙ„
+            طباعة الوصل
           </Button>
           {order.id && onCancelOrder && order._isOrderRequest && (
             <></>
@@ -2765,7 +2764,7 @@ const OrderDetailsDialog: React.FC<{ order: any; onClose: () => void; onCancelOr
               }}
             >
               {cancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
-              {isDirectSale ? 'Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø¨ÙŠØ¹ Ø§Ù„Ù…Ø¨Ø§Ø´Ø±' : 'Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø·Ù„Ø¨ÙŠØ©'}
+              {isDirectSale ? 'إلغاء البيع المباشر' : 'إلغاء الطلبية'}
             </Button>
           )}
         </div>
@@ -2882,13 +2881,13 @@ const CustomerList: React.FC<{
     });
     return sortedKeys.map(key => ({
       zoneId: key,
-      zoneName: key ? (allZones?.find(z => z.id === key) ? getLocalizedName(allZones.find(z => z.id === key)!, language) : 'Ù…Ù†Ø·Ù‚Ø© ØºÙŠØ± Ù…Ø¹Ø±ÙˆÙØ©') : 'Ø¨Ø¯ÙˆÙ† Ù…Ù†Ø·Ù‚Ø©',
+      zoneName: key ? (allZones?.find(z => z.id === key) ? getLocalizedName(allZones.find(z => z.id === key)!, language) : 'منطقة غير معروفة') : 'بدون منطقة',
       customers: groups.get(key)!,
     }));
   }, [filtered, allZones, language]);
 
   if (filtered.length === 0) {
-    return <div className="p-6 text-center text-sm text-muted-foreground">{searchQuery?.trim() ? 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ù†ØªØ§Ø¦Ø¬' : emptyMessage}</div>;
+    return <div className="p-6 text-center text-sm text-muted-foreground">{searchQuery?.trim() ? 'لا توجد نتائج' : emptyMessage}</div>;
   }
 
   const renderCustomer = (c: any) => {
@@ -2916,9 +2915,9 @@ const CustomerList: React.FC<{
              />
              {liveDistanceMap.has(c.id) && (
                <Badge className="text-[9px] px-1.5 py-0 h-4 bg-yellow-400 text-black border-0 font-medium">
-                 ðŸ“ {liveDistanceMap.get(c.id)! >= 1000
-                   ? `${(liveDistanceMap.get(c.id)! / 1000).toFixed(1)} ÙƒÙ…`
-                   : `${liveDistanceMap.get(c.id)!} Ù…`}
+                 📍 {liveDistanceMap.get(c.id)! >= 1000
+                   ? `${(liveDistanceMap.get(c.id)! / 1000).toFixed(1)} كم`
+                   : `${liveDistanceMap.get(c.id)!} م`}
                </Badge>
              )}
              {postponedBadgeIds?.has(c.id) && (
@@ -2929,23 +2928,23 @@ const CustomerList: React.FC<{
                )}
              {noOrderStreakMap && (noOrderStreakMap.get(c.id) || 0) >= 2 && (
                 <Badge className="text-[9px] px-1.5 py-0 h-4 bg-red-100 text-red-700 border-0 font-bold gap-0.5">
-                  ðŸ”„ {noOrderStreakMap.get(c.id)} Ø¨Ø¯ÙˆÙ† Ø·Ù„Ø¨ÙŠØ©
+                  🔄 {noOrderStreakMap.get(c.id)} بدون طلبية
                 </Badge>
               )}
              {salesRepStatusMap && salesRepStatusMap.has(c.id) && (() => {
                const status = salesRepStatusMap.get(c.id);
-               if (status === 'not_visited') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-amber-100 text-amber-700 border-0">Ø¨Ø¯ÙˆÙ† Ø²ÙŠØ§Ø±Ø©</Badge>;
-               if (status === 'closed') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-red-100 text-red-700 border-0">Ù…ØºÙ„Ù‚</Badge>;
-               if (status === 'unavailable') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-gray-100 text-gray-600 border-0">ØºÙŠØ± Ù…ØªØ§Ø­</Badge>;
-               if (status === 'visited') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-blue-100 text-blue-700 border-0">ØªÙ…Øª Ø§Ù„Ø²ÙŠØ§Ø±Ø©</Badge>;
+               if (status === 'not_visited') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-amber-100 text-amber-700 border-0">بدون زيارة</Badge>;
+               if (status === 'closed') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-red-100 text-red-700 border-0">مغلق</Badge>;
+               if (status === 'unavailable') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-gray-100 text-gray-600 border-0">غير متاح</Badge>;
+               if (status === 'visited') return <Badge className="text-[9px] px-1.5 py-0 h-4 bg-blue-100 text-blue-700 border-0">تمت الزيارة</Badge>;
                return null;
              })()}
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               {c.phone && <span>{c.phone}</span>}
               {distanceMap?.has(c.id) ? (
-                <span>â€¢ ðŸ“ {distanceMap.get(c.id)!} Ù…</span>
+                <span>• 📍 {distanceMap.get(c.id)!} م</span>
               ) : c.wilaya ? (
-                <span>â€¢ {c.wilaya}</span>
+                <span>• {c.wilaya}</span>
               ) : null}
               {timeMap?.has(c.id) && (
                 <span className="flex items-center gap-0.5 text-[10px]">
@@ -2960,7 +2959,7 @@ const CustomerList: React.FC<{
           {c.latitude && c.longitude && (
             <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.latitude},${c.longitude}`, '_blank')}>
               <Navigation className="w-3 h-3" />
-              Ø§Ù„Ù…ÙˆÙ‚Ø¹
+              الموقع
             </Button>
           )}
           {showPrintButton && onPrint && (
@@ -2971,37 +2970,37 @@ const CustomerList: React.FC<{
           {showVisitButton && onVisitWithoutOrder && (
             <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-orange-600" onClick={() => onVisitWithoutOrder(c)} disabled={checkingLocationFor === c.id}>
               {checkingLocationFor === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <MapPinOff className="w-3 h-3" />}
-              {visitButtonLabel || 'Ø²ÙŠØ§Ø±Ø© Ø¨Ø¯ÙˆÙ† Ø·Ù„Ø¨ÙŠØ©'}
+              {visitButtonLabel || 'زيارة بدون طلبية'}
             </Button>
           )}
           {showNoSaleButton && onNoSale && (
             <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-amber-600" onClick={() => onNoSale(c)} disabled={checkingLocationFor === c.id}>
               {checkingLocationFor === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
-              Ø¨Ø¯ÙˆÙ† Ø¨ÙŠØ¹
+              بدون بيع
             </Button>
           )}
           {showActionButtons && onClosed && (
             <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-destructive" onClick={() => onClosed(c)} disabled={checkingLocationFor === c.id}>
               <DoorClosed className="w-3 h-3" />
-              Ù…ØºÙ„Ù‚
+              مغلق
             </Button>
           )}
           {showActionButtons && onUnavailable && (
             <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-muted-foreground" onClick={() => onUnavailable(c)} disabled={checkingLocationFor === c.id}>
               <UserX className="w-3 h-3" />
-              ØºÙŠØ± Ù…ØªØ§Ø­
+              غير متاح
             </Button>
           )}
           {showActionButtons && onDebtRefused && (
             <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-purple-600" onClick={() => onDebtRefused(c)} disabled={checkingLocationFor === c.id}>
               <BanknoteIcon className="w-3 h-3" />
-              Ø±ÙØ¶ Ø§Ù„Ø¯ÙŠÙ†
+              رفض الدين
             </Button>
           )}
           {onPostpone && (
             <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-amber-600" onClick={() => onPostpone(c)}>
               <CalendarClock className="w-3 h-3" />
-              ØªØ£Ø¬ÙŠÙ„
+              تأجيل
             </Button>
           )}
         </div>
@@ -3056,15 +3055,14 @@ const CollectedDebtOperationList: React.FC<{
   }, [operations, searchQuery]);
 
   if (filtered.length === 0) {
-    return <div className="p-6 text-center text-sm text-muted-foreground">{searchQuery?.trim() ? 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ù†ØªØ§Ø¦Ø¬' : emptyMessage}</div>;
+    return <div className="p-6 text-center text-sm text-muted-foreground">{searchQuery?.trim() ? 'لا توجد نتائج' : emptyMessage}</div>;
   }
 
   return (
     <div className="space-y-2 p-2">
       {filtered.map((operation) => {
         const customer = operation.debt?.customer;
-        const collectorName = operation.worker?.full_name || operation.worker?.username || 'â€”';
-        const debtCreatorName = operation.debt?.worker?.full_name || operation.debt?.worker?.username || '—';
+        const collectorName = operation.worker?.full_name || operation.worker?.username || '—';
         const collectedAmount = Number(operation.amount_collected || 0);
         const sector = customer?.sector_id ? sectors?.find((s) => s.id === customer.sector_id) : null;
         const zone = (customer as any)?.zone_id ? allZones?.find((z) => z.id === (customer as any).zone_id) : null;
@@ -3089,24 +3087,22 @@ const CollectedDebtOperationList: React.FC<{
                       <Clock className="w-3 h-3" />
                       {format(new Date(operation.created_at), 'dd/MM/yyyy HH:mm')}
                     </span>
-                    {customer?.phone && <span>â€¢ {customer.phone}</span>}
+                    {customer?.phone && <span>• {customer.phone}</span>}
                     <span className="rounded-full bg-muted px-2 py-0.5">{operation.payment_method || 'cash'}</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                     <span>عامل التحصيل: <span className="font-semibold text-foreground">{collectorName}</span></span>
                     <span>•</span>
-                    <span>منشئ الدين: <span className="font-semibold text-foreground">{debtCreatorName}</span></span>
-                    <span>•</span>
                     <span>
-                      Ø§Ù„Ù…ÙˆØ¹Ø¯ Ø§Ù„Ù‚Ø§Ø¯Ù…:{' '}
+                      الموعد القادم:{' '}
                       <span className="font-semibold text-foreground">
-                        {operation.next_due_date ? format(new Date(operation.next_due_date), 'dd/MM/yyyy HH:mm') : 'ØºÙŠØ± Ù…Ø­Ø¯Ø¯'}
+                        {operation.next_due_date ? format(new Date(operation.next_due_date), 'dd/MM/yyyy HH:mm') : 'غير محدد'}
                       </span>
                     </span>
                   </div>
                 </div>
                 <div className="rounded-2xl border border-green-100 bg-green-50/80 px-3 py-2 text-left" dir="ltr">
-                  <div className="text-[11px] font-medium text-green-600">Ø§Ù„Ù…Ø­ØµÙ„</div>
+                  <div className="text-[11px] font-medium text-green-600">المحصل</div>
                   <div className="mt-1 text-base font-black text-green-700">{collectedAmount.toLocaleString()} DA</div>
                 </div>
               </div>
@@ -3144,7 +3140,7 @@ const DebtList: React.FC<{ debts: DueDebt[]; onCollect: (d: DueDebt) => void; on
   }, [debts, searchQuery, timeMap]);
 
   if (filtered.length === 0) {
-    return <div className="p-6 text-center text-sm text-muted-foreground">{searchQuery?.trim() ? 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ù†ØªØ§Ø¦Ø¬' : emptyMessage}</div>;
+    return <div className="p-6 text-center text-sm text-muted-foreground">{searchQuery?.trim() ? 'لا توجد نتائج' : emptyMessage}</div>;
   }
 
   return (
@@ -3158,11 +3154,11 @@ const DebtList: React.FC<{ debts: DueDebt[]; onCollect: (d: DueDebt) => void; on
             </div>
             <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
               <Clock className="w-3 h-3" />
-              <span>{debt.due_date ? format(new Date(debt.due_date + 'T00:00:00'), 'dd/MM/yyyy') : 'â€”'}</span>
-              {(debt.customer as any)?.phone && <span>â€¢ {(debt.customer as any).phone}</span>}
+              <span>{debt.due_date ? format(new Date(debt.due_date + 'T00:00:00'), 'dd/MM/yyyy') : '—'}</span>
+              {(debt.customer as any)?.phone && <span>• {(debt.customer as any).phone}</span>}
               {timeMap?.has(debt.id) && (
                 <span className="flex items-center gap-0.5 text-[10px]">
-                  â° {format(new Date(timeMap.get(debt.id)!), 'HH:mm')}
+                  ⏰ {format(new Date(timeMap.get(debt.id)!), 'HH:mm')}
                 </span>
               )}
             </div>
@@ -3170,24 +3166,24 @@ const DebtList: React.FC<{ debts: DueDebt[]; onCollect: (d: DueDebt) => void; on
           <div className="flex items-center gap-1 mt-1.5 justify-end flex-wrap">
             <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-orange-600" onClick={(e) => { e.stopPropagation(); onVisitNoPayment(debt); }}>
               <Eye className="w-3 h-3" />
-              Ø²ÙŠØ§Ø±Ø© Ø¨Ø¯ÙˆÙ† Ø¯ÙØ¹
+              زيارة بدون دفع
             </Button>
             <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-green-600" onClick={(e) => { e.stopPropagation(); onCollect(debt); }}>
               <Landmark className="w-3 h-3" />
-              ØªØ­ØµÙŠÙ„
+              تحصيل
             </Button>
             <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-red-600" onClick={(e) => { e.stopPropagation(); onClosed(debt); }}>
               <DoorClosed className="w-3 h-3" />
-              Ù…ØºÙ„Ù‚
+              مغلق
             </Button>
             <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-gray-600" onClick={(e) => { e.stopPropagation(); onUnavailable(debt); }}>
               <UserX className="w-3 h-3" />
-              ØºÙŠØ± Ù…ØªØ§Ø­
+              غير متاح
             </Button>
             {onDebtRefused && (
               <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 gap-0.5 text-purple-600" onClick={(e) => { e.stopPropagation(); onDebtRefused(debt); }}>
                 <BanknoteIcon className="w-3 h-3" />
-                Ø±ÙØ¶ Ø§Ù„Ø¯ÙŠÙ†
+                رفض الدين
               </Button>
             )}
           </div>
@@ -3198,8 +3194,6 @@ const DebtList: React.FC<{ debts: DueDebt[]; onCollect: (d: DueDebt) => void; on
 };
 
 export default TodayCustomersDialog;
-
-
 
 
 
