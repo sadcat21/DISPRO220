@@ -995,6 +995,7 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
                     <StatCard label={labels.collectedDebts} value={fmtMoney(aggregate.calc.debtCollections.total)} icon={<HandCoins className="h-4 w-4" />} tone="text-orange-600" />
                     <StatCard label={labels.actualCash} value={fmtMoney(aggregate.calc.physicalCash)} icon={<Banknote className="h-4 w-4" />} tone="text-green-700" />
                     <StatCard label={labels.workersHeld} value={fmtMoney(finance.workerHeldAmount)} icon={<Wallet className="h-4 w-4" />} tone="text-sky-700" />
+                    <StatCard label={labels.documents} value={fmtMoney(aggregate.documentsValue)} subtitle={documentsSubtitle} icon={<ClipboardList className="h-4 w-4" />} tone="text-indigo-700" />
                     <StatCard label={labels.expenses} value={fmtMoney(aggregate.calc.expenses)} icon={<Wallet className="h-4 w-4" />} tone="text-amber-700" />
                     <StatCard label={labels.gifts} value={giftsDisplay.text} icon={<Gift className="h-4 w-4" />} tone="text-fuchsia-600" />
                     <StatCard label={labels.ordersQty} value={`${aggregate.orderCount} / ${totalQuantity}`} icon={<Package className="h-4 w-4" />} tone="text-violet-600" />
