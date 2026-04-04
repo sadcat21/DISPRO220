@@ -627,10 +627,11 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
 
   const aggregate = useMemo(() => buildAggregateSummary(data || [], selectedWorkerId), [data, selectedWorkerId]);
   const totalQuantity = useMemo(() => aggregate.items.reduce((sum, item) => sum + item.quantity, 0), [aggregate.items]);
+  const finance = useMemo(() => getSummaryFinance(aggregate.calc), [aggregate.calc]);
 
   const resetFilters = () => {
-    setPeriodFrom('');
-    setPeriodTo('');
+    setPeriodFrom(todayDateString);
+    setPeriodTo(todayDateString);
     setSelectedWorkerId('all');
     void refetch();
   };
