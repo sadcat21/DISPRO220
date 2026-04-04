@@ -8,12 +8,15 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
+import { useActiveStampTiers, calculateStampAmount } from '@/hooks/useStampTiers';
 import { isTransferPaidByCash, resolveReceiptBucket } from '@/utils/treasuryDocumentClassification';
 
 export interface PickedItem {
   order_id: string;
   amount: number;
   customer_name: string;
+  stamp_amount?: number;
+  total_with_stamp?: number;
 }
 
 interface Props {
@@ -34,6 +37,7 @@ const labels: Record<string, string> = {
 const HandoverItemPickerDialog = ({ open, onOpenChange, paymentMethod, onConfirm }: Props) => {
   const { activeBranch } = useAuth();
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const { data: stampTiers } = useActiveStampTiers();
 
   // Fetch delivered orders with this payment method
   const { data: items, isLoading } = useQuery({
