@@ -279,6 +279,7 @@ const HandoverPrintView: React.FC<Props> = ({
               <th className="border border-black p-1 text-left">Client</th>
               <th className="border border-black p-1 text-left">NÂ° Facture</th>
               <th className="border border-black p-1 text-right">Montant HT</th>
+              <th className="border border-black p-1 text-right">Taux %</th>
               <th className="border border-black p-1 text-right">Timbre</th>
               <th className="border border-black p-1 text-right">Montant TTC</th>
               <th className="border border-black p-1 text-left">Date</th>
@@ -290,6 +291,7 @@ const HandoverPrintView: React.FC<Props> = ({
                 <td className="border border-black p-1">{item.customer_name || '-'}</td>
                 <td className="border border-black p-1">{item.invoice_number || '-'}</td>
                 <td className="border border-black p-1 text-right">{Number(item.base_amount || 0).toLocaleString()}</td>
+                <td className="border border-black p-1 text-right">{Number(item.stamp_percentage || 0).toLocaleString()}%</td>
                 <td className="border border-black p-1 text-right">{Number(item.stamp_amount || 0).toLocaleString()}</td>
                 <td className="border border-black p-1 text-right">{Number(item.amount || 0).toLocaleString()}</td>
                 <td className="border border-black p-1">{item.invoice_date || item.check_date || '-'}</td>
@@ -298,7 +300,8 @@ const HandoverPrintView: React.FC<Props> = ({
             <tr className="font-bold">
               <td className="border border-black p-1" colSpan={2}>Total ESPÈCES FACTURE 1</td>
               <td className="border border-black p-1 text-right">{cashItemsNetTotal.toLocaleString()}</td>
-              <td className="border border-black p-1 text-right">{stampAmount.toLocaleString()}</td>
+              <td className="border border-black p-1 text-right">-</td>
+              <td className="border border-black p-1 text-right">{cashItemsStampTotal.toLocaleString()}</td>
               <td className="border border-black p-1 text-right">{cashItemsTotal.toLocaleString()}</td>
               <td className="border border-black p-1"></td>
             </tr>
