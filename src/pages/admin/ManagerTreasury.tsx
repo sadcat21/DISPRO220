@@ -1664,13 +1664,13 @@ const PickerSection = ({ label, items, onOpen, onRemove, currency }: {
           {items.map(item => (
             <div key={item.order_id} className="flex items-center justify-between text-xs bg-background rounded-md px-2 py-1.5 border">
               <span className="truncate flex-1">{item.customer_name}</span>
-              <span className="font-bold mx-2 whitespace-nowrap">{item.amount.toLocaleString()} {currency}</span>
+              <MoneyValue value={item.amount} currency={currency} className="font-bold mx-2" />
               <button onClick={(e) => { e.preventDefault(); onRemove(item.order_id); }} className="text-destructive hover:text-destructive/80 text-xs">✕</button>
             </div>
           ))}
           <div className="flex items-center justify-between text-xs pt-1 border-t">
             <span className="text-muted-foreground">{items.length} {t('treasury.items')}</span>
-            <span className="font-bold">{total.toLocaleString()} {currency}</span>
+            <MoneyValue value={total} currency={currency} className="font-bold" />
           </div>
         </div>
       ) : (
