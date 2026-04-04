@@ -1081,7 +1081,7 @@ const DeliverySaleDialog: React.FC<DeliverySaleDialogProps> = ({ open, onOpenCha
                     return (
                       <div
                         key={item.productId}
-                        className={`flex items-center justify-between gap-2 p-2 rounded-lg ${
+                        className={`rounded-xl border p-2.5 transition-colors ${
                           isShortage ? 'opacity-50 bg-orange-50 dark:bg-orange-900/10 border border-orange-200 dark:border-orange-800' :
                           item.quantity === 0 ? 'opacity-40 bg-destructive/5' :
                           changed ? 'bg-primary/5 border border-primary/20' : ''
