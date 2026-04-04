@@ -834,7 +834,8 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
 
                     <TabsContent value="snapshot" className="mt-0 rounded-[22px] border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
                       <BreakdownRow label="إجمالي النقد (مبيعات + تحصيلات)" value={aggregate.calc.totalPaid + aggregate.calc.debtCollections.total} />
-                      <BreakdownRow label="إجمالي غير نقدي" value={aggregate.calc.invoice1.check + aggregate.calc.invoice1.transfer + aggregate.calc.invoice1.receipt + aggregate.calc.debtCollections.check + aggregate.calc.debtCollections.transfer + aggregate.calc.debtCollections.receipt} />
+                      <BreakdownRow label="إجمالي غير نقدي" value={finance.nonCashCollected} />
+                      <BreakdownRow label="في ذمة العمال ولم يسلَّم للمدير" value={finance.workerHeldAmount} />
                       <BreakdownRow label="المصاريف النقدية" value={aggregate.calc.cashExpenses} />
                       <BreakdownRow label="فائض العملاء" value={aggregate.calc.customerSurplusCash} />
                     </TabsContent>
