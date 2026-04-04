@@ -330,10 +330,29 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category, handedCashIn
           </DialogTitle>
         </DialogHeader>
 
-        <div className="mb-2 rounded-lg bg-muted/50 p-3 text-center">
+        {isCashInvoice2 && (
+          <div className="mb-2 space-y-2">
+            <div className="rounded-lg bg-muted/50 p-3 text-center">
+              <p className="text-xs text-muted-foreground">المتبقي</p>
+              <MoneyValue value={cashInvoice2Remaining} className={`text-xl font-bold ${config.colorClass}`} />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-lg border border-muted bg-background p-2 text-center">
+                <p className="text-[10px] text-muted-foreground">الإجمالي</p>
+                <MoneyValue value={cashInvoice2Overall} className="text-sm font-bold text-foreground" />
+              </div>
+              <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-2 text-center">
+                <p className="text-[10px] text-muted-foreground">مسلّم</p>
+                <MoneyValue value={cashInvoice2Handed} className="text-sm font-bold text-green-600" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!isCashInvoice2 && <div className="mb-2 rounded-lg bg-muted/50 p-3 text-center">
           <p className="text-xs text-muted-foreground">الإجمالي</p>
           <p className={`text-xl font-bold ${config.colorClass}`}>{invoice1GrandTotal.toLocaleString()} د.ج</p>
-        </div>
+        </div>}
 
         {isCashInvoice1 && (
           <>
