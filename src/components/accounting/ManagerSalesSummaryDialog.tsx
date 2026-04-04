@@ -674,6 +674,7 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
 
           const sessionIds = (sessions || []).map((session) => session.id);
           let managerReceivedAmount = 0;
+          let receivedDocumentsValue = 0;
           if (sessionIds.length > 0) {
             const { data: sessionItems } = await supabase
               .from('accounting_session_items')
@@ -682,6 +683,13 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
 
             managerReceivedAmount = (sessionItems || []).reduce((sum, item: any) => {
               if (!SETTLEMENT_ITEM_TYPES.has(String(item.item_type || ''))) return sum;
+              return sum + Number(item.actual_amount || 0);
+            }, 0);
+            receivedDocumentsValue = (sessionItems || []).reduce((sum, item: any) => {
+              const itemType = String(item.item_type || '');
+              if (!['invoice1_check', 'invoice1_transfer', 'invoice1_receipt', 'debt_collections_check', 'debt_collections_transfer', 'debt_collections_receipt'].includes(itemType)) {
+                return sum;
+              }
               return sum + Number(item.actual_amount || 0);
             }, 0);
           }
@@ -726,6 +734,9 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
             lastOrderTime: salesSummary.lastOrderTime,
             calc,
             managerReceivedAmount,
+            documentsCount: salesSummary.documentsCount || 0,
+            documentsValue: salesSummary.documentsValue || 0,
+            receivedDocumentsValue,
           } satisfies WorkerSummary;
         }),
       );
