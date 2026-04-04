@@ -311,13 +311,14 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   });
 
   const { data: todayVisits = [] } = useQuery({
-    queryKey: ['today-visits-dialog', effectiveWorkerId, todayStart],
+    queryKey: ['today-visits-dialog', effectiveWorkerId, todayStart, selectedDayBounds.end],
     queryFn: async () => {
       const { data } = await supabase
         .from('visit_tracking')
         .select('customer_id, operation_type, notes, created_at, latitude, longitude')
         .eq('worker_id', effectiveWorkerId!)
-        .gte('created_at', todayStart);
+        .gte('created_at', todayStart)
+        .lte('created_at', selectedDayBounds.end);
       return data || [];
     },
     enabled: !!effectiveWorkerId && open,
@@ -325,13 +326,14 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   });
 
   const { data: todayOrders = [] } = useQuery({
-    queryKey: ['today-orders-dialog', effectiveWorkerId, todayStart],
+    queryKey: ['today-orders-dialog', effectiveWorkerId, todayStart, selectedDayBounds.end],
     queryFn: async () => {
       const { data } = await supabase
         .from('orders')
         .select('customer_id, created_at')
         .eq('created_by', effectiveWorkerId!)
         .gte('created_at', todayStart)
+        .lte('created_at', selectedDayBounds.end)
         .not('status', 'eq', 'cancelled');
       return data || [];
     },
