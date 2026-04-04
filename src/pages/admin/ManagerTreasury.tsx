@@ -1067,33 +1067,33 @@ const ManagerTreasury = () => {
 
                 <div className="flex items-center justify-between rounded-lg bg-background p-2">
                   <span className="text-[10px] text-muted-foreground">{t('treasury.actual_after_handover')}</span>
-                  <span className="text-xs font-bold">{netInTreasury.toLocaleString()} {cur}</span>
+                  <MoneyValue value={netInTreasury} currency={cur} className="text-xs font-bold" />
                 </div>
                 <div className="flex items-center justify-between rounded-lg bg-background p-2">
                   <span className="text-[10px] text-muted-foreground">{t('treasury.handed_to_upper')}</span>
-                  <span className="text-xs font-bold">{handedOver.toLocaleString()} {cur}</span>
+                  <MoneyValue value={handedOver} currency={cur} className="text-xs font-bold" />
                 </div>
                 {totalExpenses > 0 && (
                   <div className="flex items-center justify-between rounded-lg bg-background p-2">
                     <span className="text-[10px] text-muted-foreground">{t('treasury.approved_expenses')}</span>
-                    <span className="text-xs font-bold">{totalExpenses.toLocaleString()} {cur}</span>
+                    <MoneyValue value={totalExpenses} currency={cur} className="text-xs font-bold" />
                   </div>
                 )}
                 {workerHeldAmount > 0 && (
                   <div className="flex items-center justify-between rounded-lg bg-amber-500/5 border border-amber-500/20 p-2">
                     <span className="text-[10px] text-muted-foreground">👷 {t('treasury.worker_held')}</span>
-                    <span className="text-xs font-bold text-amber-600">{workerHeldAmount.toLocaleString()} {cur}</span>
+                    <MoneyValue value={workerHeldAmount} currency={cur} className="text-xs font-bold text-amber-600" />
                   </div>
                 )}
                 {coinExchangeOut > 0 && (
                   <div className="flex items-center justify-between rounded-lg bg-amber-500/5 border border-amber-500/20 p-2">
                     <span className="text-[10px] text-muted-foreground">🪙 {t('coin_exchange.title') || 'تحويل عملات'}</span>
-                    <span className="text-xs font-bold text-amber-600">{coinExchangeOut.toLocaleString()} {cur}</span>
+                    <MoneyValue value={coinExchangeOut} currency={cur} className="text-xs font-bold text-amber-600" />
                   </div>
                 )}
                 <div className="flex items-center justify-between rounded-lg bg-muted/50 p-2">
                   <span className="text-[10px] font-medium">{t('treasury.total_accounted')}</span>
-                  <span className="text-xs font-bold">{accountedFor.toLocaleString()} {cur}</span>
+                  <MoneyValue value={accountedFor} currency={cur} className="text-xs font-bold" />
                 </div>
               </div>
 
