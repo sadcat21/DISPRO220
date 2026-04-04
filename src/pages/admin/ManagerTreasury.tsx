@@ -45,11 +45,15 @@ const TreasuryCard = ({ icon, label, total, handed, colorClass, borderClass, onC
         <div className="mx-auto mb-1">{icon}</div>
         <p className="text-xs text-muted-foreground">{label}</p>
         {badgeText && <p dir="rtl" className="text-[10px] font-medium text-muted-foreground">{badgeText}</p>}
-        <p dir="ltr" className={`text-lg font-bold text-${colorClass} truncate`}>{remaining.toLocaleString()} {currency}</p>
+        <MoneyValue value={remaining} currency={currency} className={`text-lg font-bold text-${colorClass}`} />
         {showDetails && (
           <div className="flex justify-between text-[10px] px-1">
-            <span dir="ltr" className="text-muted-foreground">{t('treasury.total')}: {total.toLocaleString()} {currency}</span>
-            <span dir="ltr" className="text-green-600">{t('treasury.handed')}: {handed.toLocaleString()} {currency}</span>
+            <span className="text-muted-foreground">
+              {t('treasury.total')}: <MoneyValue value={total} currency={currency} />
+            </span>
+            <span className="text-green-600">
+              {t('treasury.handed')}: <MoneyValue value={handed} currency={currency} />
+            </span>
           </div>
         )}
       </CardContent>
@@ -58,8 +62,15 @@ const TreasuryCard = ({ icon, label, total, handed, colorClass, borderClass, onC
 };
 
 const MoneyValue = ({ value, currency, className = '' }: { value: number; currency: string; className?: string }) => (
-  <span dir="ltr" className={`inline-block whitespace-nowrap ${className}`.trim()}>
-    {value.toLocaleString()} {currency}
+  <bdi dir="ltr" className={`inline-block whitespace-nowrap tabular-nums ${className}`.trim()}>
+    {value.toLocaleString()} {` ${currency}`}
+  </bdi>
+);
+
+const SignedMoneyValue = ({ value, currency, className = '', signClassName = '' }: { value: number; currency: string; className?: string; signClassName?: string }) => (
+  <span dir="ltr" className={`inline-flex items-center gap-1 whitespace-nowrap tabular-nums ${className}`.trim()}>
+    <span className={signClassName}>{value >= 0 ? '+' : '-'}</span>
+    <bdi dir="ltr">{Math.abs(value).toLocaleString()} {currency}</bdi>
   </span>
 );
 
