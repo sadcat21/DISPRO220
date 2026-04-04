@@ -2450,6 +2450,17 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         />
       )}
 
+      {selectedCollectedOperation && (
+        <CollectedDebtOperationDialog
+          open={showCollectedOperationDialog}
+          onOpenChange={(o) => {
+            setShowCollectedOperationDialog(o);
+            if (!o) setSelectedCollectedOperation(null);
+          }}
+          collection={selectedCollectedOperation}
+        />
+      )}
+
       {/* Print Receipt Dialog */}
       {printReceiptData && (
         <ReceiptDialog
