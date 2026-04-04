@@ -497,13 +497,13 @@ const BreakdownRow: React.FC<{ label: string; value: number }> = ({ label, value
 
 export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, workers = [] }) => {
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>('all');
-  const [periodFrom, setPeriodFrom] = useState<string>('');
-  const [periodTo, setPeriodTo] = useState<string>('');
+  const today = new Date();
+  const todayDateString = today.toISOString().slice(0, 10);
+  const [periodFrom, setPeriodFrom] = useState<string>(todayDateString);
+  const [periodTo, setPeriodTo] = useState<string>(todayDateString);
   const [timeFilterOpen, setTimeFilterOpen] = useState(false);
   const [workerFilterOpen, setWorkerFilterOpen] = useState(false);
   const workerButtons = workers;
-  const today = new Date();
-  const todayDateString = today.toISOString().slice(0, 10);
   const selectedSingleDay = periodFrom && periodFrom === periodTo ? periodFrom : null;
 
   const normalizePeriodRange = (from: string, to: string) => {
