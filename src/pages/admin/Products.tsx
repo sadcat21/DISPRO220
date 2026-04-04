@@ -1012,6 +1012,7 @@ const Products: React.FC = () => {
               <div className="border rounded-lg p-3 space-y-2 bg-muted/20">
                 <Label className="text-sm font-bold text-primary block">{t('products.invoice1_title')}</Label>
                 <Input type="number" min={0} step="0.01" value={editPriceInvoice} onChange={(e) => setEditPriceInvoice(parseFloat(e.target.value) || 0)} className="text-right h-9" onFocus={(e) => e.target.select()} />
+                <p className="text-[10px] text-muted-foreground">قبل TVA 19%: <span dir="ltr" className="font-medium">{formatPrice(getNetPriceBeforeVat(editPriceInvoice))} DA</span></p>
               </div>
 
 
