@@ -864,6 +864,18 @@ const Products: React.FC = () => {
               />
             </div>
 
+            <div className="space-y-2">
+              <Label>CODE</Label>
+              <Input
+                value={editProductCode}
+                onChange={(e) => setEditProductCode(e.target.value)}
+                placeholder="AROMA-125"
+                className="text-left [direction:ltr]"
+                dir="ltr"
+              />
+              <p className="text-xs text-muted-foreground">سيظهر هذا الكود لاحقًا في الفواتير.</p>
+            </div>
+
             {/* Sort Order */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
