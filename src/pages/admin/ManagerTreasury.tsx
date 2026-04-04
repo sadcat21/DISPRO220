@@ -248,19 +248,15 @@ const ManagerTreasury = () => {
           });
       };
 
-      const handedCash1 = (handovers || []).reduce((sum, handover: any) => sum + Number(handover.cash_invoice1 || 0), 0);
       const handedCash2 = (handovers || []).reduce((sum, handover: any) => sum + Number(handover.cash_invoice2 || 0), 0);
-      const handedChecks = (handovers || []).reduce((sum, handover: any) => sum + Number(handover.checks_amount || 0), 0);
-      const handedReceipts = (handovers || []).reduce((sum, handover: any) => sum + Number(handover.receipts_amount || 0), 0);
-      const handedTransfers = (handovers || []).reduce((sum, handover: any) => sum + Number(handover.transfers_amount || 0), 0);
 
       return {
-        cash_invoice1: applyAmountFallback(buckets.cash_invoice1, handedCash1).length,
+        cash_invoice1: buckets.cash_invoice1.length,
         cash_invoice2: applyAmountFallback(buckets.cash_invoice2, handedCash2).length,
-        check: applyAmountFallback(buckets.check, handedChecks).length,
+        check: buckets.check.length,
         receipt_cash: buckets.receipt_cash.length,
-        receipt: applyAmountFallback(buckets.receipt, handedReceipts).length,
-        transfer: applyAmountFallback(buckets.transfer, handedTransfers).length,
+        receipt: buckets.receipt.length,
+        transfer: buckets.transfer.length,
       };
     },
   });
