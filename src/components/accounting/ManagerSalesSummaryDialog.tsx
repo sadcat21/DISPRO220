@@ -758,10 +758,7 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
   const finance = useMemo(() => getSummaryFinance(aggregate.calc), [aggregate.calc]);
   const giftsDisplay = useMemo(() => {
     const promoGiftPieces = aggregate.calc.promoTracking.reduce((sum, item) => sum + Number(item.giftQuantity || 0), 0);
-    const fallbackGiftPieces = aggregate.items.reduce((sum, item) => {
-      const piecesPerBox = Math.max(1, Number(item.piecesPerBox || 1));
-      return sum + (Number(item.giftQuantity || 0) * piecesPerBox);
-    }, 0);
+    const fallbackGiftPieces = aggregate.items.reduce((sum, item) => sum + Number(item.giftQuantity || 0), 0);
     const totalGiftPieces = Math.max(promoGiftPieces, fallbackGiftPieces);
     const piecesByBox = new Map<number, number>();
     for (const item of aggregate.calc.promoTracking) {
@@ -771,7 +768,7 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
     if (piecesByBox.size === 0) {
       for (const item of aggregate.items) {
         const ppb = Math.max(1, Number(item.piecesPerBox || 1));
-        piecesByBox.set(ppb, (piecesByBox.get(ppb) || 0) + (Number(item.giftQuantity || 0) * ppb));
+        piecesByBox.set(ppb, (piecesByBox.get(ppb) || 0) + Number(item.giftQuantity || 0));
       }
     }
     const dominantPiecesPerBox =
@@ -782,7 +779,7 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
       totalGiftPieces,
       text: formatGiftDisplay(totalGiftPieces, dominantPiecesPerBox),
     };
-  }, [aggregate.calc.promoTracking]);
+  }, [aggregate.calc.promoTracking, aggregate.items]);
 
   const resetFilters = () => {
     setPeriodFrom(todayDateString);
