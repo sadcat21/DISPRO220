@@ -246,6 +246,7 @@ const Products: React.FC = () => {
   const openEditDialog = async (product: Product) => {
     setEditingProduct(product);
     setEditProductName(product.name);
+    setEditProductCode(product.product_code || '');
     setEditPiecesPerBox(product.pieces_per_box);
     setEditPricingUnit(product.pricing_unit || 'box');
     setEditWeightPerBox(product.weight_per_box || 0);
@@ -339,6 +340,7 @@ const Products: React.FC = () => {
         .from('products')
         .update({
           name: editProductName.trim(),
+          product_code: editProductCode.trim() || null,
           pieces_per_box: editPiecesPerBox,
           pricing_unit: editPricingUnit,
           weight_per_box: editPricingUnit === 'kg' ? editWeightPerBox : null,
@@ -360,6 +362,7 @@ const Products: React.FC = () => {
           ? { 
               ...p, 
               name: editProductName.trim(), 
+              product_code: editProductCode.trim() || null,
               pieces_per_box: editPiecesPerBox,
               pricing_unit: editPricingUnit,
               weight_per_box: editPricingUnit === 'kg' ? editWeightPerBox : null,
@@ -416,6 +419,7 @@ const Products: React.FC = () => {
         .from('products')
         .update({
           name: editProductName.trim(),
+          product_code: editProductCode.trim() || null,
           pieces_per_box: editPiecesPerBox,
           pricing_unit: editPricingUnit,
           weight_per_box: editPricingUnit === 'kg' ? editWeightPerBox : null,
@@ -435,6 +439,7 @@ const Products: React.FC = () => {
           ? { 
               ...p, 
               name: editProductName.trim(), 
+              product_code: editProductCode.trim() || null,
               pieces_per_box: editPiecesPerBox,
               pricing_unit: editPricingUnit,
               weight_per_box: editPricingUnit === 'kg' ? editWeightPerBox : null,
