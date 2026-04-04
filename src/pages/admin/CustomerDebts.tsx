@@ -286,6 +286,16 @@ const CustomerDebts: React.FC = () => {
             ) : (
               <div className="space-y-2">
                 {customerGroups.map(group => (
+                  (() => {
+                    const primaryDebt = group.debts[0];
+                    const sector = primaryDebt?.customer?.sector_id
+                      ? sectors.find((s) => s.id === primaryDebt.customer?.sector_id)
+                      : null;
+                    const zone = primaryDebt?.customer?.zone_id
+                      ? allZones.find((z) => z.id === primaryDebt.customer?.zone_id)
+                      : null;
+
+                    return (
                   <Card
                     key={group.id}
                     className="cursor-pointer overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm transition-all hover:border-red-200 hover:shadow-md active:scale-[0.99]"
@@ -297,15 +307,11 @@ const CustomerDebts: React.FC = () => {
                           <div className="min-w-0 flex-1 text-right">
                             <CustomerLabel
                               customer={{
-                                name: group.debts[0]?.customer?.name,
-                                store_name: group.debts[0]?.customer?.store_name,
-                                customer_type: group.debts[0]?.customer?.customer_type,
-                                sector_name: group.debts[0]?.customer?.sector_id
-                                  ? getLocalizedName(sectors.find((s) => s.id === group.debts[0]?.customer?.sector_id) || null as any, language)
-                                  : undefined,
-                                zone_name: group.debts[0]?.customer?.zone_id
-                                  ? getLocalizedName(allZones.find((z) => z.id === group.debts[0]?.customer?.zone_id) || null as any, language)
-                                  : undefined,
+                                name: primaryDebt?.customer?.name,
+                                store_name: primaryDebt?.customer?.store_name,
+                                customer_type: primaryDebt?.customer?.customer_type,
+                                sector_name: sector ? getLocalizedName(sector, language) : undefined,
+                                zone_name: zone ? getLocalizedName(zone, language) : undefined,
                               }}
                               className="items-end"
                             />
@@ -334,6 +340,8 @@ const CustomerDebts: React.FC = () => {
                       </div>
                     </CardContent>
                   </Card>
+                    );
+                  })()
                 ))}
               </div>
             )}
