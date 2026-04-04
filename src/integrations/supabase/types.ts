@@ -3360,6 +3360,7 @@ export type Database = {
           is_active: boolean
           name: string
           pieces_per_box: number
+          product_code: string | null
           price_gros: number | null
           price_invoice: number | null
           price_no_invoice: number | null
@@ -3378,6 +3379,7 @@ export type Database = {
           is_active?: boolean
           name: string
           pieces_per_box?: number
+          product_code?: string | null
           price_gros?: number | null
           price_invoice?: number | null
           price_no_invoice?: number | null
@@ -3396,6 +3398,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           pieces_per_box?: number
+          product_code?: string | null
           price_gros?: number | null
           price_invoice?: number | null
           price_no_invoice?: number | null
