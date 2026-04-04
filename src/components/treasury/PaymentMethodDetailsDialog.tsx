@@ -225,7 +225,7 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category }: Props) => 
               total_amount: Math.max(0, orderAmount - remainingHanded),
             };
             remainingHanded = 0;
-            return [{ ...entry, order: adjustedOrder }];
+            return adjustedOrder.total_amount > 0 ? [{ ...entry, order: adjustedOrder }] : [];
           });
       }
 
