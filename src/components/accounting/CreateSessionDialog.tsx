@@ -134,7 +134,7 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
     ? { workerId: selectedWorkerId, branchId: activeBranch?.id, periodStart, periodEnd }
     : null;
 
-  const { data: calc, isLoading: calcLoading } = useSessionCalculations(calcParams, { refetchInterval: autoRefresh ? 600000 : false });
+  const { data: calc, isLoading: calcLoading, error: calcError } = useSessionCalculations(calcParams, { refetchInterval: autoRefresh ? 600000 : false });
   const { data: pendingDiscrepancies = [] } = usePendingDiscrepancies(selectedWorkerId || null);
 
   // Check for loading/unloading sessions after last review
@@ -357,6 +357,15 @@ const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({ open, onOpenC
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
                 <span className="mr-2 text-sm text-muted-foreground">{t('accounting.calculating')}</span>
               </div>
+            )}
+
+            {calcError && !calcLoading && (
+              <Alert className="rounded-xl border-destructive/30 bg-destructive/5">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <AlertDescription className="text-sm text-destructive">
+                  {calcError instanceof Error ? calcError.message : (t('common.error') || 'تعذر تحميل الحسابات')}
+                </AlertDescription>
+              </Alert>
             )}
 
             {calc && (
