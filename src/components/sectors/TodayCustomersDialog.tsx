@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MapPin, Truck, ShoppingCart, Landmark, User, Phone, Eye, EyeOff, CheckCircle, PackageX, PackageCheck, Navigation, Loader2, MapPinOff, Clock, Check, X, DoorClosed, UserX, ShoppingBag, Printer, XCircle, Search, BanknoteIcon, Pencil, CalendarClock, ClipboardList, Calendar as CalendarIcon } from 'lucide-react';
@@ -1835,42 +1834,18 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
           <div className="border-b px-2 py-1.5 shrink-0">
             <ScrollArea className="w-full" dir="rtl">
               <div className="flex gap-1.5 pb-1">
-                <Popover open={calendarOpen} onOpenChange={setCalendarOpen} modal={false}>
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        setCalendarOpen((current) => !current);
-                      }}
-                      className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-medium whitespace-nowrap transition-colors shrink-0 ${
-                        selectedCustomDate
-                          ? 'bg-red-500 text-white border-red-500 hover:bg-red-600'
-                          : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
-                      }`}
-                    >
-                      <CalendarIcon className="w-3.5 h-3.5" />
-                      <span dir="ltr">{calendarButtonLabel}</span>
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="z-[120] w-auto p-0 bg-popover shadow-xl" align="start" sideOffset={6}>
-                    <Calendar
-                      mode="single"
-                      selected={selectedCustomDate}
-                      onSelect={(date) => {
-                        if (!date) return;
-                        const jsDay = date.getDay();
-                        setSelectedCustomDate(date);
-                        setSelectedDay(JS_DAY_TO_NAME[jsDay] || todayName);
-                        setCalendarOpen(false);
-                      }}
-                      disabled={(date) => date > new Date()}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
+                <button
+                  type="button"
+                  onClick={() => setCalendarOpen(true)}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-medium whitespace-nowrap transition-colors shrink-0 ${
+                    selectedCustomDate
+                      ? 'bg-red-500 text-white border-red-500 hover:bg-red-600'
+                      : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
+                  }`}
+                >
+                  <CalendarIcon className="w-3.5 h-3.5" />
+                  <span dir="ltr">{calendarButtonLabel}</span>
+                </button>
                 {Object.entries(DAY_NAMES).map(([key, label]) => {
                   const isSelected = key === selectedDay && !selectedCustomDate;
                   const isToday = key === todayName;
