@@ -151,6 +151,8 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   const isAdmin = isAdminRole(role) || role === 'supervisor';
   const todayName = JS_DAY_TO_NAME[new Date().getDay()] || '';
   const [selectedDay, setSelectedDay] = useState(todayName);
+  const [selectedCustomDate, setSelectedCustomDate] = useState<Date | undefined>(undefined);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const { trackVisit } = useTrackVisit();
   const { data: locationThreshold } = useLocationThreshold();
   const canBypassLocation = useHasPermission('bypass_location_check');
