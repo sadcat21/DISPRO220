@@ -23,6 +23,17 @@ interface ProductGroup {
   products: Product[];
 }
 
+const VAT_RATE = 0.19;
+const VAT_DIVISOR = 1 + VAT_RATE;
+
+const getNetPriceBeforeVat = (grossPrice: number) => {
+  if (!grossPrice || grossPrice <= 0) return 0;
+  return grossPrice / VAT_DIVISOR;
+};
+
+const formatPrice = (value: number) =>
+  value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
 const Products: React.FC = () => {
   const { workerId } = useAuth();
   const { t } = useLanguage();
