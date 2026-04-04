@@ -593,18 +593,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
 
   // Sector coverage (substitution system)
   const { getActiveCoveragesForDate } = useSectorCoverage();
-  const selectedDateStr = useMemo(() => {
-    const now = new Date();
-    const currentJsDay = now.getDay();
-    const daysFromSaturday = currentJsDay === 6 ? 0 : currentJsDay + 1;
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - daysFromSaturday);
-    const targetJsDay = NAME_TO_JS_DAY[selectedDay] ?? currentJsDay;
-    const targetOffset = targetJsDay === 6 ? 0 : targetJsDay + 1;
-    const targetDate = new Date(weekStart);
-    targetDate.setDate(weekStart.getDate() + targetOffset);
-    return toLocalDateKey(targetDate);
-  }, [selectedDay]);
+  const selectedDateStr = selectedDayBounds.dateKey;
 
   const activeCoveragesForSelectedDay = useMemo(() => {
     const activeCoverages = getActiveCoveragesForDate(selectedDateStr);
