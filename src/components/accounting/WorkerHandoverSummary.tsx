@@ -121,13 +121,19 @@ const WorkerHandoverSummary: React.FC<WorkerHandoverSummaryProps> = ({
       // Debt collections customers count
       const { data: debtPaymentsData } = await supabase
         .from('debt_payments')
-        .select('debt_id, debt:customer_debts!debt_payments_debt_id_fkey(customer_id)')
+        .select('debt_id, debt:customer_debts!debt_payments_debt_id_fkey(customer_id, order_id)')
         .eq('worker_id', workerId)
         .gte('collected_at', startTz)
         .lte('collected_at', endTz);
 
       const collectedDebtCustomers = new Set(
-        (debtPaymentsData || []).map((dp: any) => dp.debt?.customer_id).filter(Boolean)
+        (debtPaymentsData || [])
+          .filter((dp: any) => {
+            const orderId = dp?.debt?.order_id;
+            return !orderId || !orders.some(o => o.id === orderId);
+          })
+          .map((dp: any) => dp.debt?.customer_id)
+          .filter(Boolean)
       ).size;
 
       // Completed deliveries
