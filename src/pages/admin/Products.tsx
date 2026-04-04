@@ -776,6 +776,11 @@ const Products: React.FC = () => {
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="font-bold truncate">{product.name}</p>
+                    {product.product_code && (
+                      <p className="text-[11px] text-muted-foreground" dir="ltr">
+                        CODE: <span className="font-medium text-foreground">{product.product_code}</span>
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
                       <Box className="w-3 h-3" />
                       {product.pieces_per_box} قطعة/صندوق
