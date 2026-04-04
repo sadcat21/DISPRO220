@@ -168,7 +168,7 @@ const ManagerTreasury = () => {
           .eq('handover.branch_id', activeBranch!.id),
         supabase
           .from('orders')
-          .select('id, total_amount, partial_amount, payment_status, payment_type, invoice_payment_method, document_verification')
+          .select('id, customer_id, total_amount, partial_amount, payment_status, payment_type, invoice_payment_method, document_verification')
           .eq('status', 'delivered')
           .eq('branch_id', activeBranch!.id),
       ]);
