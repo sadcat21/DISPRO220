@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card } from '@/components/ui/card';
 import { MapPin, Truck, ShoppingCart, Landmark, User, Phone, Eye, EyeOff, CheckCircle, PackageX, PackageCheck, Navigation, Loader2, MapPinOff, Clock, Check, X, DoorClosed, UserX, ShoppingBag, Printer, XCircle, Search, BanknoteIcon, Pencil, CalendarClock, ClipboardList, Calendar as CalendarIcon } from 'lucide-react';
 import { useWorkerGeoPosition } from '@/hooks/useWorkerGeoPosition';
 import { reverseGeocode } from '@/utils/geoUtils';
@@ -32,6 +33,7 @@ import DeliverySaleDialog from '@/components/orders/DeliverySaleDialog';
 import CreateOrderDialog from '@/components/orders/CreateOrderDialog';
 import VisitNoPaymentDialog from '@/components/debts/VisitNoPaymentDialog';
 import CollectDebtDialog from '@/components/debts/CollectDebtDialog';
+import CollectedDebtOperationDialog, { TodayDebtCollectionOperation } from '@/components/debts/CollectedDebtOperationDialog';
 import DirectSaleDialog from '@/components/warehouse/DirectSaleDialog';
 import ReceiptDialog from '@/components/printing/ReceiptDialog';
 import ModifyOrderDialog from '@/components/orders/ModifyOrderDialog';
@@ -266,6 +268,8 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   const [showVisitNoPayment, setShowVisitNoPayment] = useState(false);
   const [selectedDebt, setSelectedDebt] = useState<any>(null);
   const [showCollectDebt, setShowCollectDebt] = useState(false);
+  const [selectedCollectedOperation, setSelectedCollectedOperation] = useState<TodayDebtCollectionOperation | null>(null);
+  const [showCollectedOperationDialog, setShowCollectedOperationDialog] = useState(false);
   const [checkingLocationFor, setCheckingLocationFor] = useState<string | null>(null);
   const [loadingDeliveryFor, setLoadingDeliveryFor] = useState<string | null>(null);
   const [orderDetailsDialog, setOrderDetailsDialog] = useState<any>(null);
@@ -411,13 +415,37 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     queryFn: async () => {
       let query = supabase
         .from('debt_collections')
-        .select('debt_id, action, amount_collected, status, created_at')
+        .select(`
+          id,
+          debt_id,
+          worker_id,
+          collection_date,
+          action,
+          amount_collected,
+          payment_method,
+          next_due_date,
+          status,
+          notes,
+          created_at,
+          debt:customer_debts!debt_collections_debt_id_fkey(
+            id,
+            customer_id,
+            total_amount,
+            paid_amount,
+            remaining_amount,
+            due_date,
+            collection_type,
+            collection_days,
+            collection_amount,
+            customer:customers(id, name, store_name, phone, customer_type, latitude, longitude, sector_id)
+          )
+        `)
         .eq('collection_date', todayDateStr);
       if (!isAdmin || hasSpecificWorker) {
         query = query.eq('worker_id', effectiveWorkerId!);
       }
       const { data } = await query;
-      return data || [];
+      return (data || []) as TodayDebtCollectionOperation[];
     },
     enabled: !!effectiveWorkerId && open,
     refetchInterval: 10000,
@@ -1087,9 +1115,11 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     ),
     [debtCustomers, collectedDebtIds, noPaymentDebtIds, debtClosedCustomerIds, debtUnavailableCustomerIds]
   );
-  const debtsCollectedToday = useMemo(
-    () => allDebtsFiltered.filter(d => collectedDebtIds.has(d.id)),
-    [allDebtsFiltered, collectedDebtIds]
+  const collectedDebtOperations = useMemo(
+    () => todayCollections
+      .filter((collection) => collection.action !== 'no_payment')
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+    [todayCollections]
   );
   const debtsNoPaymentVisitOnly = useMemo(
     () => allDebtsFiltered.filter(d => noPaymentDebtIds.has(d.id) && !debtClosedCustomerIds.has(d.customer_id) && !debtUnavailableCustomerIds.has(d.customer_id)),
@@ -1806,6 +1836,11 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   const handleDebtClick = (debt: any) => {
     setSelectedDebt(debt);
     setShowCollectDebt(true);
+  };
+
+  const handleCollectedOperationClick = (operation: TodayDebtCollectionOperation) => {
+    setSelectedCollectedOperation(operation);
+    setShowCollectedOperationDialog(true);
   };
 
   const handleVisitNoPayment = (debt: any) => {
