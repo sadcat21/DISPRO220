@@ -726,6 +726,29 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
   const timingSummary = periodFrom && periodTo
     ? (periodFrom === periodTo ? periodFrom : `${periodFrom} - ${periodTo}`)
     : todayDateString;
+  const labels = {
+    totalSales: language === 'fr' ? 'Total ventes' : 'إجمالي المبيعات',
+    managerReceived: language === 'fr' ? 'Montant reçu par le manager' : 'المبلغ المقبوض',
+    newDebts: language === 'fr' ? 'Nouvelles dettes' : 'ديون جديدة',
+    collectedDebts: language === 'fr' ? 'Dettes recouvrées' : 'ديون محصلة',
+    actualCash: language === 'fr' ? 'Cash effectif' : 'النقد الفعلي',
+    workersHeld: language === 'fr' ? 'En caisse chez les ouvriers' : 'في ذمة العمال',
+    expenses: language === 'fr' ? 'Dépenses' : 'المصاريف',
+    gifts: language === 'fr' ? 'Offres (colis.pièce)' : 'العروض (صندوق.قطعة)',
+    ordersQty: language === 'fr' ? 'Commandes / Quantités' : 'الطلبيات / الكميات',
+    overview: language === 'fr' ? 'Résumé' : 'الملخص',
+    products: language === 'fr' ? 'Produits' : 'المنتجات',
+    snapshot: language === 'fr' ? 'Vue globale' : 'نظرة عامة',
+    payments: language === 'fr' ? 'Paiements' : 'طرق الدفع',
+    collections: language === 'fr' ? 'Recouvrements' : 'التحصيلات',
+    noSales: language === 'fr' ? 'Aucune vente pour cette période et ces ouvriers' : 'لا توجد مبيعات في هذه الفترة للعمال المحددين',
+    noWorkers: language === 'fr' ? 'Aucun ouvrier disponible pour cette agence actuellement' : 'لا يوجد عمال متاحون لهذا الفرع حاليًا',
+    cashAndCollections: language === 'fr' ? 'Total cash (ventes + recouvrements)' : 'إجمالي النقد (مبيعات + تحصيلات)',
+    nonCash: language === 'fr' ? 'Total non cash' : 'إجمالي غير نقدي',
+    heldNotDelivered: language === 'fr' ? 'Chez les ouvriers et non remis au manager' : 'في ذمة العمال ولم يسلَّم للمدير',
+    cashExpenses: language === 'fr' ? 'Dépenses cash' : 'المصاريف النقدية',
+    customerSurplus: language === 'fr' ? 'Surplus clients' : 'فائض العملاء',
+  };
 
   return (
       <div className="flex h-full min-h-0 flex-col overflow-hidden" dir="rtl">
