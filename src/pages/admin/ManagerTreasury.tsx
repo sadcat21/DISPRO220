@@ -639,7 +639,11 @@ const ManagerTreasury = () => {
                       <Button type="button" size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => setHandoverForm(f => ({ ...f, cash_delivered: String(invoice1CashAmountWithStamp) }))}>
                         إدراج فاتورة 1
                       </Button>
-                      <Button type="button" size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => setHandoverForm(f => ({ ...f, cash_delivered: String(invoice1CashAmountWithStamp + availableInvoice2CashAmount) }))}>
+                      <Button type="button" size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => setHandoverForm(f => {
+                        const current = Number(f.cash_delivered || 0);
+                        const base = Math.max(current, invoice1CashAmountWithStamp);
+                        return { ...f, cash_delivered: String(base + availableInvoice2CashAmount) };
+                      })}>
                         إدراج فاتورة 2
                       </Button>
                       <Button type="button" size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => setHandoverForm(f => ({ ...f, cash_delivered: String(invoice1CashAmountWithStamp + availableInvoice2CashAmount) }))}>
