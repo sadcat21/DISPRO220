@@ -570,7 +570,8 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
             branchId || null,
           );
 
-          let calc = salesSummary.calc || emptyCalc();
+          const salesCalc = salesSummary.calc || emptyCalc();
+          let calc = salesCalc;
           try {
             const fetchedCalc = await fetchSessionCalculations({
               workerId: worker.id,
@@ -578,22 +579,22 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
               periodStart,
               periodEnd,
             });
-            if (fetchedCalc.totalSales > 0 || fetchedCalc.totalPaid > 0 || fetchedCalc.newDebts > 0) {
-              calc = fetchedCalc;
-            } else if (calc.totalSales > 0 || calc.totalPaid > 0 || calc.newDebts > 0) {
-              calc = {
-                ...fetchedCalc,
-                totalSales: calc.totalSales,
-                totalPaid: calc.totalPaid,
-                newDebts: calc.newDebts,
-                invoice1: calc.invoice1,
-                invoice2: calc.invoice2,
-                physicalCash: calc.physicalCash,
-                giftOfferValue: calc.giftOfferValue,
-              };
-            } else {
-              calc = fetchedCalc;
-            }
+            calc = {
+              ...fetchedCalc,
+              totalSales: salesCalc.totalSales,
+              totalPaid: salesCalc.totalPaid,
+              newDebts: salesCalc.newDebts,
+              invoice1: salesCalc.invoice1,
+              invoice2: salesCalc.invoice2,
+              physicalCash:
+                salesCalc.invoice2.cash +
+                salesCalc.invoice1.espaceCash +
+                salesCalc.invoice1.versementCash +
+                fetchedCalc.debtCollections.cash -
+                fetchedCalc.cashExpenses +
+                fetchedCalc.customerSurplusCash,
+              giftOfferValue: salesCalc.giftOfferValue > 0 ? salesCalc.giftOfferValue : fetchedCalc.giftOfferValue,
+            };
           } catch (error) {
             console.error('Manager sales calculations failed for worker:', worker.id, error);
           }
