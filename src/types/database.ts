@@ -83,6 +83,7 @@ export const asPricingUnit = (val: string | null | undefined): PricingUnit => {
 export interface Product {
   id: string;
   name: string;
+  product_code: string | null;
   pieces_per_box: number;
   is_active: boolean;
   created_at: string;
