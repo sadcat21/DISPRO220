@@ -1077,10 +1077,25 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
                           </div>
                           {item.giftQuantity > 0 && (
                             <div className="rounded-md bg-secondary px-2 py-1.5 text-[10px] font-semibold text-secondary-foreground sm:text-xs">
-                              🎁 {item.giftQuantity}
+                              🎁 {formatGiftDisplay(Number(item.giftQuantity || 0), Math.max(1, Number(item.piecesPerBox || 1)))}
                             </div>
                           )}
                         </div>
+                        {!!Object.keys(item.subtypeQuantities || {}).length && (
+                          <div className="flex flex-wrap gap-1">
+                            {Object.entries(item.subtypeQuantities || {})
+                              .filter(([, quantity]) => Number(quantity || 0) > 0)
+                              .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))
+                              .map(([subtype, quantity]) => (
+                                <span
+                                  key={subtype}
+                                  className={`rounded-full border px-1.5 py-0.5 text-[10px] font-bold ${subtypeColorMap[subtype] || 'bg-slate-100 text-slate-700 border-slate-200'}`}
+                                >
+                                  {(subtypeAbbrMap[subtype] || subtype).toUpperCase()} ({quantity})
+                                </span>
+                              ))}
+                          </div>
+                        )}
                         <div className="flex items-center justify-center rounded-md bg-slate-100 py-1.5 text-[10px] font-semibold text-slate-600 sm:text-xs">
                           {fmtMoney(item.totalAmount)}
                         </div>
