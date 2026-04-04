@@ -1789,6 +1789,8 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     ? `عملاء اليوم — ${dayLabel} — ${workersList.find(w => w.id === selectedAdminWorkerId)?.full_name || ''}${sectorSuffix}`
     : `عملاء اليوم — ${dayLabel}${sectorSuffix}`;
 
+  const displayTitle = selectedDateCaption ? title.replace(dayLabel, titleDayPart) : title;
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
