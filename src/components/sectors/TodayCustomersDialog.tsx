@@ -1841,8 +1841,8 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                       type="button"
                       className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-medium whitespace-nowrap transition-colors shrink-0 ${
                         selectedCustomDate
-                          ? 'bg-blue-50 text-blue-700 border-blue-200'
-                          : 'bg-background border-border hover:bg-accent text-foreground'
+                          ? 'bg-red-500 text-white border-red-500 hover:bg-red-600'
+                          : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
                       }`}
                     >
                       <CalendarIcon className="w-3.5 h-3.5" />
