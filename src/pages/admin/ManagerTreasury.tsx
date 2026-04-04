@@ -1087,6 +1087,9 @@ const ManagerTreasury = () => {
                 {hasGap ? (
                   <>
                     <p className="text-[10px] text-muted-foreground mb-1">
+                      {gap > 0 ? '⚠️ فرق محاسبي سالب' : '💰 فرق محاسبي موجب'}
+                    </p>
+                    <p className="hidden text-[10px] text-muted-foreground mb-1">
                       {gap > 0 ? `⚠️ ${t('treasury.deficit')}` : `💰 ${t('treasury.surplus')}`}
                     </p>
                     <p className={`text-sm font-bold ${gap > 0 ? 'text-orange-600' : 'text-green-600'}`}>
