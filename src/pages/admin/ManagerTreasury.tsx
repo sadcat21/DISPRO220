@@ -45,11 +45,11 @@ const TreasuryCard = ({ icon, label, total, handed, colorClass, borderClass, onC
         <div className="mx-auto mb-1">{icon}</div>
         <p className="text-xs text-muted-foreground">{label}</p>
         {badgeText && <p dir="rtl" className="text-[10px] font-medium text-muted-foreground">{badgeText}</p>}
-        <p className={`text-lg font-bold text-${colorClass} truncate`}>{remaining.toLocaleString()} {currency}</p>
+        <p dir="ltr" className={`text-lg font-bold text-${colorClass} truncate`}>{remaining.toLocaleString()} {currency}</p>
         {showDetails && (
           <div className="flex justify-between text-[10px] px-1">
-            <span className="text-muted-foreground">{t('treasury.total')}: {total.toLocaleString()}</span>
-            <span className="text-green-600">{t('treasury.handed')}: {handed.toLocaleString()}</span>
+            <span dir="ltr" className="text-muted-foreground">{t('treasury.total')}: {total.toLocaleString()} {currency}</span>
+            <span dir="ltr" className="text-green-600">{t('treasury.handed')}: {handed.toLocaleString()} {currency}</span>
           </div>
         )}
       </CardContent>
