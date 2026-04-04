@@ -132,7 +132,7 @@ export async function fetchSessionCalculations(params: SessionCalcParams | null)
   // 2. Fetch debt payments (use exact period timestamps)
   const { data: debtPayments, error: debtPaymentsError } = await supabase
     .from('debt_payments')
-    .select('amount, payment_method')
+    .select('debt_id, amount, payment_method, debt:customer_debts!debt_payments_debt_id_fkey(order_id)')
     .eq('worker_id', workerId)
     .gte('collected_at', periodStartTz)
     .lte('collected_at', periodEndTz);
@@ -270,6 +270,24 @@ export async function fetchSessionCalculations(params: SessionCalcParams | null)
         total: 0, check: 0, transfer: 0, receipt: 0, espaceCash: 0, versementCash: 0,
       };
       const invoice2 = { total: 0, cash: 0 };
+      const tempDebtPaymentsByOrderId: Record<string, { total: number; cash: number; check: number; transfer: number; receipt: number }> = {};
+
+      for (const dp of (debtPayments || [])) {
+        const debtOrderId = (dp as any)?.debt?.order_id;
+        if (!debtOrderId || !deliveryOrderIds.includes(debtOrderId)) continue;
+
+        const amount = Number((dp as any).amount || 0);
+        const method = String((dp as any).payment_method || 'cash').toLowerCase();
+        if (!tempDebtPaymentsByOrderId[debtOrderId]) {
+          tempDebtPaymentsByOrderId[debtOrderId] = { total: 0, cash: 0, check: 0, transfer: 0, receipt: 0 };
+        }
+
+        tempDebtPaymentsByOrderId[debtOrderId].total += amount;
+        if (method === 'check') tempDebtPaymentsByOrderId[debtOrderId].check += amount;
+        else if (method === 'transfer' || method === 'virement') tempDebtPaymentsByOrderId[debtOrderId].transfer += amount;
+        else if (method === 'receipt' || method === 'versement') tempDebtPaymentsByOrderId[debtOrderId].receipt += amount;
+        else tempDebtPaymentsByOrderId[debtOrderId].cash += amount;
+      }
 
       // Promo tracking aggregation: key = productId_offerId
       const promoMap: Record<string, PromoTrackingItem> = {};
@@ -286,15 +304,10 @@ export async function fetchSessionCalculations(params: SessionCalcParams | null)
           paidAmount = Number(order.partial_amount || 0);
         }
 
-        const linkedDebt = debtsByOrderId[order.id];
-        const debtAmount = linkedDebt
-          ? Math.max(
-              0,
-              linkedDebt.remaining_amount == null
-                ? linkedDebt.total_amount - linkedDebt.paid_amount
-                : linkedDebt.remaining_amount,
-            )
-          : Math.max(0, totalAmount - paidAmount);
+        const temporaryDebtRecovery = tempDebtPaymentsByOrderId[order.id] || { total: 0, cash: 0, check: 0, transfer: 0, receipt: 0 };
+        paidAmount = Math.min(totalAmount, paidAmount + temporaryDebtRecovery.total);
+
+        const debtAmount = Math.max(0, totalAmount - paidAmount);
         totalPaid += paidAmount;
         newDebts += debtAmount;
 
@@ -370,6 +383,11 @@ export async function fetchSessionCalculations(params: SessionCalcParams | null)
           } else {
             invoice1.espaceCash += paidAmount;
           }
+
+          if (temporaryDebtRecovery.check > 0) invoice1.check += temporaryDebtRecovery.check;
+          if (temporaryDebtRecovery.transfer > 0) invoice1.transfer += temporaryDebtRecovery.transfer;
+          if (temporaryDebtRecovery.receipt > 0) invoice1.receipt += temporaryDebtRecovery.receipt;
+          if (temporaryDebtRecovery.cash > 0) invoice1.espaceCash += temporaryDebtRecovery.cash;
         } else {
           invoice2.total += paidAmount;
           invoice2.cash += paidAmount;
@@ -442,6 +460,9 @@ export async function fetchSessionCalculations(params: SessionCalcParams | null)
         total: 0, cash: 0, check: 0, transfer: 0, receipt: 0,
       };
       for (const dp of (debtPayments || [])) {
+        const debtOrderId = (dp as any)?.debt?.order_id;
+        if (debtOrderId && deliveryOrderIds.includes(debtOrderId)) continue;
+
         const amount = Number(dp.amount || 0);
         debtCollections.total += amount;
         const method = dp.payment_method || 'cash';
