@@ -1059,7 +1059,7 @@ const ManagerTreasury = () => {
                 <div className="border-t pt-1.5">
                   <div className="flex items-center justify-between rounded-lg bg-primary/5 border border-primary/20 p-2">
                     <span className="text-[10px] font-medium">{t('treasury.expected_in_treasury')}</span>
-                    <span className="text-xs font-bold text-primary">{expectedInTreasury.toLocaleString()} {cur}</span>
+                    <MoneyValue value={expectedInTreasury} currency={cur} className="text-xs font-bold text-primary" />
                   </div>
                 </div>
 
