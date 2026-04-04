@@ -671,16 +671,16 @@ const ManagerTreasury = () => {
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
 	                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
 	                      <p className="text-[11px] text-emerald-700">{t('treasury.cash_invoice1')} + Versement Cash</p>
-	                      <p className="mt-1 text-lg font-bold text-emerald-600">{invoice1CashAmountWithStamp.toLocaleString()} {cur}</p>
+	                      <MoneyValue value={invoice1CashAmountWithStamp} currency={cur} className="mt-1 text-lg font-bold text-emerald-600" />
 	                      {pickedCashStampAmount > 0 && (
-	                        <p className="mt-1 text-[11px] text-amber-700">الطابع ضمن Espèces: {pickedCashStampAmount.toLocaleString()} {cur}</p>
+	                        <p className="mt-1 text-[11px] text-amber-700">الطابع ضمن Espèces: <MoneyValue value={pickedCashStampAmount} currency={cur} /></p>
 	                      )}
 	                    </div>
 	                    <div className="rounded-xl border border-sky-200 bg-sky-50 p-3">
 	                      <p className="text-[11px] text-sky-700">{t('treasury.cash_invoice2')}</p>
-	                      <p className="mt-1 text-lg font-bold text-sky-600">{availableInvoice2CashAmount.toLocaleString()} {cur}</p>
+	                      <MoneyValue value={availableInvoice2CashAmount} currency={cur} className="mt-1 text-lg font-bold text-sky-600" />
 	                      {invoice2CashAmount > 0 && (
-	                        <p className="mt-1 text-[11px] text-sky-700">المرسل من فاتورة 2: {invoice2CashAmount.toLocaleString()} {cur}</p>
+	                        <p className="mt-1 text-[11px] text-sky-700">المرسل من فاتورة 2: <MoneyValue value={invoice2CashAmount} currency={cur} /></p>
 	                      )}
 	                    </div>
                   </div>
@@ -720,7 +720,7 @@ const ManagerTreasury = () => {
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">{t('treasury.total_handover')}</span>
                       <span className="text-sm font-bold text-primary">
-                        {grandTotal.toLocaleString()} {cur}
+                        <MoneyValue value={grandTotal} currency={cur} />
                       </span>
                     </div>
                   </div>
