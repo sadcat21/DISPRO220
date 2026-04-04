@@ -256,6 +256,21 @@ const mergeProducts = (summaries: WorkerSummary[]): ProductAgg[] => {
   return Array.from(map.values()).sort((a, b) => b.totalAmount - a.totalAmount);
 };
 
+const getSummaryFinance = (calc: SessionCalculations): SummaryFinance => {
+  const nonCashCollected =
+    calc.invoice1.check +
+    calc.invoice1.transfer +
+    calc.invoice1.receipt +
+    calc.debtCollections.check +
+    calc.debtCollections.transfer +
+    calc.debtCollections.receipt;
+
+  return {
+    nonCashCollected,
+    workerHeldAmount: calc.physicalCash + nonCashCollected,
+  };
+};
+
 const fetchWorkerSalesSummary = async (
   workerId: string,
   periodStart?: string | null,
