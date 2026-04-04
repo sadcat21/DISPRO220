@@ -676,11 +676,22 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
   const totalQuantity = useMemo(() => aggregate.items.reduce((sum, item) => sum + item.quantity, 0), [aggregate.items]);
   const finance = useMemo(() => getSummaryFinance(aggregate.calc), [aggregate.calc]);
   const giftsDisplay = useMemo(() => {
-    const totalGiftPieces = aggregate.calc.promoTracking.reduce((sum, item) => sum + Number(item.giftQuantity || 0), 0);
+    const promoGiftPieces = aggregate.calc.promoTracking.reduce((sum, item) => sum + Number(item.giftQuantity || 0), 0);
+    const fallbackGiftPieces = aggregate.items.reduce((sum, item) => {
+      const piecesPerBox = Math.max(1, Number(item.piecesPerBox || 1));
+      return sum + (Number(item.giftQuantity || 0) * piecesPerBox);
+    }, 0);
+    const totalGiftPieces = Math.max(promoGiftPieces, fallbackGiftPieces);
     const piecesByBox = new Map<number, number>();
     for (const item of aggregate.calc.promoTracking) {
       const ppb = Math.max(1, Number(item.piecesPerBox || 1));
       piecesByBox.set(ppb, (piecesByBox.get(ppb) || 0) + Number(item.giftQuantity || 0));
+    }
+    if (piecesByBox.size === 0) {
+      for (const item of aggregate.items) {
+        const ppb = Math.max(1, Number(item.piecesPerBox || 1));
+        piecesByBox.set(ppb, (piecesByBox.get(ppb) || 0) + (Number(item.giftQuantity || 0) * ppb));
+      }
     }
     const dominantPiecesPerBox =
       piecesByBox.size > 0
