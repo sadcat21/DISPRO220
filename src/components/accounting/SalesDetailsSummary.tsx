@@ -62,6 +62,7 @@ interface CustomerSummary {
   total_amount: number;
   order_count: number;
   has_debt: boolean;
+  pricing_subtypes: string[];
 }
 
 interface CustomerDebt {
@@ -80,6 +81,14 @@ const paymentStatusColor: Record<string, string> = {
   partial: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
   credit: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
   check: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+};
+
+const subtypeAbbrMap: Record<string, string> = { invoice: 'F1', gros: 'G', super_gros: 'SG', retail: 'D' };
+const subtypeBadgeColorMap: Record<string, string> = {
+  invoice: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300',
+  gros: 'bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300',
+  super_gros: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300',
+  retail: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300',
 };
 
 const SalesDetailsSummary: React.FC<SalesDetailsSummaryProps> = ({ workerId, periodStart, periodEnd }) => {
