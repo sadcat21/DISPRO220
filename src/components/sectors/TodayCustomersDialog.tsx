@@ -1835,7 +1835,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
           <div className="border-b px-2 py-1.5 shrink-0">
             <ScrollArea className="w-full" dir="rtl">
               <div className="flex gap-1.5 pb-1">
-                <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                <Popover open={calendarOpen} onOpenChange={setCalendarOpen} modal={false}>
                   <PopoverTrigger asChild>
                     <button
                       type="button"
@@ -1849,7 +1849,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                       <span dir="ltr">{calendarButtonLabel}</span>
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 bg-popover" align="start">
+                  <PopoverContent className="z-[120] w-auto p-0 bg-popover shadow-xl" align="start" sideOffset={6}>
                     <Calendar
                       mode="single"
                       selected={selectedCustomDate}
