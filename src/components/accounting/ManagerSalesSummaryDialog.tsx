@@ -593,6 +593,28 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
             branchId || null,
           );
 
+          const { data: sessions } = await supabase
+            .from('accounting_sessions')
+            .select('id')
+            .eq('worker_id', worker.id)
+            .eq('status', 'completed')
+            .gte('completed_at', periodStart)
+            .lte('completed_at', periodEnd);
+
+          const sessionIds = (sessions || []).map((session) => session.id);
+          let managerReceivedAmount = 0;
+          if (sessionIds.length > 0) {
+            const { data: sessionItems } = await supabase
+              .from('accounting_session_items')
+              .select('item_type, actual_amount')
+              .in('session_id', sessionIds);
+
+            managerReceivedAmount = (sessionItems || []).reduce((sum, item: any) => {
+              if (!SETTLEMENT_ITEM_TYPES.has(String(item.item_type || ''))) return sum;
+              return sum + Number(item.actual_amount || 0);
+            }, 0);
+          }
+
           const salesCalc = salesSummary.calc || emptyCalc();
           let calc = salesCalc;
           try {
@@ -632,6 +654,7 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
             firstOrderTime: salesSummary.firstOrderTime,
             lastOrderTime: salesSummary.lastOrderTime,
             calc,
+            managerReceivedAmount,
           } satisfies WorkerSummary;
         }),
       );
