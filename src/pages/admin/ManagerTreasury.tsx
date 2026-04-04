@@ -1048,7 +1048,7 @@ const ManagerTreasury = () => {
                 </div>
                 <div className="flex items-center justify-between rounded-lg bg-background p-2">
                   <span className="text-[10px] text-muted-foreground">{t('treasury.unpaid')}</span>
-                  <span className="text-xs font-bold text-orange-500">−{unpaidAmount.toLocaleString()} {cur}</span>
+                  <span dir="ltr" className="inline-block whitespace-nowrap text-xs font-bold text-orange-500">-{unpaidAmount.toLocaleString()} {cur}</span>
                 </div>
                 {debtCashCollected > 0 && (
                   <div className="flex items-center justify-between rounded-lg bg-background p-2">
