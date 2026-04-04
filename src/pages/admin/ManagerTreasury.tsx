@@ -1096,6 +1096,11 @@ const ManagerTreasury = () => {
                       {Math.abs(gap).toLocaleString()} {cur}
                     </p>
                     <p className="text-[10px] text-muted-foreground mt-1">
+                      {gap > 0
+                        ? 'المبلغ المتوقع في الخزينة أكبر من المبلغ الذي تم احتسابه كموجود أو مُسلَّم أو مصروف.'
+                        : 'المبلغ المحتسب كموجود أو مُسلَّم أو مصروف أكبر من المبلغ المتوقع في الخزينة وفق المبيعات والديون.'}
+                    </p>
+                    <p className="hidden text-[10px] text-muted-foreground mt-1">
                       {gap > 0 ? t('treasury.deficit_msg') : t('treasury.surplus_msg')}
                     </p>
                   </>
