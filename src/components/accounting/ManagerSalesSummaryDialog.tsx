@@ -636,6 +636,22 @@ export const ManagerSalesSummaryContent: React.FC<ContentProps> = ({ branchId, w
   const aggregate = useMemo(() => buildAggregateSummary(data || [], selectedWorkerId), [data, selectedWorkerId]);
   const totalQuantity = useMemo(() => aggregate.items.reduce((sum, item) => sum + item.quantity, 0), [aggregate.items]);
   const finance = useMemo(() => getSummaryFinance(aggregate.calc), [aggregate.calc]);
+  const giftsDisplay = useMemo(() => {
+    const totalGiftPieces = aggregate.calc.promoTracking.reduce((sum, item) => sum + Number(item.giftQuantity || 0), 0);
+    const piecesByBox = new Map<number, number>();
+    for (const item of aggregate.calc.promoTracking) {
+      const ppb = Math.max(1, Number(item.piecesPerBox || 1));
+      piecesByBox.set(ppb, (piecesByBox.get(ppb) || 0) + Number(item.giftQuantity || 0));
+    }
+    const dominantPiecesPerBox =
+      piecesByBox.size > 0
+        ? Array.from(piecesByBox.entries()).sort((a, b) => b[1] - a[1])[0][0]
+        : 1;
+    return {
+      totalGiftPieces,
+      text: formatGiftDisplay(totalGiftPieces, dominantPiecesPerBox),
+    };
+  }, [aggregate.calc.promoTracking]);
 
   const resetFilters = () => {
     setPeriodFrom(todayDateString);
