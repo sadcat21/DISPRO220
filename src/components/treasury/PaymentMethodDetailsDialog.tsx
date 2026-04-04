@@ -313,6 +313,9 @@ const PaymentMethodDetailsDialog = ({ open, onOpenChange, category, handedCashIn
   const grandDebt = (customerGroups || []).reduce((sum, group) => sum + group.totalDebt, 0);
   const totalOrders = (customerGroups || []).reduce((sum, group) => sum + group.orders.length, 0);
   const invoice1GrandTotal = isCashInvoice1 ? grandTotal + grandStamp : grandTotal;
+  const cashInvoice2Remaining = isCashInvoice2 ? grandTotal : 0;
+  const cashInvoice2Handed = isCashInvoice2 ? handedCashInvoice2Amount : 0;
+  const cashInvoice2Overall = isCashInvoice2 ? cashInvoice2Remaining + cashInvoice2Handed : 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
