@@ -1474,6 +1474,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
         .eq('customer_id', customer.id)
         .eq('status', 'delivered')
         .gte('updated_at', todayStart)
+        .lte('updated_at', selectedDayBounds.end)
         .order('updated_at', { ascending: false })
         .limit(1);
       if (data && data.length > 0) {
