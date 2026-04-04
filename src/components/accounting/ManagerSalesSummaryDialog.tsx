@@ -275,6 +275,12 @@ const mergeProducts = (summaries: WorkerSummary[]): ProductAgg[] => {
       current.quantity += item.quantity;
       current.giftQuantity += item.giftQuantity;
       current.totalAmount += item.totalAmount;
+      current.subtypeQuantities = {
+        ...(current.subtypeQuantities || {}),
+      };
+      Object.entries(item.subtypeQuantities || {}).forEach(([subtype, quantity]) => {
+        current.subtypeQuantities![subtype] = (current.subtypeQuantities![subtype] || 0) + Number(quantity || 0);
+      });
       current.warehouseQuantity = item.warehouseQuantity ?? current.warehouseQuantity ?? 0;
       current.workerStockQuantity = item.workerStockQuantity ?? current.workerStockQuantity ?? 0;
       current.workerStockByWorker = {
