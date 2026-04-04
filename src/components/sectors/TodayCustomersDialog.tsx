@@ -3077,9 +3077,10 @@ const CollectedDebtOperationList: React.FC<{
                       name: customer?.name,
                       store_name: customer?.store_name,
                       customer_type: customer?.customer_type,
+                      sector_name: sector ? getLocalizedName(sector, language) : undefined,
+                      zone_name: zone ? getLocalizedName(zone, language) : undefined,
                     }}
                     compact
-                    hideBadges
                   />
                   <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <span className="inline-flex items-center gap-1">
