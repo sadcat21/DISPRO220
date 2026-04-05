@@ -417,46 +417,6 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
     return totalGiftPieces;
   }, [activeOffers]);
 
-  const handleUpdateQuantity = (itemIndex: number, delta: number) => {
-    setOrderItems(prev =>
-      prev
-        .map((item, index) => {
-          if (index !== itemIndex) return item;
-
-          const currentPaidQty = item.isUnitSale
-            ? item.quantity
-            : Math.max(0, item.quantity - (item.giftQuantity || 0));
-
-          const newPaidQty = currentPaidQty + delta;
-          if (newPaidQty <= 0) {
-            return { ...item, quantity: 0, totalPrice: 0, giftQuantity: 0, giftPieces: 0 };
-          }
-
-          if (item.isUnitSale) {
-            return {
-              ...item,
-              quantity: newPaidQty,
-              totalPrice: newPaidQty * item.unitPrice,
-            };
-          }
-
-          const product = products.find(p => p.id === item.productId);
-          const piecesPerBox = product?.pieces_per_box || 1;
-          const totalGiftPieces = recalcGiftPieces(item.productId, newPaidQty, piecesPerBox);
-          const giftBoxes = Math.floor(totalGiftPieces / piecesPerBox);
-
-          return {
-            ...item,
-            quantity: newPaidQty + giftBoxes,
-            giftQuantity: giftBoxes || undefined,
-            giftPieces: totalGiftPieces || undefined,
-            totalPrice: newPaidQty * item.unitPrice,
-          };
-        })
-        .filter(item => item.quantity > 0)
-    );
-  };
-
   const handleRemoveProduct = (productId: string) => {
     setOrderItems(prev => prev.filter(item => item.productId !== productId));
   };
