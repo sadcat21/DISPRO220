@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import CustomerPickerDialog from '@/components/orders/CustomerPickerDialog';
 import {
-  Truck, Plus, Minus, Loader2, User,
+  Truck, Plus, Loader2, User,
   Receipt, ReceiptText, XCircle, Package, Check, ChevronsUpDown, Stamp, Gift
 } from 'lucide-react';
 import { toast } from 'sonner';
