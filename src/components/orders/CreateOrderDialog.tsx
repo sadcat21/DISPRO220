@@ -943,25 +943,9 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
                           )}
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="h-7 w-7"
-                              onClick={() => handleUpdateQuantity(idx, -1)}
-                            >
-                              <Minus className="w-3 h-3" />
-                            </Button>
-                            <span className="w-8 text-center font-bold text-sm">{item.isUnitSale ? item.quantity : Math.max(0, item.quantity - (item.giftQuantity || 0))}</span>
-                            <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="h-7 w-7"
-                              onClick={() => handleUpdateQuantity(idx, 1)}
-                            >
-                            <Plus className="w-3 h-3" />
-                          </Button>
+                          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold">
+                            {item.isUnitSale ? item.quantity : Math.max(0, item.quantity - (item.giftQuantity || 0))}
+                          </span>
                           <Button
                             type="button"
                             variant="ghost"
