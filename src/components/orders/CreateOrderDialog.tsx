@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import CustomerPickerDialog from './CustomerPickerDialog';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import {
-  ShoppingCart, Plus, Minus, Loader2, User,
+  ShoppingCart, Plus, Loader2, User,
   Receipt, ReceiptText, UserPlus, Edit2, XCircle, Package, Check, ChevronsUpDown, Stamp,
   AlertTriangle, Gift, Banknote
 } from 'lucide-react';
