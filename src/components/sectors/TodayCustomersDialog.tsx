@@ -2518,7 +2518,7 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
               </SelectTrigger>
               <SelectContent dir="rtl">
                 <SelectItem value="_same">نفس العامل الحالي</SelectItem>
-                {workersList.map(w => (
+                {adminPickerWorkers.map(w => (
                   <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>
                 ))}
               </SelectContent>
