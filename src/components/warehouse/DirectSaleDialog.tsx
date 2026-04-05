@@ -377,22 +377,6 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
     setOverflowData(null);
   };
 
-  const handleUpdateQuantity = (productId: string, delta: number) => {
-    const available = getAvailable(productId);
-    setOrderItems(prev =>
-      prev.map(item => {
-        if (item.productId === productId) {
-          const newQuantity = item.quantity + delta;
-          if (newQuantity > 0 && newQuantity <= available) {
-            return { ...item, quantity: newQuantity, totalPrice: newQuantity * item.unitPrice };
-          }
-          if (newQuantity <= 0) return { ...item, quantity: 0 };
-        }
-        return item;
-      }).filter(item => item.quantity > 0)
-    );
-  };
-
   const handleRemoveProduct = (productId: string) => {
     setOrderItems(prev => prev.filter(item => item.productId !== productId));
   };
