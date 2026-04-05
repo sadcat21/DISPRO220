@@ -413,8 +413,8 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     refetchInterval: 10000,
   });
 
+  const { data: dueDebts = [] } = useDueDebts(todayDateStr);
   const { data: allDebts = [] } = useDueDebts('__all__');
-  const dueDebts = allDebts;
 
   const { data: todayCollections = [] } = useQuery({
     queryKey: ['today-debt-collections-dialog', effectiveWorkerId, todayDateStr],
@@ -1096,11 +1096,9 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
 
   const collectedDebtIds = useMemo(() => new Set(todayCollections.filter(c => c.action !== 'no_payment').map(c => c.debt_id)), [todayCollections]);
   const noPaymentDebtIds = useMemo(() => new Set(todayCollections.filter(c => c.action === 'no_payment').map(c => c.debt_id)), [todayCollections]);
-  const debtCustomers = useMemo(() => {
-    if (hasSpecificWorker) return dueDebts.filter(d => d.worker_id === effectiveWorkerId);
-    return dueDebts;
-  }, [dueDebts, effectiveWorkerId, hasSpecificWorker]);
-  const allDebtsFiltered = useMemo(() => {
+  const debtCustomers = useMemo(() => dueDebts, [dueDebts]);
+  const allDebtsFiltered = useMemo(() => allDebts, [allDebts]);
+  const workerDebts = useMemo(() => {
     if (hasSpecificWorker) return allDebts.filter(d => d.worker_id === effectiveWorkerId);
     return allDebts;
   }, [allDebts, effectiveWorkerId, hasSpecificWorker]);
@@ -1130,16 +1128,16 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     [todayCollections]
   );
   const debtsNoPaymentVisitOnly = useMemo(
-    () => allDebtsFiltered.filter(d => noPaymentDebtIds.has(d.id) && !debtClosedCustomerIds.has(d.customer_id) && !debtUnavailableCustomerIds.has(d.customer_id)),
-    [allDebtsFiltered, noPaymentDebtIds, debtClosedCustomerIds, debtUnavailableCustomerIds]
+    () => workerDebts.filter(d => noPaymentDebtIds.has(d.id) && !debtClosedCustomerIds.has(d.customer_id) && !debtUnavailableCustomerIds.has(d.customer_id)),
+    [workerDebts, noPaymentDebtIds, debtClosedCustomerIds, debtUnavailableCustomerIds]
   );
   const debtsNoPaymentClosed = useMemo(
-    () => allDebtsFiltered.filter(d => debtClosedCustomerIds.has(d.customer_id)),
-    [allDebtsFiltered, debtClosedCustomerIds]
+    () => workerDebts.filter(d => debtClosedCustomerIds.has(d.customer_id)),
+    [workerDebts, debtClosedCustomerIds]
   );
   const debtsNoPaymentUnavailable = useMemo(
-    () => allDebtsFiltered.filter(d => debtUnavailableCustomerIds.has(d.customer_id)),
-    [allDebtsFiltered, debtUnavailableCustomerIds]
+    () => workerDebts.filter(d => debtUnavailableCustomerIds.has(d.customer_id)),
+    [workerDebts, debtUnavailableCustomerIds]
   );
   const debtsNoPaymentToday = useMemo(
     () => {
