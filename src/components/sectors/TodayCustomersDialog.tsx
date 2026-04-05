@@ -459,6 +459,45 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     refetchInterval: 10000,
   });
 
+  const { data: todayCollectionsAll = [] } = useQuery({
+    queryKey: ['today-debt-collections-dialog-all', todayDateStr],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('debt_collections')
+        .select(`
+          id,
+          debt_id,
+          worker_id,
+          collection_date,
+          action,
+          amount_collected,
+          payment_method,
+          next_due_date,
+          status,
+          notes,
+          created_at,
+          worker:workers!debt_collections_worker_id_fkey(id, full_name, username),
+          debt:customer_debts!debt_collections_debt_id_fkey(
+            id,
+            customer_id,
+            total_amount,
+            paid_amount,
+            remaining_amount,
+            due_date,
+            collection_type,
+            collection_days,
+            collection_amount,
+            worker:workers!customer_debts_worker_id_fkey(id, full_name, username),
+            customer:customers(id, name, store_name, phone, customer_type, latitude, longitude, sector_id)
+          )
+        `)
+        .eq('collection_date', todayDateStr);
+      return (data || []) as TodayDebtCollectionOperation[];
+    },
+    enabled: isAdmin && open,
+    refetchInterval: 10000,
+  });
+
   // Compute consecutive no-order visit streaks per customer
   // Fetches all visits (type 'visit') and orders to calculate how many consecutive
   // visits happened without an order being placed. Resets to 0 when an order is created.
@@ -1096,6 +1135,8 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
 
   const collectedDebtIds = useMemo(() => new Set(todayCollections.filter(c => c.action !== 'no_payment').map(c => c.debt_id)), [todayCollections]);
   const noPaymentDebtIds = useMemo(() => new Set(todayCollections.filter(c => c.action === 'no_payment').map(c => c.debt_id)), [todayCollections]);
+  const collectedDebtIdsAll = useMemo(() => new Set(todayCollectionsAll.filter(c => c.action !== 'no_payment').map(c => c.debt_id)), [todayCollectionsAll]);
+  const noPaymentDebtIdsAll = useMemo(() => new Set(todayCollectionsAll.filter(c => c.action === 'no_payment').map(c => c.debt_id)), [todayCollectionsAll]);
   const debtCustomers = useMemo(() => dueDebts, [dueDebts]);
   const allDebtsFiltered = useMemo(() => allDebts, [allDebts]);
   const workerDebts = useMemo(() => {
@@ -1112,15 +1153,16 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
       .filter((v: any) => v.operation_type === 'visit' && String(v.notes || '').includes('(تحصيل دين)') && String(v.notes || '').includes('غير متاح'))
       .map((v: any) => v.customer_id)
   ), [todayVisits]);
-  const debtsToCollectToday = useMemo(
-    () => debtCustomers.filter(d =>
-      !collectedDebtIds.has(d.id) &&
-      !noPaymentDebtIds.has(d.id) &&
+  const debtsToCollectToday = useMemo(() => {
+    const collectedSet = isAdmin ? collectedDebtIdsAll : collectedDebtIds;
+    const noPaymentSet = isAdmin ? noPaymentDebtIdsAll : noPaymentDebtIds;
+    return debtCustomers.filter(d =>
+      !collectedSet.has(d.id) &&
+      !noPaymentSet.has(d.id) &&
       !debtClosedCustomerIds.has(d.customer_id) &&
       !debtUnavailableCustomerIds.has(d.customer_id)
-    ),
-    [debtCustomers, collectedDebtIds, noPaymentDebtIds, debtClosedCustomerIds, debtUnavailableCustomerIds]
-  );
+    );
+  }, [debtCustomers, collectedDebtIds, noPaymentDebtIds, collectedDebtIdsAll, noPaymentDebtIdsAll, debtClosedCustomerIds, debtUnavailableCustomerIds, isAdmin]);
   const collectedDebtOperations = useMemo(
     () => todayCollections
       .filter((collection) => collection.action !== 'no_payment')
