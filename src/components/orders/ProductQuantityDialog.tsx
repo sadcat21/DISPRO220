@@ -15,6 +15,7 @@ import { Plus, Minus, Package, Gift, Check, Settings2, Receipt, ReceiptText } fr
 import { Product, PaymentType, PriceSubType } from '@/types/database';
 import { InvoicePaymentMethod } from '@/types/stamp';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useHasPermission } from '@/hooks/usePermissions';
 import ProductOfferBadge from '@/components/offers/ProductOfferBadge';
 import InvoicePaymentMethodSelect from '@/components/orders/InvoicePaymentMethodSelect';
 import { parseBP, boxesToBP } from '@/utils/boxPieceInput';
@@ -29,6 +30,7 @@ export interface PerItemPricing {
   paymentType: PaymentType;
   invoicePaymentMethod: InvoicePaymentMethod | null;
   priceSubType: PriceSubType;
+  customUnitPrice?: number;
 }
 
 interface ProductQuantityDialogProps {
@@ -55,8 +57,10 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
   defaultPriceSubType = 'gros',
   defaultInvoicePaymentMethod = null,
   initialQuantity = 1,
+  initialCustomUnitPrice,
 }) => {
   const { t, dir } = useLanguage();
+  const canCustomizePrices = useHasPermission('customize_prices');
   const [quantityInput, setQuantityInput] = useState(String(initialQuantity));
   const piecesPerBox = product?.pieces_per_box || 1;
   const [giftPieces, setGiftPieces] = useState(0);
@@ -67,11 +71,15 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
   const [itemPaymentType, setItemPaymentType] = useState<PaymentType>(defaultPaymentType);
   const [itemPriceSubType, setItemPriceSubType] = useState<PriceSubType>(defaultPriceSubType);
   const [itemInvoicePaymentMethod, setItemInvoicePaymentMethod] = useState<InvoicePaymentMethod | null>(defaultInvoicePaymentMethod);
+  const [customPriceOpen, setCustomPriceOpen] = useState(false);
+  const [customUnitPriceInput, setCustomUnitPriceInput] = useState(initialCustomUnitPrice ? String(initialCustomUnitPrice) : '');
 
   // Derived quantity from B.P input
   const parsed = useMemo(() => parseBP(quantityInput, piecesPerBox), [quantityInput, piecesPerBox]);
   const quantity = isUnitSale ? (parseInt(quantityInput) || 0) : parsed.boxes;
   const quantityPieces = isUnitSale ? 0 : parsed.pieces;
+  const customUnitPriceValue = Number(customUnitPriceInput || 0);
+  const hasCustomUnitPrice = Number.isFinite(customUnitPriceValue) && customUnitPriceValue > 0;
 
   // Sync quantity when initialQuantity changes (edit mode vs new)
   useEffect(() => {
@@ -86,10 +94,11 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
   const handleConfirm = () => {
     const effectiveQty = isUnitSale ? quantity : parsed.totalBoxes;
     if (product && effectiveQty > 0 && !hasUnappliedOffer) {
-      const perItemPricing: PerItemPricing | undefined = showPricingOverride ? {
+      const perItemPricing: PerItemPricing | undefined = (showPricingOverride || hasCustomUnitPrice) ? {
         paymentType: itemPaymentType,
         invoicePaymentMethod: itemPaymentType === 'with_invoice' ? itemInvoicePaymentMethod : null,
         priceSubType: itemPriceSubType,
+        customUnitPrice: hasCustomUnitPrice ? customUnitPriceValue : undefined,
       } : undefined;
 
       if (isUnitSale) {
@@ -112,6 +121,7 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
       setOfferApplied(false);
       setIsUnitSale(false);
       setShowPricingOverride(false);
+      setCustomUnitPriceInput('');
       onOpenChange(false);
     }
   };
@@ -154,6 +164,7 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
       setItemPaymentType(defaultPaymentType);
       setItemPriceSubType(defaultPriceSubType);
       setItemInvoicePaymentMethod(defaultInvoicePaymentMethod);
+      setCustomUnitPriceInput(initialCustomUnitPrice ? String(initialCustomUnitPrice) : '');
     }
     onOpenChange(isOpen);
   };
@@ -173,8 +184,9 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
   const baseQuantity = quantity;
   const basePieces = isUnitSale ? quantity : parsed.totalPieces;
   const totalPieces = isUnitSale ? quantity : (parsed.totalPieces + appliedGiftPieces);
-  const displayPrice = isUnitSale ? unitPiecePrice : unitPrice;
-  const displayTotal = isUnitSale ? (unitPiecePrice * quantity) : (unitPrice * parsed.totalBoxes);
+  const baseUnitPrice = isUnitSale ? unitPiecePrice : unitPrice;
+  const displayPrice = hasCustomUnitPrice ? customUnitPriceValue : baseUnitPrice;
+  const displayTotal = isUnitSale ? (displayPrice * quantity) : (displayPrice * parsed.totalBoxes);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -233,6 +245,20 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
                 <Label htmlFor="unit-sale-switch" className="text-xs cursor-pointer">
                   {t('offers.unit_piece')}
                 </Label>
+              </div>
+            )}
+
+            {canCustomizePrices && (
+              <div className="flex items-center justify-between gap-2">
+                <Button type="button" variant="outline" size="sm" className="h-8 text-[11px] gap-1" onClick={() => setCustomPriceOpen(true)}>
+                  <Settings2 className="w-3.5 h-3.5" />
+                  {t('orders.custom_unit_price') || 'تخصيص سعر الوحدة'}
+                </Button>
+                {hasCustomUnitPrice && (
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                    {customUnitPriceValue.toLocaleString()} {t('common.currency')}
+                  </Badge>
+                )}
               </div>
             )}
 
@@ -425,6 +451,47 @@ const ProductQuantityDialog: React.FC<ProductQuantityDialogProps> = ({
             </Collapsible>
           </div>
         </div>
+
+        <Dialog open={customPriceOpen} onOpenChange={setCustomPriceOpen}>
+          <DialogContent className="max-w-xs" dir={dir}>
+            <DialogHeader>
+              <DialogTitle className="text-sm">{t('orders.custom_unit_price') || 'تخصيص سعر الوحدة'}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">
+                  {t('accounting.unit_price') || 'سعر الوحدة'} ({isUnitSale ? t('offers.unit_piece') : t('offers.unit_box')})
+                </Label>
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  value={customUnitPriceInput}
+                  onChange={(e) => setCustomUnitPriceInput(e.target.value)}
+                  placeholder={String(baseUnitPrice || 0)}
+                />
+                <div className="text-[10px] text-muted-foreground">
+                  {t('orders.default_price') || 'السعر الافتراضي'}: {baseUnitPrice.toLocaleString()} {t('common.currency')}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button className="flex-1" onClick={() => setCustomPriceOpen(false)}>
+                  {t('common.save') || 'حفظ'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setCustomUnitPriceInput('');
+                    setCustomPriceOpen(false);
+                  }}
+                >
+                  {t('orders.use_default_price') || 'استخدام السعر الافتراضي'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <div className="sticky bottom-0 border-t border-border bg-background px-6 py-3 flex flex-row gap-2">
           <Button className="flex-1" onClick={handleConfirm} disabled={hasUnappliedOffer}>
