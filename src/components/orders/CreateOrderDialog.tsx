@@ -252,9 +252,11 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({ open, onOpenChang
       setEditingProductMode(true);
       const existingPaidQuantity = Math.max(1, existingItem.quantity - (existingItem.giftQuantity || 0));
       setEditingInitialQuantity(existingPaidQuantity);
+      setEditingCustomUnitPrice(existingItem.customUnitPrice);
     } else {
       setEditingProductMode(false);
       setEditingInitialQuantity(1);
+      setEditingCustomUnitPrice(undefined);
     }
     setSelectedProduct(product);
     setShowQuantityDialog(true);
