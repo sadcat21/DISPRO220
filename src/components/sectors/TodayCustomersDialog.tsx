@@ -1886,11 +1886,11 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
           </DialogHeader>
 
           {/* Admin worker picker strip */}
-          {isAdmin && !targetWorkerId && workersList.length > 0 && (
+          {isAdmin && !targetWorkerId && adminPickerWorkers.length > 0 && (
             <div className="border-b px-1.5 py-1 shrink-0">
               <ScrollArea className="w-full" dir="rtl">
                 <div className="flex gap-1 pb-1">
-                  {workersList.filter(w => availableWorkerIdsForSelectedDay.has(w.id)).map(w => {
+                  {adminPickerWorkers.map(w => {
                     const isSelected = w.id === selectedAdminWorkerId;
                     return (
                       <button
@@ -1902,7 +1902,6 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
                             : 'bg-background border-border hover:bg-accent text-foreground'}
                         `}
                       >
-                        <User className="w-3 h-3" />
                         {w.full_name}
                       </button>
                     );
