@@ -51,6 +51,7 @@ interface OrderItemWithPrice {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  customUnitPrice?: number;
   giftQuantity?: number;
   giftPieces?: number;
   giftOfferId?: string;
