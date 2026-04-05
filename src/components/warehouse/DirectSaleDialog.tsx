@@ -1048,13 +1048,9 @@ const DirectSaleDialog: React.FC<DirectSaleDialogProps> = ({ open, onOpenChange,
                           )}
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleUpdateQuantity(item.productId, -1)}>
-                            <Minus className="w-3 h-3" />
-                          </Button>
-                          <span className="w-8 text-center font-bold text-sm">{item.quantity}</span>
-                          <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleUpdateQuantity(item.productId, 1)}>
-                            <Plus className="w-3 h-3" />
-                          </Button>
+                          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold">
+                            {item.quantity}
+                          </span>
                           <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleRemoveProduct(item.productId)}>
                             <XCircle className="w-4 h-4" />
                           </Button>
