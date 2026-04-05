@@ -413,8 +413,8 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
     refetchInterval: 10000,
   });
 
-  const { data: dueDebts = [] } = useDueDebts(todayDateStr);
   const { data: allDebts = [] } = useDueDebts('__all__');
+  const dueDebts = allDebts;
 
   const { data: todayCollections = [] } = useQuery({
     queryKey: ['today-debt-collections-dialog', effectiveWorkerId, todayDateStr],
