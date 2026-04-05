@@ -184,13 +184,19 @@ const TodayCustomersDialog: React.FC<TodayCustomersDialogProps> = ({
   const { data: workersList = [] } = useQuery({
     queryKey: ['today-cust-workers-list', activeBranch?.id],
     queryFn: async () => {
-      let query = supabase.from('workers').select('id, full_name, username, is_active');
-      if (activeBranch && role === 'branch_admin') query = query.eq('branch_id', activeBranch.id);
+      let query = supabase.from('workers').select('id, full_name, username, is_active, role, branch_id');
+      if (activeBranch) query = query.eq('branch_id', activeBranch.id);
       const { data } = await query.order('full_name');
       return data || [];
     },
     enabled: (isAdminRole(role) || role === 'supervisor') && open && !targetWorkerId,
   });
+
+  const adminExcludedRoles = useMemo(() => new Set(['admin', 'branch_admin', 'project_manager', 'accountant', 'admin_assistant']), []);
+  const adminPickerWorkers = useMemo(
+    () => workersList.filter(w => !adminExcludedRoles.has(w.role) && (w.is_active ?? true)),
+    [workersList, adminExcludedRoles]
+  );
 
   // For admin: use selected worker or fallback to auth worker
   const effectiveWorkerId = targetWorkerId || (isAdmin && selectedAdminWorkerId ? selectedAdminWorkerId : authWorkerId);
